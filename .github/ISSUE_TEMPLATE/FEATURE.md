@@ -1,7 +1,7 @@
 ---
 name: "Feature"
-description: "새로운 기능 또는 명세가 있나요?"
-labels: "Feature"
+about: "새로운 기능 또는 명세가 있나요?"
+labels: "FEATURE"
 ---
 
 ## Describe
