@@ -1,0 +1,196 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit review settings for the Nearby Spring Boot backend.
+language: "ko-KR"
+tone_instructions: >
+  당신의 목표는 백엔드 팀원들이 코드 품질을 개선하며 성장하도록 돕는 것입니다.
+  1. 피드백은 명확하고 구체적이어야 하며, 문제의 원인과 개선 방법을 반드시 제시하세요.
+  2. 리뷰는 교육적이어야 하며, 관련 개념이나 공식 문서를 함께 추천하세요.
+  3. 비판보다는 개선 중심의 제안을 우선하세요.
+  4. 칭찬은 짧고 위트 있게 작성하세요.
+  5. 피드백의 우선 순위를 P1 ~ P5로 표시한 후 내용을 작성하세요.
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_in_walkthrough: true
+  review_status: true
+  review_details: true
+  commit_status: true
+  fail_commit_status: false
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: false
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  auto_apply_labels: false
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  enable_prompt_for_ai_agents: true
+
+  path_filters:
+    - "**/*.java"
+    - "**/*.gradle"
+    - "**/*.yaml"
+    - "**/*.yml"
+    - ".coderabbit.yaml"
+    - ".github/**"
+    - "gradle/**"
+    - "!**/build/**"
+    - "!.gradle/**"
+    - "!.idea/**"
+    - "!**/*.jar"
+
+  labeling_instructions:
+    - label: "api"
+      instructions: "Apply when the PR changes HTTP controllers, request/response DTOs, validation, or OpenAPI behavior."
+    - label: "domain"
+      instructions: "Apply when the PR changes domain rules, domain models, or business invariants."
+    - label: "infra"
+      instructions: "Apply when the PR changes persistence, external integrations, configuration, deployment, or build logic."
+    - label: "test"
+      instructions: "Apply when the PR mainly adds or changes tests."
+
+  path_instructions:
+    - path: "**/*.java"
+      instructions: |
+        Review as Java 21 and Spring Boot 3 backend code.
+        Prioritize correctness, transaction boundaries, validation, null-safety, exception handling, security, and testability.
+        Do not request speculative abstractions or broad refactors unless the changed code creates real duplication or risk.
+        Check that public API behavior is explicit and that error cases are covered by focused tests.
+        Classify comments using the team's PR scale when possible: P1 must fix, P2 strongly consider, P3 should fix if practical, P4 optional, P5 nit.
+    - path: "app/**"
+      instructions: |
+        The app module wires the Spring Boot application and runtime configuration.
+        Watch for configuration drift, unsafe defaults, secrets in source, profile mistakes, and dependencies that belong in lower modules.
+    - path: "api/**"
+      instructions: |
+        The api module owns web/API-facing concerns.
+        Check request validation, response shape compatibility, HTTP status codes, OpenAPI impact, and whether controllers avoid embedding domain logic.
+    - path: "domain/**"
+      instructions: |
+        The domain module should keep business rules independent from web and infrastructure concerns.
+        Flag dependencies from domain to api, adapter, persistence frameworks, or Spring web types.
+    - path: "adapter/**"
+      instructions: |
+        The adapter module owns infrastructure and integration boundaries.
+        Check persistence mapping, external API error handling, retries/timeouts where relevant, and leakage of infrastructure models into domain APIs.
+    - path: "common/**"
+      instructions: |
+        The common module should contain only genuinely shared, stable utilities or types.
+        Flag convenience code that couples unrelated modules or becomes a dumping ground.
+    - path: "**/*.gradle"
+      instructions: |
+        Review Gradle changes for dependency scope, module boundaries, Java 21 compatibility, Spring Boot BOM alignment, and unnecessary plugin or version drift.
+    - path: "app/src/main/resources/**/*.yaml"
+      instructions: |
+        Treat configuration changes as production-sensitive.
+        Flag hard-coded secrets, unsafe defaults, missing environment overrides, and settings that could break local/test profiles.
+    - path: ".github/**"
+      instructions: |
+        Review GitHub templates and automation for clarity, least privilege, and consistency with the team's P1-P5 review policy.
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 5
+    drafts: false
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT REVIEW"
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: true
+    simplify:
+      enabled: false
+
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: "warning"
+      requirements: "PR title should be concise and describe one logical backend change."
+    issue_assessment:
+      mode: "warning"
+    custom_checks:
+      - name: "Spring module boundary"
+        mode: "warning"
+        instructions: "Warn when a module depends on an upper layer or bypasses the intended app/api/domain/adapter/common boundaries."
+      - name: "Test evidence"
+        mode: "warning"
+        instructions: "Warn when backend behavior changes without nearby unit, slice, or integration test coverage, unless the PR explains why tests are unnecessary."
+
+  tools:
+    github-checks:
+      enabled: true
+      timeout_ms: 180000
+    pmd:
+      enabled: true
+    fbinfer:
+      enabled: true
+      enable_java: true
+    semgrep:
+      enabled: true
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    yamllint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    actionlint:
+      enabled: true
+    zizmor:
+      enabled: true
+    osvScanner:
+      enabled: true
+
+chat:
+  art: false
+  auto_reply: true
+  allow_non_org_members: false
+
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+  learnings:
+    scope: "local"
+    approval_delay: 7
+  issues:
+    scope: "local"
+  pull_requests:
+    scope: "local"
+  automatic_repository_linking: false
+
+code_generation:
+  docstrings:
+    language: "ko-KR"
+    path_instructions:
+      - path: "**/*.java"
+        instructions: "Generate JavaDoc only when it clarifies non-obvious public API behavior or domain rules. Do not add boilerplate comments."
+  unit_tests:
+    path_instructions:
+      - path: "**/*.java"
+        instructions: "Prefer focused JUnit 5 tests. Use Spring Boot integration tests only when wiring, persistence, or HTTP behavior is part of the change."
+
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+  planning:
+    enabled: true
+    auto_planning:
+      enabled: false
+  labeling:
+    auto_apply_labels: false
