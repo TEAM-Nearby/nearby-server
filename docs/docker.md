@@ -1,5 +1,47 @@
 # Docker 이미지 실행 가이드
 
+## Docker Compose 로컬 실행
+
+로컬 개발 환경은 Docker Compose로 애플리케이션, PostgreSQL, Redis를 함께 실행한다. 기본 DB는 Compose 내부 PostgreSQL이다.
+
+Compose 실행에는 로컬 전용 `.env`가 필수다. 예시 파일을 참고해 `.env`를 만든다.
+
+```bash
+cp .env.example .env
+```
+
+`.env.example`은 커밋해도 되지만 실제 Secret이나 실제 dev DB 비밀번호를 넣지 않는다. 아래 값은 로컬에서 직접 정해야 하는 placeholder다.
+
+```text
+SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/nearby
+SPRING_DATASOURCE_USERNAME=<local-postgres-user>
+SPRING_DATASOURCE_PASSWORD=<local-postgres-password>
+SPRING_DATA_REDIS_HOST=redis
+SPRING_DATA_REDIS_PORT=6379
+POSTGRES_DB=nearby
+POSTGRES_USER=<local-postgres-user>
+POSTGRES_PASSWORD=<local-postgres-password>
+POSTGRES_PORT=5432
+```
+
+`SPRING_DATASOURCE_USERNAME`과 `POSTGRES_USER`는 같은 값으로 맞춘다. `SPRING_DATASOURCE_PASSWORD`와 `POSTGRES_PASSWORD`도 같은 값으로 맞춘다. 실제 dev DB 비밀번호나 운영 Secret은 Git에 커밋하지 않는다.
+
+Compose 환경을 실행한다.
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+
+로그에 `Started NearbyApplication`이 출력되면 애플리케이션 컨테이너가 정상 기동한 것이다.
+
+PostgreSQL 데이터는 `postgres-data` Docker volume에 저장된다. DB를 초기화해야 할 때는 컨테이너 중단 후 volume 삭제 여부를 별도로 판단한다.
+
+실행 중인 Compose 환경을 중단하고 컨테이너를 제거한다.
+
+```bash
+docker compose -f docker/docker-compose.yml down
+```
+
 ## 이미지 빌드
 
 ```bash
@@ -22,9 +64,9 @@ docker run --rm -p 8080:8080 nearby-server:local
 
 | 환경 변수 | 설명 | 예시 |
 | --- | --- | --- |
-| `SPRING_DATASOURCE_URL` | PostgreSQL JDBC URL | `jdbc:postgresql://host.docker.internal:55432/nearby` |
-| `SPRING_DATASOURCE_USERNAME` | PostgreSQL 사용자 이름 | `nearby` |
-| `SPRING_DATASOURCE_PASSWORD` | PostgreSQL 비밀번호 | `nearby` |
+| `SPRING_DATASOURCE_URL` | PostgreSQL JDBC URL | `jdbc:postgresql://postgres:5432/nearby` |
+| `SPRING_DATASOURCE_USERNAME` | PostgreSQL 사용자 이름 | `<local-postgres-user>` |
+| `SPRING_DATASOURCE_PASSWORD` | PostgreSQL 비밀번호 | `<local-postgres-password>` |
 
 Redis 의존성도 포함되어 있으므로 로컬 Compose 구성에서는 아래 값도 함께 정리한다.
 
@@ -33,15 +75,28 @@ Redis 의존성도 포함되어 있으므로 로컬 Compose 구성에서는 아�
 | `SPRING_DATA_REDIS_HOST` | Redis 호스트 | `redis` |
 | `SPRING_DATA_REDIS_PORT` | Redis 포트 | `6379` |
 
+Compose 내부 PostgreSQL 설정은 아래 값으로 조정할 수 있다.
+
+| 환경 변수 | 설명 | 예시 |
+| --- | --- | --- |
+| `POSTGRES_DB` | 로컬 PostgreSQL DB 이름 | `nearby` |
+| `POSTGRES_USER` | 로컬 PostgreSQL 사용자 이름 | `<local-postgres-user>` |
+| `POSTGRES_PASSWORD` | 로컬 PostgreSQL 비밀번호 | `<local-postgres-password>` |
+| `POSTGRES_PORT` | 호스트에서 열 PostgreSQL 포트 | `5432` |
+
+dev Supabase session pooler에 연결해야 할 때는 `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`만 `.env`에서 Supabase 값으로 덮어쓴다. 실제 dev DB 비밀번호와 운영 Secret은 Dockerfile, `docker-compose.yml`, `.env.example`, 문서에 직접 작성하지 않는다.
+
 ## 로컬 컨테이너 기동 검증 예시
 
 Compose 없이 #10 이미지만 검증할 때는 임시 PostgreSQL 컨테이너를 먼저 실행한 뒤 애플리케이션 컨테이너에 DataSource 환경 변수를 주입한다.
+
+아래 예시의 `LOCAL_POSTGRES_PASSWORD`는 로컬 셸에서만 설정하는 임시 값이며 Git에 커밋하지 않는다.
 
 ```bash
 docker run --rm --name nearby-postgres-local \
   -e POSTGRES_DB=nearby \
   -e POSTGRES_USER=nearby \
-  -e POSTGRES_PASSWORD=nearby \
+  -e POSTGRES_PASSWORD="$LOCAL_POSTGRES_PASSWORD" \
   -p 55432:5432 \
   postgres:16-alpine
 ```
@@ -52,7 +107,7 @@ docker run --rm --name nearby-postgres-local \
 docker run --rm -p 8080:8080 \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:55432/nearby \
   -e SPRING_DATASOURCE_USERNAME=nearby \
-  -e SPRING_DATASOURCE_PASSWORD=nearby \
+  -e SPRING_DATASOURCE_PASSWORD="$LOCAL_POSTGRES_PASSWORD" \
   nearby-server:local
 ```
 
