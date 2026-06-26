@@ -136,7 +136,7 @@ reviews:
       enabled: true
     fbinfer:
       enabled: true
-      enable_java: false
+      enable_java: true
     semgrep:
       enabled: true
     gitleaks:
