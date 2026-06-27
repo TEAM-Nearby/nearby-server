@@ -4,6 +4,7 @@ package com.sopt.nearby.api.common.exception;
 import com.sopt.nearby.api.common.response.CommonResponse;
 import com.sopt.nearby.common.exception.BusinessException;
 import com.sopt.nearby.common.exception.ErrorCode;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -75,8 +77,15 @@ public class GlobalExceptionHandler {
 			.getFieldErrors()
 			.stream()
 			.map(FieldError::getDefaultMessage)
+			.filter(Objects::nonNull)
 			.findFirst()
-			.orElse("올바르지 않은 입력값입니다.");
+			.orElseGet(() -> exception.getBindingResult()
+				.getGlobalErrors()
+				.stream()
+				.map(ObjectError::getDefaultMessage)
+				.filter(Objects::nonNull)
+				.findFirst()
+				.orElse("올바르지 않은 입력값입니다."));
 
 		return ResponseEntity
 			.status(HttpStatus.BAD_REQUEST)

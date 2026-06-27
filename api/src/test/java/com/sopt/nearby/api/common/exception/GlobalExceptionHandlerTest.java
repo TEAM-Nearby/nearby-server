@@ -24,7 +24,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.validation.BindException;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -68,6 +71,22 @@ class GlobalExceptionHandlerTest {
 			.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
 			.andExpect(jsonPath("$.message").value("이름은 필수입니다."))
 			.andExpect(jsonPath("$.data").value(nullValue()));
+	}
+
+	@Test
+	void handlesGlobalValidationMessage() {
+		GlobalExceptionHandler handler = new GlobalExceptionHandler();
+		BindException exception = new BindException(new TestRequest("test"), "testRequest");
+		exception.addError(new ObjectError("testRequest", "시작일은 종료일보다 빨라야 합니다."));
+
+		ResponseEntity<CommonResponse<Void>> response = handler.handleBindException(exception);
+
+		assertThat(response.getStatusCode().value()).isEqualTo(400);
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().status()).isEqualTo(400);
+		assertThat(response.getBody().code()).isEqualTo("VALIDATION_ERROR");
+		assertThat(response.getBody().message()).isEqualTo("시작일은 종료일보다 빨라야 합니다.");
+		assertThat(response.getBody().data()).isNull();
 	}
 
 	@Test
