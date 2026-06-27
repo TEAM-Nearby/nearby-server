@@ -13,23 +13,17 @@ cp .env.example .env
 `.env.example`은 커밋해도 되지만 실제 Secret이나 실제 dev DB 비밀번호를 넣지 않는다. 아래 값은 로컬에서 직접 정해야 하는 placeholder다.
 
 ```text
-SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/nearby
-SPRING_DATASOURCE_USERNAME=<local-postgres-user>
-SPRING_DATASOURCE_PASSWORD=<local-postgres-password>
-SPRING_DATA_REDIS_HOST=redis
-SPRING_DATA_REDIS_PORT=6379
 POSTGRES_DB=nearby
 POSTGRES_USER=<local-postgres-user>
 POSTGRES_PASSWORD=<local-postgres-password>
-POSTGRES_PORT=5432
 ```
 
-`SPRING_DATASOURCE_USERNAME`과 `POSTGRES_USER`는 같은 값으로 맞춘다. `SPRING_DATASOURCE_PASSWORD`와 `POSTGRES_PASSWORD`도 같은 값으로 맞춘다. 실제 dev DB 비밀번호나 운영 Secret은 Git에 커밋하지 않는다.
+앱 컨테이너는 Compose 내부 서비스명인 `postgres:5432`와 `redis:6379`를 사용한다. 실제 dev DB 비밀번호나 운영 Secret은 Git에 커밋하지 않는다.
 
 Compose 환경을 실행한다.
 
 ```bash
-docker compose -f docker/docker-compose.yml up --build
+docker compose --env-file .env -f docker/docker-compose.yml up --build
 ```
 
 로그에 `Started NearbyApplication`이 출력되면 애플리케이션 컨테이너가 정상 기동한 것이다.
@@ -39,7 +33,7 @@ PostgreSQL 데이터는 `postgres-data` Docker volume에 저장된다. DB를 초
 실행 중인 Compose 환경을 중단하고 컨테이너를 제거한다.
 
 ```bash
-docker compose -f docker/docker-compose.yml down
+docker compose --env-file .env -f docker/docker-compose.yml down
 ```
 
 ## 이미지 빌드
@@ -60,31 +54,24 @@ docker run --rm -p 8080:8080 nearby-server:local
 
 ## 필수 환경 변수
 
-현재 애플리케이션은 JPA 자동 설정을 사용하므로 PostgreSQL 연결 정보가 없으면 Spring Boot 기동에 실패한다.
-
-| 환경 변수 | 설명 | 예시 |
-| --- | --- | --- |
-| `SPRING_DATASOURCE_URL` | PostgreSQL JDBC URL | `jdbc:postgresql://postgres:5432/nearby` |
-| `SPRING_DATASOURCE_USERNAME` | PostgreSQL 사용자 이름 | `<local-postgres-user>` |
-| `SPRING_DATASOURCE_PASSWORD` | PostgreSQL 비밀번호 | `<local-postgres-password>` |
-
-Redis 의존성도 포함되어 있으므로 로컬 Compose 구성에서는 아래 값도 함께 정리한다.
-
-| 환경 변수 | 설명 | 예시 |
-| --- | --- | --- |
-| `SPRING_DATA_REDIS_HOST` | Redis 호스트 | `redis` |
-| `SPRING_DATA_REDIS_PORT` | Redis 포트 | `6379` |
-
-Compose 내부 PostgreSQL 설정은 아래 값으로 조정할 수 있다.
+현재 애플리케이션은 JPA 자동 설정을 사용하므로 PostgreSQL 연결 정보가 없으면 Spring Boot 기동에 실패한다. Compose 실행 시 앱의 PostgreSQL과 Redis 주소는 내부 서비스명으로 자동 주입된다.
 
 | 환경 변수 | 설명 | 예시 |
 | --- | --- | --- |
 | `POSTGRES_DB` | 로컬 PostgreSQL DB 이름 | `nearby` |
 | `POSTGRES_USER` | 로컬 PostgreSQL 사용자 이름 | `<local-postgres-user>` |
 | `POSTGRES_PASSWORD` | 로컬 PostgreSQL 비밀번호 | `<local-postgres-password>` |
-| `POSTGRES_PORT` | 호스트에서 열 PostgreSQL 포트 | `5432` |
 
-dev Supabase session pooler에 연결해야 할 때는 `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`만 `.env`에서 Supabase 값으로 덮어쓴다. 실제 dev DB 비밀번호와 운영 Secret은 Dockerfile, `docker-compose.yml`, `.env.example`, 문서에 직접 작성하지 않는다.
+Redis 의존성도 포함되어 있으므로 로컬 Compose 구성에서는 아래 값도 함께 정리한다.
+
+| 환경 변수 | 설명 | 예시 |
+| --- | --- | --- |
+| `SPRING_DATA_REDIS_HOST` | Compose에서 자동 주입되는 Redis 호스트 | `redis` |
+| `SPRING_DATA_REDIS_PORT` | Compose에서 자동 주입되는 Redis 포트 | `6379` |
+
+Compose 내부 PostgreSQL은 호스트의 `5432` 포트로 노출된다.
+
+dev Supabase session pooler에 연결해야 할 때는 Compose 기본 구성이 아니라 별도 실행 방식으로 DataSource 값을 주입한다. 실제 dev DB 비밀번호와 운영 Secret은 Dockerfile, `docker-compose.yml`, `.env.example`, 문서에 직접 작성하지 않는다.
 
 ## 로컬 컨테이너 기동 검증 예시
 
