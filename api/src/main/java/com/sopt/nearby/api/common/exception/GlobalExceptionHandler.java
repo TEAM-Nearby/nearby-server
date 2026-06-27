@@ -6,11 +6,13 @@ import com.sopt.nearby.common.exception.BusinessException;
 import com.sopt.nearby.common.exception.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -39,6 +41,24 @@ public class GlobalExceptionHandler {
 		final MethodArgumentNotValidException exception
 	) {
 		return handleValidationException(exception);
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	public ResponseEntity<CommonResponse<Void>> handleHttpMessageNotReadableException(
+		final HttpMessageNotReadableException exception
+	) {
+		return ResponseEntity
+			.status(HttpStatus.BAD_REQUEST)
+			.body(CommonResponse.error(GlobalErrorCode.BAD_REQUEST));
+	}
+
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	public ResponseEntity<CommonResponse<Void>> handleHttpRequestMethodNotSupportedException(
+		final HttpRequestMethodNotSupportedException exception
+	) {
+		return ResponseEntity
+			.status(HttpStatus.METHOD_NOT_ALLOWED)
+			.body(CommonResponse.error(GlobalErrorCode.METHOD_NOT_ALLOWED));
 	}
 
 	@ExceptionHandler(Exception.class)

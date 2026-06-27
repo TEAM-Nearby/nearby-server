@@ -71,6 +71,28 @@ class GlobalExceptionHandlerTest {
 	}
 
 	@Test
+	void handlesMalformedJsonAsBadRequest() throws Exception {
+		mockMvc.perform(post("/test/validation-error")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.status").value(400))
+			.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+			.andExpect(jsonPath("$.message").value("잘못된 요청입니다."))
+			.andExpect(jsonPath("$.data").value(nullValue()));
+	}
+
+	@Test
+	void handlesUnsupportedMethodAsMethodNotAllowed() throws Exception {
+		mockMvc.perform(get("/test/validation-error"))
+			.andExpect(status().isMethodNotAllowed())
+			.andExpect(jsonPath("$.status").value(405))
+			.andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"))
+			.andExpect(jsonPath("$.message").value("지원하지 않는 HTTP 메서드입니다."))
+			.andExpect(jsonPath("$.data").value(nullValue()));
+	}
+
+	@Test
 	void handlesUnhandledException(final CapturedOutput output) throws Exception {
 		mockMvc.perform(get("/test/unhandled-error"))
 			.andExpect(status().isInternalServerError())
