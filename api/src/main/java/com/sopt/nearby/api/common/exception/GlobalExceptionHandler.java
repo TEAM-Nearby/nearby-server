@@ -4,6 +4,8 @@ package com.sopt.nearby.api.common.exception;
 import com.sopt.nearby.api.common.response.CommonResponse;
 import com.sopt.nearby.common.exception.BusinessException;
 import com.sopt.nearby.common.exception.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
 	@ExceptionHandler(BusinessException.class)
 	public ResponseEntity<CommonResponse<Void>> handleBusinessException(final BusinessException exception) {
@@ -39,6 +43,8 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<CommonResponse<Void>> handleException(final Exception exception) {
+		log.error("처리되지 않은 예외가 발생했습니다.", exception);
+
 		return ResponseEntity
 			.status(HttpStatus.INTERNAL_SERVER_ERROR)
 			.body(CommonResponse.error(GlobalErrorCode.INTERNAL_SERVER_ERROR));
