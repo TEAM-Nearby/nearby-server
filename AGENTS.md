@@ -16,6 +16,7 @@ This file defines Codex working instructions for this repository. Before making 
   - Do not use this module for API, domain, or adapter implementation details.
 - `api` owns the HTTP API boundary.
   - Put controllers, request/response DTOs, validation, HTTP status behavior, and OpenAPI-related code here.
+  - Separate Swagger/OpenAPI documentation from controller implementation by using feature-specific `*Api` interfaces.
   - Do not put business rules in controllers or DTOs.
 - `domain` owns business rules and domain models.
   - Put core policies, state transitions, domain services, and domain events here.
@@ -61,6 +62,17 @@ common -> none
 - Put DB, Redis, Security, and external API integration in `adapter`.
 - Put application startup and configuration assembly in `app`.
 - Do not change behavior without tests. If testing is difficult, explain the reason clearly.
+
+## API And Swagger Standards
+
+- Keep REST controller implementation and Swagger documentation separated.
+- For each API feature, create a `{Feature}Api` interface for Swagger/OpenAPI annotations.
+- Create the matching `{Feature}Controller` class in the same feature controller package and make it implement `{Feature}Api`.
+- Put `@Tag`, `@Operation`, `@ApiResponse`, `@Parameter`, and custom Swagger exception annotations on the `{Feature}Api` interface.
+- Put `@RestController`, `@RequestMapping`, `@GetMapping`, `@PostMapping`, `@PatchMapping`, `@DeleteMapping`, and request handling logic on the `{Feature}Controller` class.
+- Keep request binding annotations needed by Spring MVC, such as `@PathVariable`, `@RequestParam`, `@RequestHeader`, `@RequestBody`, and `@Valid`, on the controller method implementation.
+- Do not put business rules in `{Feature}Api` or `{Feature}Controller`.
+- Place request and response DTOs under the feature's `dto/request` and `dto/response` packages.
 
 ## Verification Commands
 
