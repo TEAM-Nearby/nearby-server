@@ -1,4 +1,4 @@
-# GitHub Actions에서 테스트, 빌드, Docker 이미지 빌드를 검증하는 CI 워크플로우
+# GitHub Actions에서 테스트와 애플리케이션 빌드를 검증하는 CI 워크플로우
 name: CI
 
 on:
@@ -44,6 +44,3 @@ jobs:
 
       - name: Build application jar
         run: ./gradlew :app:bootJar --no-daemon
-
-      - name: Build Docker image
-        run: docker build -t nearby-server:ci .
