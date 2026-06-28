@@ -20,6 +20,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        // TODO(JWT 도입 전 임시): 전면 허용. JWT 적용 시 authenticated()로 전환
                         .anyRequest().permitAll()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)

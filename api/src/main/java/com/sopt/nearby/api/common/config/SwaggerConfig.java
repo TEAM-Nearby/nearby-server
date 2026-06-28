@@ -15,8 +15,9 @@ public class SwaggerConfig {
         Server devServer = new Server();
         devServer.setUrl("/"); // API 서버 설정
 
-        Server prodServer = new Server();
-        prodServer.setUrl("운영 URL"); // 운영서버에 따로 띄우기 위한 서버 추가 가능
+        //ToDO 운영서버 생길 시 아래에 설정
+//        Server prodServer = new Server();
+//        prodServer.setUrl("운영 URL"); // 운영서버에 따로 띄우기 위한 서버 추가 가능
 
         Info info = new Info()
                 .title("Nearby API")
@@ -25,6 +26,6 @@ public class SwaggerConfig {
 
         return new OpenAPI()
                 .info(info)
-                .servers(List.of(devServer, prodServer));
+                .servers(List.of(devServer));
     }
 }
