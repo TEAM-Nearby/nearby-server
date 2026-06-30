@@ -1,6 +1,6 @@
 rootProject.name = 'nearby'
 
-include 'app'
+include 'bootstrap'
 include 'api'
 include 'domain'
 include 'adapter'
