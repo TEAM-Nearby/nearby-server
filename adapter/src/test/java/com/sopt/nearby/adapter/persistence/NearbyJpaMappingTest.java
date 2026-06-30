@@ -30,6 +30,8 @@ import com.sopt.nearby.domain.user.model.UserAccountStatus;
 import com.sopt.nearby.domain.user.model.UserOnboardingStatus;
 import com.sopt.nearby.domain.user.model.UserRole;
 import jakarta.persistence.Column;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
@@ -99,12 +101,28 @@ class NearbyJpaMappingTest {
 		assertPublicNoArgConstructor(CompanionReviewKeywordEntityId.class);
 	}
 
+	@Test
+	void companionReportPreventsDuplicateReportsForSameMeetingAndUsers() {
+		Table table = CompanionReportEntity.class.getAnnotation(Table.class);
+
+		assertThat(table).isNotNull();
+		assertThat(table.uniqueConstraints())
+				.singleElement()
+				.satisfies(NearbyJpaMappingTest::assertCompanionReportUniqueConstraint);
+	}
+
 	private void assertCoordinateColumn(final Class<?> entityType, final String fieldName) throws NoSuchFieldException {
 		Column column = entityType.getDeclaredField(fieldName).getAnnotation(Column.class);
 
 		assertThat(column).isNotNull();
 		assertThat(column.precision()).isEqualTo(11);
 		assertThat(column.scale()).isEqualTo(8);
+	}
+
+	private static void assertCompanionReportUniqueConstraint(final UniqueConstraint uniqueConstraint) {
+		assertThat(uniqueConstraint.name()).isEqualTo("uk_companion_report_meeting_reporter_reported");
+		assertThat(uniqueConstraint.columnNames())
+				.containsExactly("meeting_id", "reporter_user_id", "reported_user_id");
 	}
 
 	private void assertPublicNoArgConstructor(final Class<?> idClass) throws NoSuchMethodException {
