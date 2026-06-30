@@ -10,6 +10,7 @@ import com.sopt.nearby.adapter.persistence.companion.entity.CompanionPostEntity;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionProfileEntity;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionReportEntity;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionReviewEntity;
+import com.sopt.nearby.adapter.persistence.companion.entity.MeetingCheckInEntity;
 import com.sopt.nearby.adapter.persistence.companion.repository.CompanionApplicationJpaRepository;
 import com.sopt.nearby.adapter.persistence.companion.repository.CompanionMatchJpaRepository;
 import com.sopt.nearby.adapter.persistence.companion.repository.CompanionMeetingJpaRepository;
@@ -24,6 +25,7 @@ import com.sopt.nearby.adapter.persistence.user.repository.UserAccountJpaReposit
 import com.sopt.nearby.domain.user.model.UserAccountStatus;
 import com.sopt.nearby.domain.user.model.UserOnboardingStatus;
 import com.sopt.nearby.domain.user.model.UserRole;
+import jakarta.persistence.Column;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +76,22 @@ class NearbyJpaMappingTest {
 		assertThat(saved.getRole()).isEqualTo(UserRole.USER);
 		assertThat(saved.getStatus()).isEqualTo(UserAccountStatus.ACTIVE);
 		assertThat(saved.getOnboardingStatus()).isEqualTo(UserOnboardingStatus.STARTED);
+	}
+
+	@Test
+	void coordinateColumnsUseGoogleMapsPrecisionAndScale() throws NoSuchFieldException {
+		assertCoordinateColumn(MeetingCheckInEntity.class, "latitude");
+		assertCoordinateColumn(MeetingCheckInEntity.class, "longitude");
+		assertCoordinateColumn(PlaceCacheEntity.class, "latitude");
+		assertCoordinateColumn(PlaceCacheEntity.class, "longitude");
+	}
+
+	private void assertCoordinateColumn(final Class<?> entityType, final String fieldName) throws NoSuchFieldException {
+		Column column = entityType.getDeclaredField(fieldName).getAnnotation(Column.class);
+
+		assertThat(column).isNotNull();
+		assertThat(column.precision()).isEqualTo(11);
+		assertThat(column.scale()).isEqualTo(8);
 	}
 
 	@SpringBootConfiguration

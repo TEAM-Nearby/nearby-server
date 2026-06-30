@@ -28,10 +28,10 @@ public class PlaceCacheEntity {
 
 	private String address;
 
-	@Column(nullable = false)
+	@Column(nullable = false, precision = 11, scale = 8)
 	private BigDecimal latitude;
 
-	@Column(nullable = false)
+	@Column(nullable = false, precision = 11, scale = 8)
 	private BigDecimal longitude;
 
 	private String category;

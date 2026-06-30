@@ -28,10 +28,10 @@ public class MeetingCheckInEntity {
 	@Column(name = "user_id", nullable = false)
 	private Long userId;
 
-	@Column(nullable = false)
+	@Column(nullable = false, precision = 11, scale = 8)
 	private BigDecimal latitude;
 
-	@Column(nullable = false)
+	@Column(nullable = false, precision = 11, scale = 8)
 	private BigDecimal longitude;
 
 	@Column(name = "checked_in_at", nullable = false)
