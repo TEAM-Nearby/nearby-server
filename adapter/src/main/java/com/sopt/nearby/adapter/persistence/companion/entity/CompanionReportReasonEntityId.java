@@ -10,7 +10,7 @@ public class CompanionReportReasonEntityId implements Serializable {
 	private Long reportId;
 	private ReportReason reason;
 
-	protected CompanionReportReasonEntityId() {
+	public CompanionReportReasonEntityId() {
 	}
 
 	public CompanionReportReasonEntityId(final Long reportId, final ReportReason reason) {

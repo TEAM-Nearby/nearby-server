@@ -10,7 +10,7 @@ public class CompanionPostStyleEntityId implements Serializable {
 	private Long postId;
 	private TravelStyleKeyword keyword;
 
-	protected CompanionPostStyleEntityId() {
+	public CompanionPostStyleEntityId() {
 	}
 
 	public CompanionPostStyleEntityId(final Long postId, final TravelStyleKeyword keyword) {

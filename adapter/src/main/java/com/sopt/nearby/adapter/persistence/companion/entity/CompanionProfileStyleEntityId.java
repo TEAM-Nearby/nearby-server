@@ -10,7 +10,7 @@ public class CompanionProfileStyleEntityId implements Serializable {
 	private Long profileId;
 	private TravelStyleKeyword keyword;
 
-	protected CompanionProfileStyleEntityId() {
+	public CompanionProfileStyleEntityId() {
 	}
 
 	public CompanionProfileStyleEntityId(final Long profileId, final TravelStyleKeyword keyword) {

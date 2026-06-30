@@ -6,9 +6,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionApplicationEntity;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionMatchEntity;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionMeetingEntity;
+import com.sopt.nearby.adapter.persistence.companion.entity.CompanionPostStyleEntityId;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionPostEntity;
+import com.sopt.nearby.adapter.persistence.companion.entity.CompanionProfileStyleEntityId;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionProfileEntity;
+import com.sopt.nearby.adapter.persistence.companion.entity.CompanionReportReasonEntityId;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionReportEntity;
+import com.sopt.nearby.adapter.persistence.companion.entity.CompanionReviewKeywordEntityId;
 import com.sopt.nearby.adapter.persistence.companion.entity.CompanionReviewEntity;
 import com.sopt.nearby.adapter.persistence.companion.entity.MeetingCheckInEntity;
 import com.sopt.nearby.adapter.persistence.companion.repository.CompanionApplicationJpaRepository;
@@ -26,6 +30,7 @@ import com.sopt.nearby.domain.user.model.UserAccountStatus;
 import com.sopt.nearby.domain.user.model.UserOnboardingStatus;
 import com.sopt.nearby.domain.user.model.UserRole;
 import jakarta.persistence.Column;
+import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,12 +91,24 @@ class NearbyJpaMappingTest {
 		assertCoordinateColumn(PlaceCacheEntity.class, "longitude");
 	}
 
+	@Test
+	void idClassesExposePublicNoArgConstructors() throws NoSuchMethodException {
+		assertPublicNoArgConstructor(CompanionProfileStyleEntityId.class);
+		assertPublicNoArgConstructor(CompanionPostStyleEntityId.class);
+		assertPublicNoArgConstructor(CompanionReportReasonEntityId.class);
+		assertPublicNoArgConstructor(CompanionReviewKeywordEntityId.class);
+	}
+
 	private void assertCoordinateColumn(final Class<?> entityType, final String fieldName) throws NoSuchFieldException {
 		Column column = entityType.getDeclaredField(fieldName).getAnnotation(Column.class);
 
 		assertThat(column).isNotNull();
 		assertThat(column.precision()).isEqualTo(11);
 		assertThat(column.scale()).isEqualTo(8);
+	}
+
+	private void assertPublicNoArgConstructor(final Class<?> idClass) throws NoSuchMethodException {
+		assertThat(Modifier.isPublic(idClass.getDeclaredConstructor().getModifiers())).isTrue();
 	}
 
 	@SpringBootConfiguration

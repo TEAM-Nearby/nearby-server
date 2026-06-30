@@ -10,7 +10,7 @@ public class CompanionReviewKeywordEntityId implements Serializable {
 	private Long reviewId;
 	private ReviewKeyword keyword;
 
-	protected CompanionReviewKeywordEntityId() {
+	public CompanionReviewKeywordEntityId() {
 	}
 
 	public CompanionReviewKeywordEntityId(final Long reviewId, final ReviewKeyword keyword) {
