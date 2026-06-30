@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
 	implementation project(':adapter-in:web')
+	implementation project(':adapter-out:persistence')
 	implementation project(':application')
 	implementation project(':adapter')
 	implementation project(':common')
