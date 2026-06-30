@@ -5,8 +5,8 @@ plugins {
 dependencies {
 	implementation project(':adapter-in:web')
 	implementation project(':adapter-out:persistence')
+	implementation project(':adapter-out:security')
 	implementation project(':application')
-	implementation project(':adapter')
 	implementation project(':common')
 
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'

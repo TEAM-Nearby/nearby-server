@@ -1,4 +1,4 @@
-package com.sopt.nearby.adapter.security;
+package com.sopt.nearby.security.adapter.out;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
