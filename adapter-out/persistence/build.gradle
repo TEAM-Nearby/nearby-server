@@ -5,6 +5,7 @@ plugins {
 dependencies {
 	implementation project(':application')
 	implementation project(':common')
+	implementation project(':logging')
 
 	compileOnly 'org.springframework.modulith:spring-modulith-api'
 

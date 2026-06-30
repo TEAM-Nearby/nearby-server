@@ -8,6 +8,7 @@ dependencies {
 	implementation project(':adapter-out:security')
 	implementation project(':application')
 	implementation project(':common')
+	implementation project(':logging')
 
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.modulith:spring-modulith-starter-core'
