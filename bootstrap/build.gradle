@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-	implementation project(':api')
+	implementation project(':adapter-in:web')
 	implementation project(':application')
 	implementation project(':adapter')
 	implementation project(':common')

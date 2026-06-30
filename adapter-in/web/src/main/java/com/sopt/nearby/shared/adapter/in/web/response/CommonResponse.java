@@ -1,5 +1,5 @@
 // API 성공과 실패 응답을 동일한 구조로 감싸는 응답 래퍼
-package com.sopt.nearby.api.common.response;
+package com.sopt.nearby.shared.adapter.in.web.response;
 
 import com.sopt.nearby.common.exception.ErrorCode;
 

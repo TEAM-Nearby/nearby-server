@@ -1,5 +1,5 @@
 // 공통 응답과 전역 예외 처리 동작을 검증하는 테스트
-package com.sopt.nearby.api.common.exception;
+package com.sopt.nearby.shared.adapter.in.web.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
@@ -8,8 +8,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.sopt.nearby.api.common.response.CommonResponse;
-import com.sopt.nearby.api.common.response.SuccessCode;
+import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
+import com.sopt.nearby.shared.adapter.in.web.response.SuccessCode;
 import com.sopt.nearby.common.exception.BusinessException;
 import com.sopt.nearby.common.exception.ErrorCode;
 import jakarta.validation.Valid;
