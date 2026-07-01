@@ -8,7 +8,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -27,8 +26,7 @@ public class MeetingCancellationEntity {
 	@Column(name = "canceled_by_user_id", nullable = false)
 	private Long canceledByUserId;
 
-	@Lob
-	@Column(nullable = false)
+	@Column(nullable = false, columnDefinition = "text")
 	private String reason;
 
 	@Column(name = "canceled_at", nullable = false)
