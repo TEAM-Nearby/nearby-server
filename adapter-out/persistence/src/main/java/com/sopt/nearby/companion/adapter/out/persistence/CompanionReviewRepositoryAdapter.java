@@ -5,7 +5,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewE
 import com.sopt.nearby.companion.adapter.out.persistence.mapper.CompanionPersistenceMapper;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReviewJpaRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
-import com.sopt.nearby.companion.domain.model.CompanionReview;
+import com.sopt.nearby.companion.domain.model.review.CompanionReview;
 import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;

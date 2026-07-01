@@ -1,5 +1,5 @@
 // 동행 모집글 신청 정보를 표현하는 도메인 모델
-package com.sopt.nearby.companion.domain.model;
+package com.sopt.nearby.companion.domain.model.match;
 
 import java.time.LocalDateTime;
 

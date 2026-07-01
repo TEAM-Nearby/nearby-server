@@ -1,5 +1,5 @@
 // 동행 리뷰에 연결된 키워드를 표현하는 도메인 모델
-package com.sopt.nearby.companion.domain.model;
+package com.sopt.nearby.companion.domain.model.review;
 
 public record CompanionReviewKeyword(
 		Long reviewId,

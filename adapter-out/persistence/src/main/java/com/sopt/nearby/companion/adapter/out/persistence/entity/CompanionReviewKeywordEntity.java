@@ -1,7 +1,7 @@
 // 동행 리뷰 키워드 테이블을 매핑하는 JPA 엔티티
 package com.sopt.nearby.companion.adapter.out.persistence.entity;
 
-import com.sopt.nearby.companion.domain.model.ReviewKeyword;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

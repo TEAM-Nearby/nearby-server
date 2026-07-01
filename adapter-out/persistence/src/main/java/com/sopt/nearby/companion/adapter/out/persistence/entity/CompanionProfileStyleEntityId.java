@@ -1,7 +1,7 @@
 // 동행 프로필 성향 엔티티의 복합 키를 표현하는 JPA 식별자 클래스
 package com.sopt.nearby.companion.adapter.out.persistence.entity;
 
-import com.sopt.nearby.companion.domain.model.TravelStyleKeyword;
+import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import java.io.Serializable;
 import java.util.Objects;
 

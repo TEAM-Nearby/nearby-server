@@ -1,8 +1,8 @@
 // 동행 프로필 테이블을 매핑하는 JPA 엔티티
 package com.sopt.nearby.companion.adapter.out.persistence.entity;
 
-import com.sopt.nearby.companion.domain.model.CompanionProfileStatus;
-import com.sopt.nearby.companion.domain.model.UserGender;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

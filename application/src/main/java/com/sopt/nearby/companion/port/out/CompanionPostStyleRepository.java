@@ -2,7 +2,7 @@
 package com.sopt.nearby.companion.port.out;
 
 import com.sopt.nearby.common.port.DomainRepository;
-import com.sopt.nearby.companion.domain.model.CompanionPostStyle;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostStyle;
 
 public interface CompanionPostStyleRepository extends DomainRepository<CompanionPostStyle, CompanionPostStyle.Key> {
 }

@@ -2,7 +2,7 @@
 package com.sopt.nearby.companion.port.out;
 
 import com.sopt.nearby.common.port.DomainRepository;
-import com.sopt.nearby.companion.domain.model.MeetingCancellation;
+import com.sopt.nearby.companion.domain.model.meeting.MeetingCancellation;
 
 public interface MeetingCancellationRepository extends DomainRepository<MeetingCancellation, Long> {
 }

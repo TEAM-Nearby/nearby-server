@@ -5,7 +5,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfile
 import com.sopt.nearby.companion.adapter.out.persistence.mapper.CompanionPersistenceMapper;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
-import com.sopt.nearby.companion.domain.model.CompanionProfile;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;

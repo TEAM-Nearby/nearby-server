@@ -5,7 +5,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.MeetingCancellat
 import com.sopt.nearby.companion.adapter.out.persistence.mapper.CompanionPersistenceMapper;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.MeetingCancellationJpaRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
-import com.sopt.nearby.companion.domain.model.MeetingCancellation;
+import com.sopt.nearby.companion.domain.model.meeting.MeetingCancellation;
 import com.sopt.nearby.companion.port.out.MeetingCancellationRepository;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;

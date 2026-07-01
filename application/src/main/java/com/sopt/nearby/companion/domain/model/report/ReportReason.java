@@ -1,5 +1,5 @@
 // 동행 신고 사유를 정의하는 enum
-package com.sopt.nearby.companion.domain.model;
+package com.sopt.nearby.companion.domain.model.report;
 
 public enum ReportReason {
 	BAD_ATTITUDE,

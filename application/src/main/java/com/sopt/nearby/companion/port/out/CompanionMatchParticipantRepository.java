@@ -2,7 +2,7 @@
 package com.sopt.nearby.companion.port.out;
 
 import com.sopt.nearby.common.port.DomainRepository;
-import com.sopt.nearby.companion.domain.model.CompanionMatchParticipant;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 
 public interface CompanionMatchParticipantRepository extends DomainRepository<CompanionMatchParticipant, Long> {
 }

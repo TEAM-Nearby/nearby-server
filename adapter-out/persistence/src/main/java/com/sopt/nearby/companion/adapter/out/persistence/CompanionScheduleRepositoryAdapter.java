@@ -5,7 +5,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionSchedul
 import com.sopt.nearby.companion.adapter.out.persistence.mapper.CompanionPersistenceMapper;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
-import com.sopt.nearby.companion.domain.model.CompanionSchedule;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;

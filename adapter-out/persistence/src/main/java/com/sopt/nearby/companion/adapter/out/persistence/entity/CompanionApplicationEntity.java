@@ -1,7 +1,7 @@
 // 동행 신청 테이블을 매핑하는 JPA 엔티티
 package com.sopt.nearby.companion.adapter.out.persistence.entity;
 
-import com.sopt.nearby.companion.domain.model.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

@@ -1,5 +1,5 @@
 // 동행 프로필의 운영 상태를 정의하는 enum
-package com.sopt.nearby.companion.domain.model;
+package com.sopt.nearby.companion.domain.model.profile;
 
 public enum CompanionProfileStatus {
 	ACTIVE,

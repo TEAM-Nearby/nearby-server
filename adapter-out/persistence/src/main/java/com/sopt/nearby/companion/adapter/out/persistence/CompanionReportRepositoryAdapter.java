@@ -5,7 +5,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReportE
 import com.sopt.nearby.companion.adapter.out.persistence.mapper.CompanionPersistenceMapper;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReportJpaRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
-import com.sopt.nearby.companion.domain.model.CompanionReport;
+import com.sopt.nearby.companion.domain.model.report.CompanionReport;
 import com.sopt.nearby.companion.port.out.CompanionReportRepository;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;

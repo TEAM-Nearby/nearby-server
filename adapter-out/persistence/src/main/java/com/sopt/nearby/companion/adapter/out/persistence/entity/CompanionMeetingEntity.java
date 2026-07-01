@@ -1,7 +1,7 @@
 // 동행 미팅 테이블을 매핑하는 JPA 엔티티
 package com.sopt.nearby.companion.adapter.out.persistence.entity;
 
-import com.sopt.nearby.companion.domain.model.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

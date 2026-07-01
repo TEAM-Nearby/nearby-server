@@ -2,7 +2,7 @@
 package com.sopt.nearby.companion.port.out;
 
 import com.sopt.nearby.common.port.DomainRepository;
-import com.sopt.nearby.companion.domain.model.CompanionReviewKeyword;
+import com.sopt.nearby.companion.domain.model.review.CompanionReviewKeyword;
 
 public interface CompanionReviewKeywordRepository
 		extends DomainRepository<CompanionReviewKeyword, CompanionReviewKeyword.Key> {

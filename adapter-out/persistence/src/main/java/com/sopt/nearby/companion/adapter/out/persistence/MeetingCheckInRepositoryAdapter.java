@@ -5,7 +5,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.MeetingCheckInEn
 import com.sopt.nearby.companion.adapter.out.persistence.mapper.CompanionPersistenceMapper;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.MeetingCheckInJpaRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
-import com.sopt.nearby.companion.domain.model.MeetingCheckIn;
+import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;

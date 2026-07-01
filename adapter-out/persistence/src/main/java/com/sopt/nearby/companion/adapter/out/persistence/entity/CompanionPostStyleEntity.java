@@ -1,7 +1,7 @@
 // 동행 모집글 성향 테이블을 매핑하는 JPA 엔티티
 package com.sopt.nearby.companion.adapter.out.persistence.entity;
 
-import com.sopt.nearby.companion.domain.model.TravelStyleKeyword;
+import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

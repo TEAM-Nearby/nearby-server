@@ -6,7 +6,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostSty
 import com.sopt.nearby.companion.adapter.out.persistence.mapper.CompanionPersistenceMapper;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostStyleJpaRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
-import com.sopt.nearby.companion.domain.model.CompanionPostStyle;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostStyle;
 import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
 import org.springframework.stereotype.Repository;
 

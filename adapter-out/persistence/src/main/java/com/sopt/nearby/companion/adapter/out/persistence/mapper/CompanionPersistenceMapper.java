@@ -20,21 +20,21 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewK
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.MeetingCancellationEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.MeetingCheckInEntity;
-import com.sopt.nearby.companion.domain.model.CompanionApplication;
-import com.sopt.nearby.companion.domain.model.CompanionMatch;
-import com.sopt.nearby.companion.domain.model.CompanionMatchParticipant;
-import com.sopt.nearby.companion.domain.model.CompanionMeeting;
-import com.sopt.nearby.companion.domain.model.CompanionPost;
-import com.sopt.nearby.companion.domain.model.CompanionPostStyle;
-import com.sopt.nearby.companion.domain.model.CompanionProfile;
-import com.sopt.nearby.companion.domain.model.CompanionProfileStyle;
-import com.sopt.nearby.companion.domain.model.CompanionReport;
-import com.sopt.nearby.companion.domain.model.CompanionReportReason;
-import com.sopt.nearby.companion.domain.model.CompanionReview;
-import com.sopt.nearby.companion.domain.model.CompanionReviewKeyword;
-import com.sopt.nearby.companion.domain.model.CompanionSchedule;
-import com.sopt.nearby.companion.domain.model.MeetingCancellation;
-import com.sopt.nearby.companion.domain.model.MeetingCheckIn;
+import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
+import com.sopt.nearby.companion.domain.model.post.CompanionPost;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostStyle;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStyle;
+import com.sopt.nearby.companion.domain.model.report.CompanionReport;
+import com.sopt.nearby.companion.domain.model.report.CompanionReportReason;
+import com.sopt.nearby.companion.domain.model.review.CompanionReview;
+import com.sopt.nearby.companion.domain.model.review.CompanionReviewKeyword;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
+import com.sopt.nearby.companion.domain.model.meeting.MeetingCancellation;
+import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 
 public final class CompanionPersistenceMapper {
 

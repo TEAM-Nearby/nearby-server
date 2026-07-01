@@ -1,7 +1,7 @@
 // 동행 리뷰 키워드 엔티티의 복합 키를 표현하는 JPA 식별자 클래스
 package com.sopt.nearby.companion.adapter.out.persistence.entity;
 
-import com.sopt.nearby.companion.domain.model.ReviewKeyword;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import java.io.Serializable;
 import java.util.Objects;
 

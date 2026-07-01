@@ -1,5 +1,5 @@
 // 동행 신고에 연결된 사유를 표현하는 도메인 모델
-package com.sopt.nearby.companion.domain.model;
+package com.sopt.nearby.companion.domain.model.report;
 
 public record CompanionReportReason(
 		Long reportId,
