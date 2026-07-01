@@ -11,7 +11,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
@@ -34,8 +33,7 @@ public class CompanionApplicationEntity {
 	@Column(nullable = false)
 	private CompanionApplicationStatus status;
 
-	@Lob
-	@Column(name = "rejection_reason")
+	@Column(name = "rejection_reason", columnDefinition = "text")
 	private String rejectionReason;
 
 	@Column(name = "created_at", nullable = false)

@@ -8,7 +8,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -37,7 +36,7 @@ public class CompanionReportEntity {
 	@Column(name = "reported_user_id", nullable = false)
 	private Long reportedUserId;
 
-	@Lob
+	@Column(columnDefinition = "text")
 	private String detail;
 
 	@Column(name = "created_at", nullable = false)
