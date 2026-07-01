@@ -1,7 +1,9 @@
 rootProject.name = 'nearby'
 
-include 'app'
-include 'api'
-include 'domain'
-include 'adapter'
+include 'bootstrap'
+include 'application'
+include 'adapter-in:web'
+include 'adapter-out:persistence'
+include 'adapter-out:security'
 include 'common'
+include 'logging'

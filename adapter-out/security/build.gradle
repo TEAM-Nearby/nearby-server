@@ -1,0 +1,15 @@
+plugins {
+	id 'java-library'
+}
+
+dependencies {
+	implementation project(':application')
+	implementation project(':common')
+	implementation project(':logging')
+
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

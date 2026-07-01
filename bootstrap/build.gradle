@@ -1,0 +1,25 @@
+plugins {
+	id 'org.springframework.boot'
+}
+
+dependencies {
+	implementation project(':adapter-in:web')
+	implementation project(':adapter-out:persistence')
+	implementation project(':adapter-out:security')
+	implementation project(':application')
+	implementation project(':common')
+	implementation project(':logging')
+
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.modulith:spring-modulith-starter-core'
+
+	runtimeOnly 'org.postgresql:postgresql'
+	runtimeOnly 'org.springframework.modulith:spring-modulith-actuator'
+	runtimeOnly 'org.springframework.modulith:spring-modulith-observability'
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.modulith:spring-modulith-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'com.h2database:h2'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

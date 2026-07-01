@@ -1,0 +1,8 @@
+// 회원 계정 JPA 저장소를 정의하는 인터페이스
+package com.sopt.nearby.user.adapter.out.persistence.repository;
+
+import com.sopt.nearby.user.adapter.out.persistence.entity.UserAccountEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserAccountJpaRepository extends JpaRepository<UserAccountEntity, Long> {
+}
