@@ -23,8 +23,8 @@ public record CommonResponse<T>(
 		return success(successCode, null);
 	}
 
-	public static CommonResponse<Void> error(final ErrorCode errorCode) {
-		return new CommonResponse<>(errorCode.getStatus(), errorCode.name(), errorCode.message(), null);
+	public static CommonResponse<Void> error(final int status,final ErrorCode errorCode) {
+		return new CommonResponse<>(status, errorCode.name(), errorCode.message(), null);
 	}
 
 	public static CommonResponse<Void> validationError(final String validationErrorMessage) {

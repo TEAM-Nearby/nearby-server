@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sopt.nearby.common.exception.ErrorCode;
+import com.sopt.nearby.common.exception.NotFoundException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.response.SuccessCode;
 import com.sopt.nearby.common.exception.BusinessException;
@@ -39,171 +40,177 @@ import org.springframework.web.bind.annotation.RestController;
 @ExtendWith(OutputCaptureExtension.class)
 class GlobalExceptionHandlerTest {
 
-	@Autowired
-	private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-	@Test
-	void wrapsSuccessResponse() throws Exception {
-		mockMvc.perform(get("/test/success"))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.status").value(200))
-			.andExpect(jsonPath("$.code").value("TEST_SUCCESS"))
-			.andExpect(jsonPath("$.message").value("테스트 성공입니다."))
-			.andExpect(jsonPath("$.data.value").value("ok"));
-	}
+    @Test
+    void wrapsSuccessResponse() throws Exception {
+        mockMvc.perform(get("/test/success"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("TEST_SUCCESS"))
+                .andExpect(jsonPath("$.message").value("테스트 성공입니다."))
+                .andExpect(jsonPath("$.data.value").value("ok"));
+    }
 
-	@Test
-	void handlesBusinessExceptionWithErrorCode() throws Exception {
-		mockMvc.perform(get("/test/business-error"))
-			.andExpect(status().isNotFound())
-			.andExpect(jsonPath("$.status").value(404))
-			.andExpect(jsonPath("$.code").value("TEST_NOT_FOUND"))
-			.andExpect(jsonPath("$.message").value("테스트 대상을 찾을 수 없습니다."))
-			.andExpect(jsonPath("$.data").value(nullValue()));
-	}
+    @Test
+    void handlesBusinessExceptionWithErrorCode() throws Exception {
+        mockMvc.perform(get("/test/not-found-error"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("TEST_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("테스트 대상을 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
 
-	@Test
-	void handlesValidationException() throws Exception {
-		mockMvc.perform(post("/test/validation-error")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{}"))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.status").value(400))
-			.andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
-			.andExpect(jsonPath("$.message").value("이름은 필수입니다."))
-			.andExpect(jsonPath("$.data").value(nullValue()));
-	}
+    @Test
+    void handlesValidationException() throws Exception {
+        mockMvc.perform(post("/test/validation-error")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("이름은 필수입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
 
-	@Test
-	void handlesGlobalValidationMessage() {
-		GlobalExceptionHandler handler = new GlobalExceptionHandler();
-		BindException exception = new BindException(new TestRequest("test"), "testRequest");
-		exception.addError(new ObjectError("testRequest", "시작일은 종료일보다 빨라야 합니다."));
+    @Test
+    void handlesGlobalValidationMessage() {
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        BindException exception = new BindException(new TestRequest("test"), "testRequest");
+        exception.addError(new ObjectError("testRequest", "시작일은 종료일보다 빨라야 합니다."));
 
-		ResponseEntity<CommonResponse<Void>> response = handler.handleBindException(exception);
+        ResponseEntity<CommonResponse<Void>> response = handler.handleBindException(exception);
 
-		assertThat(response.getStatusCode().value()).isEqualTo(400);
-		assertThat(response.getBody()).isNotNull();
-		assertThat(response.getBody().status()).isEqualTo(400);
-		assertThat(response.getBody().code()).isEqualTo("VALIDATION_ERROR");
-		assertThat(response.getBody().message()).isEqualTo("시작일은 종료일보다 빨라야 합니다.");
-		assertThat(response.getBody().data()).isNull();
-	}
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().status()).isEqualTo(400);
+        assertThat(response.getBody().code()).isEqualTo("VALIDATION_ERROR");
+        assertThat(response.getBody().message()).isEqualTo("시작일은 종료일보다 빨라야 합니다.");
+        assertThat(response.getBody().data()).isNull();
+    }
 
-	@Test
-	void handlesMalformedJsonAsBadRequest() throws Exception {
-		mockMvc.perform(post("/test/validation-error")
-				.contentType(MediaType.APPLICATION_JSON)
-				.content(""))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.status").value(400))
-			.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
-			.andExpect(jsonPath("$.message").value("잘못된 요청입니다."))
-			.andExpect(jsonPath("$.data").value(nullValue()));
-	}
+    @Test
+    void handlesMalformedJsonAsBadRequest() throws Exception {
+        mockMvc.perform(post("/test/validation-error")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("BAD_REQUEST"))
+                .andExpect(jsonPath("$.message").value("잘못된 요청입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
 
-	@Test
-	void handlesUnsupportedMethodAsMethodNotAllowed() throws Exception {
-		mockMvc.perform(get("/test/validation-error"))
-			.andExpect(status().isMethodNotAllowed())
-			.andExpect(jsonPath("$.status").value(405))
-			.andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"))
-			.andExpect(jsonPath("$.message").value("지원하지 않는 HTTP 메서드입니다."))
-			.andExpect(jsonPath("$.data").value(nullValue()));
-	}
+    @Test
+    void handlesUnsupportedMethodAsMethodNotAllowed() throws Exception {
+        mockMvc.perform(get("/test/validation-error"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.status").value(405))
+                .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"))
+                .andExpect(jsonPath("$.message").value("지원하지 않는 HTTP 메서드입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
 
-	@Test
-	void handlesUnhandledException(final CapturedOutput output) throws Exception {
-		mockMvc.perform(get("/test/unhandled-error"))
-			.andExpect(status().isInternalServerError())
-			.andExpect(jsonPath("$.status").value(500))
-			.andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"))
-			.andExpect(jsonPath("$.message").value("내부 서버 오류가 발생했습니다. 다시 시도해 주세요."))
-			.andExpect(jsonPath("$.data").value(nullValue()));
+    @Test
+    void handlesUnhandledException(final CapturedOutput output) throws Exception {
+        mockMvc.perform(get("/test/unhandled-error"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(jsonPath("$.message").value("내부 서버 오류가 발생했습니다. 다시 시도해 주세요."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
 
-		assertThat(output)
-			.contains("처리되지 않은 예외가 발생했습니다.")
-			.contains("java.lang.IllegalStateException: unexpected");
-	}
+        assertThat(output)
+                .contains("처리되지 않은 예외가 발생했습니다.")
+                .contains("java.lang.IllegalStateException: unexpected");
+    }
 
-	@RestController
-	static class TestController {
+    @RestController
+    static class TestController {
 
-		@GetMapping("/test/success")
-		CommonResponse<TestResponse> success() {
-			return CommonResponse.success(TestSuccessCode.TEST_SUCCESS, new TestResponse("ok"));
-		}
+        @GetMapping("/test/success")
+        CommonResponse<TestResponse> success() {
+            return CommonResponse.success(TestSuccessCode.TEST_SUCCESS, new TestResponse("ok"));
+        }
 
-		@GetMapping("/test/business-error")
-		void businessError() {
-			throw new TestBusinessException();
-		}
+        @GetMapping("/test/business-error")
+        void businessError() {
+            throw new TestBusinessException();
+        }
 
-		@PostMapping("/test/validation-error")
-		void validationError(@Valid @RequestBody final TestRequest request) {
-		}
+        @GetMapping("/test/not-found-error")
+        void notFoundError() {
+            throw new TestNotFoundException();
+        }
 
-		@GetMapping("/test/unhandled-error")
-		void unhandledError() {
-			throw new IllegalStateException("unexpected");
-		}
-	}
+        @PostMapping("/test/validation-error")
+        void validationError(@Valid @RequestBody final TestRequest request) {
+        }
 
-	record TestResponse(String value) {
-	}
+        @GetMapping("/test/unhandled-error")
+        void unhandledError() {
+            throw new IllegalStateException("unexpected");
+        }
+    }
 
-	record TestRequest(
-		@NotBlank(message = "이름은 필수입니다.")
-		String name
-	) {
-	}
+    record TestResponse(String value) {
+    }
 
-	enum TestSuccessCode implements SuccessCode {
-		TEST_SUCCESS("테스트 성공입니다.");
+    record TestRequest(
+            @NotBlank(message = "이름은 필수입니다.")
+            String name
+    ) {
+    }
 
-		private final String message;
+    enum TestSuccessCode implements SuccessCode {
+        TEST_SUCCESS("테스트 성공입니다.");
 
-		TestSuccessCode(final String message) {
-			this.message = message;
-		}
+        private final String message;
 
-		@Override
-		public String message() {
-			return message;
-		}
-	}
+        TestSuccessCode(final String message) {
+            this.message = message;
+        }
 
-	enum TestErrorCode implements ErrorCode {
-		TEST_NOT_FOUND(404, "테스트 대상을 찾을 수 없습니다.");
+        @Override
+        public String message() {
+            return message;
+        }
+    }
 
-		private final int status;
-		private final String message;
+    enum TestErrorCode implements ErrorCode {
+        TEST_NOT_FOUND("테스트 대상을 찾을 수 없습니다.");
 
-		TestErrorCode(final int status, final String message) {
-			this.status = status;
-			this.message = message;
-		}
+        private final String message;
 
-		@Override
-		public int getStatus() {
-			return status;
-		}
+        TestErrorCode(final String message) {
+            this.message = message;
+        }
 
-		@Override
-		public String message() {
-			return message;
-		}
-	}
+        @Override
+        public String message() {
+            return message;
+        }
+    }
 
-	static class TestBusinessException extends BusinessException {
 
-		TestBusinessException() {
-			super(TestErrorCode.TEST_NOT_FOUND);
-		}
-	}
+    static class TestBusinessException extends BusinessException {
 
-	@SpringBootConfiguration
-	@EnableAutoConfiguration
-	static class TestApplication {
-	}
+        TestBusinessException() {
+            super(TestErrorCode.TEST_NOT_FOUND);
+        }
+    }
+
+    static class TestNotFoundException extends NotFoundException {
+
+        TestNotFoundException() {
+            super(TestErrorCode.TEST_NOT_FOUND);
+        }
+    }
+
+    @SpringBootConfiguration
+    @EnableAutoConfiguration
+    static class TestApplication {
+    }
 }
