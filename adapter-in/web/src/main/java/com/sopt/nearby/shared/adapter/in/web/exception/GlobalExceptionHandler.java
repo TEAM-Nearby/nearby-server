@@ -1,9 +1,10 @@
 // API 계층에서 발생한 예외를 공통 응답 형식으로 변환하는 전역 핸들러
 package com.sopt.nearby.shared.adapter.in.web.exception;
 
+import com.sopt.nearby.common.exception.ErrorCode;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.common.exception.BusinessException;
-import com.sopt.nearby.common.exception.ErrorCode;
+
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,7 @@ public class GlobalExceptionHandler {
 		ErrorCode errorCode = exception.getErrorCode();
 
 		return ResponseEntity
-			.status(HttpStatusCode.valueOf(errorCode.status()))
+			.status(HttpStatusCode.valueOf(errorCode.getStatus()))
 			.body(CommonResponse.error(errorCode));
 	}
 

@@ -8,10 +8,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sopt.nearby.common.exception.ErrorCode;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.response.SuccessCode;
 import com.sopt.nearby.common.exception.BusinessException;
-import com.sopt.nearby.common.exception.ErrorCode;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.Test;
@@ -93,7 +94,7 @@ class GlobalExceptionHandlerTest {
 	void handlesMalformedJsonAsBadRequest() throws Exception {
 		mockMvc.perform(post("/test/validation-error")
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{"))
+				.content(""))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.status").value(400))
 			.andExpect(jsonPath("$.code").value("BAD_REQUEST"))
@@ -184,7 +185,7 @@ class GlobalExceptionHandlerTest {
 		}
 
 		@Override
-		public int status() {
+		public int getStatus() {
 			return status;
 		}
 

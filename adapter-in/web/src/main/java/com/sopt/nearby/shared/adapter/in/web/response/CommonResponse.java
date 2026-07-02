@@ -1,6 +1,7 @@
 // API 성공과 실패 응답을 동일한 구조로 감싸는 응답 래퍼
 package com.sopt.nearby.shared.adapter.in.web.response;
 
+
 import com.sopt.nearby.common.exception.ErrorCode;
 
 public record CommonResponse<T>(
@@ -23,7 +24,7 @@ public record CommonResponse<T>(
 	}
 
 	public static CommonResponse<Void> error(final ErrorCode errorCode) {
-		return new CommonResponse<>(errorCode.status(), errorCode.name(), errorCode.message(), null);
+		return new CommonResponse<>(errorCode.getStatus(), errorCode.name(), errorCode.message(), null);
 	}
 
 	public static CommonResponse<Void> validationError(final String validationErrorMessage) {

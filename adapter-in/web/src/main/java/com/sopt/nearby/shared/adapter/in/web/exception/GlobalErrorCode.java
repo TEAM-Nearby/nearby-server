@@ -1,6 +1,7 @@
 // API 전역 예외 상황의 기본 에러 코드를 정의하는 enum
 package com.sopt.nearby.shared.adapter.in.web.exception;
 
+
 import com.sopt.nearby.common.exception.ErrorCode;
 
 public enum GlobalErrorCode implements ErrorCode {
@@ -18,7 +19,7 @@ public enum GlobalErrorCode implements ErrorCode {
 	}
 
 	@Override
-	public int status() {
+	public int getStatus() {
 		return status;
 	}
 
