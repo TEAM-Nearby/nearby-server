@@ -1,9 +1,9 @@
-// Nearby 자체 JWT 액세스 토큰과 리프레시 토큰을 발급하는 어댑터
+// JWT 액세스 토큰과 리프레시 토큰을 발급하는 어댑터
 package com.sopt.nearby.user.adapter.out.security;
 
-import com.sopt.nearby.user.application.IssuedNearbyTokens;
+import com.sopt.nearby.user.application.IssuedTokens;
 import com.sopt.nearby.user.application.TokenIssueRequest;
-import com.sopt.nearby.user.port.out.NearbyTokenIssuer;
+import com.sopt.nearby.user.port.out.TokenIssuer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -22,7 +22,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Component;
 
 @Component
-public class NearbyJwtTokenAdapter implements NearbyTokenIssuer {
+public class JwtTokenAdapter implements TokenIssuer {
 
 	private static final String ISSUER = "nearby";
 	private static final int REFRESH_TOKEN_BYTE_LENGTH = 32;
@@ -34,7 +34,7 @@ public class NearbyJwtTokenAdapter implements NearbyTokenIssuer {
 	private final SecureRandom secureRandom = new SecureRandom();
 
 	@Autowired
-	public NearbyJwtTokenAdapter(
+	public JwtTokenAdapter(
 			final JwtEncoder jwtEncoder,
 			@Value("${nearby.jwt.access-token-ttl-seconds:${NEARBY_ACCESS_TOKEN_TTL_SECONDS:3600}}")
 			final long accessTokenTtlSeconds,
@@ -44,7 +44,7 @@ public class NearbyJwtTokenAdapter implements NearbyTokenIssuer {
 		this(jwtEncoder, accessTokenTtlSeconds, refreshTokenTtlSeconds, Clock.systemUTC());
 	}
 
-	NearbyJwtTokenAdapter(
+	JwtTokenAdapter(
 			final JwtEncoder jwtEncoder,
 			final long accessTokenTtlSeconds,
 			final long refreshTokenTtlSeconds,
@@ -57,12 +57,12 @@ public class NearbyJwtTokenAdapter implements NearbyTokenIssuer {
 	}
 
 	@Override
-	public IssuedNearbyTokens issue(final TokenIssueRequest request) {
+	public IssuedTokens issue(final TokenIssueRequest request) {
 		Instant issuedAt = clock.instant();
 		String accessToken = issueAccessToken(request, issuedAt);
 		String refreshToken = randomRefreshToken();
 
-		return new IssuedNearbyTokens(
+		return new IssuedTokens(
 				accessToken,
 				refreshToken,
 				sha256(refreshToken),

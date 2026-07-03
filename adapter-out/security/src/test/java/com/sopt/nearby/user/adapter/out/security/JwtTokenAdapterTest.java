@@ -1,10 +1,10 @@
-// Nearby JWT 발급 어댑터의 토큰 클레임과 리프레시 토큰 해시를 검증하는 테스트
+// JWT 발급 어댑터의 액세스 토큰 클레임과 리프레시 토큰 해시를 검증하는 테스트
 package com.sopt.nearby.user.adapter.out.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
-import com.sopt.nearby.user.application.IssuedNearbyTokens;
+import com.sopt.nearby.user.application.IssuedTokens;
 import com.sopt.nearby.user.application.TokenIssueRequest;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
@@ -22,7 +22,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
-class NearbyJwtTokenAdapterTest {
+class JwtTokenAdapterTest {
 
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-03T12:00:00Z"), ZoneId.of("UTC"));
 	private static final String SECRET = "12345678901234567890123456789012";
@@ -30,14 +30,14 @@ class NearbyJwtTokenAdapterTest {
 	@Test
 	void issuesAccessTokenAndHashedRefreshToken() throws Exception {
 		SecretKey secretKey = new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-		NearbyJwtTokenAdapter adapter = new NearbyJwtTokenAdapter(
+		JwtTokenAdapter adapter = new JwtTokenAdapter(
 				new NimbusJwtEncoder(new ImmutableSecret<>(secretKey.getEncoded())),
 				3600,
 				1209600,
 				CLOCK
 		);
 
-		IssuedNearbyTokens tokens = adapter.issue(new TokenIssueRequest(
+		IssuedTokens tokens = adapter.issue(new TokenIssueRequest(
 				1L,
 				UserRole.USER,
 				UserOnboardingStatus.STARTED

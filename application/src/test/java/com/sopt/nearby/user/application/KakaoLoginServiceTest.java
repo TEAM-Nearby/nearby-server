@@ -15,9 +15,9 @@ import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import com.sopt.nearby.user.exception.KakaoLoginFailedException;
 import com.sopt.nearby.user.port.out.KakaoIdTokenVerifier;
-import com.sopt.nearby.user.port.out.NearbyTokenIssuer;
 import com.sopt.nearby.user.port.out.RefreshTokenRepository;
 import com.sopt.nearby.user.port.out.SocialAccountRepository;
+import com.sopt.nearby.user.port.out.TokenIssuer;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -89,7 +89,7 @@ class KakaoLoginServiceTest {
 				(idToken, nonce) -> {
 					throw new KakaoLoginFailedException();
 				},
-				new FakeNearbyTokenIssuer(),
+				new FakeTokenIssuer(),
 				new FakeUserAccountRepository(),
 				new FakeSocialAccountRepository(),
 				new FakeRefreshTokenRepository(),
@@ -111,7 +111,7 @@ class KakaoLoginServiceTest {
 	) {
 		return new KakaoLoginService(
 				(idToken, nonce) -> new VerifiedKakaoUser(providerUserId),
-				new FakeNearbyTokenIssuer(),
+				new FakeTokenIssuer(),
 				userAccounts,
 				socialAccounts,
 				refreshTokens,
@@ -119,11 +119,11 @@ class KakaoLoginServiceTest {
 		);
 	}
 
-	private static final class FakeNearbyTokenIssuer implements NearbyTokenIssuer {
+	private static final class FakeTokenIssuer implements TokenIssuer {
 
 		@Override
-		public IssuedNearbyTokens issue(final TokenIssueRequest request) {
-			return new IssuedNearbyTokens(
+		public IssuedTokens issue(final TokenIssueRequest request) {
+			return new IssuedTokens(
 					"access-" + request.userId(),
 					"refresh-" + request.userId(),
 					"refresh-hash-" + request.userId(),

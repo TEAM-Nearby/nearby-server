@@ -16,7 +16,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            @Qualifier("nearbyJwtDecoder") JwtDecoder nearbyJwtDecoder
+            @Qualifier("accessTokenJwtDecoder") JwtDecoder accessTokenJwtDecoder
     ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -32,7 +32,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(nearbyJwtDecoder)))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(accessTokenJwtDecoder)))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .build();

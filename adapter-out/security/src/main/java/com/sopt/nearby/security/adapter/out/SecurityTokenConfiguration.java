@@ -1,4 +1,4 @@
-// Nearby JWT와 카카오 OIDC 토큰 검증에 필요한 보안 토큰 빈을 구성한다
+// 액세스 토큰과 카카오 ID 토큰 검증에 필요한 보안 토큰 빈을 구성한다
 package com.sopt.nearby.security.adapter.out;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
@@ -28,7 +28,7 @@ public class SecurityTokenConfiguration {
 	}
 
 	@Bean
-	public JwtDecoder nearbyJwtDecoder(
+	public JwtDecoder accessTokenJwtDecoder(
 			@Value("${nearby.jwt.secret}")
 			final String secret
 	) {

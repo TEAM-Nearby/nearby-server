@@ -49,7 +49,7 @@ class KakaoLoginControllerTest {
 	}
 
 	@Test
-	void returnsNearbyTokensWhenKakaoLoginSucceeds() throws Exception {
+	void returnsTokensWhenKakaoLoginSucceeds() throws Exception {
 		mockMvc.perform(post("/api/kakao/login")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(objectMapper.writeValueAsString(new Request("id-token", "nonce"))))
