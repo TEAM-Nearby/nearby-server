@@ -18,6 +18,8 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 @Configuration
 public class SecurityTokenConfiguration {
 
+	private static final int HS256_MIN_SECRET_BYTES = 32;
+
 	@Bean
 	public JwtEncoder jwtEncoder(
 			@Value("${nearby.jwt.secret}")
@@ -48,6 +50,10 @@ public class SecurityTokenConfiguration {
 	}
 
 	private SecretKey secretKey(final String secret) {
-		return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+		byte[] bytes = secret == null ? new byte[0] : secret.getBytes(StandardCharsets.UTF_8);
+		if (bytes.length < HS256_MIN_SECRET_BYTES) {
+			throw new IllegalStateException("nearby.jwt.secret은 HS256 서명을 위해 32바이트 이상이어야 합니다.");
+		}
+		return new SecretKeySpec(bytes, "HmacSHA256");
 	}
 }
