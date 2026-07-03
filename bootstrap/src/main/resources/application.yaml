@@ -4,6 +4,14 @@ spring:
   aop:
     proxy-target-class: false
 
-management:
-  tracing:
-    enabled: false
+kakao:
+  native-app-key: ${KAKAO_NATIVE_APP_KEY:}
+  oidc:
+    issuer-uri: ${KAKAO_OIDC_ISSUER_URI:https://kauth.kakao.com}
+    jwk-set-uri: ${KAKAO_OIDC_JWK_SET_URI:https://kauth.kakao.com/.well-known/jwks.json}
+
+nearby:
+  jwt:
+    secret: ${NEARBY_JWT_SECRET}
+    access-token-ttl-seconds: ${NEARBY_ACCESS_TOKEN_TTL_SECONDS:3600}
+    refresh-token-ttl-seconds: ${NEARBY_REFRESH_TOKEN_TTL_SECONDS:1209600}

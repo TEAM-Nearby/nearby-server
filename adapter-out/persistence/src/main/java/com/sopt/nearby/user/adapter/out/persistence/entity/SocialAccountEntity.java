@@ -10,9 +10,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "social_account")
+@Table(
+		name = "social_account",
+		uniqueConstraints = @UniqueConstraint(
+				name = "uk_social_account_provider_user",
+				columnNames = {"provider", "provider_user_id"}
+		)
+)
 public class SocialAccountEntity {
 
 	@Id
