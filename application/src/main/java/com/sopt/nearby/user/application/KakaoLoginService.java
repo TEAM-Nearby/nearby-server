@@ -18,6 +18,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class KakaoLoginService implements KakaoLoginUseCase {
@@ -67,6 +68,7 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 	}
 
 	@Override
+	@Transactional
 	public KakaoLoginResult login(final KakaoLoginCommand command) {
 		VerifiedKakaoUser kakaoUser = kakaoIdTokenVerifier.verify(command.idToken(), command.nonce());
 		UserAccount userAccount = findOrCreateUser(kakaoUser.providerUserId());

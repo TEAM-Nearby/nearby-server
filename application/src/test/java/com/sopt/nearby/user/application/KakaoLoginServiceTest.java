@@ -23,6 +23,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -101,6 +102,18 @@ class KakaoLoginServiceTest {
 				() -> service.login(new KakaoLoginCommand("bad-token", "nonce"))
 		);
 		assertInstanceOf(KakaoLoginFailedException.class, exception);
+	}
+
+	@Test
+	void loginMethodHasTransactionBoundary() throws Exception {
+		boolean hasTransactional = Arrays.stream(
+						KakaoLoginService.class.getMethod("login", KakaoLoginCommand.class).getAnnotations()
+				)
+				.anyMatch(annotation -> annotation.annotationType()
+						.getName()
+						.equals("org.springframework.transaction.annotation.Transactional"));
+
+		assertTrue(hasTransactional);
 	}
 
 	private static KakaoLoginService service(
