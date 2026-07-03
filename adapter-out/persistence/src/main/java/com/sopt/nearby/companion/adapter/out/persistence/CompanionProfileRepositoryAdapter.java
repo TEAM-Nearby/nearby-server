@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPro
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
+import java.util.List;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;
 
@@ -15,8 +16,19 @@ public class CompanionProfileRepositoryAdapter
 		extends SimpleJpaRepositoryAdapter<CompanionProfile, Long, CompanionProfileEntity, Long>
 		implements CompanionProfileRepository {
 
+	private final CompanionProfileJpaRepository jpaRepository;
+
 	public CompanionProfileRepositoryAdapter(final CompanionProfileJpaRepository jpaRepository) {
 		super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
 				Function.identity());
+		this.jpaRepository = jpaRepository;
+	}
+
+	@Override
+	public List<CompanionProfile> findAllByUserIdIn(final List<Long> userIds) {
+		return jpaRepository.findAllByUserIdIn(userIds)
+				.stream()
+				.map(CompanionPersistenceMapper::toDomain)
+				.toList();
 	}
 }
