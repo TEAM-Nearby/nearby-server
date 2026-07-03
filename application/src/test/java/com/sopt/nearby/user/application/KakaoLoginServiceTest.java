@@ -14,6 +14,7 @@ import com.sopt.nearby.user.domain.model.UserAccountStatus;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import com.sopt.nearby.user.exception.KakaoLoginFailedException;
+import com.sopt.nearby.user.exception.SocialAccountAlreadyExistsException;
 import com.sopt.nearby.user.port.out.KakaoIdTokenVerifier;
 import com.sopt.nearby.user.port.out.RefreshTokenRepository;
 import com.sopt.nearby.user.port.out.SocialAccountRepository;
@@ -81,6 +82,32 @@ class KakaoLoginServiceTest {
 		assertEquals(UserOnboardingStatus.PHONE_VERIFIED, result.onboardingStatus());
 		assertEquals(1, userAccounts.saved.size());
 		assertEquals(1, socialAccounts.saved.size());
+		assertEquals(1, refreshTokens.saved.size());
+	}
+
+	@Test
+	void reusesExistingUserWhenSocialAccountIsCreatedConcurrently() {
+		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
+		UserAccount existing = userAccounts.save(new UserAccount(
+				null,
+				UserRole.USER,
+				UserAccountStatus.ACTIVE,
+				null,
+				null,
+				UserOnboardingStatus.PHONE_VERIFIED,
+				LocalDateTime.now(CLOCK),
+				null
+		));
+		FakeSocialAccountRepository socialAccounts = new ConcurrentSocialAccountRepository(
+				new SocialAccount(1L, existing.id(), "KAKAO", "kakao-subject")
+		);
+		FakeRefreshTokenRepository refreshTokens = new FakeRefreshTokenRepository();
+		KakaoLoginService service = service(userAccounts, socialAccounts, refreshTokens, "kakao-subject");
+
+		KakaoLoginResult result = service.login(new KakaoLoginCommand("id-token", "nonce"));
+
+		assertEquals(existing.id(), result.userId());
+		assertEquals(UserOnboardingStatus.PHONE_VERIFIED, result.onboardingStatus());
 		assertEquals(1, refreshTokens.saved.size());
 	}
 
@@ -176,7 +203,7 @@ class KakaoLoginServiceTest {
 		}
 	}
 
-	private static final class FakeSocialAccountRepository implements SocialAccountRepository {
+	private static class FakeSocialAccountRepository implements SocialAccountRepository {
 
 		private final Map<Long, SocialAccount> saved = new HashMap<>();
 		private long nextId = 1L;
@@ -208,6 +235,35 @@ class KakaoLoginServiceTest {
 					.filter(account -> account.provider().equals(provider))
 					.filter(account -> account.providerUserId().equals(providerUserId))
 					.findFirst();
+		}
+	}
+
+	private static final class ConcurrentSocialAccountRepository extends FakeSocialAccountRepository {
+
+		private final SocialAccount existingSocialAccount;
+		private boolean duplicated;
+
+		private ConcurrentSocialAccountRepository(final SocialAccount existingSocialAccount) {
+			this.existingSocialAccount = existingSocialAccount;
+		}
+
+		@Override
+		public SocialAccount save(final SocialAccount model) {
+			duplicated = true;
+			throw new SocialAccountAlreadyExistsException();
+		}
+
+		@Override
+		public Optional<SocialAccount> findByProviderAndProviderUserId(
+				final String provider,
+				final String providerUserId
+		) {
+			if (!duplicated) {
+				return Optional.empty();
+			}
+			return Optional.of(existingSocialAccount)
+					.filter(account -> account.provider().equals(provider))
+					.filter(account -> account.providerUserId().equals(providerUserId));
 		}
 	}
 

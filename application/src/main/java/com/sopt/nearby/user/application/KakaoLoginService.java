@@ -8,6 +8,7 @@ import com.sopt.nearby.user.domain.model.UserAccountStatus;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import com.sopt.nearby.user.exception.KakaoLoginFailedException;
+import com.sopt.nearby.user.exception.SocialAccountAlreadyExistsException;
 import com.sopt.nearby.user.port.in.KakaoLoginUseCase;
 import com.sopt.nearby.user.port.out.KakaoIdTokenVerifier;
 import com.sopt.nearby.user.port.out.RefreshTokenRepository;
@@ -18,7 +19,13 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
+import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 public class KakaoLoginService implements KakaoLoginUseCase {
@@ -32,6 +39,7 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 	private final SocialAccountRepository socialAccountRepository;
 	private final RefreshTokenRepository refreshTokenRepository;
 	private final Clock clock;
+	private final TransactionOperations createUserTransaction;
 
 	@Autowired
 	public KakaoLoginService(
@@ -39,7 +47,8 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 			final TokenIssuer tokenIssuer,
 			final UserAccountRepository userAccountRepository,
 			final SocialAccountRepository socialAccountRepository,
-			final RefreshTokenRepository refreshTokenRepository
+			final RefreshTokenRepository refreshTokenRepository,
+			final PlatformTransactionManager transactionManager
 	) {
 		this(
 				kakaoIdTokenVerifier,
@@ -47,7 +56,8 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 				userAccountRepository,
 				socialAccountRepository,
 				refreshTokenRepository,
-				Clock.systemUTC()
+				Clock.systemUTC(),
+				requiresNewTransaction(transactionManager)
 		);
 	}
 
@@ -59,12 +69,33 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 			final RefreshTokenRepository refreshTokenRepository,
 			final Clock clock
 	) {
+		this(
+				kakaoIdTokenVerifier,
+				tokenIssuer,
+				userAccountRepository,
+				socialAccountRepository,
+				refreshTokenRepository,
+				clock,
+				withoutTransaction()
+		);
+	}
+
+	KakaoLoginService(
+			final KakaoIdTokenVerifier kakaoIdTokenVerifier,
+			final TokenIssuer tokenIssuer,
+			final UserAccountRepository userAccountRepository,
+			final SocialAccountRepository socialAccountRepository,
+			final RefreshTokenRepository refreshTokenRepository,
+			final Clock clock,
+			final TransactionOperations createUserTransaction
+	) {
 		this.kakaoIdTokenVerifier = kakaoIdTokenVerifier;
 		this.tokenIssuer = tokenIssuer;
 		this.userAccountRepository = userAccountRepository;
 		this.socialAccountRepository = socialAccountRepository;
 		this.refreshTokenRepository = refreshTokenRepository;
 		this.clock = clock;
+		this.createUserTransaction = createUserTransaction;
 	}
 
 	@Override
@@ -109,6 +140,20 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 	}
 
 	private UserAccount createUser(final String providerUserId) {
+		try {
+			return createUserTransaction.execute(status -> createNewUser(providerUserId));
+		} catch (SocialAccountAlreadyExistsException exception) {
+			return findExistingUser(providerUserId);
+		}
+	}
+
+	private UserAccount findExistingUser(final String providerUserId) {
+		return socialAccountRepository.findByProviderAndProviderUserId(KAKAO_PROVIDER, providerUserId)
+				.map(this::findUser)
+				.orElseThrow(KakaoLoginFailedException::new);
+	}
+
+	private UserAccount createNewUser(final String providerUserId) {
 		LocalDateTime now = LocalDateTime.now(clock);
 		UserAccount userAccount = userAccountRepository.save(new UserAccount(
 				null,
@@ -122,5 +167,20 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 		));
 		socialAccountRepository.save(new SocialAccount(null, userAccount.id(), KAKAO_PROVIDER, providerUserId));
 		return userAccount;
+	}
+
+	private static TransactionOperations requiresNewTransaction(final PlatformTransactionManager transactionManager) {
+		DefaultTransactionDefinition definition = new DefaultTransactionDefinition();
+		definition.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+		return new TransactionTemplate(transactionManager, definition);
+	}
+
+	private static TransactionOperations withoutTransaction() {
+		return new TransactionOperations() {
+			@Override
+			public <T> T execute(final TransactionCallback<T> action) {
+				return action.doInTransaction(null);
+			}
+		};
 	}
 }

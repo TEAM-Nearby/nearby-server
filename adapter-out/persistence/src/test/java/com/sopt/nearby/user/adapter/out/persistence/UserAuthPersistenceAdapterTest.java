@@ -16,6 +16,7 @@ import com.sopt.nearby.user.domain.model.UserAccount;
 import com.sopt.nearby.user.domain.model.UserAccountStatus;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
+import com.sopt.nearby.user.exception.SocialAccountAlreadyExistsException;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,11 +54,12 @@ class UserAuthPersistenceAdapterTest {
 	@Test
 	void preventsDuplicatedSocialAccountForSameProviderUser() {
 		UserAccount user = userAdapter().save(newUser());
-		socialAccountJpaRepository.saveAndFlush(new SocialAccountEntity(null, user.id(), "KAKAO", "kakao-subject"));
+		SocialAccountRepositoryAdapter adapter = new SocialAccountRepositoryAdapter(socialAccountJpaRepository);
+		adapter.save(new SocialAccount(null, user.id(), "KAKAO", "kakao-subject"));
 
-		assertThatThrownBy(() -> socialAccountJpaRepository.saveAndFlush(
-				new SocialAccountEntity(null, user.id(), "KAKAO", "kakao-subject")
-		)).isInstanceOf(DataIntegrityViolationException.class);
+		assertThatThrownBy(() -> adapter.save(new SocialAccount(null, user.id(), "KAKAO", "kakao-subject")))
+				.isInstanceOf(SocialAccountAlreadyExistsException.class)
+				.hasCauseInstanceOf(DataIntegrityViolationException.class);
 	}
 
 	@Test
