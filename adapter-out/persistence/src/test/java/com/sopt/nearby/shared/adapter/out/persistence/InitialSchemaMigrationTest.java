@@ -45,11 +45,46 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void secondMigrationAddsAuthUniquenessConstraints() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource authMigration = new ClassPathResource("db/migration/V2__add_auth_unique_constraints.sql");
+
+		assertThat(authMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_auth_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, authMigration);
+
+			assertThat(indexNames(connection, "social_account"))
+					.anyMatch(indexName -> indexName.startsWith("uk_social_account_provider_user"));
+			assertThat(indexNames(connection, "refresh_token"))
+					.anyMatch(indexName -> indexName.startsWith("uk_refresh_token_hash"));
+		}
+	}
+
 	private static List<String> tableNames(final Connection connection) throws SQLException {
 		List<String> names = new ArrayList<>();
 		try (ResultSet tables = connection.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {
 			while (tables.next()) {
 				names.add(tables.getString("TABLE_NAME").toLowerCase());
+			}
+		}
+		return names;
+	}
+
+	private static List<String> indexNames(final Connection connection, final String tableName) throws SQLException {
+		List<String> names = new ArrayList<>();
+		try (ResultSet indexes = connection.getMetaData().getIndexInfo(null, null, tableName, false, false)) {
+			while (indexes.next()) {
+				String indexName = indexes.getString("INDEX_NAME");
+				if (indexName != null) {
+					names.add(indexName.toLowerCase());
+				}
 			}
 		}
 		return names;

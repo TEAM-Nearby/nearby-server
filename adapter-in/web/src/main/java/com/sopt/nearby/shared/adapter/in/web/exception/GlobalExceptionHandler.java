@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
 //                 "ALREADY_APPLIED",
 //                 "DUPLICATED_USER" -> HttpStatus.CONFLICT;
 //
-//            case "UNAUTHORIZED" -> HttpStatus.UNAUTHORIZED;
+            case "KAKAO_LOGIN_FAILED" -> HttpStatus.UNAUTHORIZED;
 //
 //            case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
 
