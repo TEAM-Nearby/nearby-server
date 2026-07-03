@@ -3,3 +3,7 @@ spring:
     name: nearby
   aop:
     proxy-target-class: false
+
+management:
+  tracing:
+    enabled: false

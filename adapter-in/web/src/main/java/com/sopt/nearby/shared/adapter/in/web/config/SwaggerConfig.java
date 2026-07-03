@@ -13,11 +13,8 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
         Server devServer = new Server();
-        devServer.setUrl("/"); // API 서버 설정
-
-        //ToDO 운영서버 생길 시 아래에 설정
-//        Server prodServer = new Server();
-//        prodServer.setUrl("운영 URL"); // 운영서버에 따로 띄우기 위한 서버 추가 가능
+        devServer.setUrl("http://localhost:8080"); // 로컬 개발 서버 절대 경로
+        devServer.setDescription("Local Development Server");
 
         Info info = new Info()
                 .title("Nearby API")

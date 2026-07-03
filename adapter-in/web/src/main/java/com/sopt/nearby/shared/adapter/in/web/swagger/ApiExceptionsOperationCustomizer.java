@@ -3,7 +3,7 @@ package com.sopt.nearby.shared.adapter.in.web.swagger;
 
 import com.sopt.nearby.common.exception.BusinessException;
 import com.sopt.nearby.common.exception.ErrorCode;
-import com.sopt.nearby.common.exception.NotFoundException;
+import com.sopt.nearby.shared.adapter.in.web.exception.ApiExceptionStatusResolver;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.examples.Example;
@@ -138,16 +138,6 @@ public class ApiExceptionsOperationCustomizer implements OperationCustomizer {
 			final Class<? extends BusinessException> exceptionClass,
 			final ErrorCode errorCode
 	) {
-		if (NotFoundException.class.isAssignableFrom(exceptionClass)) {
-			return HttpStatus.NOT_FOUND;
-		}
-		if (errorCode.name().startsWith("FORBIDDEN")) {
-			return HttpStatus.FORBIDDEN;
-		}
-		if (errorCode.name().equals("UNAUTHORIZED")) {
-			return HttpStatus.UNAUTHORIZED;
-		}
-
-		return HttpStatus.BAD_REQUEST;
+		return ApiExceptionStatusResolver.resolve(exceptionClass, errorCode);
 	}
 }
