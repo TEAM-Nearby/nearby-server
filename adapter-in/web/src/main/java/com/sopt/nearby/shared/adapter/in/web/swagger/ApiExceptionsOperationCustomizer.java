@@ -144,7 +144,7 @@ public class ApiExceptionsOperationCustomizer implements OperationCustomizer {
 		if (errorCode.name().startsWith("FORBIDDEN")) {
 			return HttpStatus.FORBIDDEN;
 		}
-		if (errorCode.name().equals("UNAUTHORIZED")) {
+		if (errorCode.name().equals("UNAUTHORIZED") || errorCode.name().equals("KAKAO_LOGIN_FAILED")) {
 			return HttpStatus.UNAUTHORIZED;
 		}
 
