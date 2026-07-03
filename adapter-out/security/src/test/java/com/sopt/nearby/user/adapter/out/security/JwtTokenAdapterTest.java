@@ -24,7 +24,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 class JwtTokenAdapterTest {
 
-	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-03T12:00:00Z"), ZoneId.of("UTC"));
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2099-01-01T12:00:00Z"), ZoneId.of("UTC"));
 	private static final String SECRET = "12345678901234567890123456789012";
 
 	@Test
