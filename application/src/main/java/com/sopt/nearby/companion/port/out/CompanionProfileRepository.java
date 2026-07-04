@@ -3,6 +3,8 @@ package com.sopt.nearby.companion.port.out;
 
 import com.sopt.nearby.common.port.DomainRepository;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
+import java.util.List;
 
 public interface CompanionProfileRepository extends DomainRepository<CompanionProfile, Long> {
+    List<CompanionProfile> findAllByUserIdIn(List<Long> list);
 }
