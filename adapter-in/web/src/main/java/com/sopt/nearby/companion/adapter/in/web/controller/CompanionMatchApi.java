@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 
 
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMatchPreviewResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMatchesResponse;
 import com.sopt.nearby.companion.domain.exception.CompanionProfileNotFoundException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
@@ -19,6 +20,17 @@ import java.security.Principal;
 
 @Tag(name = "CompanionMatch", description = "매칭된 동행 API")
 public interface CompanionMatchApi {
+
+    @Operation(
+            summary = "매칭된 동행 목록 보기",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭 목록을 조회합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CompanionMatchesResponse> getMatches(
+            final Principal principal
+    );
+
+
 
     @ApiExceptions({
             InvalidCompanionMatchIdException.class,
