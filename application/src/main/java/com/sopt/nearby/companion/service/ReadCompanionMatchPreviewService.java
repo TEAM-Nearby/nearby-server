@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.service;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileNotFoundException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMatchException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
@@ -65,7 +66,7 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
                     CompanionProfile profile = profiles.stream()
                             .filter(p -> p.userId().equals(participant.userId()))
                             .findFirst()
-                            .orElseThrow();
+                            .orElseThrow(CompanionProfileNotFoundException::new);
                     return new Member(
                             participant.userId(),
                             profile.profileImageUrl(),

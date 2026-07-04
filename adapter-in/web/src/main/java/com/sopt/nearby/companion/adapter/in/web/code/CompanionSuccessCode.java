@@ -1,3 +1,4 @@
+// 동행 매칭 성공 코드 정의
 package com.sopt.nearby.companion.adapter.in.web.code;
 
 import com.sopt.nearby.shared.adapter.in.web.response.SuccessCode;

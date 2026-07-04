@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 
 
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMatchPreviewResponse;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileNotFoundException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
@@ -23,7 +24,8 @@ public interface CompanionMatchApi {
             InvalidCompanionMatchIdException.class,
             CompanionMatchNotFoundException.class,
             ForbiddenCompanionMatchException.class,
-            CompanionPostNotFoundException.class
+            CompanionPostNotFoundException.class,
+            CompanionProfileNotFoundException.class
     })
     @Operation(
             summary = "매칭된 동행 미리보기",
