@@ -27,7 +27,7 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
             left join companion_schedule schedule
                 on schedule.match_id = m.id
                 and schedule.confirmed = true
-            join place_cache place
+            left join place_cache place
                 on place.id = coalesce(schedule.place_id, post.place_id)
             where participant.user_id = :userId
                         and m.status in ('MATCHED', 'SCHEDULE_CONFIRMED')
