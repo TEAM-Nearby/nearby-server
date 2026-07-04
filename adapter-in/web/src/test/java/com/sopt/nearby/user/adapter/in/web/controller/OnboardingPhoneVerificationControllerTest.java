@@ -4,6 +4,7 @@ package com.sopt.nearby.user.adapter.in.web.controller;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -11,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
+import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
+import com.sopt.nearby.user.adapter.in.web.dto.request.ConfirmPhoneVerificationCodeRequest;
 import com.sopt.nearby.user.adapter.in.web.dto.request.SendPhoneVerificationCodeRequest;
 import com.sopt.nearby.user.application.ConfirmPhoneVerificationCodeCommand;
 import com.sopt.nearby.user.application.ConfirmPhoneVerificationCodeResult;
@@ -24,6 +27,7 @@ import com.sopt.nearby.user.exception.PhoneVerificationSendLimitExceededExceptio
 import com.sopt.nearby.user.port.in.ConfirmPhoneVerificationCodeUseCase;
 import com.sopt.nearby.user.port.in.SendPhoneVerificationCodeUseCase;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.Arrays;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -182,6 +186,26 @@ class OnboardingPhoneVerificationControllerTest {
 		assertNotNull(operation);
 		assertEquals(1, operation.security().length);
 		assertEquals("bearerAuth", operation.security()[0].name());
+	}
+
+	@Test
+	void documentsConfirmBearerAuthAndBusinessErrorsForSwaggerTryItOut() throws Exception {
+		Method method = OnboardingPhoneVerificationApi.class.getMethod(
+				"confirm",
+				Long.class,
+				ConfirmPhoneVerificationCodeRequest.class,
+				Jwt.class
+		);
+		Operation operation = method.getAnnotation(Operation.class);
+		ApiExceptions exceptions = method.getAnnotation(ApiExceptions.class);
+
+		assertNotNull(operation);
+		assertEquals(1, operation.security().length);
+		assertEquals("bearerAuth", operation.security()[0].name());
+		assertNotNull(exceptions);
+		assertTrue(Arrays.asList(exceptions.value()).contains(PhoneVerificationCodeMismatchException.class));
+		assertTrue(Arrays.asList(exceptions.value()).contains(PhoneVerificationNotFoundException.class));
+		assertTrue(Arrays.asList(exceptions.value()).contains(PhoneVerificationExpiredException.class));
 	}
 
 	private void assertInvalidPhoneNumber(final String phoneNumber) throws Exception {

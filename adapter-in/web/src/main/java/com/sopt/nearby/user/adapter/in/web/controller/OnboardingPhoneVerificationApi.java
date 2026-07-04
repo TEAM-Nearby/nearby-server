@@ -7,6 +7,9 @@ import com.sopt.nearby.user.adapter.in.web.dto.request.ConfirmPhoneVerificationC
 import com.sopt.nearby.user.adapter.in.web.dto.request.SendPhoneVerificationCodeRequest;
 import com.sopt.nearby.user.adapter.in.web.dto.response.ConfirmPhoneVerificationCodeResponse;
 import com.sopt.nearby.user.adapter.in.web.dto.response.SendPhoneVerificationCodeResponse;
+import com.sopt.nearby.user.exception.PhoneVerificationCodeMismatchException;
+import com.sopt.nearby.user.exception.PhoneVerificationExpiredException;
+import com.sopt.nearby.user.exception.PhoneVerificationNotFoundException;
 import com.sopt.nearby.user.exception.PhoneVerificationSendLimitExceededException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -62,8 +65,48 @@ public interface OnboardingPhoneVerificationApi {
 			@Parameter(hidden = true) Jwt jwt
 	);
 
+	@Operation(
+			summary = "휴대폰 인증 번호 확인",
+			description = "사용자가 입력한 휴대폰 인증 번호를 확인하고 온보딩 상태를 갱신합니다.",
+			security = @SecurityRequirement(name = "bearerAuth"),
+			requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+					required = true,
+					content = @Content(
+							mediaType = "application/json",
+							schema = @Schema(implementation = ConfirmPhoneVerificationCodeRequest.class),
+							examples = @ExampleObject(value = """
+									{
+									  "verificationCode": "123456"
+									}
+									""")
+					)
+			)
+	)
+	@ApiResponse(
+			responseCode = "200",
+			description = "휴대폰 인증에 성공했습니다.",
+			content = @Content(
+					mediaType = "application/json",
+					examples = @ExampleObject(value = """
+							{
+							  "status": 200,
+							  "code": "PHONE_VERIFICATION_CODE_CONFIRMED",
+							  "message": "휴대폰 인증에 성공했습니다.",
+							  "data": {
+							    "phoneVerified": true,
+							    "onboardingStatus": "PHONE_VERIFIED"
+							  }
+							}
+							""")
+			)
+	)
+	@ApiExceptions({
+			PhoneVerificationCodeMismatchException.class,
+			PhoneVerificationNotFoundException.class,
+			PhoneVerificationExpiredException.class
+	})
 	CommonResponse<ConfirmPhoneVerificationCodeResponse> confirm(
-			Long phoneVerificationId,
+			@Parameter(description = "휴대폰 인증 요청 ID", example = "10") Long phoneVerificationId,
 			ConfirmPhoneVerificationCodeRequest request,
 			@Parameter(hidden = true) Jwt jwt
 	);
