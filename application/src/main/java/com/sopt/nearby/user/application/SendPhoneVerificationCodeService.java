@@ -14,8 +14,8 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.function.IntSupplier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class SendPhoneVerificationCodeService implements SendPhoneVerificationCodeUseCase {
@@ -27,6 +27,7 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 	private final UserAccountRepository userAccountRepository;
 	private final PhoneVerificationRepository phoneVerificationRepository;
 	private final PhoneVerificationSender phoneVerificationSender;
+	private final String hashSecret;
 	private final Clock clock;
 	private final IntSupplier verificationCodeSupplier;
 
@@ -34,12 +35,14 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 	public SendPhoneVerificationCodeService(
 			final UserAccountRepository userAccountRepository,
 			final PhoneVerificationRepository phoneVerificationRepository,
-			final PhoneVerificationSender phoneVerificationSender
+			final PhoneVerificationSender phoneVerificationSender,
+			@Value("${nearby.phone-verification.hash-secret}") final String hashSecret
 	) {
 		this(
 				userAccountRepository,
 				phoneVerificationRepository,
 				phoneVerificationSender,
+				hashSecret,
 				Clock.systemUTC(),
 				() -> SECURE_RANDOM.nextInt(CODE_BOUND)
 		);
@@ -49,18 +52,19 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 			final UserAccountRepository userAccountRepository,
 			final PhoneVerificationRepository phoneVerificationRepository,
 			final PhoneVerificationSender phoneVerificationSender,
+			final String hashSecret,
 			final Clock clock,
 			final IntSupplier verificationCodeSupplier
 	) {
 		this.userAccountRepository = userAccountRepository;
 		this.phoneVerificationRepository = phoneVerificationRepository;
 		this.phoneVerificationSender = phoneVerificationSender;
+		this.hashSecret = hashSecret;
 		this.clock = clock;
 		this.verificationCodeSupplier = verificationCodeSupplier;
 	}
 
 	@Override
-	@Transactional
 	public SendPhoneVerificationCodeResult send(final SendPhoneVerificationCodeCommand command) {
 		UserAccount userAccount = userAccountRepository.findById(command.userId())
 				.orElseThrow(UserNotFoundException::new);
@@ -70,7 +74,7 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 				userAccount.id(),
 				command.phoneNumber(),
 				null,
-				PhoneVerificationCodeHasher.sha256(verificationCode),
+				PhoneVerificationCodeHasher.hmacSha256(verificationCode, hashSecret),
 				PhoneVerificationStatus.PENDING,
 				LocalDateTime.now(clock).plusSeconds(EXPIRES_IN_SECONDS),
 				null

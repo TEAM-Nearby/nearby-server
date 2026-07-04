@@ -24,12 +24,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.annotation.Transactional;
 
 class SendPhoneVerificationCodeServiceTest {
 
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-04T07:00:00Z"), ZoneId.of("UTC"));
+	private static final String HASH_SECRET = "nearby-phone-verification-test-secret-32bytes";
 	private static final String CODE_123456_HASH =
-			"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
+			"2a0ce34b1c06ef8464a8b86091d1fbfb8ea80db5fae72670fbeebb6ec17ee395";
 
 	@Test
 	void savesPendingVerificationAndSendsCode() {
@@ -41,6 +43,7 @@ class SendPhoneVerificationCodeServiceTest {
 				userAccounts,
 				phoneVerifications,
 				sender,
+				HASH_SECRET,
 				CLOCK,
 				() -> 123456
 		);
@@ -71,6 +74,7 @@ class SendPhoneVerificationCodeServiceTest {
 				(phoneNumber, verificationCode) -> {
 					throw new PhoneVerificationSendLimitExceededException();
 				},
+				HASH_SECRET,
 				CLOCK,
 				() -> 123456
 		);
@@ -90,6 +94,7 @@ class SendPhoneVerificationCodeServiceTest {
 				new FakeUserAccountRepository(),
 				new FakePhoneVerificationRepository(),
 				sender,
+				HASH_SECRET,
 				CLOCK,
 				() -> 123456
 		);
@@ -101,6 +106,16 @@ class SendPhoneVerificationCodeServiceTest {
 
 		assertInstanceOf(UserNotFoundException.class, exception);
 		assertEquals(null, sender.verificationCode);
+	}
+
+	@Test
+	void sendMethodDoesNotHoldTransactionWhileSendingSms() throws NoSuchMethodException {
+		assertEquals(
+				null,
+				SendPhoneVerificationCodeService.class
+						.getMethod("send", SendPhoneVerificationCodeCommand.class)
+						.getAnnotation(Transactional.class)
+		);
 	}
 
 	private static UserAccount newUser(final Long id) {

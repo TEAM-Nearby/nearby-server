@@ -2,21 +2,25 @@
 package com.sopt.nearby.user.application;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 final class PhoneVerificationCodeHasher {
 
 	private PhoneVerificationCodeHasher() {
 	}
 
-	static String sha256(final String value) {
+	static String hmacSha256(final String value, final String secret) {
+		if (secret == null || secret.isBlank()) {
+			throw new IllegalStateException("휴대폰 인증 번호 HMAC secret이 설정되지 않았습니다.");
+		}
 		try {
-			byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-			return HexFormat.of().formatHex(digest);
-		} catch (NoSuchAlgorithmException exception) {
-			throw new IllegalStateException("SHA-256 알고리즘을 사용할 수 없습니다.", exception);
+			Mac mac = Mac.getInstance("HmacSHA256");
+			mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+			return HexFormat.of().formatHex(mac.doFinal(value.getBytes(StandardCharsets.UTF_8)));
+		} catch (Exception exception) {
+			throw new IllegalStateException("HMAC-SHA256 알고리즘을 사용할 수 없습니다.", exception);
 		}
 	}
 }

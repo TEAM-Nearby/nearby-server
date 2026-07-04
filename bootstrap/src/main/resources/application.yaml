@@ -15,6 +15,8 @@ nearby:
     secret: ${NEARBY_JWT_SECRET}
     access-token-ttl-seconds: ${NEARBY_ACCESS_TOKEN_TTL_SECONDS:3600}
     refresh-token-ttl-seconds: ${NEARBY_REFRESH_TOKEN_TTL_SECONDS:1209600}
+  phone-verification:
+    hash-secret: ${NEARBY_PHONE_VERIFICATION_HASH_SECRET:${nearby.jwt.secret}}
   sms:
     solapi:
       api-key: ${SOLAPI_API_KEY:}

@@ -17,6 +17,7 @@ import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,23 +28,27 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 
 	private final UserAccountRepository userAccountRepository;
 	private final PhoneVerificationRepository phoneVerificationRepository;
+	private final String hashSecret;
 	private final Clock clock;
 
 	@Autowired
 	public ConfirmPhoneVerificationCodeService(
 			final UserAccountRepository userAccountRepository,
-			final PhoneVerificationRepository phoneVerificationRepository
+			final PhoneVerificationRepository phoneVerificationRepository,
+			@Value("${nearby.phone-verification.hash-secret}") final String hashSecret
 	) {
-		this(userAccountRepository, phoneVerificationRepository, Clock.systemUTC());
+		this(userAccountRepository, phoneVerificationRepository, hashSecret, Clock.systemUTC());
 	}
 
 	ConfirmPhoneVerificationCodeService(
 			final UserAccountRepository userAccountRepository,
 			final PhoneVerificationRepository phoneVerificationRepository,
+			final String hashSecret,
 			final Clock clock
 	) {
 		this.userAccountRepository = userAccountRepository;
 		this.phoneVerificationRepository = phoneVerificationRepository;
+		this.hashSecret = hashSecret;
 		this.clock = clock;
 	}
 
@@ -54,6 +59,9 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 				.orElseThrow(PhoneVerificationNotFoundException::new);
 		if (!phoneVerification.userId().equals(command.userId())) {
 			throw new PhoneVerificationNotFoundException();
+		}
+		if (phoneVerification.status() != PhoneVerificationStatus.PENDING) {
+			throw new PhoneVerificationCodeMismatchException();
 		}
 
 		LocalDateTime now = LocalDateTime.now(clock);
@@ -98,7 +106,7 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 
 		return MessageDigest.isEqual(
 				expectedHash.getBytes(StandardCharsets.UTF_8),
-				PhoneVerificationCodeHasher.sha256(verificationCode).getBytes(StandardCharsets.UTF_8)
+				PhoneVerificationCodeHasher.hmacSha256(verificationCode, hashSecret).getBytes(StandardCharsets.UTF_8)
 		);
 	}
 }

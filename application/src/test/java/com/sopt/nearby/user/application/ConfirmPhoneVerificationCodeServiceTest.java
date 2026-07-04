@@ -27,8 +27,9 @@ import org.junit.jupiter.api.Test;
 class ConfirmPhoneVerificationCodeServiceTest {
 
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-04T07:00:00Z"), ZoneId.of("UTC"));
+	private static final String HASH_SECRET = "nearby-phone-verification-test-secret-32bytes";
 	private static final String CODE_123456_HASH =
-			"8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
+			"2a0ce34b1c06ef8464a8b86091d1fbfb8ea80db5fae72670fbeebb6ec17ee395";
 
 	@Test
 	void confirmsCodeAndUpdatesPhoneVerificationAndUserAccount() {
@@ -39,6 +40,7 @@ class ConfirmPhoneVerificationCodeServiceTest {
 		ConfirmPhoneVerificationCodeService service = new ConfirmPhoneVerificationCodeService(
 				userAccounts,
 				phoneVerifications,
+				HASH_SECRET,
 				CLOCK
 		);
 
@@ -90,6 +92,7 @@ class ConfirmPhoneVerificationCodeServiceTest {
 		ConfirmPhoneVerificationCodeService service = new ConfirmPhoneVerificationCodeService(
 				userAccounts,
 				new FakePhoneVerificationRepository(),
+				HASH_SECRET,
 				CLOCK
 		);
 
@@ -108,6 +111,7 @@ class ConfirmPhoneVerificationCodeServiceTest {
 		ConfirmPhoneVerificationCodeService service = new ConfirmPhoneVerificationCodeService(
 				userAccounts,
 				phoneVerifications,
+				HASH_SECRET,
 				CLOCK
 		);
 
@@ -135,6 +139,7 @@ class ConfirmPhoneVerificationCodeServiceTest {
 		ConfirmPhoneVerificationCodeService service = new ConfirmPhoneVerificationCodeService(
 				userAccounts,
 				phoneVerifications,
+				HASH_SECRET,
 				CLOCK
 		);
 
@@ -144,12 +149,41 @@ class ConfirmPhoneVerificationCodeServiceTest {
 		);
 	}
 
+	@Test
+	void failsWhenVerificationIsAlreadyVerified() {
+		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
+		userAccounts.save(newUser(1L));
+		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
+		phoneVerifications.save(new PhoneVerification(
+				10L,
+				1L,
+				"01012345678",
+				null,
+				CODE_123456_HASH,
+				PhoneVerificationStatus.VERIFIED,
+				LocalDateTime.of(2026, 7, 4, 7, 3),
+				LocalDateTime.of(2026, 7, 4, 6, 59)
+		));
+		ConfirmPhoneVerificationCodeService service = new ConfirmPhoneVerificationCodeService(
+				userAccounts,
+				phoneVerifications,
+				HASH_SECRET,
+				CLOCK
+		);
+
+		assertThrows(
+				PhoneVerificationCodeMismatchException.class,
+				() -> service.confirm(new ConfirmPhoneVerificationCodeCommand(1L, 10L, "123456"))
+		);
+		assertEquals(LocalDateTime.of(2026, 7, 4, 6, 59), phoneVerifications.saved.get(10L).verifiedAt());
+	}
+
 	private ConfirmPhoneVerificationCodeService newServiceWithPendingVerification() {
 		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
 		userAccounts.save(newUser(1L));
 		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
 		phoneVerifications.save(newPendingVerification(10L, 1L, "01012345678"));
-		return new ConfirmPhoneVerificationCodeService(userAccounts, phoneVerifications, CLOCK);
+		return new ConfirmPhoneVerificationCodeService(userAccounts, phoneVerifications, HASH_SECRET, CLOCK);
 	}
 
 	private static PhoneVerification newPendingVerification(
