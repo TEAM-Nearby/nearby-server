@@ -97,6 +97,7 @@ public final class UserPersistenceMapper {
 				model.userId(),
 				model.phoneNumber(),
 				model.carrier(),
+				model.verificationCodeHash(),
 				model.status(),
 				model.expiresAt(),
 				model.verifiedAt()
@@ -109,6 +110,7 @@ public final class UserPersistenceMapper {
 				entity.getUserId(),
 				entity.getPhoneNumber(),
 				entity.getCarrier(),
+				entity.getVerificationCodeHash(),
 				entity.getStatus(),
 				entity.getExpiresAt(),
 				entity.getVerifiedAt()
