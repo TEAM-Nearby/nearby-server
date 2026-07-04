@@ -10,9 +10,11 @@ on:
     branches:
       - develop
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -22,6 +24,18 @@ jobs:
   test-and-build:
     name: Test and build
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+      APP_SERVICE_NAME: ${{ vars.APP_SERVICE_NAME }}
+      APP_DIR: ${{ vars.APP_DIR }}
+      APP_JAR_PATH: ${{ vars.APP_JAR_PATH }}
+      APP_PORT: ${{ vars.APP_PORT }}
+      DOMAIN_NAME: ${{ vars.DOMAIN_NAME }}
+      SERVICE_URL: ${{ vars.SERVICE_URL }}
+      DEPLOY_S3_BUCKET: ${{ vars.DEPLOY_S3_BUCKET }}
+      HEALTHCHECK_PATH: ${{ vars.HEALTHCHECK_PATH }}
 
     steps:
       - name: Checkout repository
@@ -44,3 +58,129 @@ jobs:
 
       - name: Build application jar
         run: ./gradlew :bootstrap:bootJar --no-daemon
+
+      - name: Resolve boot jar
+        id: boot_jar
+        shell: bash
+        run: |
+          jars=()
+          while IFS= read -r candidate; do
+            if unzip -p "$candidate" META-INF/MANIFEST.MF | grep -q '^Implementation-Title: bootstrap'; then
+              jars+=("$candidate")
+            fi
+          done < <(find bootstrap/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' | sort)
+
+          if [ "${#jars[@]}" -ne 1 ]; then
+            printf 'Expected one bootstrap boot jar, found %s:\n' "${#jars[@]}" >&2
+            printf '%s\n' "${jars[@]}" >&2
+            exit 1
+          fi
+
+          jar="${jars[0]}"
+          test -s "$jar"
+          unzip -p "$jar" META-INF/MANIFEST.MF | grep -q '^Main-Class: org.springframework.boot.loader.launch.JarLauncher'
+          unzip -p "$jar" META-INF/MANIFEST.MF | grep -q '^Start-Class: com.sopt.nearby.NearbyApplication'
+          echo "path=$jar" >> "$GITHUB_OUTPUT"
+
+      - name: Validate deploy settings
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        shell: bash
+        env:
+          AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+        run: |
+          set -euo pipefail
+          for name in AWS_REGION AWS_ACCOUNT_ID EC2_INSTANCE_ID APP_SERVICE_NAME APP_DIR APP_JAR_PATH APP_PORT DOMAIN_NAME SERVICE_URL DEPLOY_S3_BUCKET HEALTHCHECK_PATH AWS_ROLE_TO_ASSUME; do
+            if [ -z "${!name}" ]; then
+              echo "$name is required" >&2
+              exit 1
+            fi
+          done
+
+      - name: Configure AWS credentials
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-session-name: nearby-github-actions-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload jar to S3
+        id: upload_artifact
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        shell: bash
+        env:
+          BOOT_JAR: ${{ steps.boot_jar.outputs.path }}
+        run: |
+          set -euo pipefail
+          s3_uri="s3://${DEPLOY_S3_BUCKET}/releases/${GITHUB_SHA}/app.jar"
+          aws s3 cp "$BOOT_JAR" "$s3_uri"
+          echo "s3_uri=$s3_uri" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy through SSM
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        shell: bash
+        env:
+          S3_URI: ${{ steps.upload_artifact.outputs.s3_uri }}
+        run: |
+          set -euo pipefail
+          parameters="$(jq -n \
+            --arg s3_uri "$S3_URI" \
+            --arg app_dir "$APP_DIR" \
+            --arg app_jar_path "$APP_JAR_PATH" \
+            --arg app_service_name "$APP_SERVICE_NAME" \
+            --arg app_port "$APP_PORT" \
+            --arg healthcheck_path "$HEALTHCHECK_PATH" \
+            '{commands: [
+              "set -euo pipefail",
+              "aws s3 cp \($s3_uri) /tmp/nearby-app.jar",
+              "sudo test -d \($app_dir)",
+              "sudo install -o nearby -g nearby -m 0644 /tmp/nearby-app.jar \($app_jar_path)",
+              "sudo systemctl daemon-reload",
+              "sudo systemctl restart \($app_service_name)",
+              "sudo systemctl is-active \($app_service_name)",
+              "for i in $(seq 1 30); do curl -fsS --connect-timeout 3 --max-time 5 http://127.0.0.1:\($app_port)\($healthcheck_path) && exit 0; sleep 2; done; echo 'health check timed out' >&2; exit 1"
+            ]}')"
+
+          command_id="$(aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy nearby ${GITHUB_SHA}" \
+            --parameters "$parameters" \
+            --query 'Command.CommandId' \
+            --output text)"
+
+          for _ in {1..60}; do
+            status="$(aws ssm get-command-invocation \
+              --command-id "$command_id" \
+              --instance-id "$EC2_INSTANCE_ID" \
+              --query Status \
+              --output text 2>/dev/null || true)"
+
+            case "$status" in
+              Success)
+                aws ssm get-command-invocation \
+                  --command-id "$command_id" \
+                  --instance-id "$EC2_INSTANCE_ID" \
+                  --query '{stdout:StandardOutputContent,stderr:StandardErrorContent}' \
+                  --output json
+                exit 0
+                ;;
+              Cancelled|Cancelling|Failed|TimedOut)
+                aws ssm get-command-invocation \
+                  --command-id "$command_id" \
+                  --instance-id "$EC2_INSTANCE_ID" \
+                  --query '{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}' \
+                  --output json || true
+                exit 1
+                ;;
+            esac
+
+            sleep 5
+          done
+
+          echo "SSM command timed out: $command_id" >&2
+          exit 1
+
+      - name: Run external health check
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        run: curl -fsS --retry 6 --retry-delay 5 --retry-connrefused --retry-max-time 60 --connect-timeout 5 --max-time 10 "${SERVICE_URL}${HEALTHCHECK_PATH}"
