@@ -7,14 +7,22 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMatchException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -22,12 +30,15 @@ class CompanionMatchControllerTest {
 
     private MockMvc mockMvc;
     private FakeReadCompanionMatchPreviewUseCase useCase;
+    private FakeReadCompanionMatchesUseCase readCompanionMatchesUseCase;
 
     @BeforeEach
     void setUp() {
         useCase = new FakeReadCompanionMatchPreviewUseCase();
+        readCompanionMatchesUseCase = new FakeReadCompanionMatchesUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionMatchController(useCase))
+                .standaloneSetup(new CompanionMatchController(useCase, readCompanionMatchesUseCase))
+                .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -64,6 +75,34 @@ class CompanionMatchControllerTest {
     }
 
     @Test
+    void passesAuthenticatedUserIdFromPrincipalToReadMatchesUseCase() throws Exception {
+        readCompanionMatchesUseCase.result = List.of(new CompanionMatchSummary(
+                1L,
+                "호스트A",
+                "시우다드콘달",
+                LocalDateTime.of(2026, 6, 29, 18, 30),
+                "오늘 저녁 바르셀로나에서 같이 타파스 드실 분 구해요",
+                CompanionMatchStatus.MATCHED
+        ));
+
+        mockMvc.perform(get("/api/companion-matches")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("READ_COMPANION_MATCHES"))
+                .andExpect(jsonPath("$.message").value("매칭된 동행 목록을 조회했어요."))
+                .andExpect(jsonPath("$.data.matches[0].matchId").value(1))
+                .andExpect(jsonPath("$.data.matches[0].hostNickname").value("호스트A"))
+                .andExpect(jsonPath("$.data.matches[0].placeName").value("시우다드콘달"))
+                .andExpect(jsonPath("$.data.matches[0].meetingAt").value("2026-06-29T18:30:00"))
+                .andExpect(jsonPath("$.data.matches[0].content")
+                        .value("오늘 저녁 바르셀로나에서 같이 타파스 드실 분 구해요"))
+                .andExpect(jsonPath("$.data.matches[0].matchStatus").value("MATCHED"));
+
+        assertEquals(7L, readCompanionMatchesUseCase.userId);
+    }
+
+    @Test
     void returnsForbiddenWhenRequesterIsNotMatchParticipant() throws Exception {
         useCase.exception = new ForbiddenCompanionMatchException();
 
@@ -80,6 +119,13 @@ class CompanionMatchControllerTest {
         return () -> name;
     }
 
+    private MappingJackson2HttpMessageConverter jsonMessageConverter() {
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return new MappingJackson2HttpMessageConverter(objectMapper);
+    }
+
     private static final class FakeReadCompanionMatchPreviewUseCase implements ReadCompanionMatchPreviewUseCase {
 
         private CompanionMatchPreview result;
@@ -94,6 +140,18 @@ class CompanionMatchControllerTest {
             if (exception != null) {
                 throw exception;
             }
+            return result;
+        }
+    }
+
+    private static final class FakeReadCompanionMatchesUseCase implements ReadCompanionMatchesUseCase {
+
+        private List<CompanionMatchSummary> result = List.of();
+        private Long userId;
+
+        @Override
+        public List<CompanionMatchSummary> getMatches(final Long userId) {
+            this.userId = userId;
             return result;
         }
     }
