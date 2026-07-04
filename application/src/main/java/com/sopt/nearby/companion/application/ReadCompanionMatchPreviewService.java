@@ -1,5 +1,5 @@
 //매칭된 동행 미리보기 서비스 로직
-package com.sopt.nearby.companion.service;
+package com.sopt.nearby.companion.application;
 
 
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;

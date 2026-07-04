@@ -6,7 +6,7 @@ import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
-import com.sopt.nearby.companion.service.ReadCompanionMatchPreviewService;
+import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

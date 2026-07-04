@@ -1,5 +1,5 @@
 // 동행 매칭 미리보기 조회 서비스의 권한 검증과 응답 조립을 검증하는 테스트
-package com.sopt.nearby.companion.service;
+package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
