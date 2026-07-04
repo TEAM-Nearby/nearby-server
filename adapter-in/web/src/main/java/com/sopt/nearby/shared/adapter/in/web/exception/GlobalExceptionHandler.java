@@ -28,40 +28,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<CommonResponse<Void>> handleBusinessException(final BusinessException exception) {
         ErrorCode errorCode = exception.getErrorCode();
-        HttpStatus status = resolveBusinessErrorStatus(errorCode);
+        HttpStatus status = ApiExceptionStatusResolver.resolve(exception);
 
         return ResponseEntity
                 .status(status)
                 .body(CommonResponse.error(status.value(), errorCode));
     }
 
-    private HttpStatus resolveBusinessErrorStatus(final ErrorCode errorCode) {
-        return switch (errorCode.name()) {
-            //Todo 추후 feature별 ErrorCode가 추가되면 이곳에서 HTTP status로 매핑합니다.
-//            case "USER_NOT_FOUND",
-//                 "PLACE_NOT_FOUND",
-//                 "COMPANION_NOT_FOUND" -> HttpStatus.NOT_FOUND;
-//
-//            case "ALREADY_EXISTS",
-//                 "ALREADY_APPLIED",
-//                 "DUPLICATED_USER" -> HttpStatus.CONFLICT;
-//
-            case "KAKAO_LOGIN_FAILED" -> HttpStatus.UNAUTHORIZED;
-//
-//            case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
-
-            default -> HttpStatus.BAD_REQUEST;
-        };
-    }
-
-
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<CommonResponse<Void>> handleNotFoundException(final NotFoundException exception) {
-        ErrorCode errorCode = exception.getErrorCode();
-
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(CommonResponse.error(HttpStatus.NOT_FOUND.value(), errorCode));
+        return handleBusinessException(exception);
     }
 
     @ExceptionHandler(BindException.class)

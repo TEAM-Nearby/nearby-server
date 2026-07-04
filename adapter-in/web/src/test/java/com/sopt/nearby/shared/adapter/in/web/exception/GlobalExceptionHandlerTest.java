@@ -55,11 +55,41 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void handlesBusinessExceptionWithErrorCode() throws Exception {
+        mockMvc.perform(get("/test/business-error"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("TEST_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("테스트 대상을 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void handlesNotFoundExceptionWithNotFoundStatus() throws Exception {
         mockMvc.perform(get("/test/not-found-error"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.code").value("TEST_NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("테스트 대상을 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void handlesForbiddenBusinessExceptionWithForbiddenStatus() throws Exception {
+        mockMvc.perform(get("/test/forbidden-error"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_TEST"))
+                .andExpect(jsonPath("$.message").value("접근 권한이 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void handlesUnauthorizedBusinessExceptionWithUnauthorizedStatus() throws Exception {
+        mockMvc.perform(get("/test/unauthorized-error"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("인증이 필요합니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
@@ -145,6 +175,16 @@ class GlobalExceptionHandlerTest {
             throw new TestNotFoundException();
         }
 
+        @GetMapping("/test/forbidden-error")
+        void forbiddenError() {
+            throw new TestForbiddenException();
+        }
+
+        @GetMapping("/test/unauthorized-error")
+        void unauthorizedError() {
+            throw new TestUnauthorizedException();
+        }
+
         @PostMapping("/test/validation-error")
         void validationError(@Valid @RequestBody final TestRequest request) {
         }
@@ -180,7 +220,9 @@ class GlobalExceptionHandlerTest {
     }
 
     enum TestErrorCode implements ErrorCode {
-        TEST_NOT_FOUND("테스트 대상을 찾을 수 없습니다.");
+        TEST_NOT_FOUND("테스트 대상을 찾을 수 없습니다."),
+        FORBIDDEN_TEST("접근 권한이 없습니다."),
+        UNAUTHORIZED("인증이 필요합니다.");
 
         private final String message;
 
@@ -206,6 +248,20 @@ class GlobalExceptionHandlerTest {
 
         TestNotFoundException() {
             super(TestErrorCode.TEST_NOT_FOUND);
+        }
+    }
+
+    static class TestForbiddenException extends BusinessException {
+
+        TestForbiddenException() {
+            super(TestErrorCode.FORBIDDEN_TEST);
+        }
+    }
+
+    static class TestUnauthorizedException extends BusinessException {
+
+        TestUnauthorizedException() {
+            super(TestErrorCode.UNAUTHORIZED);
         }
     }
 
