@@ -7,15 +7,25 @@ import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRep
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import com.sopt.nearby.place.domain.model.PlaceCache;
 import com.sopt.nearby.place.port.out.PlaceCacheRepository;
+import java.util.Optional;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class PlaceCacheRepositoryAdapter
-		extends SimpleJpaRepositoryAdapter<PlaceCache, Long, PlaceCacheEntity, Long>
-		implements PlaceCacheRepository {
+        extends SimpleJpaRepositoryAdapter<PlaceCache, Long, PlaceCacheEntity, Long>
+        implements PlaceCacheRepository {
+    private final PlaceCacheJpaRepository jpaRepository;
 
-	public PlaceCacheRepositoryAdapter(final PlaceCacheJpaRepository jpaRepository) {
-		super(jpaRepository, PlacePersistenceMapper::toEntity, PlacePersistenceMapper::toDomain, Function.identity());
-	}
+    @Override
+    public Optional<PlaceCache> findByGooglePlaceId(final String googlePlaceId) {
+        return jpaRepository.findByGooglePlaceId(googlePlaceId)
+                .map(PlacePersistenceMapper::toDomain);
+    }
+
+    public PlaceCacheRepositoryAdapter(final PlaceCacheJpaRepository jpaRepository,
+                                       PlaceCacheJpaRepository jpaRepository1) {
+        super(jpaRepository, PlacePersistenceMapper::toEntity, PlacePersistenceMapper::toDomain, Function.identity());
+        this.jpaRepository = jpaRepository1;
+    }
 }

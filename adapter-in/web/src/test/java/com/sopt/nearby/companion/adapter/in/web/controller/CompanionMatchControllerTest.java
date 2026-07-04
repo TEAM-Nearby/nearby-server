@@ -10,10 +10,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.sopt.nearby.companion.application.ConfirmCompanionScheduleCommand;
+import com.sopt.nearby.companion.application.ConfirmCompanionScheduleResult;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMatchException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
+import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
@@ -31,13 +34,19 @@ class CompanionMatchControllerTest {
     private MockMvc mockMvc;
     private FakeReadCompanionMatchPreviewUseCase useCase;
     private FakeReadCompanionMatchesUseCase readCompanionMatchesUseCase;
+    private FakeConfirmCompanionScheduleUseCase confirmCompanionScheduleUseCase;
 
     @BeforeEach
     void setUp() {
         useCase = new FakeReadCompanionMatchPreviewUseCase();
         readCompanionMatchesUseCase = new FakeReadCompanionMatchesUseCase();
+        confirmCompanionScheduleUseCase = new FakeConfirmCompanionScheduleUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionMatchController(useCase, readCompanionMatchesUseCase))
+                .standaloneSetup(new CompanionMatchController(
+                        useCase,
+                        readCompanionMatchesUseCase,
+                        confirmCompanionScheduleUseCase
+                ))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -153,6 +162,14 @@ class CompanionMatchControllerTest {
         public List<CompanionMatchSummary> getMatches(final Long userId) {
             this.userId = userId;
             return result;
+        }
+    }
+
+    private static final class FakeConfirmCompanionScheduleUseCase implements ConfirmCompanionScheduleUseCase {
+
+        @Override
+        public ConfirmCompanionScheduleResult confirm(final ConfirmCompanionScheduleCommand command) {
+            return null;
         }
     }
 }
