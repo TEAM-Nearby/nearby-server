@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface CompanionMatchParticipantRepository extends DomainRepository<CompanionMatchParticipant, Long> {
 
-    List<CompanionMatchParticipant> findAllByMatchId(Long id);
+    List<CompanionMatchParticipant> findAllByMatchId(Long matchId);
+
+    boolean existsByMatchIdAndUserId(Long matchId, Long userId);
 }

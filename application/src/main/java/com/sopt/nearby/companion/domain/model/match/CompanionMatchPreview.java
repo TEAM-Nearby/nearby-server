@@ -1,3 +1,4 @@
+// 동행 매칭 미리보기 응답용 도메인 모델
 package com.sopt.nearby.companion.domain.model.match;
 
 
@@ -15,10 +16,11 @@ public record CompanionMatchPreview(
             String nickname
     ) {
     }
+
     public record Post(
             Long postId,
             String content
-    ){
+    ) {
 
     }
 }

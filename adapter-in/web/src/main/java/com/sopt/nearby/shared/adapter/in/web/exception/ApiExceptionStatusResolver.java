@@ -1,3 +1,4 @@
+// 예외 유형과 ErrorCode를 기반으로 HTTP 상태 코드를 결정하는 유틸리티
 package com.sopt.nearby.shared.adapter.in.web.exception;
 
 import com.sopt.nearby.common.exception.BusinessException;

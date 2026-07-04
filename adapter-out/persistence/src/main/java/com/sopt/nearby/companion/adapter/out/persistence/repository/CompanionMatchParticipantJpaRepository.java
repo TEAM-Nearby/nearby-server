@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CompanionMatchParticipantJpaRepository extends JpaRepository<CompanionMatchParticipantEntity, Long> {
     List<CompanionMatchParticipantEntity> findAllByMatchId(Long matchId);
+
+    boolean existsByMatchIdAndUserId(Long matchId, Long userId);
 }

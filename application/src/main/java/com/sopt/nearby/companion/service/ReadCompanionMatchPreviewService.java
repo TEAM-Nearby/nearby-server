@@ -1,10 +1,11 @@
-//실제 조회 흐름 담당
-//매칭 조회, 참여자 조회, 게시글 조회, 권한 검증을 조립
+//매칭된 동행 미리보기 서비스 로직
 package com.sopt.nearby.companion.service;
 
 
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMatchException;
+import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
@@ -37,17 +38,23 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
         this.companionProfileRepository = companionProfileRepository;
     }
 
-    public CompanionMatchPreview getPreview(Long matchId) {
-        //Todo 로그인 구현 시 userId를 활용한 검증 로직 추가
-//        if (userId == null) {
-//            throw new ForbiddenCompanionMatchException();
-//        }
+    @Override
+    public CompanionMatchPreview getPreview(final Long matchId, final Long userId) {
+        if (matchId == null || matchId <= 0) {
+            throw new InvalidCompanionMatchIdException();
+        }
 
         CompanionMatch match = companionMatchRepository.findById(matchId)
                 .orElseThrow(CompanionMatchNotFoundException::new);
 
+        boolean joined = companionMatchParticipantRepository.existsByMatchIdAndUserId(match.id(), userId);
+
+        if (!joined) {
+            throw new ForbiddenCompanionMatchException();
+        }
+
         CompanionPost post = companionPostRepository.findById(match.postId()).orElseThrow(
-                CompanionMatchNotFoundException::new);
+                CompanionPostNotFoundException::new);
         List<CompanionMatchParticipant> participants = companionMatchParticipantRepository.findAllByMatchId(match.id());
         List<CompanionProfile> profiles = companionProfileRepository.findAllByUserIdIn(participants.stream().map(
                 CompanionMatchParticipant::userId

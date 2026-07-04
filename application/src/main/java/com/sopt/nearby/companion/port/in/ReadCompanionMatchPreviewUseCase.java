@@ -5,5 +5,5 @@ package com.sopt.nearby.companion.port.in;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 
 public interface ReadCompanionMatchPreviewUseCase {
-    CompanionMatchPreview getPreview(Long matchId);
+    CompanionMatchPreview getPreview(Long matchId, Long userId);
 }

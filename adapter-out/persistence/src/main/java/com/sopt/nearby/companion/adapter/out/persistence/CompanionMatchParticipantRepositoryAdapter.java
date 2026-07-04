@@ -31,4 +31,9 @@ public class CompanionMatchParticipantRepositoryAdapter
 				.map(CompanionPersistenceMapper::toDomain)
 				.toList();
 	}
+
+	@Override
+	public boolean existsByMatchIdAndUserId(final Long matchId, final Long userId) {
+		return jpaRepository.existsByMatchIdAndUserId(matchId, userId);
+	}
 }
