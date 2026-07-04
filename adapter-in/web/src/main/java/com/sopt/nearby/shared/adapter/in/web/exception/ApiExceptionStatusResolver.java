@@ -11,6 +11,8 @@ public final class ApiExceptionStatusResolver {
     private static final String FORBIDDEN_PREFIX = "FORBIDDEN";
     private static final String UNAUTHORIZED_CODE = "UNAUTHORIZED";
     private static final String KAKAO_LOGIN_FAILED_CODE = "KAKAO_LOGIN_FAILED";
+    private static final String PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE =
+            "PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED";
 
     private ApiExceptionStatusResolver() {
     }
@@ -31,6 +33,9 @@ public final class ApiExceptionStatusResolver {
         }
         if (errorCode.name().equals(UNAUTHORIZED_CODE) || errorCode.name().equals(KAKAO_LOGIN_FAILED_CODE)) {
             return HttpStatus.UNAUTHORIZED;
+        }
+        if (errorCode.name().equals(PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE)) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
         }
 
         return HttpStatus.BAD_REQUEST;
