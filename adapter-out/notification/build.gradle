@@ -7,9 +7,12 @@ dependencies {
 	implementation project(':common')
 	implementation project(':logging')
 
+	implementation 'com.solapi:sdk:1.0.3'
+
 	compileOnly 'org.springframework:spring-context'
 	implementation 'org.slf4j:slf4j-api'
 
+	testImplementation 'org.springframework:spring-context'
 	testImplementation 'org.junit.jupiter:junit-jupiter'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
