@@ -9,13 +9,9 @@ import com.sopt.nearby.user.port.in.SendPhoneVerificationCodeUseCase;
 import com.sopt.nearby.user.port.out.PhoneVerificationRepository;
 import com.sopt.nearby.user.port.out.PhoneVerificationSender;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import java.util.function.IntSupplier;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -74,7 +70,7 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 				userAccount.id(),
 				command.phoneNumber(),
 				null,
-				sha256(verificationCode),
+				PhoneVerificationCodeHasher.sha256(verificationCode),
 				PhoneVerificationStatus.PENDING,
 				LocalDateTime.now(clock).plusSeconds(EXPIRES_IN_SECONDS),
 				null
@@ -87,14 +83,5 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 
 	private String verificationCode() {
 		return "%06d".formatted(Math.floorMod(verificationCodeSupplier.getAsInt(), CODE_BOUND));
-	}
-
-	private String sha256(final String value) {
-		try {
-			byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-			return HexFormat.of().formatHex(digest);
-		} catch (NoSuchAlgorithmException exception) {
-			throw new IllegalStateException("SHA-256 알고리즘을 사용할 수 없습니다.", exception);
-		}
 	}
 }
