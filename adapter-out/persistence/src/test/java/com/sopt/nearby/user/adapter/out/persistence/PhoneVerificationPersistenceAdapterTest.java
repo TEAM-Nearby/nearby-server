@@ -55,6 +55,67 @@ class PhoneVerificationPersistenceAdapterTest {
 				.isEqualTo("code-hash");
 	}
 
+	@Test
+	void updatesPhoneVerificationStatusAndVerifiedAt() {
+		UserAccount user = userAdapter().save(newUser());
+		PhoneVerificationRepositoryAdapter adapter = new PhoneVerificationRepositoryAdapter(
+				phoneVerificationJpaRepository
+		);
+		PhoneVerification saved = adapter.save(new PhoneVerification(
+				null,
+				user.id(),
+				"01012345678",
+				null,
+				"code-hash",
+				PhoneVerificationStatus.PENDING,
+				LocalDateTime.of(2026, 7, 4, 7, 3),
+				null
+		));
+
+		adapter.save(new PhoneVerification(
+				saved.id(),
+				saved.userId(),
+				saved.phoneNumber(),
+				saved.carrier(),
+				saved.verificationCodeHash(),
+				PhoneVerificationStatus.VERIFIED,
+				saved.expiresAt(),
+				LocalDateTime.of(2026, 7, 4, 7, 0)
+		));
+
+		assertThat(adapter.findById(saved.id()))
+				.get()
+				.satisfies(verification -> {
+					assertThat(verification.status()).isEqualTo(PhoneVerificationStatus.VERIFIED);
+					assertThat(verification.verifiedAt()).isEqualTo(LocalDateTime.of(2026, 7, 4, 7, 0));
+				});
+	}
+
+	@Test
+	void updatesUserPhoneVerificationFields() {
+		UserAccountRepositoryAdapter adapter = userAdapter();
+		UserAccount saved = adapter.save(newUser());
+
+		adapter.save(new UserAccount(
+				saved.id(),
+				saved.role(),
+				saved.status(),
+				"01012345678",
+				LocalDateTime.of(2026, 7, 4, 7, 0),
+				UserOnboardingStatus.PHONE_VERIFIED,
+				saved.createdAt(),
+				saved.deletedAt()
+		));
+
+		assertThat(adapter.findById(saved.id()))
+				.get()
+				.satisfies(user -> {
+					assertThat(user.phoneNumber()).isEqualTo("01012345678");
+					assertThat(user.phoneVerifiedAt()).isEqualTo(LocalDateTime.of(2026, 7, 4, 7, 0));
+					assertThat(user.onboardingStatus()).isEqualTo(UserOnboardingStatus.PHONE_VERIFIED);
+				});
+	}
+
 	private UserAccountRepositoryAdapter userAdapter() {
 		return new UserAccountRepositoryAdapter(userAccountJpaRepository);
 	}
