@@ -30,6 +30,7 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
             join place_cache place
                 on place.id = coalesce(schedule.place_id, post.place_id)
             where participant.user_id = :userId
+                        and m.status in ('MATCHED', 'SCHEDULE_CONFIRMED')
             order by m.created_at desc
             """, nativeQuery = true)
     List<CompanionMatchSummaryProjection> findAllByParticipantUserId(@Param("userId") Long userId);
