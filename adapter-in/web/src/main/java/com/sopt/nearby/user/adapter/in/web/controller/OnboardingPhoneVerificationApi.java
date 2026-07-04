@@ -3,7 +3,9 @@ package com.sopt.nearby.user.adapter.in.web.controller;
 
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
+import com.sopt.nearby.user.adapter.in.web.dto.request.ConfirmPhoneVerificationCodeRequest;
 import com.sopt.nearby.user.adapter.in.web.dto.request.SendPhoneVerificationCodeRequest;
+import com.sopt.nearby.user.adapter.in.web.dto.response.ConfirmPhoneVerificationCodeResponse;
 import com.sopt.nearby.user.adapter.in.web.dto.response.SendPhoneVerificationCodeResponse;
 import com.sopt.nearby.user.exception.PhoneVerificationSendLimitExceededException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -57,6 +59,12 @@ public interface OnboardingPhoneVerificationApi {
 	@ApiExceptions(PhoneVerificationSendLimitExceededException.class)
 	CommonResponse<SendPhoneVerificationCodeResponse> send(
 			SendPhoneVerificationCodeRequest request,
+			@Parameter(hidden = true) Jwt jwt
+	);
+
+	CommonResponse<ConfirmPhoneVerificationCodeResponse> confirm(
+			Long phoneVerificationId,
+			ConfirmPhoneVerificationCodeRequest request,
 			@Parameter(hidden = true) Jwt jwt
 	);
 }

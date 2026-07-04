@@ -13,6 +13,7 @@ public final class ApiExceptionStatusResolver {
     private static final String KAKAO_LOGIN_FAILED_CODE = "KAKAO_LOGIN_FAILED";
     private static final String PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE =
             "PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED";
+    private static final String PHONE_VERIFICATION_EXPIRED_CODE = "PHONE_VERIFICATION_EXPIRED";
 
     private ApiExceptionStatusResolver() {
     }
@@ -36,6 +37,9 @@ public final class ApiExceptionStatusResolver {
         }
         if (errorCode.name().equals(PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE)) {
             return HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        if (errorCode.name().equals(PHONE_VERIFICATION_EXPIRED_CODE)) {
+            return HttpStatus.GONE;
         }
 
         return HttpStatus.BAD_REQUEST;
