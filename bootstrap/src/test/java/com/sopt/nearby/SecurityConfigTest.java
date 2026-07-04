@@ -2,8 +2,11 @@
 package com.sopt.nearby;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.nullValue;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,5 +46,33 @@ class SecurityConfigTest {
 	void rejectsOtherApiWithoutBearerToken() throws Exception {
 		mockMvc.perform(get("/api/protected"))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void rejectsOnboardingPhoneVerificationWithoutBearerTokenAsCommonJson() throws Exception {
+		mockMvc.perform(post("/api/onboarding/phone-verifications")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"phoneNumber":"01012345678"}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.status").value(401))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.message").value("인증이 필요합니다."))
+				.andExpect(jsonPath("$.data").value(nullValue()));
+	}
+
+	@Test
+	void rejectsOnboardingPhoneVerificationConfirmWithoutBearerTokenAsCommonJson() throws Exception {
+		mockMvc.perform(patch("/api/onboarding/phone-verifications/{phoneVerificationId}", 10L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"verificationCode":"123456"}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.status").value(401))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.message").value("인증이 필요합니다."))
+				.andExpect(jsonPath("$.data").value(nullValue()));
 	}
 }

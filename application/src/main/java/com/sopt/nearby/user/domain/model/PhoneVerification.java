@@ -8,6 +8,7 @@ public record PhoneVerification(
 		Long userId,
 		String phoneNumber,
 		String carrier,
+		String verificationCodeHash,
 		PhoneVerificationStatus status,
 		LocalDateTime expiresAt,
 		LocalDateTime verifiedAt

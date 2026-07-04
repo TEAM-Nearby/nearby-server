@@ -67,6 +67,30 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void thirdMigrationAddsPhoneVerificationCodeHash() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource authMigration = new ClassPathResource("db/migration/V2__add_auth_unique_constraints.sql");
+		ClassPathResource phoneVerificationMigration = new ClassPathResource(
+				"db/migration/V3__add_phone_verification_code_hash.sql"
+		);
+
+		assertThat(phoneVerificationMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_phone_verification_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, authMigration);
+			ScriptUtils.executeSqlScript(connection, phoneVerificationMigration);
+
+			assertThat(columnNames(connection, "phone_verification"))
+					.contains("verification_code_hash");
+		}
+	}
+
 	private static List<String> tableNames(final Connection connection) throws SQLException {
 		List<String> names = new ArrayList<>();
 		try (ResultSet tables = connection.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {
@@ -85,6 +109,16 @@ class InitialSchemaMigrationTest {
 				if (indexName != null) {
 					names.add(indexName.toLowerCase());
 				}
+			}
+		}
+		return names;
+	}
+
+	private static List<String> columnNames(final Connection connection, final String tableName) throws SQLException {
+		List<String> names = new ArrayList<>();
+		try (ResultSet columns = connection.getMetaData().getColumns(null, null, tableName, null)) {
+			while (columns.next()) {
+				names.add(columns.getString("COLUMN_NAME").toLowerCase());
 			}
 		}
 		return names;

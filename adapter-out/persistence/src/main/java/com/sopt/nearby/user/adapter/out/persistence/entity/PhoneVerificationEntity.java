@@ -31,6 +31,9 @@ public class PhoneVerificationEntity {
 
 	private String carrier;
 
+	@Column(name = "verification_code_hash")
+	private String verificationCodeHash;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private PhoneVerificationStatus status;
@@ -53,6 +56,7 @@ public class PhoneVerificationEntity {
 			final Long userId,
 			final String phoneNumber,
 			final String carrier,
+			final String verificationCodeHash,
 			final PhoneVerificationStatus status,
 			final LocalDateTime expiresAt,
 			final LocalDateTime verifiedAt
@@ -61,6 +65,7 @@ public class PhoneVerificationEntity {
 		this.userId = userId;
 		this.phoneNumber = phoneNumber;
 		this.carrier = carrier;
+		this.verificationCodeHash = verificationCodeHash;
 		this.status = status;
 		this.expiresAt = expiresAt;
 		this.verifiedAt = verifiedAt;
@@ -80,6 +85,10 @@ public class PhoneVerificationEntity {
 
 	public String getCarrier() {
 		return carrier;
+	}
+
+	public String getVerificationCodeHash() {
+		return verificationCodeHash;
 	}
 
 	public PhoneVerificationStatus getStatus() {
