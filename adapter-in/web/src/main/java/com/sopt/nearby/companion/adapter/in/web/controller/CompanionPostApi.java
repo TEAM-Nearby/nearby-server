@@ -7,6 +7,9 @@ import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.security.Principal;
@@ -17,6 +20,24 @@ public interface CompanionPostApi {
     @ApiExceptions({
             InvalidCompanionPostSearchRequestException.class
     })
+    @ApiResponse(
+            responseCode = "403",
+            description = "온보딩 과정이 완료되지 않았습니다.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "ONBOARDING_REQUIRED",
+                            value = """
+                                    {
+                                      "status": 403,
+                                      "code": "ONBOARDING_REQUIRED",
+                                      "message": "온보딩 과정이 완료되지 않았습니다.",
+                                      "data": null
+                                    }
+                                    """
+                    )
+            )
+    )
     @Operation(
             summary = "동행 모집글 목록 조회",
             description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치 주변 동행 모집글을 조회합니다.",
