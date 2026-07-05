@@ -9,6 +9,7 @@ import com.sopt.nearby.user.domain.model.UserAccountStatus;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import com.sopt.nearby.user.exception.OnboardingRequiredException;
+import com.sopt.nearby.user.exception.UserNotFoundException;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -35,7 +36,7 @@ class RequireCompletedOnboardingServiceTest {
 
     @Test
     void rejectsMissingUser() {
-        assertThrows(OnboardingRequiredException.class, () -> service.requireCompleted(1L));
+        assertThrows(UserNotFoundException.class, () -> service.requireCompleted(1L));
     }
 
     private static UserAccount user(final UserOnboardingStatus onboardingStatus) {

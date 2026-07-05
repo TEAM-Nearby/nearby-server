@@ -4,6 +4,7 @@ package com.sopt.nearby.user.application;
 import com.sopt.nearby.user.domain.model.UserAccount;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.exception.OnboardingRequiredException;
+import com.sopt.nearby.user.exception.UserNotFoundException;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import org.springframework.stereotype.Service;
@@ -22,7 +23,7 @@ public class RequireCompletedOnboardingService implements RequireCompletedOnboar
     @Transactional(readOnly = true)
     public void requireCompleted(final Long userId) {
         UserAccount userAccount = userAccountRepository.findById(userId)
-                .orElseThrow(OnboardingRequiredException::new);
+                .orElseThrow(UserNotFoundException::new);
         if (!isCompleted(userAccount.onboardingStatus())) {
             throw new OnboardingRequiredException();
         }
