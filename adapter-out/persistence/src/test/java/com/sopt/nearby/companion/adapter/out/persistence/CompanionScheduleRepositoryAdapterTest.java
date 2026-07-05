@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
@@ -20,6 +21,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @DataJpaTest
@@ -73,6 +75,34 @@ class CompanionScheduleRepositoryAdapterTest {
         assertThat(result.get().placeId()).isEqualTo(40L);
         assertThat(result.get().scheduledAt()).isEqualTo(NOW.plusDays(2));
         assertThat(result.get().confirmed()).isTrue();
+    }
+
+    @Test
+    void preventsDuplicateConfirmedSchedulesForSameMatch() {
+        CompanionMatchEntity match = companionMatchJpaRepository.saveAndFlush(new CompanionMatchEntity(
+                null,
+                companionPostJpaRepository.saveAndFlush(post()).getId(),
+                CompanionMatchStatus.MATCHED,
+                NOW
+        ));
+        companionScheduleJpaRepository.saveAndFlush(new CompanionScheduleEntity(
+                null,
+                match.getId(),
+                40L,
+                NOW.plusDays(1),
+                120,
+                true
+        ));
+
+        assertThatThrownBy(() -> companionScheduleJpaRepository.saveAndFlush(new CompanionScheduleEntity(
+                null,
+                match.getId(),
+                50L,
+                NOW.plusDays(2),
+                90,
+                true
+        )))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     private CompanionPostEntity post() {

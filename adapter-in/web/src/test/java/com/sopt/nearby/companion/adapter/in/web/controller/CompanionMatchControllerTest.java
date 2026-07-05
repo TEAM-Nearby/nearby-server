@@ -17,9 +17,11 @@ import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMatchExcepti
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
+import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -38,17 +40,20 @@ class CompanionMatchControllerTest {
     private FakeReadCompanionMatchPreviewUseCase useCase;
     private FakeReadCompanionMatchesUseCase readCompanionMatchesUseCase;
     private FakeConfirmCompanionScheduleUseCase confirmCompanionScheduleUseCase;
+    private FakeReadCompanionScheduleUseCase readCompanionScheduleUseCase;
 
     @BeforeEach
     void setUp() {
         useCase = new FakeReadCompanionMatchPreviewUseCase();
         readCompanionMatchesUseCase = new FakeReadCompanionMatchesUseCase();
         confirmCompanionScheduleUseCase = new FakeConfirmCompanionScheduleUseCase();
+        readCompanionScheduleUseCase = new FakeReadCompanionScheduleUseCase();
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new CompanionMatchController(
                         useCase,
                         readCompanionMatchesUseCase,
-                        confirmCompanionScheduleUseCase
+                        confirmCompanionScheduleUseCase,
+                        readCompanionScheduleUseCase
                 ))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -171,6 +176,67 @@ class CompanionMatchControllerTest {
         assertEquals("https://open.kakao.com/o/confirmed", command.openChatUrl());
     }
 
+    @Test
+    void returnsConfirmedScheduleDetailAndPassesAuthenticatedUserIdToUseCase() throws Exception {
+        readCompanionScheduleUseCase.result = new CompanionScheduleDetail(
+                10L,
+                CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                new CompanionScheduleDetail.Schedule(
+                        99L,
+                        new CompanionScheduleDetail.Place(
+                                "google-place-id",
+                                "Siutat condal",
+                                "Rambla de Catalunya, 16",
+                                new BigDecimal("41.390205"),
+                                new BigDecimal("2.163548")
+                        ),
+                        LocalDateTime.of(2026, 6, 18, 16, 30)
+                ),
+                "https://open.kakao.com/o/confirmed"
+        );
+
+        mockMvc.perform(get("/api/companion-matches/{matchId}/schedule", 10L)
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("READ_COMPANION_SCHEDULE"))
+                .andExpect(jsonPath("$.message").value("동행 일정 정보를 조회했어요."))
+                .andExpect(jsonPath("$.data.matchId").value(10))
+                .andExpect(jsonPath("$.data.matchStatus").value("SCHEDULE_CONFIRMED"))
+                .andExpect(jsonPath("$.data.schedule.scheduleId").value(99))
+                .andExpect(jsonPath("$.data.schedule.place.googlePlaceId").value("google-place-id"))
+                .andExpect(jsonPath("$.data.schedule.place.name").value("Siutat condal"))
+                .andExpect(jsonPath("$.data.schedule.place.address").value("Rambla de Catalunya, 16"))
+                .andExpect(jsonPath("$.data.schedule.place.latitude").value(41.390205))
+                .andExpect(jsonPath("$.data.schedule.place.longitude").value(2.163548))
+                .andExpect(jsonPath("$.data.schedule.scheduledAt").value("2026-06-18T16:30:00"))
+                .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/confirmed"));
+
+        assertEquals(10L, readCompanionScheduleUseCase.matchId);
+        assertEquals(7L, readCompanionScheduleUseCase.userId);
+    }
+
+    @Test
+    void returnsNullScheduleWhenCompanionScheduleIsNotConfirmed() throws Exception {
+        readCompanionScheduleUseCase.result = new CompanionScheduleDetail(
+                10L,
+                CompanionMatchStatus.MATCHED,
+                null,
+                null
+        );
+
+        mockMvc.perform(get("/api/companion-matches/{matchId}/schedule", 10L)
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("READ_COMPANION_SCHEDULE"))
+                .andExpect(jsonPath("$.message").value("동행 일정 정보를 조회했어요."))
+                .andExpect(jsonPath("$.data.matchId").value(10))
+                .andExpect(jsonPath("$.data.matchStatus").value("MATCHED"))
+                .andExpect(jsonPath("$.data.schedule").value(nullValue()))
+                .andExpect(jsonPath("$.data.openChatUrl").value(nullValue()));
+    }
+
     private Principal principal(final String name) {
         return () -> name;
     }
@@ -220,6 +286,20 @@ class CompanionMatchControllerTest {
         @Override
         public ConfirmCompanionScheduleResult confirm(final ConfirmCompanionScheduleCommand command) {
             this.command = command;
+            return result;
+        }
+    }
+
+    private static final class FakeReadCompanionScheduleUseCase implements ReadCompanionScheduleUseCase {
+
+        private CompanionScheduleDetail result;
+        private Long matchId;
+        private Long userId;
+
+        @Override
+        public CompanionScheduleDetail getSchedule(final Long matchId, final Long userId) {
+            this.matchId = matchId;
+            this.userId = userId;
             return result;
         }
     }

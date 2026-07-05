@@ -6,11 +6,15 @@ import com.sopt.nearby.companion.adapter.in.web.dto.request.CompanionMatchSchedu
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMatchPreviewResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMatchScheduleResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMatchesResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionScheduleDetailResponse;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCompletedException;
+import com.sopt.nearby.companion.domain.exception.CompanionMatchScheduleNotReadableException;
 import com.sopt.nearby.companion.domain.exception.CompanionProfileNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleAlreadyConfirmedException;
+import com.sopt.nearby.companion.domain.exception.CompletedCompanionScheduleNotReadableException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionScheduleException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
@@ -78,6 +82,25 @@ public interface CompanionMatchApi {
             Long matchId,
             CompanionMatchScheduleRequest request,
 
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            InvalidCompanionMatchIdException.class,
+            CompanionMatchNotFoundException.class,
+            ForbiddenReadCompanionScheduleException.class,
+            CompanionMatchScheduleNotReadableException.class,
+            CompletedCompanionScheduleNotReadableException.class
+    })
+    @Operation(
+            summary = "내 동행 일정 조회",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 동행 일정 정보를 조회합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CompanionScheduleDetailResponse> getSchedule(
+            @Parameter(description = "일정을 조회할 매칭 ID", required = true, example = "1")
+            Long matchId,
             @Parameter(hidden = true)
             Principal principal
     );
