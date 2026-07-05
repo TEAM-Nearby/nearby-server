@@ -11,6 +11,9 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.post.NearbyCompanionPostSummary;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.NearbyCompanionPostQueryPort;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
+import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
 import com.sopt.nearby.user.exception.OnboardingRequiredException;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.math.BigDecimal;
@@ -28,17 +31,19 @@ class ReadNearbyCompanionPostsServiceTest {
 
     private FakeNearbyCompanionPostQueryPort queryPort;
     private FakeRequireCompletedOnboardingUseCase onboardingUseCase;
+    private FakeResolvePlaceImageUseCase resolvePlaceImageUseCase;
     private ReadNearbyCompanionPostsService service;
 
     @BeforeEach
     void setUp() {
         queryPort = new FakeNearbyCompanionPostQueryPort();
         onboardingUseCase = new FakeRequireCompletedOnboardingUseCase();
+        resolvePlaceImageUseCase = new FakeResolvePlaceImageUseCase();
         service = new ReadNearbyCompanionPostsService(
                 queryPort,
                 onboardingUseCase,
                 CLOCK,
-                "https://cdn.nearby.test/default-place.png"
+                resolvePlaceImageUseCase
         );
     }
 
@@ -90,8 +95,11 @@ class ReadNearbyCompanionPostsServiceTest {
         assertEquals("2/4 모집 중", post.participantSummaryText());
         assertEquals("30분 전", post.createdAgoText());
         assertEquals("7월 3일 14시 니어바이스시 동행", post.mapMarkerText());
+        assertEquals("google-place-id", resolvePlaceImageUseCase.command.googlePlaceId());
+        assertEquals("https://lh3.googleusercontent.com/place.jpg", resolvePlaceImageUseCase.command.photoReference());
+        assertEquals("https://lh3.googleusercontent.com/resolved-place.jpg", post.place().imageUrl());
         assertEquals("GOOGLE_MAPS", post.place().imageSource());
-        assertEquals(0, post.place().imageAttributions().size());
+        assertEquals("Google User", post.place().imageAttributions().get(0).displayName());
     }
 
     @Test
@@ -115,6 +123,11 @@ class ReadNearbyCompanionPostsServiceTest {
                 4,
                 LocalDateTime.of(2026, 7, 1, 3, 30)
         ));
+        resolvePlaceImageUseCase.result = new ResolvedPlaceImage(
+                "https://cdn.nearby.test/default-place.png",
+                "DEFAULT",
+                List.of()
+        );
 
         NearbyCompanionPostsResult result = service.read(validCommand());
 
@@ -186,6 +199,26 @@ class ReadNearbyCompanionPostsServiceTest {
             if (exception != null) {
                 throw exception;
             }
+        }
+    }
+
+    private static final class FakeResolvePlaceImageUseCase implements ResolvePlaceImageUseCase {
+
+        private ResolvedPlaceImage result = new ResolvedPlaceImage(
+                "https://lh3.googleusercontent.com/resolved-place.jpg",
+                "GOOGLE_MAPS",
+                List.of(new ResolvedPlaceImage.ImageAttribution(
+                        "Google User",
+                        "https://maps.google.com/contrib/1",
+                        "https://lh3.googleusercontent.com/profile.jpg"
+                ))
+        );
+        private ResolvePlaceImageCommand command;
+
+        @Override
+        public ResolvedPlaceImage resolve(final ResolvePlaceImageCommand command) {
+            this.command = command;
+            return result;
         }
     }
 }

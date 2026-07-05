@@ -8,6 +8,7 @@ dependencies {
 	implementation project(':adapter-out:security')
 	implementation project(':adapter-out:storage')
 	implementation project(':adapter-out:notification')
+	implementation project(':adapter-out:google-maps')
 	implementation project(':application')
 	implementation project(':common')
 	implementation project(':logging')

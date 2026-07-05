@@ -6,6 +6,9 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.NearbyCompanionPostSummary;
 import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.out.NearbyCompanionPostQueryPort;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
+import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -29,18 +32,18 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
     private final NearbyCompanionPostQueryPort queryPort;
     private final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase;
     private final Clock clock;
-    private final String defaultPlaceImageUrl;
+    private final ResolvePlaceImageUseCase resolvePlaceImageUseCase;
 
     public ReadNearbyCompanionPostsService(
             final NearbyCompanionPostQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final Clock clock,
-            final String defaultPlaceImageUrl
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
         this.queryPort = queryPort;
         this.requireCompletedOnboardingUseCase = requireCompletedOnboardingUseCase;
         this.clock = clock;
-        this.defaultPlaceImageUrl = defaultPlaceImageUrl;
+        this.resolvePlaceImageUseCase = resolvePlaceImageUseCase;
     }
 
     @Override
@@ -68,7 +71,10 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
 
     private NearbyCompanionPostsResult.Post toPost(final NearbyCompanionPostSummary summary) {
         String contentPreview = contentPreview(summary.content());
-        boolean hasPhoto = !isBlank(summary.photoReference());
+        ResolvedPlaceImage image = resolvePlaceImageUseCase.resolve(new ResolvePlaceImageCommand(
+                summary.googlePlaceId(),
+                summary.photoReference()
+        ));
 
         NearbyCompanionPostsResult.Place place = new NearbyCompanionPostsResult.Place(
                 summary.placeId(),
@@ -78,9 +84,16 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
                 summary.latitude(),
                 summary.longitude(),
                 summary.distanceMeters(),
-                hasPhoto ? summary.photoReference() : defaultPlaceImageUrl,
-                hasPhoto ? "GOOGLE_MAPS" : "DEFAULT",
-                List.of()
+                image.imageUrl(),
+                image.imageSource(),
+                image.imageAttributions()
+                        .stream()
+                        .map(attribution -> new NearbyCompanionPostsResult.ImageAttribution(
+                                attribution.displayName(),
+                                attribution.uri(),
+                                attribution.photoUri()
+                        ))
+                        .toList()
         );
 
         return new NearbyCompanionPostsResult.Post(
@@ -145,9 +158,5 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
                 || command.longitude().compareTo(MAX_LONGITUDE) > 0) {
             throw new InvalidCompanionPostSearchRequestException();
         }
-    }
-
-    private boolean isBlank(final String value) {
-        return value == null || value.isBlank();
     }
 }

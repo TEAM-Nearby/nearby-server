@@ -26,6 +26,7 @@ import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.user.port.in.CompleteCompanionProfileOnboardingUseCase;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.time.Clock;
@@ -70,13 +71,13 @@ public class CompanionUseCaseConfig {
     ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase(
             final NearbyCompanionPostQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
-            @Value("${nearby.place.default-image-url}") final String defaultPlaceImageUrl
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
         return new ReadNearbyCompanionPostsService(
                 queryPort,
                 requireCompletedOnboardingUseCase,
                 Clock.systemDefaultZone(),
-                defaultPlaceImageUrl
+                resolvePlaceImageUseCase
         );
     }
 
