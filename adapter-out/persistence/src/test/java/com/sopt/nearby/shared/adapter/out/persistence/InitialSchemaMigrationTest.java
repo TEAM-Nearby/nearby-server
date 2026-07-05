@@ -91,6 +91,68 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void fourthMigrationAddsPlaceCacheGooglePlaceIdUniquenessConstraint() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource authMigration = new ClassPathResource("db/migration/V2__add_auth_unique_constraints.sql");
+		ClassPathResource phoneVerificationMigration = new ClassPathResource(
+				"db/migration/V3__add_phone_verification_code_hash.sql"
+		);
+		ClassPathResource placeCacheMigration = new ClassPathResource(
+				"db/migration/V4__add_place_cache_google_place_id_unique_constraint.sql"
+		);
+
+		assertThat(placeCacheMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_place_cache_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, authMigration);
+			ScriptUtils.executeSqlScript(connection, phoneVerificationMigration);
+			ScriptUtils.executeSqlScript(connection, placeCacheMigration);
+
+			assertThat(indexNames(connection, "place_cache"))
+					.anyMatch(indexName -> indexName.startsWith("uk_place_cache_google_place_id"));
+		}
+	}
+
+	@Test
+	void fifthMigrationAddsCompanionProfileUniquenessConstraints() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource authMigration = new ClassPathResource("db/migration/V2__add_auth_unique_constraints.sql");
+		ClassPathResource phoneVerificationMigration = new ClassPathResource(
+				"db/migration/V3__add_phone_verification_code_hash.sql"
+		);
+		ClassPathResource placeCacheMigration = new ClassPathResource(
+				"db/migration/V4__add_place_cache_google_place_id_unique_constraint.sql"
+		);
+		ClassPathResource companionProfileMigration = new ClassPathResource(
+				"db/migration/V5__add_companion_profile_unique_constraints.sql"
+		);
+
+		assertThat(companionProfileMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_companion_profile_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, authMigration);
+			ScriptUtils.executeSqlScript(connection, phoneVerificationMigration);
+			ScriptUtils.executeSqlScript(connection, placeCacheMigration);
+			ScriptUtils.executeSqlScript(connection, companionProfileMigration);
+
+			assertThat(indexNames(connection, "companion_profile"))
+					.anyMatch(indexName -> indexName.startsWith("uk_companion_profile_nickname"));
+			assertThat(indexNames(connection, "companion_profile"))
+					.anyMatch(indexName -> indexName.startsWith("uk_companion_profile_user"));
+		}
+	}
+
 	private static List<String> tableNames(final Connection connection) throws SQLException {
 		List<String> names = new ArrayList<>();
 		try (ResultSet tables = connection.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {

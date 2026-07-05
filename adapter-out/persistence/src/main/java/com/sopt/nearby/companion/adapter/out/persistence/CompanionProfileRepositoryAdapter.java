@@ -8,6 +8,7 @@ import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositor
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;
 
@@ -30,5 +31,20 @@ public class CompanionProfileRepositoryAdapter
 				.stream()
 				.map(CompanionPersistenceMapper::toDomain)
 				.toList();
+	}
+
+	@Override
+	public boolean existsByNickname(final String nickname) {
+		return jpaRepository.existsByNickname(nickname);
+	}
+
+	@Override
+	public boolean existsByUserId(final Long userId) {
+		return jpaRepository.existsByUserId(userId);
+	}
+
+	@Override
+	public Optional<CompanionProfile> findByUserId(final Long userId) {
+		return jpaRepository.findByUserId(userId).map(CompanionPersistenceMapper::toDomain);
 	}
 }

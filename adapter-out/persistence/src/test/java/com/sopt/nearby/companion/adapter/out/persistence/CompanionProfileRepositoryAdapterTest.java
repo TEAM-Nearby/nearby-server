@@ -83,6 +83,13 @@ class CompanionProfileRepositoryAdapterTest {
 		assertThat(firstProfile.mannerScore()).isEqualByComparingTo("4.50");
 		assertThat(firstProfile.reviewCount()).isEqualTo(3);
 		assertThat(firstProfile.status()).isEqualTo(CompanionProfileStatus.ACTIVE);
+		assertThat(adapter.existsByNickname("여행자A")).isTrue();
+		assertThat(adapter.existsByNickname("없는닉네임")).isFalse();
+		assertThat(adapter.existsByUserId(7L)).isTrue();
+		assertThat(adapter.existsByUserId(99L)).isFalse();
+		assertThat(adapter.findByUserId(7L)).get()
+				.extracting(CompanionProfile::nickname)
+				.isEqualTo("여행자A");
 	}
 
 	private CompanionProfileEntity profile(
