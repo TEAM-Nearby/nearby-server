@@ -112,7 +112,7 @@ class OnboardingCompanionProfileControllerTest {
 								"FEMALE",
 								"혼자 여행도 같이 여행도 좋아해요",
 								"https://cdn.nearby.com/profiles/1/profile.jpg",
-								List.of("PLANNED", "FOODIE")
+								List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE)
 						))))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status", is(200)))
@@ -148,12 +148,29 @@ class OnboardingCompanionProfileControllerTest {
 								"FEMALE",
 								null,
 								null,
-								List.of("FOODIE", "FOODIE")
+								List.of(TravelStyleKeyword.FOODIE, TravelStyleKeyword.FOODIE)
 						))))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", is(400)))
 				.andExpect(jsonPath("$.code", is("VALIDATION_ERROR")))
 				.andExpect(jsonPath("$.message", is("필수값 누락되었거나 형식에 오류가 발생했습니다.")));
+	}
+
+	@Test
+	void rejectsUnknownTravelStyleKeyword() throws Exception {
+		mockMvc.perform(post("/api/onboarding/companion-profiles")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "nickname": "여행친구",
+								  "gender": "FEMALE",
+								  "travelStyleKeywords": ["UNKNOWN"]
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", is(400)))
+				.andExpect(jsonPath("$.code", is("BAD_REQUEST")))
+				.andExpect(jsonPath("$.message", is("잘못된 요청입니다.")));
 	}
 
 	@Test
@@ -182,7 +199,7 @@ class OnboardingCompanionProfileControllerTest {
 								"FEMALE",
 								null,
 								null,
-								List.of("FOODIE")
+								List.of(TravelStyleKeyword.FOODIE)
 						))))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.status", is(409)))
@@ -201,7 +218,7 @@ class OnboardingCompanionProfileControllerTest {
 								"FEMALE",
 								null,
 								null,
-								List.of("FOODIE")
+								List.of(TravelStyleKeyword.FOODIE)
 						))))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.status", is(409)))
@@ -226,7 +243,7 @@ class OnboardingCompanionProfileControllerTest {
 			String gender,
 			String intro,
 			String profileImageUrl,
-			List<String> travelStyleKeywords
+			List<TravelStyleKeyword> travelStyleKeywords
 	) {
 	}
 
