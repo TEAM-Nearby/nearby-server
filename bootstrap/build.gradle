@@ -6,6 +6,7 @@ dependencies {
 	implementation project(':adapter-in:web')
 	implementation project(':adapter-out:persistence')
 	implementation project(':adapter-out:security')
+	implementation project(':adapter-out:storage')
 	implementation project(':adapter-out:notification')
 	implementation project(':application')
 	implementation project(':common')
