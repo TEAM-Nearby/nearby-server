@@ -95,10 +95,13 @@ class ReadCompanionScheduleServiceTest {
     void throwsForbiddenWhenRequesterIsNotMatchParticipant() {
         queryPort.save(confirmedScheduleDetail());
 
-        assertThrows(
+        ForbiddenReadCompanionScheduleException exception = assertThrows(
                 ForbiddenReadCompanionScheduleException.class,
                 () -> service.getSchedule(1L, 7L)
         );
+
+        assertEquals("FORBIDDEN_READ_COMPANION_SCHEDULE", exception.getErrorCode().name());
+        assertEquals("동행 일정을 조회할 권한이 없습니다.", exception.getErrorCode().message());
     }
 
     @Test

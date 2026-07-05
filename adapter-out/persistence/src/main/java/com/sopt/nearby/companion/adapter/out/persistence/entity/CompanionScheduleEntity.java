@@ -10,10 +10,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "companion_schedule")
+@Table(
+		name = "companion_schedule",
+		uniqueConstraints = @UniqueConstraint(
+				name = "uk_companion_schedule_match_confirmed",
+				columnNames = {"match_id", "confirmed"}
+		)
+)
 public class CompanionScheduleEntity {
 
 	@Id
