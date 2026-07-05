@@ -3,11 +3,13 @@ package com.sopt.nearby.companion.config;
 
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
+import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
 import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
+import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
@@ -18,12 +20,15 @@ import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
+import com.sopt.nearby.companion.port.out.NearbyCompanionPostQueryPort;
 import com.sopt.nearby.companion.port.out.ProfileImageUploadUrlIssuer;
 import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
 import com.sopt.nearby.user.port.in.CompleteCompanionProfileOnboardingUseCase;
+import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
+import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,6 +64,20 @@ public class CompanionUseCaseConfig {
             final CompanionMatchParticipantRepository companionMatchParticipantRepository
     ) {
         return new ReadCompanionScheduleService(queryPort, companionMatchParticipantRepository);
+    }
+
+    @Bean
+    ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase(
+            final NearbyCompanionPostQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            @Value("${nearby.place.default-image-url}") final String defaultPlaceImageUrl
+    ) {
+        return new ReadNearbyCompanionPostsService(
+                queryPort,
+                requireCompletedOnboardingUseCase,
+                Clock.systemDefaultZone(),
+                defaultPlaceImageUrl
+        );
     }
 
     @Bean
