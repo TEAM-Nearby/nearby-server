@@ -23,10 +23,10 @@ public class CompanionScheduleRepositoryAdapter
                 .map(CompanionPersistenceMapper::toDomain);
     }
 
-    public CompanionScheduleRepositoryAdapter(final CompanionScheduleJpaRepository jpaRepository,
-                                              CompanionScheduleJpaRepository jpaRepository1) {
+    public CompanionScheduleRepositoryAdapter(final CompanionScheduleJpaRepository jpaRepository
+    ) {
         super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
                 Function.identity());
-        this.jpaRepository = jpaRepository1;
+        this.jpaRepository = jpaRepository;
     }
 }

@@ -7,6 +7,7 @@ import com.sopt.nearby.place.port.in.ResolvePlaceCacheCommand;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
 import com.sopt.nearby.place.port.in.ResolvedPlaceCache;
 import com.sopt.nearby.place.port.out.PlaceCacheRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 
 public class ResolvePlaceCacheService implements ResolvePlaceCacheUseCase {
 
@@ -18,22 +19,39 @@ public class ResolvePlaceCacheService implements ResolvePlaceCacheUseCase {
 
     @Override
     public ResolvedPlaceCache resolve(final ResolvePlaceCacheCommand command) {
-        PlaceCache place = placeCacheRepository.findByGooglePlaceId(command.googlePlaceId())
-                .orElseGet(() -> placeCacheRepository.save(new PlaceCache(
-                        null,
-                        command.googlePlaceId(),
-                        command.name(),
-                        command.address(),
-                        command.latitude(),
-                        command.longitude(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        PlaceBusinessStatus.UNKNOWN
-                )));
+        return placeCacheRepository.findByGooglePlaceId(command.googlePlaceId())
+                .map(this::toResolvedPlaceCache)
+                .orElseGet(() -> saveOrReload(command));
+    }
 
-        return new ResolvedPlaceCache(place.id());
+    private ResolvedPlaceCache saveOrReload(final ResolvePlaceCacheCommand command) {
+        try {
+            return toResolvedPlaceCache(placeCacheRepository.save(newPlaceCache(command)));
+        } catch (DataIntegrityViolationException exception) {
+            return placeCacheRepository.findByGooglePlaceId(command.googlePlaceId())
+                    .map(this::toResolvedPlaceCache)
+                    .orElseThrow(() -> exception);
+        }
+    }
+
+    private PlaceCache newPlaceCache(final ResolvePlaceCacheCommand command) {
+        return new PlaceCache(
+                null,
+                command.googlePlaceId(),
+                command.name(),
+                command.address(),
+                command.latitude(),
+                command.longitude(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                PlaceBusinessStatus.UNKNOWN
+        );
+    }
+
+    private ResolvedPlaceCache toResolvedPlaceCache(final PlaceCache placeCache) {
+        return new ResolvedPlaceCache(placeCache.id());
     }
 }

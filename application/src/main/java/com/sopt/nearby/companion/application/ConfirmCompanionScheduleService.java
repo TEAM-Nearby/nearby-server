@@ -60,6 +60,8 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
                     throw new CompanionScheduleAlreadyConfirmedException();
                 });
 
+        confirmMatch(match.id());
+
         Long placeId = resolvePlace(command.place());
 
         CompanionSchedule schedule = scheduleRepository.save(new CompanionSchedule(
@@ -83,13 +85,6 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
                 post.createdAt()
         ));
 
-        matchRepository.save(new CompanionMatch(
-                match.id(),
-                match.postId(),
-                CompanionMatchStatus.SCHEDULE_CONFIRMED,
-                match.createdAt()
-        ));
-
         return new ConfirmCompanionScheduleResult(
                 match.id(),
                 schedule.id(),
@@ -105,6 +100,17 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
             case CANCELED -> throw new CompanionMatchAlreadyCanceledException();
             case COMPLETED -> throw new CompanionMatchAlreadyCompletedException();
         }
+    }
+
+    private void confirmMatch(final Long matchId) {
+        if (matchRepository.confirmScheduleIfMatched(matchId)) {
+            return;
+        }
+
+        CompanionMatch latestMatch = matchRepository.findById(matchId)
+                .orElseThrow(CompanionMatchNotFoundException::new);
+        validateStatus(latestMatch.status());
+        throw new CompanionScheduleAlreadyConfirmedException();
     }
 
     private Long resolvePlace(final ConfirmCompanionScheduleCommand.Place place) {

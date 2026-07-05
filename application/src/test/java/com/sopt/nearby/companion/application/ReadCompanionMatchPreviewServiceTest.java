@@ -200,6 +200,11 @@ class ReadCompanionMatchPreviewServiceTest {
         public Optional<CompanionMatch> findById(final Long id) {
             return Optional.ofNullable(matches.get(id));
         }
+
+        @Override
+        public boolean confirmScheduleIfMatched(final Long matchId) {
+            return false;
+        }
     }
 
     private static final class FakeCompanionPostRepository implements CompanionPostRepository {

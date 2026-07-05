@@ -23,9 +23,8 @@ public class PlaceCacheRepositoryAdapter
                 .map(PlacePersistenceMapper::toDomain);
     }
 
-    public PlaceCacheRepositoryAdapter(final PlaceCacheJpaRepository jpaRepository,
-                                       PlaceCacheJpaRepository jpaRepository1) {
+    public PlaceCacheRepositoryAdapter(final PlaceCacheJpaRepository jpaRepository) {
         super(jpaRepository, PlacePersistenceMapper::toEntity, PlacePersistenceMapper::toDomain, Function.identity());
-        this.jpaRepository = jpaRepository1;
+        this.jpaRepository = jpaRepository;
     }
 }

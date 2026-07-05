@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -20,11 +21,13 @@ import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
+import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -124,6 +127,50 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
+    @Test
+    void passesScheduleRequestAndAuthenticatedUserIdToConfirmScheduleUseCase() throws Exception {
+        confirmCompanionScheduleUseCase.result = new ConfirmCompanionScheduleResult(
+                10L,
+                99L,
+                CompanionMatchStatus.SCHEDULE_CONFIRMED
+        );
+
+        mockMvc.perform(post("/api/companion-matches/{matchId}/schedule", 10L)
+                        .principal(principal("7"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "scheduledAt": "2026-07-04T16:22:29",
+                                  "place": {
+                                    "googlePlaceId": "google-place-id",
+                                    "name": "Siutat condal",
+                                    "address": "Rambla de Catalunya, 16",
+                                    "latitude": 41.390205,
+                                    "longitude": 2.163548
+                                  },
+                                  "openChatUrl": "https://open.kakao.com/o/confirmed"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("CONFIRM_COMPANION_SCHEDULE"))
+                .andExpect(jsonPath("$.message").value("동행 일정이 확정되었어요."))
+                .andExpect(jsonPath("$.data.matchId").value(10))
+                .andExpect(jsonPath("$.data.scheduleId").value(99))
+                .andExpect(jsonPath("$.data.matchStatus").value("SCHEDULE_CONFIRMED"));
+
+        ConfirmCompanionScheduleCommand command = confirmCompanionScheduleUseCase.command;
+        assertEquals(10L, command.matchId());
+        assertEquals(7L, command.requesterUserId());
+        assertEquals(LocalDateTime.of(2026, 7, 4, 16, 22, 29), command.scheduledAt());
+        assertEquals("google-place-id", command.place().googlePlaceId());
+        assertEquals("Siutat condal", command.place().name());
+        assertEquals("Rambla de Catalunya, 16", command.place().address());
+        assertEquals(new BigDecimal("41.390205"), command.place().latitude());
+        assertEquals(new BigDecimal("2.163548"), command.place().longitude());
+        assertEquals("https://open.kakao.com/o/confirmed", command.openChatUrl());
+    }
+
     private Principal principal(final String name) {
         return () -> name;
     }
@@ -167,9 +214,13 @@ class CompanionMatchControllerTest {
 
     private static final class FakeConfirmCompanionScheduleUseCase implements ConfirmCompanionScheduleUseCase {
 
+        private ConfirmCompanionScheduleResult result;
+        private ConfirmCompanionScheduleCommand command;
+
         @Override
         public ConfirmCompanionScheduleResult confirm(final ConfirmCompanionScheduleCommand command) {
-            return null;
+            this.command = command;
+            return result;
         }
     }
 }

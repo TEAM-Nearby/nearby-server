@@ -5,4 +5,5 @@ import com.sopt.nearby.common.port.DomainRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 
 public interface CompanionMatchRepository extends DomainRepository<CompanionMatch, Long> {
+    boolean confirmScheduleIfMatched(Long matchId);
 }

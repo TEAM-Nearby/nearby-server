@@ -40,7 +40,6 @@ public interface CompanionMatchApi {
     );
 
 
-
     @ApiExceptions({
             InvalidCompanionMatchIdException.class,
             CompanionMatchNotFoundException.class,
@@ -75,8 +74,11 @@ public interface CompanionMatchApi {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionMatchScheduleResponse> postSchedule(
-            @PathVariable final Long matchId,
-            @RequestBody final CompanionMatchScheduleRequest request,
-            final Principal principal
+            @Parameter(description = "확정할 매칭 ID", required = true, example = "1")
+            Long matchId,
+            CompanionMatchScheduleRequest request,
+
+            @Parameter(hidden = true)
+            Principal principal
     );
 }
