@@ -2,18 +2,26 @@
 package com.sopt.nearby.companion.config;
 
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
+import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
+import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
+import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
+import com.sopt.nearby.companion.port.in.RegisterCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
+import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
+import com.sopt.nearby.companion.port.out.ProfileImageUploadUrlIssuer;
 import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
+import com.sopt.nearby.user.port.in.CompleteCompanionProfileOnboardingUseCase;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -54,6 +62,27 @@ public class CompanionUseCaseConfig {
                 companionPostRepository,
                 companionScheduleRepository,
                 resolvePlaceCacheUseCase
+        );
+    }
+
+    @Bean
+    IssueProfileImageUploadUrlUseCase issueProfileImageUploadUrlUseCase(
+            final ProfileImageUploadUrlIssuer issuer,
+            @Value("${nearby.storage.profile-image.max-file-size-bytes:5242880}") final long maxFileSizeBytes
+    ) {
+        return new IssueProfileImageUploadUrlService(issuer, maxFileSizeBytes);
+    }
+
+    @Bean
+    RegisterCompanionProfileUseCase registerCompanionProfileUseCase(
+            final CompanionProfileRepository companionProfileRepository,
+            final CompanionProfileStyleRepository companionProfileStyleRepository,
+            final CompleteCompanionProfileOnboardingUseCase completeOnboardingUseCase
+    ) {
+        return new RegisterCompanionProfileService(
+                companionProfileRepository,
+                companionProfileStyleRepository,
+                completeOnboardingUseCase
         );
     }
 }

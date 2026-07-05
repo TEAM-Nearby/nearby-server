@@ -13,7 +13,10 @@ public enum CompanionErrorCode implements ErrorCode {
     FORBIDDEN_COMPANION_SCHEDULE("동행 일정을 확정할 권한이 없습니다."),
     COMPANION_SCHEDULE_ALREADY_CONFIRMED("이미 확정된 동행 일정입니다."),
     COMPANION_MATCH_ALREADY_CANCELED("취소된 매칭의 일정은 확정할 수 없습니다."),
-    COMPANION_MATCH_ALREADY_COMPLETED("완료된 매칭의 일정은 확정할 수 없습니다.");
+    COMPANION_MATCH_ALREADY_COMPLETED("완료된 매칭의 일정은 확정할 수 없습니다."),
+    DUPLICATE_NICKNAME("이미 사용 중인 닉네임입니다."),
+    DUPLICATE_COMPANION_PROFILE("이미 등록된 동행 프로필입니다."),
+    INVALID_PROFILE_IMAGE_UPLOAD_REQUEST("지원하지 않는 이미지 형식이거나 또는 파일 크기를 초과했습니다.");
 
 
     private final String message;

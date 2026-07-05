@@ -11,10 +11,17 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "companion_profile")
+@Table(
+		name = "companion_profile",
+		uniqueConstraints = {
+				@UniqueConstraint(name = "uk_companion_profile_user", columnNames = "user_id"),
+				@UniqueConstraint(name = "uk_companion_profile_nickname", columnNames = "nickname")
+		}
+)
 public class CompanionProfileEntity {
 
 	@Id

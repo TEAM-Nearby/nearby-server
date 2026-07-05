@@ -277,5 +277,27 @@ class ReadCompanionMatchPreviewServiceTest {
                     .filter(profile -> userIds.contains(profile.userId()))
                     .toList();
         }
+
+        @Override
+        public boolean existsByNickname(final String nickname) {
+            return profiles.values()
+                    .stream()
+                    .anyMatch(profile -> profile.nickname().equals(nickname));
+        }
+
+        @Override
+        public boolean existsByUserId(final Long userId) {
+            return profiles.values()
+                    .stream()
+                    .anyMatch(profile -> profile.userId().equals(userId));
+        }
+
+        @Override
+        public Optional<CompanionProfile> findByUserId(final Long userId) {
+            return profiles.values()
+                    .stream()
+                    .filter(profile -> profile.userId().equals(userId))
+                    .findFirst();
+        }
     }
 }

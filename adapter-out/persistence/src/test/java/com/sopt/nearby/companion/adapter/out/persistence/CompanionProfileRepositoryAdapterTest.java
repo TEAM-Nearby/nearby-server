@@ -2,9 +2,12 @@
 package com.sopt.nearby.companion.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
+import com.sopt.nearby.companion.domain.exception.DuplicateCompanionProfileException;
+import com.sopt.nearby.companion.domain.exception.DuplicateNicknameException;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
@@ -83,6 +86,55 @@ class CompanionProfileRepositoryAdapterTest {
 		assertThat(firstProfile.mannerScore()).isEqualByComparingTo("4.50");
 		assertThat(firstProfile.reviewCount()).isEqualTo(3);
 		assertThat(firstProfile.status()).isEqualTo(CompanionProfileStatus.ACTIVE);
+		assertThat(adapter.existsByNickname("여행자A")).isTrue();
+		assertThat(adapter.existsByNickname("없는닉네임")).isFalse();
+		assertThat(adapter.existsByUserId(7L)).isTrue();
+		assertThat(adapter.existsByUserId(99L)).isFalse();
+		assertThat(adapter.findByUserId(7L)).get()
+				.extracting(CompanionProfile::nickname)
+				.isEqualTo("여행자A");
+	}
+
+	@Test
+	void mapsDuplicateNicknameConstraintViolationToDomainException() {
+		CompanionProfileRepositoryAdapter adapter = new CompanionProfileRepositoryAdapter(companionProfileJpaRepository);
+		companionProfileJpaRepository.saveAndFlush(profile(
+				7L,
+				"중복닉네임",
+				UserGender.FEMALE,
+				null,
+				null,
+				null,
+				new BigDecimal("0.00"),
+				0,
+				CompanionProfileStatus.ACTIVE
+		));
+
+		assertThatThrownBy(() -> {
+			adapter.save(domainProfile(8L, "중복닉네임"));
+			companionProfileJpaRepository.flush();
+		}).isInstanceOf(DuplicateNicknameException.class);
+	}
+
+	@Test
+	void mapsDuplicateUserIdConstraintViolationToDomainException() {
+		CompanionProfileRepositoryAdapter adapter = new CompanionProfileRepositoryAdapter(companionProfileJpaRepository);
+		companionProfileJpaRepository.saveAndFlush(profile(
+				7L,
+				"여행자A",
+				UserGender.FEMALE,
+				null,
+				null,
+				null,
+				new BigDecimal("0.00"),
+				0,
+				CompanionProfileStatus.ACTIVE
+		));
+
+		assertThatThrownBy(() -> {
+			adapter.save(domainProfile(7L, "여행자B"));
+			companionProfileJpaRepository.flush();
+		}).isInstanceOf(DuplicateCompanionProfileException.class);
 	}
 
 	private CompanionProfileEntity profile(
@@ -107,6 +159,21 @@ class CompanionProfileRepositoryAdapterTest {
 				mannerScore,
 				reviewCount,
 				status
+		);
+	}
+
+	private CompanionProfile domainProfile(final Long userId, final String nickname) {
+		return new CompanionProfile(
+				null,
+				userId,
+				nickname,
+				UserGender.FEMALE,
+				null,
+				null,
+				null,
+				new BigDecimal("0.00"),
+				0,
+				CompanionProfileStatus.ACTIVE
 		);
 	}
 
