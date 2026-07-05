@@ -2,7 +2,9 @@
 package com.sopt.nearby.companion.adapter.out.persistence.repository;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CompanionScheduleJpaRepository extends JpaRepository<CompanionScheduleEntity, Long> {
+    Optional<CompanionScheduleEntity> findByMatchIdAndConfirmedTrue(Long matchId);
 }

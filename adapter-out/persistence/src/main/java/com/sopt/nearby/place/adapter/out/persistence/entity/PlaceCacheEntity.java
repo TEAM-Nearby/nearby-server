@@ -20,7 +20,7 @@ public class PlaceCacheEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "google_place_id", nullable = false)
+	@Column(name = "google_place_id", nullable = false, unique = true)
 	private String googlePlaceId;
 
 	@Column(nullable = false)

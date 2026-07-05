@@ -7,16 +7,26 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionSch
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
+import java.util.Optional;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class CompanionScheduleRepositoryAdapter
-		extends SimpleJpaRepositoryAdapter<CompanionSchedule, Long, CompanionScheduleEntity, Long>
-		implements CompanionScheduleRepository {
+        extends SimpleJpaRepositoryAdapter<CompanionSchedule, Long, CompanionScheduleEntity, Long>
+        implements CompanionScheduleRepository {
+    private final CompanionScheduleJpaRepository jpaRepository;
 
-	public CompanionScheduleRepositoryAdapter(final CompanionScheduleJpaRepository jpaRepository) {
-		super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
-				Function.identity());
-	}
+    @Override
+    public Optional<CompanionSchedule> findConfirmedByMatchId(final Long matchId) {
+        return jpaRepository.findByMatchIdAndConfirmedTrue(matchId)
+                .map(CompanionPersistenceMapper::toDomain);
+    }
+
+    public CompanionScheduleRepositoryAdapter(final CompanionScheduleJpaRepository jpaRepository
+    ) {
+        super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
+                Function.identity());
+        this.jpaRepository = jpaRepository;
+    }
 }

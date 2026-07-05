@@ -2,6 +2,7 @@
 package com.sopt.nearby.shared.adapter.in.web.exception;
 
 import com.sopt.nearby.common.exception.BusinessException;
+import com.sopt.nearby.common.exception.ConflictException;
 import com.sopt.nearby.common.exception.ErrorCode;
 import com.sopt.nearby.common.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,9 @@ public final class ApiExceptionStatusResolver {
     ) {
         if (NotFoundException.class.isAssignableFrom(exceptionClass)) {
             return HttpStatus.NOT_FOUND;
+        }
+        if (ConflictException.class.isAssignableFrom(exceptionClass)) {
+            return HttpStatus.CONFLICT;
         }
         if (errorCode.name().startsWith(FORBIDDEN_PREFIX)) {
             return HttpStatus.FORBIDDEN;

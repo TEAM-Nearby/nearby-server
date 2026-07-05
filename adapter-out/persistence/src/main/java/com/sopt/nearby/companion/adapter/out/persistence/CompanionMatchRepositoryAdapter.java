@@ -15,8 +15,16 @@ public class CompanionMatchRepositoryAdapter
 		extends SimpleJpaRepositoryAdapter<CompanionMatch, Long, CompanionMatchEntity, Long>
 		implements CompanionMatchRepository {
 
+	private final CompanionMatchJpaRepository jpaRepository;
+
 	public CompanionMatchRepositoryAdapter(final CompanionMatchJpaRepository jpaRepository) {
 		super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
 				Function.identity());
+		this.jpaRepository = jpaRepository;
+	}
+
+	@Override
+	public boolean confirmScheduleIfMatched(final Long matchId) {
+		return jpaRepository.confirmScheduleIfMatched(matchId) == 1;
 	}
 }

@@ -5,6 +5,7 @@ plugins {
 dependencies {
 	implementation project(':common')
 
+	compileOnly 'org.springframework.modulith:spring-modulith-api'
 	compileOnly 'org.springframework:spring-context'
 	compileOnly 'org.springframework:spring-tx'
 

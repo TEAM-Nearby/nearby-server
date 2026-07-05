@@ -2,7 +2,9 @@
 package com.sopt.nearby.place.adapter.out.persistence.repository;
 
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PlaceCacheJpaRepository extends JpaRepository<PlaceCacheEntity, Long> {
+    Optional<PlaceCacheEntity> findByGooglePlaceId(String googlePlaceId);
 }
