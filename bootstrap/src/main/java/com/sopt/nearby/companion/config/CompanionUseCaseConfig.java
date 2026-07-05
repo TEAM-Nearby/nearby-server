@@ -4,11 +4,13 @@ package com.sopt.nearby.companion.config;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
+import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
 import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.RegisterCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
@@ -18,6 +20,7 @@ import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
 import com.sopt.nearby.companion.port.out.ProfileImageUploadUrlIssuer;
 import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
+import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
 import com.sopt.nearby.user.port.in.CompleteCompanionProfileOnboardingUseCase;
@@ -48,6 +51,14 @@ public class CompanionUseCaseConfig {
             final CompanionMatchSummaryQueryPort queryPort
     ) {
         return new ReadCompanionMatchesService(queryPort);
+    }
+
+    @Bean
+    ReadCompanionScheduleUseCase readCompanionScheduleUseCase(
+            final CompanionScheduleDetailQueryPort queryPort,
+            final CompanionMatchParticipantRepository companionMatchParticipantRepository
+    ) {
+        return new ReadCompanionScheduleService(queryPort, companionMatchParticipantRepository);
     }
 
     @Bean

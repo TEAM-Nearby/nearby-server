@@ -2,6 +2,9 @@
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
 
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionScheduleDetailResponse;
+import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
 import com.sopt.nearby.companion.adapter.in.web.code.CompanionSuccessCode;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CompanionMatchScheduleRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMatchPreviewResponse;
@@ -28,20 +31,25 @@ public class CompanionMatchController implements CompanionMatchApi {
     private final ReadCompanionMatchPreviewUseCase readCompanionMatchPreviewUseCase;
     private final ReadCompanionMatchesUseCase readCompanionMatchesUseCase;
     private final ConfirmCompanionScheduleUseCase confirmCompanionScheduleUseCase;
+    private final ReadCompanionScheduleUseCase readCompanionScheduleUseCase;
 
-    public CompanionMatchController(final ReadCompanionMatchPreviewUseCase readCompanionMatchPreviewUseCase,
-                                    ReadCompanionMatchesUseCase readCompanionMatchesUseCase,
-                                    ConfirmCompanionScheduleUseCase confirmCompanionScheduleUseCase) {
+    public CompanionMatchController(
+            final ReadCompanionMatchPreviewUseCase readCompanionMatchPreviewUseCase,
+            final ReadCompanionMatchesUseCase readCompanionMatchesUseCase,
+            final ConfirmCompanionScheduleUseCase confirmCompanionScheduleUseCase,
+            final ReadCompanionScheduleUseCase readCompanionScheduleUseCase
+    ) {
         this.readCompanionMatchPreviewUseCase = readCompanionMatchPreviewUseCase;
         this.readCompanionMatchesUseCase = readCompanionMatchesUseCase;
         this.confirmCompanionScheduleUseCase = confirmCompanionScheduleUseCase;
+        this.readCompanionScheduleUseCase = readCompanionScheduleUseCase;
     }
 
     @Override
     @GetMapping
     public CommonResponse<CompanionMatchesResponse> getMatches(
             final Principal principal
-    ){
+    ) {
         Long userId = Long.valueOf(principal.getName());
         return CommonResponse.success(
                 CompanionSuccessCode.READ_COMPANION_MATCHES,
@@ -71,7 +79,7 @@ public class CompanionMatchController implements CompanionMatchApi {
             @PathVariable final Long matchId,
             @RequestBody final CompanionMatchScheduleRequest request,
             final Principal principal
-    ){
+    ) {
         Long userId = Long.valueOf(principal.getName());
 
         ConfirmCompanionScheduleResult result = confirmCompanionScheduleUseCase.confirm(
@@ -81,4 +89,21 @@ public class CompanionMatchController implements CompanionMatchApi {
                 CompanionSuccessCode.CONFIRM_COMPANION_SCHEDULE,
                 CompanionMatchScheduleResponse.from(result)
         );
-    }}
+    }
+
+    @Override
+    @GetMapping("/{matchId}/schedule")
+    public CommonResponse<CompanionScheduleDetailResponse> getSchedule(
+            @PathVariable final Long matchId,
+            final Principal principal
+    ) {
+        Long userId = Long.valueOf(principal.getName());
+
+        CompanionScheduleDetail scheduleDetail = readCompanionScheduleUseCase.getSchedule(matchId, userId);
+
+        return CommonResponse.success(
+                CompanionSuccessCode.READ_COMPANION_SCHEDULE,
+                CompanionScheduleDetailResponse.from(scheduleDetail)
+        );
+    }
+}
