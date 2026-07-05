@@ -10,6 +10,6 @@ dependencies {
 
 	testImplementation 'org.junit.jupiter:junit-jupiter'
 	testImplementation 'org.assertj:assertj-core'
+	testImplementation 'org.springframework:spring-context'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
-

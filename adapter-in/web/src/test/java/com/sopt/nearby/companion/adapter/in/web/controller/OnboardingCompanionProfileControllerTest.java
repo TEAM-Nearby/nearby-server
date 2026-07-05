@@ -157,6 +157,23 @@ class OnboardingCompanionProfileControllerTest {
 	}
 
 	@Test
+	void rejectsTooLongProfileImageUrl() throws Exception {
+		mockMvc.perform(post("/api/onboarding/companion-profiles")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new RegisterRequest(
+								"여행친구",
+								"FEMALE",
+								null,
+								"https://cdn.nearby.com/" + "a".repeat(256),
+								List.of(TravelStyleKeyword.FOODIE)
+						))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status", is(400)))
+				.andExpect(jsonPath("$.code", is("VALIDATION_ERROR")))
+				.andExpect(jsonPath("$.message", is("필수값 누락되었거나 형식에 오류가 발생했습니다.")));
+	}
+
+	@Test
 	void rejectsUnknownTravelStyleKeyword() throws Exception {
 		mockMvc.perform(post("/api/onboarding/companion-profiles")
 						.contentType(MediaType.APPLICATION_JSON)

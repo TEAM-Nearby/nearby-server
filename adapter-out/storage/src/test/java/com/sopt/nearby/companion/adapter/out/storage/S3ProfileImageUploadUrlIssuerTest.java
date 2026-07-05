@@ -5,10 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sopt.nearby.companion.port.out.ProfileImageUploadRequest;
 import com.sopt.nearby.companion.port.out.ProfileImageUploadUrl;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Parameter;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.junit.jupiter.api.Test;
 
 class S3ProfileImageUploadUrlIssuerTest {
@@ -45,5 +48,18 @@ class S3ProfileImageUploadUrlIssuerTest {
 				.contains("X-Amz-SignedHeaders=content-type%3Bhost")
 				.contains("X-Amz-Signature=");
 	}
-}
 
+	@Test
+	void requiresAwsCredentialsWithoutFallbackDefaults() {
+		Constructor<?> constructor = S3ProfileImageUploadUrlIssuer.class.getConstructors()[0];
+
+		assertThat(valueExpression(constructor.getParameters()[2]))
+				.isEqualTo("${nearby.storage.s3.access-key}");
+		assertThat(valueExpression(constructor.getParameters()[3]))
+				.isEqualTo("${nearby.storage.s3.secret-key}");
+	}
+
+	private static String valueExpression(final Parameter parameter) {
+		return parameter.getAnnotation(Value.class).value();
+	}
+}

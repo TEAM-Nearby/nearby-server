@@ -27,6 +27,7 @@ public record RegisterCompanionProfileRequest(
 		String intro,
 
 		@Schema(description = "S3 업로드 후 받은 이미지 URL")
+		@Size(max = 255, message = "필수값 누락되었거나 형식에 오류가 발생했습니다.")
 		String profileImageUrl,
 
 		@Schema(description = "여행 스타일 키워드 목록", example = "[\"PLANNED\", \"FOODIE\"]")
@@ -51,4 +52,3 @@ public record RegisterCompanionProfileRequest(
 		return travelStyleKeywords == null || new HashSet<>(travelStyleKeywords).size() == travelStyleKeywords.size();
 	}
 }
-
