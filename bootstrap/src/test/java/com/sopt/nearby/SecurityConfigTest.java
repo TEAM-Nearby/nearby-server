@@ -43,6 +43,15 @@ class SecurityConfigTest {
 	}
 
 	@Test
+	void documentsCompanionPostsOnboardingRequiredResponse() throws Exception {
+		mockMvc.perform(get("/v3/api-docs"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.paths['/api/companion-posts'].get.responses['403']"
+						+ ".content['application/json'].examples.ONBOARDING_REQUIRED.value.code")
+						.value("ONBOARDING_REQUIRED"));
+	}
+
+	@Test
 	void rejectsOtherApiWithoutBearerToken() throws Exception {
 		mockMvc.perform(get("/api/protected"))
 				.andExpect(status().isUnauthorized());

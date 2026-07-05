@@ -12,6 +12,7 @@ public final class ApiExceptionStatusResolver {
     private static final String FORBIDDEN_PREFIX = "FORBIDDEN";
     private static final String UNAUTHORIZED_CODE = "UNAUTHORIZED";
     private static final String KAKAO_LOGIN_FAILED_CODE = "KAKAO_LOGIN_FAILED";
+    private static final String ONBOARDING_REQUIRED_CODE = "ONBOARDING_REQUIRED";
     private static final String PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE =
             "PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED";
     private static final String PHONE_VERIFICATION_EXPIRED_CODE = "PHONE_VERIFICATION_EXPIRED";
@@ -34,6 +35,9 @@ public final class ApiExceptionStatusResolver {
             return HttpStatus.CONFLICT;
         }
         if (errorCode.name().startsWith(FORBIDDEN_PREFIX)) {
+            return HttpStatus.FORBIDDEN;
+        }
+        if (errorCode.name().equals(ONBOARDING_REQUIRED_CODE)) {
             return HttpStatus.FORBIDDEN;
         }
         if (errorCode.name().equals(UNAUTHORIZED_CODE) || errorCode.name().equals(KAKAO_LOGIN_FAILED_CODE)) {

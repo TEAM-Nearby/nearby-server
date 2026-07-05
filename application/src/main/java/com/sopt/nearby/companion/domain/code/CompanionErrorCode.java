@@ -4,6 +4,7 @@ import com.sopt.nearby.common.exception.ErrorCode;
 
 public enum CompanionErrorCode implements ErrorCode {
 
+    VALIDATION_ERROR("위도, 경도, 반경, 카테고리, 정렬 기준이 올바르지 않습니다."),
     COMPANION_MATCH_NOT_FOUND("매칭 정보를 찾을 수 없습니다."),
     FORBIDDEN_COMPANION_MATCH("해당 매칭 정보를 조회할 권한이 없습니다."),
     COMPANION_MATCH_POST_NOT_FOUND("매칭 게시글을 찾을 수 없습니다."),

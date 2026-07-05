@@ -22,6 +22,14 @@ nearby:
       api-key: ${SOLAPI_API_KEY:}
       api-secret: ${SOLAPI_API_SECRET:}
       from-number: ${SOLAPI_FROM_NUMBER:}
+  place:
+    default-image-url: ${NEARBY_PLACE_DEFAULT_IMAGE_URL:https://nearby.sopt.org/images/default-place.png}
+  google:
+    places:
+      api-key: ${GOOGLE_PLACES_API_KEY:}
+      timeout-ms: ${GOOGLE_PLACES_TIMEOUT_MS:1000}
+      photo:
+        max-width-px: ${GOOGLE_PLACES_PHOTO_MAX_WIDTH_PX:640}
 
 management:
   tracing:
