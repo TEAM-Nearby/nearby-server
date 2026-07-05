@@ -5,6 +5,7 @@ import com.sopt.nearby.common.exception.ErrorCode;
 
 public enum OnboardingErrorCode implements ErrorCode {
 
+	ONBOARDING_REQUIRED("온보딩 과정이 완료되지 않았습니다."),
 	PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED("인증 문자 발송 횟수를 초과했습니다."),
 	PHONE_VERIFICATION_CODE_MISMATCH("인증 번호가 일치하지 않습니다."),
 	PHONE_VERIFICATION_NOT_FOUND("인증 요청이 발생하지 않았습니다."),
