@@ -137,13 +137,23 @@ class CompanionNotificationQueryAdapterTest {
                 null,
                 NOW.plusHours(5)
         ));
+        CompanionNotificationEntity mismatchedRecipientNotification = entityManager.persistAndFlush(notification(
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                otherUserApplication.getId(),
+                null,
+                NOW.plusHours(6)
+        ));
 
         List<CompanionNotificationSummary> result = adapter.findAllByUserIdAndDirection(
                 7L,
                 CompanionNotificationDirection.SENT
         );
 
-        assertThat(result).hasSize(2);
+        assertThat(result)
+                .extracting(CompanionNotificationSummary::notificationId)
+                .containsExactly(recentNotification.getId(), oldNotification.getId())
+                .doesNotContain(mismatchedRecipientNotification.getId());
 
         CompanionNotificationSummary first = result.get(0);
         assertThat(first.notificationId()).isEqualTo(recentNotification.getId());
@@ -176,6 +186,7 @@ class CompanionNotificationQueryAdapterTest {
         CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
 
         profileJpaRepository.saveAndFlush(profile(100L, "호스트", "host.png"));
+        profileJpaRepository.saveAndFlush(profile(200L, "다른호스트", "other-host.png"));
 
         PlaceCacheEntity placeA = placeCacheJpaRepository.saveAndFlush(place("google-place-a", "오노테라"));
         PlaceCacheEntity placeB = placeCacheJpaRepository.saveAndFlush(place("google-place-b", "BRAMS"));
@@ -262,13 +273,27 @@ class CompanionNotificationQueryAdapterTest {
                 null,
                 NOW.plusHours(5)
         ));
+        CompanionNotificationEntity mismatchedRecipientNotification = entityManager.persistAndFlush(notification(
+                100L,
+                CompanionNotificationType.COMPANION_APPLICATION_CREATED,
+                otherHostApplication.getId(),
+                null,
+                NOW.plusHours(6)
+        ));
 
         List<CompanionNotificationSummary> result = adapter.findAllByUserIdAndDirection(
                 100L,
                 CompanionNotificationDirection.RECEIVED
         );
 
-        assertThat(result).hasSize(3);
+        assertThat(result)
+                .extracting(CompanionNotificationSummary::notificationId)
+                .containsExactly(
+                        pendingNotification.getId(),
+                        acceptedNotification.getId(),
+                        rejectedNotification.getId()
+                )
+                .doesNotContain(mismatchedRecipientNotification.getId());
         assertThat(result.get(0).notificationId()).isEqualTo(pendingNotification.getId());
         assertThat(result.get(0).applicationId()).isEqualTo(pendingApplication.getId());
         assertThat(result.get(0).actionType()).isEqualTo(CompanionNotificationActionType.ACCEPT_REQUEST);

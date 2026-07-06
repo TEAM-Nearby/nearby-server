@@ -18,6 +18,8 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @DataJpaTest
 class CompanionNotificationRepositoryAdapterTest {
@@ -60,6 +62,37 @@ class CompanionNotificationRepositoryAdapterTest {
                 99L,
                 7L
         )).isEmpty();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void returnsExistingNotificationWhenSaveConflictsWithUniqueKey() {
+        CompanionNotificationRepositoryAdapter adapter = new CompanionNotificationRepositoryAdapter(jpaRepository);
+        CompanionNotificationEntity existing = jpaRepository.saveAndFlush(entity(
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                1001L,
+                null,
+                NOW
+        ));
+
+        CompanionNotification result = adapter.save(notification(
+                null,
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                1001L,
+                null,
+                NOW.plusMinutes(1)
+        ));
+
+        assertThat(result.id()).isEqualTo(existing.getId());
+        assertThat(result.createdAt()).isEqualTo(NOW);
+        assertThat(jpaRepository.findByNotificationTypeAndTargetTypeAndTargetIdAndRecipientUserId(
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                CompanionNotificationTargetType.COMPANION_APPLICATION,
+                1001L,
+                7L
+        )).get().extracting(CompanionNotificationEntity::getId).isEqualTo(existing.getId());
     }
 
     @Test

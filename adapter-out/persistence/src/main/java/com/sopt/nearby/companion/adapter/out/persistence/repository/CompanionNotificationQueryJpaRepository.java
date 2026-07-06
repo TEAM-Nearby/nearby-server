@@ -37,6 +37,7 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
             left join companion_match_participant participant
                 on participant.accepted_application_id = app.id
             where notification.recipient_user_id = :userId
+                and app.applicant_user_id = :userId
                 and notification.notification_type in (
                     'COMPANION_APPLICATION_ACCEPTED',
                     'COMPANION_APPLICATION_REJECTED'
@@ -73,6 +74,7 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
             left join companion_match_participant participant
                 on participant.accepted_application_id = app.id
             where notification.recipient_user_id = :userId
+                and post.host_user_id = :userId
                 and notification.notification_type = 'COMPANION_APPLICATION_CREATED'
             order by notification.created_at desc
             """, nativeQuery = true)

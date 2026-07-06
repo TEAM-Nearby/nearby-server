@@ -11,6 +11,7 @@ import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import java.util.Optional;
 import java.util.function.Function;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -24,6 +25,22 @@ public class CompanionNotificationRepositoryAdapter
         super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
                 Function.identity());
         this.jpaRepository = jpaRepository;
+    }
+
+    @Override
+    public CompanionNotification save(final CompanionNotification model) {
+        try {
+            return CompanionPersistenceMapper.toDomain(
+                    jpaRepository.saveAndFlush(CompanionPersistenceMapper.toEntity(model))
+            );
+        } catch (DataIntegrityViolationException exception) {
+            return findByUniqueKey(
+                    model.notificationType(),
+                    model.targetType(),
+                    model.targetId(),
+                    model.recipientUserId()
+            ).orElseThrow(() -> exception);
+        }
     }
 
     @Override
