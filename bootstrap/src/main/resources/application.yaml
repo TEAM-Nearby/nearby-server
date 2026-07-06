@@ -4,6 +4,13 @@ spring:
   aop:
     proxy-target-class: false
 
+server:
+  forward-headers-strategy: framework
+
+springdoc:
+  swagger-ui:
+    disable-swagger-default-url: true
+
 kakao:
   native-app-key: ${KAKAO_NATIVE_APP_KEY:}
   oidc:
