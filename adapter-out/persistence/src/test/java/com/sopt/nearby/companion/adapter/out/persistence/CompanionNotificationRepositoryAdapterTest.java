@@ -65,7 +65,7 @@ class CompanionNotificationRepositoryAdapterTest {
     }
 
     @Test
-    void updatesReadAtWhenNotificationIsMarkedAsRead() {
+    void marksAsReadOnlyWhenUnreadNotificationBelongsToRecipient() {
         CompanionNotificationRepositoryAdapter adapter = new CompanionNotificationRepositoryAdapter(jpaRepository);
         CompanionNotification saved = adapter.save(notification(
                 null,
@@ -76,14 +76,52 @@ class CompanionNotificationRepositoryAdapterTest {
                 NOW
         ));
 
-        CompanionNotification readNotification = saved.markAsRead(NOW.plusMinutes(30));
-        CompanionNotification updated = adapter.save(readNotification);
+        boolean updated = adapter.markAsReadIfUnread(saved.id(), 7L, NOW.plusMinutes(30));
 
-        assertThat(updated.id()).isEqualTo(saved.id());
-        assertThat(updated.readAt()).isEqualTo(NOW.plusMinutes(30));
+        assertThat(updated).isTrue();
         assertThat(adapter.findById(saved.id())).get()
                 .extracting(CompanionNotification::readAt)
                 .isEqualTo(NOW.plusMinutes(30));
+    }
+
+    @Test
+    void doesNotOverwriteReadAtWhenNotificationIsAlreadyRead() {
+        CompanionNotificationRepositoryAdapter adapter = new CompanionNotificationRepositoryAdapter(jpaRepository);
+        CompanionNotification saved = adapter.save(notification(
+                null,
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                1L,
+                NOW.plusMinutes(10),
+                NOW
+        ));
+
+        boolean updated = adapter.markAsReadIfUnread(saved.id(), 7L, NOW.plusMinutes(30));
+
+        assertThat(updated).isFalse();
+        assertThat(adapter.findById(saved.id())).get()
+                .extracting(CompanionNotification::readAt)
+                .isEqualTo(NOW.plusMinutes(10));
+    }
+
+    @Test
+    void doesNotMarkAsReadWhenRecipientDoesNotMatch() {
+        CompanionNotificationRepositoryAdapter adapter = new CompanionNotificationRepositoryAdapter(jpaRepository);
+        CompanionNotification saved = adapter.save(notification(
+                null,
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                1L,
+                null,
+                NOW
+        ));
+
+        boolean updated = adapter.markAsReadIfUnread(saved.id(), 99L, NOW.plusMinutes(30));
+
+        assertThat(updated).isFalse();
+        assertThat(adapter.findById(saved.id())).get()
+                .extracting(CompanionNotification::readAt)
+                .isNull();
     }
 
     @Test

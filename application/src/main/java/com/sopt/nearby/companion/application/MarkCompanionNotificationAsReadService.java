@@ -37,20 +37,28 @@ public class MarkCompanionNotificationAsReadService implements MarkCompanionNoti
         }
 
         if (notification.isRead()) {
-            return new MarkCompanionNotificationAsReadResult(
-                    notification.id(),
-                    true,
-                    notification.readAt()
-            );
+            return toResult(notification);
         }
 
-        CompanionNotification readNotification = notification.markAsRead(LocalDateTime.now(clock));
-        CompanionNotification savedNotification = repository.save(readNotification);
+        LocalDateTime readAt = LocalDateTime.now(clock);
+        boolean marked = repository.markAsReadIfUnread(notificationId, userId, readAt);
+        if (marked) {
+            return new MarkCompanionNotificationAsReadResult(notificationId, true, readAt);
+        }
 
+        CompanionNotification currentNotification = repository.findById(notificationId)
+                .orElseThrow(CompanionNotificationNotFoundException::new);
+        if (!currentNotification.recipientUserId().equals(userId)) {
+            throw new ForbiddenCompanionNotificationException();
+        }
+        return toResult(currentNotification);
+    }
+
+    private MarkCompanionNotificationAsReadResult toResult(final CompanionNotification notification) {
         return new MarkCompanionNotificationAsReadResult(
-                savedNotification.id(),
-                savedNotification.isRead(),
-                savedNotification.readAt()
+                notification.id(),
+                notification.isRead(),
+                notification.readAt()
         );
     }
 }

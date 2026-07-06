@@ -42,7 +42,7 @@ class MarkCompanionNotificationAsReadServiceTest {
         assertEquals(1L, result.notificationId());
         assertEquals(true, result.isRead());
         assertEquals(NOW, result.readAt());
-        assertEquals(1, repository.saveCount);
+        assertEquals(1, repository.markAsReadIfUnreadCount);
         assertEquals(NOW, repository.findById(1L).orElseThrow().readAt());
     }
 
@@ -61,7 +61,26 @@ class MarkCompanionNotificationAsReadServiceTest {
         assertEquals(1L, result.notificationId());
         assertEquals(true, result.isRead());
         assertEquals(readAt, result.readAt());
-        assertEquals(0, repository.saveCount);
+        assertEquals(0, repository.markAsReadIfUnreadCount);
+    }
+
+    @Test
+    void returnsExistingReadAtWhenConditionalUpdateLosesRace() {
+        LocalDateTime firstReadAt = NOW.minusMinutes(5);
+        FakeCompanionNotificationRepository repository = new FakeCompanionNotificationRepository();
+        repository.put(notification(1L, 7L, null));
+        repository.concurrentReadAt = firstReadAt;
+        MarkCompanionNotificationAsReadService service = new MarkCompanionNotificationAsReadService(
+                repository,
+                CLOCK
+        );
+
+        MarkCompanionNotificationAsReadResult result = service.markAsRead(7L, 1L);
+
+        assertEquals(1L, result.notificationId());
+        assertEquals(true, result.isRead());
+        assertEquals(firstReadAt, result.readAt());
+        assertEquals(1, repository.markAsReadIfUnreadCount);
     }
 
     @Test
@@ -95,7 +114,7 @@ class MarkCompanionNotificationAsReadServiceTest {
         );
 
         assertThrows(ForbiddenCompanionNotificationException.class, () -> service.markAsRead(7L, 1L));
-        assertEquals(0, repository.saveCount);
+        assertEquals(0, repository.markAsReadIfUnreadCount);
     }
 
     private CompanionNotification notification(
@@ -117,12 +136,12 @@ class MarkCompanionNotificationAsReadServiceTest {
     private static final class FakeCompanionNotificationRepository implements CompanionNotificationRepository {
 
         private final Map<Long, CompanionNotification> notifications = new HashMap<>();
-        private int saveCount = 0;
+        private LocalDateTime concurrentReadAt;
+        private int markAsReadIfUnreadCount = 0;
 
         @Override
         public CompanionNotification save(final CompanionNotification model) {
             notifications.put(model.id(), model);
-            saveCount++;
             return model;
         }
 
@@ -144,6 +163,28 @@ class MarkCompanionNotificationAsReadServiceTest {
                     .filter(notification -> notification.targetId().equals(targetId))
                     .filter(notification -> notification.recipientUserId().equals(recipientUserId))
                     .findFirst();
+        }
+
+        @Override
+        public boolean markAsReadIfUnread(
+                final Long notificationId,
+                final Long recipientUserId,
+                final LocalDateTime readAt
+        ) {
+            markAsReadIfUnreadCount++;
+            CompanionNotification notification = notifications.get(notificationId);
+            if (notification == null || !notification.recipientUserId().equals(recipientUserId)) {
+                return false;
+            }
+            if (concurrentReadAt != null) {
+                notifications.put(notificationId, notification.markAsRead(concurrentReadAt));
+                return false;
+            }
+            if (notification.isRead()) {
+                return false;
+            }
+            notifications.put(notificationId, notification.markAsRead(readAt));
+            return true;
         }
 
         private void put(final CompanionNotification notification) {
