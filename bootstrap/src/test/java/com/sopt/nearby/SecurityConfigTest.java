@@ -43,6 +43,15 @@ class SecurityConfigTest {
 	}
 
 	@Test
+	void openApiDocsUsesForwardedHttpsScheme() throws Exception {
+		mockMvc.perform(get("/v3/api-docs")
+						.header("X-Forwarded-Proto", "https")
+						.header("X-Forwarded-Host", "api.nearby.test"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.servers[0].url").value("https://api.nearby.test"));
+	}
+
+	@Test
 	void documentsCompanionPostsOnboardingRequiredResponse() throws Exception {
 		mockMvc.perform(get("/v3/api-docs"))
 				.andExpect(status().isOk())
