@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPro
 import com.sopt.nearby.companion.adapter.out.persistence.repository.NearbyCompanionPostQueryJpaRepository;
 import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsCommand;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
@@ -38,6 +39,7 @@ class NearbyCompanionPostQueryAdapterTest {
     private static final BigDecimal CURRENT_LATITUDE = new BigDecimal("37.56650000");
     private static final BigDecimal CURRENT_LONGITUDE = new BigDecimal("126.97800000");
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 4, 12, 0);
+    private static final LocalDateTime FUTURE = LocalDateTime.now().plusDays(3);
 
     @Autowired
     private CompanionPostJpaRepository companionPostJpaRepository;
@@ -90,7 +92,7 @@ class NearbyCompanionPostQueryAdapterTest {
                 100L,
                 restaurant.getId(),
                 CompanionPostStatus.RECRUITING,
-                NOW.plusDays(1),
+                FUTURE.plusDays(1),
                 NOW.minusHours(2),
                 "오래된 모집글"
         ));
@@ -98,7 +100,7 @@ class NearbyCompanionPostQueryAdapterTest {
                 200L,
                 cafe.getId(),
                 CompanionPostStatus.RECRUITING,
-                NOW.plusDays(2),
+                FUTURE.plusDays(2),
                 NOW.minusHours(1),
                 "최근 모집글"
         ));
@@ -106,7 +108,7 @@ class NearbyCompanionPostQueryAdapterTest {
                 100L,
                 restaurant.getId(),
                 CompanionPostStatus.CLOSED,
-                NOW.plusDays(1),
+                FUTURE.plusDays(1),
                 NOW,
                 "닫힌 모집글"
         ));
@@ -114,7 +116,7 @@ class NearbyCompanionPostQueryAdapterTest {
                 100L,
                 farMuseum.getId(),
                 CompanionPostStatus.RECRUITING,
-                NOW.plusDays(1),
+                FUTURE.plusDays(1),
                 NOW,
                 "먼 모집글"
         ));
@@ -179,7 +181,7 @@ class NearbyCompanionPostQueryAdapterTest {
                 100L,
                 farRestaurant.getId(),
                 CompanionPostStatus.RECRUITING,
-                NOW.plusDays(1),
+                FUTURE.plusDays(1),
                 NOW,
                 "먼 식당 모집글"
         ));
@@ -187,7 +189,7 @@ class NearbyCompanionPostQueryAdapterTest {
                 100L,
                 nearRestaurant.getId(),
                 CompanionPostStatus.RECRUITING,
-                NOW.plusDays(2),
+                FUTURE.plusDays(2),
                 NOW.minusHours(1),
                 "가까운 식당 모집글"
         ));
@@ -195,7 +197,7 @@ class NearbyCompanionPostQueryAdapterTest {
                 100L,
                 cafe.getId(),
                 CompanionPostStatus.RECRUITING,
-                NOW.plusHours(1),
+                FUTURE.plusHours(1),
                 NOW.plusHours(1),
                 "카페 모집글"
         ));
@@ -229,7 +231,7 @@ class NearbyCompanionPostQueryAdapterTest {
                 100L,
                 place.getId(),
                 CompanionPostStatus.RECRUITING,
-                NOW.plusDays(2),
+                FUTURE.plusDays(2),
                 NOW,
                 "늦은 모집글"
         ));
@@ -237,9 +239,19 @@ class NearbyCompanionPostQueryAdapterTest {
                 100L,
                 place.getId(),
                 CompanionPostStatus.RECRUITING,
-                NOW.plusHours(2),
+                FUTURE.plusHours(2),
                 NOW.minusHours(1),
                 "임박 모집글"
+        ));
+        CompanionPostEntity nowPost = companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                place.getId(),
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                FUTURE.minusDays(2),
+                NOW.minusMinutes(10),
+                "지금 모집글"
         ));
 
         List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
@@ -249,7 +261,98 @@ class NearbyCompanionPostQueryAdapterTest {
         ));
 
         assertThat(result).extracting(NearbyCompanionPostSummary::postId)
-                .containsExactly(soonPost.getId(), latePost.getId());
+                .containsExactly(nowPost.getId(), soonPost.getId(), latePost.getId());
+    }
+
+    @Test
+    void excludesExpiredNowPosts() {
+        NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
+
+        companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A", UserGender.FEMALE));
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place(
+                "restaurant-place",
+                "식당",
+                "restaurant",
+                "37.56660000",
+                "126.97810000",
+                null
+        ));
+
+        companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                place.getId(),
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                LocalDateTime.now().minusHours(1),
+                LocalDateTime.now().minusHours(2),
+                "만료된 지금 모집글"
+        ));
+        CompanionPostEntity activePost = companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                place.getId(),
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().minusMinutes(10),
+                "노출 중인 지금 모집글"
+        ));
+
+        List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
+                1000,
+                CompanionPostPlaceCategory.ALL,
+                CompanionPostSort.LATEST
+        ));
+
+        assertThat(result).extracting(NearbyCompanionPostSummary::postId)
+                .containsExactly(activePost.getId());
+        assertThat(result.get(0).meetingAt()).isNull();
+    }
+
+    @Test
+    void excludesScheduledPostsAfterMeetingAt() {
+        NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
+
+        companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A", UserGender.FEMALE));
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place(
+                "restaurant-place",
+                "식당",
+                "restaurant",
+                "37.56660000",
+                "126.97810000",
+                null
+        ));
+
+        companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                place.getId(),
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.now().minusHours(1),
+                null,
+                LocalDateTime.now().minusDays(1),
+                "지난 예약 모집글"
+        ));
+        CompanionPostEntity activePost = companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                place.getId(),
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.now().plusHours(1),
+                null,
+                LocalDateTime.now().minusMinutes(10),
+                "예정된 예약 모집글"
+        ));
+
+        List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
+                1000,
+                CompanionPostPlaceCategory.ALL,
+                CompanionPostSort.LATEST
+        ));
+
+        assertThat(result).extracting(NearbyCompanionPostSummary::postId)
+                .containsExactly(activePost.getId());
     }
 
     private ReadNearbyCompanionPostsCommand command(
@@ -320,6 +423,32 @@ class NearbyCompanionPostQueryAdapterTest {
                 placeId,
                 meetingAt,
                 4,
+                content,
+                "https://openchat.example",
+                status,
+                createdAt
+        );
+    }
+
+    private CompanionPostEntity post(
+            final Long hostUserId,
+            final Long placeId,
+            final CompanionPostStatus status,
+            final CompanionPostMeetingTimeType meetingTimeType,
+            final LocalDateTime meetingAt,
+            final LocalDateTime exposureExpiresAt,
+            final LocalDateTime createdAt,
+            final String content
+    ) {
+        return new CompanionPostEntity(
+                null,
+                hostUserId,
+                placeId,
+                meetingTimeType,
+                meetingAt,
+                exposureExpiresAt,
+                4,
+                true,
                 content,
                 "https://openchat.example",
                 status,

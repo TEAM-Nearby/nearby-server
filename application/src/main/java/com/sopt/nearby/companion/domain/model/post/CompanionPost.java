@@ -7,11 +7,41 @@ public record CompanionPost(
 		Long id,
 		Long hostUserId,
 		Long placeId,
+		CompanionPostMeetingTimeType meetingTimeType,
 		LocalDateTime meetingAt,
+		LocalDateTime exposureExpiresAt,
 		int maxParticipants,
+		boolean departEvenIfNotFull,
 		String content,
 		String openChatUrl,
 		CompanionPostStatus status,
 		LocalDateTime createdAt
 ) {
+
+	public CompanionPost(
+			final Long id,
+			final Long hostUserId,
+			final Long placeId,
+			final LocalDateTime meetingAt,
+			final int maxParticipants,
+			final String content,
+			final String openChatUrl,
+			final CompanionPostStatus status,
+			final LocalDateTime createdAt
+	) {
+		this(
+				id,
+				hostUserId,
+				placeId,
+				CompanionPostMeetingTimeType.SCHEDULED,
+				meetingAt,
+				null,
+				maxParticipants,
+				true,
+				content,
+				openChatUrl,
+				status,
+				createdAt
+		);
+	}
 }

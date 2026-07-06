@@ -31,6 +31,7 @@ public interface NearbyCompanionPostQueryJpaRepository extends Repository<Compan
                     place.photo_reference as photoReference,
                     post.content as content,
                     post.meeting_at as meetingAt,
+                    post.exposure_expires_at as exposureExpiresAt,
                     cast(1 + coalesce(accepted.accepted_count, 0) as integer) as participantCount,
                     post.max_participants as maxParticipants,
                     post.created_at as createdAt
@@ -47,6 +48,11 @@ public interface NearbyCompanionPostQueryJpaRepository extends Repository<Compan
                 ) accepted
                     on accepted.post_id = post.id
                 where post.status = 'RECRUITING'
+                    and (
+                        (post.meeting_time_type = 'NOW' and post.exposure_expires_at > current_timestamp)
+                        or (post.meeting_time_type = 'SCHEDULED' and post.meeting_at > current_timestamp)
+                        or post.meeting_time_type = 'UNDECIDED'
+                    )
             )
             select
                 postId,
@@ -72,7 +78,8 @@ public interface NearbyCompanionPostQueryJpaRepository extends Repository<Compan
             order by
                 case when :sort = 'LATEST' then createdAt end desc,
                 case when :sort = 'DISTANCE' then distanceMeters end asc,
-                case when :sort = 'CLOSING_SOON' then meetingAt end asc,
+                case when :sort = 'CLOSING_SOON' and coalesce(meetingAt, exposureExpiresAt) is null then 1 else 0 end asc,
+                case when :sort = 'CLOSING_SOON' then coalesce(meetingAt, exposureExpiresAt) end asc,
                 postId desc
             """, nativeQuery = true)
     List<NearbyCompanionPostProjection> findNearby(

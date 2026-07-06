@@ -20,8 +20,29 @@ public class ResolvePlaceCacheService implements ResolvePlaceCacheUseCase {
     @Override
     public ResolvedPlaceCache resolve(final ResolvePlaceCacheCommand command) {
         return placeCacheRepository.findByGooglePlaceId(command.googlePlaceId())
+                .map(place -> updateIfCategoryExplicit(place, command))
                 .map(this::toResolvedPlaceCache)
                 .orElseGet(() -> saveOrReload(command));
+    }
+
+    private PlaceCache updateIfCategoryExplicit(final PlaceCache place, final ResolvePlaceCacheCommand command) {
+        if (command.category() == null || command.category().isBlank()) {
+            return place;
+        }
+        return placeCacheRepository.save(new PlaceCache(
+                place.id(),
+                place.googlePlaceId(),
+                command.name(),
+                command.address(),
+                command.latitude(),
+                command.longitude(),
+                command.category(),
+                place.phoneNumber(),
+                place.rating(),
+                place.reviewCount(),
+                place.photoReference(),
+                place.businessStatus()
+        ));
     }
 
     private ResolvedPlaceCache saveOrReload(final ResolvePlaceCacheCommand command) {
@@ -42,7 +63,7 @@ public class ResolvePlaceCacheService implements ResolvePlaceCacheUseCase {
                 command.address(),
                 command.latitude(),
                 command.longitude(),
-                null,
+                command.category() == null || command.category().isBlank() ? "OTHER" : command.category(),
                 null,
                 null,
                 null,
@@ -52,6 +73,14 @@ public class ResolvePlaceCacheService implements ResolvePlaceCacheUseCase {
     }
 
     private ResolvedPlaceCache toResolvedPlaceCache(final PlaceCache placeCache) {
-        return new ResolvedPlaceCache(placeCache.id());
+        return new ResolvedPlaceCache(
+                placeCache.id(),
+                placeCache.googlePlaceId(),
+                placeCache.name(),
+                placeCache.address(),
+                placeCache.latitude(),
+                placeCache.longitude(),
+                placeCache.category()
+        );
     }
 }
