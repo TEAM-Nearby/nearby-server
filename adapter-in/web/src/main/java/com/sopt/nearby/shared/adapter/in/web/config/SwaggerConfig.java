@@ -5,8 +5,6 @@ import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.servers.Server;
-import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -17,10 +15,6 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI openAPI() {
-        Server devServer = new Server();
-        devServer.setUrl("http://localhost:8080"); // 로컬 개발 서버 절대 경로
-        devServer.setDescription("Local Development Server");
-
         Info info = new Info()
                 .title("Nearby API")
                 .version("1.0.0")
@@ -28,7 +22,6 @@ public class SwaggerConfig {
 
         return new OpenAPI()
                 .info(info)
-                .servers(List.of(devServer))
                 .components(new Components().addSecuritySchemes(BEARER_AUTH, bearerAuthScheme()))
                 .addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH));
     }
