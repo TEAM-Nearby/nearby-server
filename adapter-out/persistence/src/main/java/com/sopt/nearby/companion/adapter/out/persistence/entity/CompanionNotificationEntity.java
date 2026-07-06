@@ -96,4 +96,10 @@ public class CompanionNotificationEntity {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+    public void markAsRead(final LocalDateTime readAt) {
+        if (this.readAt == null) {
+            this.readAt = readAt;
+        }
+    }
 }

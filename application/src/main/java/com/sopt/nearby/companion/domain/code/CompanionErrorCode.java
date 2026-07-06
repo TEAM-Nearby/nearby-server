@@ -20,7 +20,10 @@ public enum CompanionErrorCode implements ErrorCode {
     DUPLICATE_NICKNAME("이미 사용 중인 닉네임입니다."),
     DUPLICATE_COMPANION_PROFILE("이미 등록된 동행 프로필입니다."),
     INVALID_PROFILE_IMAGE_UPLOAD_REQUEST("지원하지 않는 이미지 형식이거나 또는 파일 크기를 초과했습니다."),
-    INVALID_REQUEST_DIRECTION("올바르지 않은 요청 방향입니다.");
+    INVALID_REQUEST_DIRECTION("올바르지 않은 요청 방향입니다."),
+    INVALID_NOTIFICATION_ID("올바르지 않은 알림 ID입니다."),
+    FORBIDDEN_COMPANION_NOTIFICATION("동행 알림을 읽음 처리할 권한이 없습니다."),
+    COMPANION_NOTIFICATION_NOT_FOUND("동행 알림을 찾을 수 없습니다.");
 
     private final String message;
 
