@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.config;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
+import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
@@ -12,6 +13,7 @@ import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
+import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
@@ -135,6 +137,13 @@ public class CompanionUseCaseConfig {
             final CompanionNotificationRepository repository
     ) {
         return new CreateCompanionNotificationService(repository, Clock.systemDefaultZone());
+    }
+
+    @Bean
+    MarkCompanionNotificationAsReadUseCase markCompanionNotificationAsReadUseCase(
+            final CompanionNotificationRepository repository
+    ) {
+        return new MarkCompanionNotificationAsReadService(repository, Clock.systemDefaultZone());
     }
 }
 
