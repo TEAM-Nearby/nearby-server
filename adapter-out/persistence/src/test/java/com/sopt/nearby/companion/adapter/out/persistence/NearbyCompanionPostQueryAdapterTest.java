@@ -124,6 +124,8 @@ class NearbyCompanionPostQueryAdapterTest {
         companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 301L, CompanionApplicationStatus.ACCEPTED));
         companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 302L, CompanionApplicationStatus.ACCEPTED));
         companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 303L, CompanionApplicationStatus.PENDING));
+        companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 304L, CompanionApplicationStatus.ACCEPTED));
+        companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 304L, CompanionApplicationStatus.CANCELED));
 
         List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
                 1000,
