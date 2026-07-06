@@ -160,6 +160,19 @@ class CreateCompanionPostServiceTest {
         ), " ");
         assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(missingOpenChatUrl));
 
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(command(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                NOW,
+                true,
+                List.of()
+        )));
+
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(command(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                NOW.minusMinutes(1),
+                true,
+                List.of()
+        )));
     }
 
     @Test

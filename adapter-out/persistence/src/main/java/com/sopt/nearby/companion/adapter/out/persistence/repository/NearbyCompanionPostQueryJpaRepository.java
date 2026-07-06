@@ -47,6 +47,11 @@ public interface NearbyCompanionPostQueryJpaRepository extends Repository<Compan
                 ) accepted
                     on accepted.post_id = post.id
                 where post.status = 'RECRUITING'
+                    and (
+                        (post.meeting_time_type = 'NOW' and post.exposure_expires_at > current_timestamp)
+                        or (post.meeting_time_type = 'SCHEDULED' and post.meeting_at > current_timestamp)
+                        or post.meeting_time_type = 'UNDECIDED'
+                    )
             )
             select
                 postId,
@@ -72,6 +77,7 @@ public interface NearbyCompanionPostQueryJpaRepository extends Repository<Compan
             order by
                 case when :sort = 'LATEST' then createdAt end desc,
                 case when :sort = 'DISTANCE' then distanceMeters end asc,
+                case when :sort = 'CLOSING_SOON' and meetingAt is null then 1 else 0 end asc,
                 case when :sort = 'CLOSING_SOON' then meetingAt end asc,
                 postId desc
             """, nativeQuery = true)

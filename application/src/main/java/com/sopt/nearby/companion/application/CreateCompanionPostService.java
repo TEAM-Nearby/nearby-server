@@ -147,7 +147,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
 
     private boolean isInvalidMeetingTime(final CreateCompanionPostCommand command) {
         return switch (command.meetingTimeType()) {
-            case SCHEDULED -> command.meetingAt() == null;
+            case SCHEDULED -> command.meetingAt() == null || !command.meetingAt().isAfter(LocalDateTime.now(clock));
             case NOW, UNDECIDED -> command.meetingAt() != null;
         };
     }
