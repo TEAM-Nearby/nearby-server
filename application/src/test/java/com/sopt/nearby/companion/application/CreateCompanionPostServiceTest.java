@@ -114,6 +114,32 @@ class CreateCompanionPostServiceTest {
     }
 
     @Test
+    void returnsResolvedPlaceSnapshot() {
+        resolvePlaceCacheUseCase.result = new ResolvedPlaceCache(
+                20L,
+                "google-place-id",
+                "저장된 장소명",
+                "저장된 주소",
+                new BigDecimal("37.11110000"),
+                new BigDecimal("126.22220000"),
+                "restaurant"
+        );
+
+        CreateCompanionPostResult result = service.create(command(
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                true,
+                List.of()
+        ));
+
+        assertEquals("저장된 장소명", result.place().name());
+        assertEquals("저장된 주소", result.place().address());
+        assertEquals(new BigDecimal("37.11110000"), result.place().latitude());
+        assertEquals(new BigDecimal("126.22220000"), result.place().longitude());
+        assertEquals(CompanionPostPlaceCategory.RESTAURANT, result.place().category());
+    }
+
+    @Test
     void createsUndecidedPostWithoutMeetingAtAndExposureExpiry() {
         CreateCompanionPostResult result = service.create(command(
                 CompanionPostMeetingTimeType.UNDECIDED,

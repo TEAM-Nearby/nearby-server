@@ -21,6 +21,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.transaction.annotation.Transactional;
 
 public class CreateCompanionPostService implements CreateCompanionPostUseCase {
@@ -62,7 +63,6 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
         requireCompletedOnboardingUseCase.requireCompleted(command.hostUserId());
 
         LocalDateTime createdAt = LocalDateTime.now(clock);
-        CompanionPostPlaceCategory category = effectiveCategory(command.place().category());
         List<TravelStyleKeyword> styleKeywords = distinct(command.styleKeywords());
         LocalDateTime meetingAt = command.meetingTimeType() == CompanionPostMeetingTimeType.SCHEDULED
                 ? command.meetingAt()
@@ -103,12 +103,12 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 post.hostUserId(),
                 new CreateCompanionPostResult.Place(
                         place.placeId(),
-                        command.place().googlePlaceId(),
-                        command.place().name(),
-                        command.place().address(),
-                        command.place().latitude(),
-                        command.place().longitude(),
-                        category
+                        place.googlePlaceId(),
+                        place.name(),
+                        place.address(),
+                        place.latitude(),
+                        place.longitude(),
+                        effectiveCategory(place.category())
                 ),
                 post.meetingTimeType(),
                 post.meetingAt(),
@@ -158,8 +158,11 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
         }
     }
 
-    private CompanionPostPlaceCategory effectiveCategory(final CompanionPostPlaceCategory category) {
-        return category == null ? CompanionPostPlaceCategory.OTHER : category;
+    private CompanionPostPlaceCategory effectiveCategory(final String category) {
+        if (isBlank(category)) {
+            return CompanionPostPlaceCategory.OTHER;
+        }
+        return CompanionPostPlaceCategory.valueOf(category.toUpperCase(Locale.ROOT));
     }
 
     private boolean isInvalidCoordinate(final BigDecimal value, final BigDecimal min, final BigDecimal max) {
