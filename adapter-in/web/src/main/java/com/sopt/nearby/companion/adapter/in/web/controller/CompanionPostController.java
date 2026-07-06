@@ -1,16 +1,20 @@
-// 동행 모집글 목록 조회 HTTP 요청을 유스케이스로 전달한다.
+// 동행 모집글 HTTP 요청을 유스케이스로 전달한다.
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.code.CompanionSuccessCode;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionPostRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.NearbyCompanionPostsRequest;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostDetailResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionPostResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.NearbyCompanionPostsResponse;
+import com.sopt.nearby.companion.application.ReadCompanionPostDetailCommand;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import java.security.Principal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,13 +31,16 @@ public class CompanionPostController implements CompanionPostApi {
 
     private final ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase;
     private final CreateCompanionPostUseCase createCompanionPostUseCase;
+    private final ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase;
 
     public CompanionPostController(
             final ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase,
-            final CreateCompanionPostUseCase createCompanionPostUseCase
+            final CreateCompanionPostUseCase createCompanionPostUseCase,
+            final ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase
     ) {
         this.readNearbyCompanionPostsUseCase = readNearbyCompanionPostsUseCase;
         this.createCompanionPostUseCase = createCompanionPostUseCase;
+        this.readCompanionPostDetailUseCase = readCompanionPostDetailUseCase;
     }
 
     @Override
@@ -72,6 +79,23 @@ public class CompanionPostController implements CompanionPostApi {
                 CompanionSuccessCode.COMPANION_POST_CREATED,
                 CreatedCompanionPostResponse.from(createCompanionPostUseCase.create(
                         request == null ? null : request.toCommand(Long.valueOf(principal.getName()))
+                ))
+        );
+    }
+
+    @Override
+    @GetMapping("/{postId}")
+    public CommonResponse<CompanionPostDetailResponse> getPost(
+            @PathVariable final Long postId,
+            final Principal principal
+    ) {
+        return CommonResponse.success(
+                CompanionSuccessCode.COMPANION_POST_FOUND,
+                CompanionPostDetailResponse.from(readCompanionPostDetailUseCase.read(
+                        new ReadCompanionPostDetailCommand(
+                                Long.valueOf(principal.getName()),
+                                postId
+                        )
                 ))
         );
     }
