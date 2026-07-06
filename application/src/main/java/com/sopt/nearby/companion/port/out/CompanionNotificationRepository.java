@@ -5,6 +5,7 @@ import com.sopt.nearby.common.port.DomainRepository;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface CompanionNotificationRepository extends DomainRepository<CompanionNotification, Long> {
@@ -15,4 +16,6 @@ public interface CompanionNotificationRepository extends DomainRepository<Compan
             Long targetId,
             Long recipientUserId
     );
+
+    boolean markAsReadIfUnread(Long notificationId, Long recipientUserId, LocalDateTime readAt);
 }

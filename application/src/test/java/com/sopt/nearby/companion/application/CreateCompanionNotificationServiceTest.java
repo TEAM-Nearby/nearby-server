@@ -128,6 +128,15 @@ class CreateCompanionNotificationServiceTest {
             )));
         }
 
+        @Override
+        public boolean markAsReadIfUnread(
+                final Long notificationId,
+                final Long recipientUserId,
+                final LocalDateTime readAt
+        ) {
+            throw new UnsupportedOperationException("알림 생성 테스트에서는 읽음 처리를 사용하지 않습니다.");
+        }
+
         private void put(final CompanionNotification notification) {
             notifications.put(new Key(
                     notification.notificationType(),

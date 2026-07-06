@@ -12,4 +12,23 @@ public record CompanionNotification(
         LocalDateTime readAt,
         LocalDateTime createdAt
 ) {
+    public boolean isRead() {
+        return readAt != null;
+    }
+
+    public CompanionNotification markAsRead(final LocalDateTime readAt) {
+        if (isRead()) {
+            return this;
+        }
+
+        return new CompanionNotification(
+                id,
+                recipientUserId,
+                notificationType,
+                targetType,
+                targetId,
+                readAt,
+                createdAt
+        );
+    }
 }

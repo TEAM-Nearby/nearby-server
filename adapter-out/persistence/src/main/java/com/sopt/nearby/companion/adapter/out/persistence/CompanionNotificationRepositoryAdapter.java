@@ -9,10 +9,12 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.function.Function;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class CompanionNotificationRepositoryAdapter
@@ -56,5 +58,15 @@ public class CompanionNotificationRepositoryAdapter
                 targetId,
                 recipientUserId
         ).map(CompanionPersistenceMapper::toDomain);
+    }
+
+    @Override
+    @Transactional
+    public boolean markAsReadIfUnread(
+            final Long notificationId,
+            final Long recipientUserId,
+            final LocalDateTime readAt
+    ) {
+        return jpaRepository.markAsReadIfUnread(notificationId, recipientUserId, readAt) > 0;
     }
 }
