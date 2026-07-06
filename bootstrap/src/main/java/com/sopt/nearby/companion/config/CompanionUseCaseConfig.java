@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.config;
 
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
+import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsService;
@@ -9,6 +10,7 @@ import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
 import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
@@ -18,6 +20,7 @@ import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.RegisterCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
@@ -125,6 +128,13 @@ public class CompanionUseCaseConfig {
             final CompanionNotificationQueryPort queryPort
     ) {
         return new ReadCompanionNotificationsService(queryPort);
+    }
+
+    @Bean
+    CreateCompanionNotificationUseCase createCompanionNotificationUseCase(
+            final CompanionNotificationRepository repository
+    ) {
+        return new CreateCompanionNotificationService(repository, Clock.systemDefaultZone());
     }
 }
 

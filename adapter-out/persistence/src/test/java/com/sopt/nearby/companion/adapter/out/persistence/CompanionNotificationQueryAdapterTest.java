@@ -4,15 +4,15 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplicationEntity;
-import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplicationReadStatusEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchParticipantEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionNotificationEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApplicationJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchParticipantJpaRepository;
-import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionNotificationJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionNotificationQueryJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
@@ -21,6 +21,8 @@ import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationActionType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
@@ -57,7 +59,7 @@ class CompanionNotificationQueryAdapterTest {
     private CompanionMatchParticipantJpaRepository participantJpaRepository;
 
     @Autowired
-    private CompanionNotificationJpaRepository notificationJpaRepository;
+    private CompanionNotificationQueryJpaRepository notificationJpaRepository;
 
     @Autowired
     private CompanionPostJpaRepository postJpaRepository;
@@ -95,7 +97,13 @@ class CompanionNotificationQueryAdapterTest {
                 7L,
                 recentApplication.getId()
         ));
-        entityManager.persistAndFlush(readStatus(recentApplication.getId(), 7L));
+        CompanionNotificationEntity recentNotification = entityManager.persistAndFlush(notification(
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                recentApplication.getId(),
+                NOW.plusHours(4),
+                NOW.plusHours(3)
+        ));
 
         CompanionPostEntity oldPost = postJpaRepository.saveAndFlush(post(
                 200L,
@@ -108,6 +116,13 @@ class CompanionNotificationQueryAdapterTest {
                 CompanionApplicationStatus.REJECTED,
                 NOW.minusHours(1)
         ));
+        CompanionNotificationEntity oldNotification = entityManager.persistAndFlush(notification(
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_REJECTED,
+                oldApplication.getId(),
+                null,
+                NOW.plusHours(1)
+        ));
 
         CompanionApplicationEntity otherUserApplication = applicationJpaRepository.saveAndFlush(application(
                 recentPost.getId(),
@@ -115,16 +130,33 @@ class CompanionNotificationQueryAdapterTest {
                 CompanionApplicationStatus.ACCEPTED,
                 NOW.plusHours(3)
         ));
-        entityManager.persistAndFlush(readStatus(otherUserApplication.getId(), 999L));
+        entityManager.persistAndFlush(notification(
+                999L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                otherUserApplication.getId(),
+                null,
+                NOW.plusHours(5)
+        ));
+        CompanionNotificationEntity mismatchedRecipientNotification = entityManager.persistAndFlush(notification(
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                otherUserApplication.getId(),
+                null,
+                NOW.plusHours(6)
+        ));
 
         List<CompanionNotificationSummary> result = adapter.findAllByUserIdAndDirection(
                 7L,
                 CompanionNotificationDirection.SENT
         );
 
-        assertThat(result).hasSize(2);
+        assertThat(result)
+                .extracting(CompanionNotificationSummary::notificationId)
+                .containsExactly(recentNotification.getId(), oldNotification.getId())
+                .doesNotContain(mismatchedRecipientNotification.getId());
 
         CompanionNotificationSummary first = result.get(0);
+        assertThat(first.notificationId()).isEqualTo(recentNotification.getId());
         assertThat(first.applicationId()).isEqualTo(recentApplication.getId());
         assertThat(first.applicationStatus()).isEqualTo(CompanionApplicationStatus.ACCEPTED);
         assertThat(first.host().userId()).isEqualTo(100L);
@@ -137,6 +169,7 @@ class CompanionNotificationQueryAdapterTest {
         assertThat(first.isRead()).isTrue();
 
         CompanionNotificationSummary second = result.get(1);
+        assertThat(second.notificationId()).isEqualTo(oldNotification.getId());
         assertThat(second.applicationId()).isEqualTo(oldApplication.getId());
         assertThat(second.applicationStatus()).isEqualTo(CompanionApplicationStatus.REJECTED);
         assertThat(second.host().userId()).isEqualTo(200L);
@@ -153,6 +186,7 @@ class CompanionNotificationQueryAdapterTest {
         CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
 
         profileJpaRepository.saveAndFlush(profile(100L, "호스트", "host.png"));
+        profileJpaRepository.saveAndFlush(profile(200L, "다른호스트", "other-host.png"));
 
         PlaceCacheEntity placeA = placeCacheJpaRepository.saveAndFlush(place("google-place-a", "오노테라"));
         PlaceCacheEntity placeB = placeCacheJpaRepository.saveAndFlush(place("google-place-b", "BRAMS"));
@@ -167,6 +201,13 @@ class CompanionNotificationQueryAdapterTest {
                 recentPost.getId(),
                 7L,
                 CompanionApplicationStatus.PENDING,
+                NOW.plusHours(3)
+        ));
+        CompanionNotificationEntity pendingNotification = entityManager.persistAndFlush(notification(
+                100L,
+                CompanionNotificationType.COMPANION_APPLICATION_CREATED,
+                pendingApplication.getId(),
+                null,
                 NOW.plusHours(3)
         ));
 
@@ -187,7 +228,13 @@ class CompanionNotificationQueryAdapterTest {
                 8L,
                 acceptedApplication.getId()
         ));
-        entityManager.persistAndFlush(readStatus(acceptedApplication.getId(), 100L));
+        CompanionNotificationEntity acceptedNotification = entityManager.persistAndFlush(notification(
+                100L,
+                CompanionNotificationType.COMPANION_APPLICATION_CREATED,
+                acceptedApplication.getId(),
+                NOW.plusHours(4),
+                NOW.plusHours(2)
+        ));
 
         CompanionPostEntity rejectedPost = postJpaRepository.saveAndFlush(post(
                 100L,
@@ -200,17 +247,38 @@ class CompanionNotificationQueryAdapterTest {
                 CompanionApplicationStatus.REJECTED,
                 NOW.plusHours(1)
         ));
+        CompanionNotificationEntity rejectedNotification = entityManager.persistAndFlush(notification(
+                100L,
+                CompanionNotificationType.COMPANION_APPLICATION_CREATED,
+                rejectedApplication.getId(),
+                null,
+                NOW.plusHours(1)
+        ));
 
         CompanionPostEntity otherHostPost = postJpaRepository.saveAndFlush(post(
                 200L,
                 placeA.getId(),
                 NOW.plusDays(4)
         ));
-        applicationJpaRepository.saveAndFlush(application(
+        CompanionApplicationEntity otherHostApplication = applicationJpaRepository.saveAndFlush(application(
                 otherHostPost.getId(),
                 7L,
                 CompanionApplicationStatus.PENDING,
                 NOW.plusHours(4)
+        ));
+        entityManager.persistAndFlush(notification(
+                200L,
+                CompanionNotificationType.COMPANION_APPLICATION_CREATED,
+                otherHostApplication.getId(),
+                null,
+                NOW.plusHours(5)
+        ));
+        CompanionNotificationEntity mismatchedRecipientNotification = entityManager.persistAndFlush(notification(
+                100L,
+                CompanionNotificationType.COMPANION_APPLICATION_CREATED,
+                otherHostApplication.getId(),
+                null,
+                NOW.plusHours(6)
         ));
 
         List<CompanionNotificationSummary> result = adapter.findAllByUserIdAndDirection(
@@ -218,16 +286,26 @@ class CompanionNotificationQueryAdapterTest {
                 CompanionNotificationDirection.RECEIVED
         );
 
-        assertThat(result).hasSize(3);
+        assertThat(result)
+                .extracting(CompanionNotificationSummary::notificationId)
+                .containsExactly(
+                        pendingNotification.getId(),
+                        acceptedNotification.getId(),
+                        rejectedNotification.getId()
+                )
+                .doesNotContain(mismatchedRecipientNotification.getId());
+        assertThat(result.get(0).notificationId()).isEqualTo(pendingNotification.getId());
         assertThat(result.get(0).applicationId()).isEqualTo(pendingApplication.getId());
         assertThat(result.get(0).actionType()).isEqualTo(CompanionNotificationActionType.ACCEPT_REQUEST);
         assertThat(result.get(0).isRead()).isFalse();
 
+        assertThat(result.get(1).notificationId()).isEqualTo(acceptedNotification.getId());
         assertThat(result.get(1).applicationId()).isEqualTo(acceptedApplication.getId());
         assertThat(result.get(1).matchId()).isEqualTo(match.getId());
         assertThat(result.get(1).actionType()).isEqualTo(CompanionNotificationActionType.CONFIRM_SCHEDULE);
         assertThat(result.get(1).isRead()).isTrue();
 
+        assertThat(result.get(2).notificationId()).isEqualTo(rejectedNotification.getId());
         assertThat(result.get(2).applicationId()).isEqualTo(rejectedApplication.getId());
         assertThat(result.get(2).actionType()).isEqualTo(CompanionNotificationActionType.NONE);
         assertThat(result.get(2).isRead()).isFalse();
@@ -326,12 +404,21 @@ class CompanionNotificationQueryAdapterTest {
         );
     }
 
-    private CompanionApplicationReadStatusEntity readStatus(final Long applicationId, final Long userId) {
-        return new CompanionApplicationReadStatusEntity(
+    private CompanionNotificationEntity notification(
+            final Long recipientUserId,
+            final CompanionNotificationType notificationType,
+            final Long applicationId,
+            final LocalDateTime readAt,
+            final LocalDateTime createdAt
+    ) {
+        return new CompanionNotificationEntity(
                 null,
+                recipientUserId,
+                notificationType,
+                CompanionNotificationTargetType.COMPANION_APPLICATION,
                 applicationId,
-                userId,
-                NOW
+                readAt,
+                createdAt
         );
     }
 
@@ -339,9 +426,9 @@ class CompanionNotificationQueryAdapterTest {
     @EnableAutoConfiguration
     @EntityScan(basePackageClasses = {
             CompanionApplicationEntity.class,
-            CompanionApplicationReadStatusEntity.class,
             CompanionMatchEntity.class,
             CompanionMatchParticipantEntity.class,
+            CompanionNotificationEntity.class,
             CompanionPostEntity.class,
             CompanionProfileEntity.class,
             PlaceCacheEntity.class
@@ -350,7 +437,7 @@ class CompanionNotificationQueryAdapterTest {
             CompanionApplicationJpaRepository.class,
             CompanionMatchJpaRepository.class,
             CompanionMatchParticipantJpaRepository.class,
-            CompanionNotificationJpaRepository.class,
+            CompanionNotificationQueryJpaRepository.class,
             CompanionPostJpaRepository.class,
             CompanionProfileJpaRepository.class,
             PlaceCacheJpaRepository.class

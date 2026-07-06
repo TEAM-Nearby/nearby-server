@@ -1,7 +1,7 @@
 // 동행 알림 목록 조회 Query Port를 구현하는 Persistence Adapter
 package com.sopt.nearby.companion.adapter.out.persistence;
 
-import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionNotificationJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionNotificationQueryJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionNotificationProjection;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
@@ -14,9 +14,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class CompanionNotificationQueryAdapter implements CompanionNotificationQueryPort {
 
-    private final CompanionNotificationJpaRepository repository;
+    private final CompanionNotificationQueryJpaRepository repository;
 
-    public CompanionNotificationQueryAdapter(final CompanionNotificationJpaRepository repository) {
+    public CompanionNotificationQueryAdapter(final CompanionNotificationQueryJpaRepository repository) {
         this.repository = repository;
     }
 
@@ -41,6 +41,7 @@ public class CompanionNotificationQueryAdapter implements CompanionNotificationQ
     ) {
         return CompanionNotificationSummary.of(
                 direction,
+                row.getNotificationId(),
                 row.getApplicationId(),
                 CompanionApplicationStatus.valueOf(row.getApplicationStatus()),
                 new CompanionNotificationHostProfile(
