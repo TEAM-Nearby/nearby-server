@@ -153,6 +153,28 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void tenthMigrationAddsCompanionPostCreationFields() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource companionPostMigration = new ClassPathResource(
+				"db/migration/V10__add_companion_post_creation_fields.sql"
+		);
+
+		assertThat(companionPostMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_companion_post_creation_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, companionPostMigration);
+
+			assertThat(columnNames(connection, "companion_post"))
+					.contains("meeting_time_type", "exposure_expires_at", "depart_even_if_not_full");
+		}
+	}
+
 	private static List<String> tableNames(final Connection connection) throws SQLException {
 		List<String> names = new ArrayList<>();
 		try (ResultSet tables = connection.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {
