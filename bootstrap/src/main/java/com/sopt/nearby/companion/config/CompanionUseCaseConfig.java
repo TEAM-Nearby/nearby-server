@@ -1,6 +1,7 @@
 // 동행 유스케이스 구현체를 Spring Bean으로 조립하는 설정 클래스
 package com.sopt.nearby.companion.config;
 
+import com.sopt.nearby.companion.application.CreateCompanionPostService;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
@@ -8,6 +9,7 @@ import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
 import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
+import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
@@ -20,6 +22,7 @@ import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
+import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
@@ -39,6 +42,22 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class CompanionUseCaseConfig {
+
+    @Bean
+    CreateCompanionPostUseCase createCompanionPostUseCase(
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final ResolvePlaceCacheUseCase resolvePlaceCacheUseCase,
+            final CompanionPostRepository companionPostRepository,
+            final CompanionPostStyleRepository companionPostStyleRepository
+    ) {
+        return new CreateCompanionPostService(
+                requireCompletedOnboardingUseCase,
+                resolvePlaceCacheUseCase,
+                companionPostRepository,
+                companionPostStyleRepository,
+                Clock.systemDefaultZone()
+        );
+    }
 
     @Bean
     ReadCompanionMatchPreviewUseCase readCompanionMatchPreviewUseCase(
@@ -127,4 +146,3 @@ public class CompanionUseCaseConfig {
         return new ReadCompanionNotificationsService(queryPort);
     }
 }
-
