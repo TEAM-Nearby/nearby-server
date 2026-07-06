@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.adapter.out.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sopt.nearby.companion.port.out.ProfileImageUploadRequest;
 import com.sopt.nearby.companion.port.out.ProfileImageUploadUrl;
@@ -50,13 +51,36 @@ class S3ProfileImageUploadUrlIssuerTest {
 	}
 
 	@Test
-	void requiresAwsCredentialsWithoutFallbackDefaults() {
+	void allowsMissingAwsCredentialsAtStartup() {
 		Constructor<?> constructor = S3ProfileImageUploadUrlIssuer.class.getConstructors()[0];
 
 		assertThat(valueExpression(constructor.getParameters()[2]))
-				.isEqualTo("${nearby.storage.s3.access-key}");
+				.isEqualTo("${nearby.storage.s3.access-key:}");
 		assertThat(valueExpression(constructor.getParameters()[3]))
-				.isEqualTo("${nearby.storage.s3.secret-key}");
+				.isEqualTo("${nearby.storage.s3.secret-key:}");
+	}
+
+	@Test
+	void rejectsIssueWhenAwsCredentialsAreMissing() {
+		S3ProfileImageUploadUrlIssuer issuer = new S3ProfileImageUploadUrlIssuer(
+				"nearby",
+				"ap-northeast-2",
+				"",
+				"",
+				"https://cdn.nearby.com",
+				300,
+				Clock.fixed(Instant.parse("2026-07-05T07:00:00Z"), ZoneOffset.UTC),
+				() -> UUID.fromString("00000000-0000-0000-0000-000000000001")
+		);
+
+		assertThatThrownBy(() -> issuer.issue(new ProfileImageUploadRequest(
+				7L,
+				"profile.jpg",
+				"image/jpeg",
+				524_288L
+		)))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("S3 storage credentials are not configured.");
 	}
 
 	private static String valueExpression(final Parameter parameter) {

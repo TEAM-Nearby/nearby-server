@@ -51,8 +51,8 @@ public class S3ProfileImageUploadUrlIssuer implements ProfileImageUploadUrlIssue
 	public S3ProfileImageUploadUrlIssuer(
 			@Value("${nearby.storage.s3.bucket:nearby}") final String bucket,
 			@Value("${nearby.storage.s3.region:ap-northeast-2}") final String region,
-			@Value("${nearby.storage.s3.access-key}") final String accessKey,
-			@Value("${nearby.storage.s3.secret-key}") final String secretKey,
+			@Value("${nearby.storage.s3.access-key:}") final String accessKey,
+			@Value("${nearby.storage.s3.secret-key:}") final String secretKey,
 			@Value("${nearby.storage.s3.cdn-base-url:https://cdn.nearby.com}") final String cdnBaseUrl,
 			@Value("${nearby.storage.s3.upload-url-expires-seconds:300}") final int expiresIn
 	) {
@@ -81,6 +81,10 @@ public class S3ProfileImageUploadUrlIssuer implements ProfileImageUploadUrlIssue
 
 	@Override
 	public ProfileImageUploadUrl issue(final ProfileImageUploadRequest request) {
+		if (accessKey.isBlank() || secretKey.isBlank()) {
+			throw new IllegalStateException("S3 storage credentials are not configured.");
+		}
+
 		String objectKey = objectKey(request.userId(), request.contentType());
 		String host = bucket + ".s3." + region + ".amazonaws.com";
 		Instant now = clock.instant();
