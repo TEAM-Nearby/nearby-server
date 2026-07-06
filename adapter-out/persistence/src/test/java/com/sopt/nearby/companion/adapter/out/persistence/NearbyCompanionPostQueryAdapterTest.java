@@ -243,6 +243,16 @@ class NearbyCompanionPostQueryAdapterTest {
                 NOW.minusHours(1),
                 "임박 모집글"
         ));
+        CompanionPostEntity nowPost = companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                place.getId(),
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                FUTURE.minusDays(2),
+                NOW.minusMinutes(10),
+                "지금 모집글"
+        ));
 
         List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
                 1000,
@@ -251,7 +261,7 @@ class NearbyCompanionPostQueryAdapterTest {
         ));
 
         assertThat(result).extracting(NearbyCompanionPostSummary::postId)
-                .containsExactly(soonPost.getId(), latePost.getId());
+                .containsExactly(nowPost.getId(), soonPost.getId(), latePost.getId());
     }
 
     @Test
