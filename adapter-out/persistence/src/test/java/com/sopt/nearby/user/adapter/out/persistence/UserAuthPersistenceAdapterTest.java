@@ -78,6 +78,58 @@ class UserAuthPersistenceAdapterTest {
 		assertThat(adapter.findByTokenHash("missing")).isEmpty();
 	}
 
+	@Test
+	void revokesRefreshTokenOnlyWhenItIsActiveAndOwnedByUser() {
+		UserAccount user = userAdapter().save(newUser());
+		RefreshTokenRepositoryAdapter adapter = new RefreshTokenRepositoryAdapter(refreshTokenJpaRepository);
+		RefreshToken refreshToken = adapter.save(new RefreshToken(
+				null,
+				user.id(),
+				"refresh-token-hash",
+				LocalDateTime.of(2026, 7, 17, 12, 0),
+				null
+		));
+		LocalDateTime revokedAt = LocalDateTime.of(2026, 7, 7, 12, 0);
+
+		boolean revoked = adapter.revokeByTokenHashIfActive("refresh-token-hash", user.id(), revokedAt);
+
+		assertThat(revoked).isTrue();
+		assertThat(adapter.findByTokenHash(refreshToken.tokenHash())).get()
+				.extracting(RefreshToken::revokedAt)
+				.isEqualTo(revokedAt);
+	}
+
+	@Test
+	void doesNotRevokeRefreshTokenWhenAlreadyRevokedOrUserDoesNotMatch() {
+		UserAccount user = userAdapter().save(newUser());
+		RefreshTokenRepositoryAdapter adapter = new RefreshTokenRepositoryAdapter(refreshTokenJpaRepository);
+		LocalDateTime firstRevokedAt = LocalDateTime.of(2026, 7, 7, 11, 0);
+		RefreshToken refreshToken = adapter.save(new RefreshToken(
+				null,
+				user.id(),
+				"refresh-token-hash",
+				LocalDateTime.of(2026, 7, 17, 12, 0),
+				firstRevokedAt
+		));
+
+		boolean revokedAgain = adapter.revokeByTokenHashIfActive(
+				"refresh-token-hash",
+				user.id(),
+				LocalDateTime.of(2026, 7, 7, 12, 0)
+		);
+		boolean revokedByAnotherUser = adapter.revokeByTokenHashIfActive(
+				"refresh-token-hash",
+				99L,
+				LocalDateTime.of(2026, 7, 7, 12, 0)
+		);
+
+		assertThat(revokedAgain).isFalse();
+		assertThat(revokedByAnotherUser).isFalse();
+		assertThat(adapter.findByTokenHash(refreshToken.tokenHash())).get()
+				.extracting(RefreshToken::revokedAt)
+				.isEqualTo(firstRevokedAt);
+	}
+
 	private UserAccountRepositoryAdapter userAdapter() {
 		return new UserAccountRepositoryAdapter(userAccountJpaRepository);
 	}

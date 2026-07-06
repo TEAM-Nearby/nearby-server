@@ -56,6 +56,13 @@ class JwtTokenAdapterTest {
 		assertThat(tokens.refreshTokenExpiresIn()).isEqualTo(1209600);
 	}
 
+	@Test
+	void hashesRefreshTokenWithSha256() throws Exception {
+		Sha256RefreshTokenHasher hasher = new Sha256RefreshTokenHasher();
+
+		assertThat(hasher.hash("refresh-token")).isEqualTo(sha256("refresh-token"));
+	}
+
 	private String sha256(final String value) throws Exception {
 		byte[] digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
 		return HexFormat.of().formatHex(digest);

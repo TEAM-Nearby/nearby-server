@@ -93,4 +93,18 @@ class SecurityConfigTest {
 				.andExpect(jsonPath("$.message").value("인증이 필요합니다."))
 				.andExpect(jsonPath("$.data").value(nullValue()));
 	}
+
+	@Test
+	void rejectsLogoutWithoutBearerTokenAsCommonJson() throws Exception {
+		mockMvc.perform(post("/api/auth/logout")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{"refreshToken":"refresh-token"}
+								"""))
+				.andExpect(status().isUnauthorized())
+				.andExpect(jsonPath("$.status").value(401))
+				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+				.andExpect(jsonPath("$.message").value("인증이 필요합니다."))
+				.andExpect(jsonPath("$.data").value(nullValue()));
+	}
 }
