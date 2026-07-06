@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplica
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchParticipantEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMeetingEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionNotificationEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostStyleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostStyleEntityId;
@@ -24,6 +25,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStyle;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
@@ -141,6 +143,30 @@ public final class CompanionPersistenceMapper {
 				entity.getApplicantUserId(),
 				entity.getStatus(),
 				entity.getRejectionReason(),
+				entity.getCreatedAt()
+		);
+	}
+
+	public static CompanionNotificationEntity toEntity(final CompanionNotification model) {
+		return new CompanionNotificationEntity(
+				model.id(),
+				model.recipientUserId(),
+				model.notificationType(),
+				model.targetType(),
+				model.targetId(),
+				model.readAt(),
+				model.createdAt()
+		);
+	}
+
+	public static CompanionNotification toDomain(final CompanionNotificationEntity entity) {
+		return new CompanionNotification(
+				entity.getId(),
+				entity.getRecipientUserId(),
+				entity.getNotificationType(),
+				entity.getTargetType(),
+				entity.getTargetId(),
+				entity.getReadAt(),
 				entity.getCreatedAt()
 		);
 	}

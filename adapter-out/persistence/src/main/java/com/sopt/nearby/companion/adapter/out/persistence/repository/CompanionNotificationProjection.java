@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 public interface CompanionNotificationProjection {
 
+    Long getNotificationId();
+
     Long getApplicationId();
 
     String getApplicationStatus();
