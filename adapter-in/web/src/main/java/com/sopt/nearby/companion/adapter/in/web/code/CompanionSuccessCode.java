@@ -10,7 +10,8 @@ public enum CompanionSuccessCode implements SuccessCode {
     CONFIRM_COMPANION_SCHEDULE("동행 일정이 확정되었어요."),
     READ_COMPANION_SCHEDULE("동행 일정 정보를 조회했어요."),
     PROFILE_IMAGE_UPLOAD_URL_ISSUED("Presigned URL 발급에 성공했습니다."),
-    COMPANION_PROFILE_CREATED("동행 프로필 등록이 완료되었습니다.");
+    COMPANION_PROFILE_CREATED("동행 프로필 등록이 완료되었습니다."),
+    READ_COMPANION_REQUESTS("동행 요청 목록을 조회했어요.");
 
     private final String message;
 

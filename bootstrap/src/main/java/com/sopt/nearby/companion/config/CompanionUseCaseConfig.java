@@ -3,12 +3,14 @@ package com.sopt.nearby.companion.config;
 
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
+import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
 import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
@@ -20,6 +22,7 @@ import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
+import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import com.sopt.nearby.companion.port.out.NearbyCompanionPostQueryPort;
 import com.sopt.nearby.companion.port.out.ProfileImageUploadUrlIssuer;
 import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
@@ -116,4 +119,12 @@ public class CompanionUseCaseConfig {
                 completeOnboardingUseCase
         );
     }
+
+    @Bean
+    ReadCompanionNotificationsUseCase readCompanionNotificationsUseCase(
+            final CompanionNotificationQueryPort queryPort
+    ) {
+        return new ReadCompanionNotificationsService(queryPort);
+    }
 }
+
