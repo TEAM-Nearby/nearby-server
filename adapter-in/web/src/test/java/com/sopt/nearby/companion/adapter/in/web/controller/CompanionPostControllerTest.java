@@ -4,18 +4,25 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.sopt.nearby.companion.application.CreateCompanionPostCommand;
+import com.sopt.nearby.companion.application.CreateCompanionPostResult;
 import com.sopt.nearby.companion.application.NearbyCompanionPostsResult;
 import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsCommand;
+import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
+import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import com.sopt.nearby.user.exception.OnboardingRequiredException;
@@ -32,13 +39,15 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class CompanionPostControllerTest {
 
     private MockMvc mockMvc;
-    private FakeReadNearbyCompanionPostsUseCase useCase;
+    private FakeReadNearbyCompanionPostsUseCase readUseCase;
+    private FakeCreateCompanionPostUseCase createUseCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new FakeReadNearbyCompanionPostsUseCase();
+        readUseCase = new FakeReadNearbyCompanionPostsUseCase();
+        createUseCase = new FakeCreateCompanionPostUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionPostController(useCase))
+                .standaloneSetup(new CompanionPostController(readUseCase, createUseCase))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -46,7 +55,7 @@ class CompanionPostControllerTest {
 
     @Test
     void passesDefaultsAndAuthenticatedUserIdToUseCase() throws Exception {
-        useCase.result = result(1000, CompanionPostPlaceCategory.ALL, CompanionPostSort.LATEST);
+        readUseCase.result = result(1000, CompanionPostPlaceCategory.ALL, CompanionPostSort.LATEST);
 
         mockMvc.perform(get("/api/companion-posts")
                         .queryParam("latitude", "37.56650000")
@@ -86,17 +95,17 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.posts[0].createdAgoText").value("30분 전"))
                 .andExpect(jsonPath("$.data.posts[0].mapMarkerText").value("7월 3일 14시 니어바이스시 동행"));
 
-        assertEquals(7L, useCase.command.userId());
-        assertEquals(new BigDecimal("37.56650000"), useCase.command.latitude());
-        assertEquals(new BigDecimal("126.97800000"), useCase.command.longitude());
-        assertEquals(1000, useCase.command.radiusMeters());
-        assertEquals(CompanionPostPlaceCategory.ALL, useCase.command.placeCategory());
-        assertEquals(CompanionPostSort.LATEST, useCase.command.sort());
+        assertEquals(7L, readUseCase.command.userId());
+        assertEquals(new BigDecimal("37.56650000"), readUseCase.command.latitude());
+        assertEquals(new BigDecimal("126.97800000"), readUseCase.command.longitude());
+        assertEquals(1000, readUseCase.command.radiusMeters());
+        assertEquals(CompanionPostPlaceCategory.ALL, readUseCase.command.placeCategory());
+        assertEquals(CompanionPostSort.LATEST, readUseCase.command.sort());
     }
 
     @Test
     void passesExplicitFiltersToUseCase() throws Exception {
-        useCase.result = result(3000, CompanionPostPlaceCategory.CAFE, CompanionPostSort.DISTANCE);
+        readUseCase.result = result(3000, CompanionPostPlaceCategory.CAFE, CompanionPostSort.DISTANCE);
 
         mockMvc.perform(get("/api/companion-posts")
                         .queryParam("latitude", "37.56650000")
@@ -110,9 +119,9 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.placeCategory").value("CAFE"))
                 .andExpect(jsonPath("$.data.sort").value("DISTANCE"));
 
-        assertEquals(3000, useCase.command.radiusMeters());
-        assertEquals(CompanionPostPlaceCategory.CAFE, useCase.command.placeCategory());
-        assertEquals(CompanionPostSort.DISTANCE, useCase.command.sort());
+        assertEquals(3000, readUseCase.command.radiusMeters());
+        assertEquals(CompanionPostPlaceCategory.CAFE, readUseCase.command.placeCategory());
+        assertEquals(CompanionPostSort.DISTANCE, readUseCase.command.sort());
     }
 
     @Test
@@ -130,7 +139,7 @@ class CompanionPostControllerTest {
 
     @Test
     void returnsOnboardingRequired() throws Exception {
-        useCase.exception = new OnboardingRequiredException();
+        readUseCase.exception = new OnboardingRequiredException();
 
         mockMvc.perform(get("/api/companion-posts")
                         .queryParam("latitude", "37.56650000")
@@ -141,6 +150,166 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.code").value("ONBOARDING_REQUIRED"))
                 .andExpect(jsonPath("$.message").value("온보딩 과정이 완료되지 않았습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void createsCompanionPost() throws Exception {
+        createUseCase.result = createResult(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 3, 14, 0),
+                null,
+                true,
+                List.of(TravelStyleKeyword.FOODIE, TravelStyleKeyword.PHOTO),
+                CompanionPostPlaceCategory.RESTAURANT
+        );
+
+        mockMvc.perform(post("/api/companion-posts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "place": {
+                                    "googlePlaceId": "google-place-id",
+                                    "name": "니어바이 스시",
+                                    "address": "서울특별시 중구 세종대로 110",
+                                    "latitude": 37.5671,
+                                    "longitude": 126.9792,
+                                    "category": "RESTAURANT"
+                                  },
+                                  "meetingTimeType": "SCHEDULED",
+                                  "meetingAt": "2026-07-03T14:00:00",
+                                  "maxParticipants": 4,
+                                  "departEvenIfNotFull": true,
+                                  "styleKeywords": ["FOODIE", "PHOTO"],
+                                  "content": "같이 스시 먹으러 갈 사람 구해요.",
+                                  "openChatUrl": "https://open.kakao.com/o/nearby123"
+                                }
+                                """)
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("COMPANION_POST_CREATED"))
+                .andExpect(jsonPath("$.message").value("동행 모집 글 작성에 성공했습니다."))
+                .andExpect(jsonPath("$.data.postId").value(101))
+                .andExpect(jsonPath("$.data.status").value("RECRUITING"))
+                .andExpect(jsonPath("$.data.hostUserId").value(7))
+                .andExpect(jsonPath("$.data.place.placeId").value(20))
+                .andExpect(jsonPath("$.data.place.googlePlaceId").value("google-place-id"))
+                .andExpect(jsonPath("$.data.place.name").value("니어바이 스시"))
+                .andExpect(jsonPath("$.data.place.address").value("서울특별시 중구 세종대로 110"))
+                .andExpect(jsonPath("$.data.place.latitude").value(37.5671))
+                .andExpect(jsonPath("$.data.place.longitude").value(126.9792))
+                .andExpect(jsonPath("$.data.place.category").value("RESTAURANT"))
+                .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
+                .andExpect(jsonPath("$.data.meetingAt").value("2026-07-03T14:00:00"))
+                .andExpect(jsonPath("$.data.exposureExpiresAt").value(nullValue()))
+                .andExpect(jsonPath("$.data.maxParticipants").value(4))
+                .andExpect(jsonPath("$.data.participantCount").value(1))
+                .andExpect(jsonPath("$.data.departEvenIfNotFull").value(true))
+                .andExpect(jsonPath("$.data.styleKeywords[0]").value("FOODIE"))
+                .andExpect(jsonPath("$.data.styleKeywords[1]").value("PHOTO"))
+                .andExpect(jsonPath("$.data.content").value("같이 스시 먹으러 갈 사람 구해요."))
+                .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/nearby123"))
+                .andExpect(jsonPath("$.data.createdAt").value("2026-07-02T14:00:00"));
+
+        assertEquals(7L, createUseCase.command.hostUserId());
+        assertEquals("google-place-id", createUseCase.command.place().googlePlaceId());
+        assertEquals(CompanionPostPlaceCategory.RESTAURANT, createUseCase.command.place().category());
+        assertEquals(CompanionPostMeetingTimeType.SCHEDULED, createUseCase.command.meetingTimeType());
+        assertEquals(LocalDateTime.of(2026, 7, 3, 14, 0), createUseCase.command.meetingAt());
+        assertEquals(4, createUseCase.command.maxParticipants());
+        assertEquals(true, createUseCase.command.departEvenIfNotFull());
+        assertEquals(List.of(TravelStyleKeyword.FOODIE, TravelStyleKeyword.PHOTO), createUseCase.command.styleKeywords());
+    }
+
+    @Test
+    void createsCompanionPostWithDefaults() throws Exception {
+        createUseCase.result = createResult(
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                LocalDateTime.of(2026, 7, 2, 15, 0),
+                true,
+                List.of(),
+                CompanionPostPlaceCategory.OTHER
+        );
+
+        mockMvc.perform(post("/api/companion-posts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "place": {
+                                    "googlePlaceId": "google-place-id",
+                                    "name": "니어바이 스시",
+                                    "latitude": 37.5671,
+                                    "longitude": 126.9792
+                                  },
+                                  "meetingTimeType": "NOW",
+                                  "maxParticipants": 4,
+                                  "content": "같이 스시 먹으러 갈 사람 구해요.",
+                                  "openChatUrl": "https://open.kakao.com/o/nearby123"
+                                }
+                                """)
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.meetingTimeType").value("NOW"))
+                .andExpect(jsonPath("$.data.meetingAt").value(nullValue()))
+                .andExpect(jsonPath("$.data.exposureExpiresAt").value("2026-07-02T15:00:00"))
+                .andExpect(jsonPath("$.data.departEvenIfNotFull").value(true))
+                .andExpect(jsonPath("$.data.styleKeywords").isArray())
+                .andExpect(jsonPath("$.data.place.category").value("OTHER"));
+
+        assertEquals(null, createUseCase.command.departEvenIfNotFull());
+        assertEquals(null, createUseCase.command.styleKeywords());
+        assertEquals(null, createUseCase.command.place().category());
+    }
+
+    @Test
+    void returnsValidationErrorForInvalidCreateRequest() throws Exception {
+        mockMvc.perform(post("/api/companion-posts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "place": {
+                                    "googlePlaceId": "google-place-id",
+                                    "name": "니어바이 스시",
+                                    "latitude": 37.5671,
+                                    "longitude": 126.9792
+                                  },
+                                  "meetingTimeType": "INVALID",
+                                  "maxParticipants": 4,
+                                  "content": "같이 스시 먹으러 갈 사람 구해요.",
+                                  "openChatUrl": "https://open.kakao.com/o/nearby123"
+                                }
+                                """)
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("필수값 누락, 인원 범위 오류, 소개 글자 수 초과, 장소 좌표 오류, 만남 시간 입력 규칙 위반입니다."));
+    }
+
+    @Test
+    void returnsInvalidOpenChatUrl() throws Exception {
+        createUseCase.exception = new InvalidOpenChatUrlException();
+
+        mockMvc.perform(post("/api/companion-posts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "place": {
+                                    "googlePlaceId": "google-place-id",
+                                    "name": "니어바이 스시",
+                                    "latitude": 37.5671,
+                                    "longitude": 126.9792
+                                  },
+                                  "meetingTimeType": "NOW",
+                                  "maxParticipants": 4,
+                                  "content": "같이 스시 먹으러 갈 사람 구해요.",
+                                  "openChatUrl": "https://example.com/o/nearby123"
+                                }
+                                """)
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_OPEN_CHAT_URL"))
+                .andExpect(jsonPath("$.message").value("카카오톡 오픈채팅 링크 형식이 올바르지 않습니다."));
     }
 
     private NearbyCompanionPostsResult result(
@@ -189,6 +358,40 @@ class CompanionPostControllerTest {
         );
     }
 
+    private CreateCompanionPostResult createResult(
+            final CompanionPostMeetingTimeType meetingTimeType,
+            final LocalDateTime meetingAt,
+            final LocalDateTime exposureExpiresAt,
+            final boolean departEvenIfNotFull,
+            final List<TravelStyleKeyword> styleKeywords,
+            final CompanionPostPlaceCategory category
+    ) {
+        return new CreateCompanionPostResult(
+                101L,
+                CompanionPostStatus.RECRUITING,
+                7L,
+                new CreateCompanionPostResult.Place(
+                        20L,
+                        "google-place-id",
+                        "니어바이 스시",
+                        "서울특별시 중구 세종대로 110",
+                        new BigDecimal("37.5671"),
+                        new BigDecimal("126.9792"),
+                        category
+                ),
+                meetingTimeType,
+                meetingAt,
+                exposureExpiresAt,
+                4,
+                1,
+                departEvenIfNotFull,
+                styleKeywords,
+                "같이 스시 먹으러 갈 사람 구해요.",
+                "https://open.kakao.com/o/nearby123",
+                LocalDateTime.of(2026, 7, 2, 14, 0)
+        );
+    }
+
     private Principal principal(final String name) {
         return () -> name;
     }
@@ -208,6 +411,22 @@ class CompanionPostControllerTest {
 
         @Override
         public NearbyCompanionPostsResult read(final ReadNearbyCompanionPostsCommand command) {
+            this.command = command;
+            if (exception != null) {
+                throw exception;
+            }
+            return result;
+        }
+    }
+
+    private static final class FakeCreateCompanionPostUseCase implements CreateCompanionPostUseCase {
+
+        private CreateCompanionPostResult result;
+        private CreateCompanionPostCommand command;
+        private RuntimeException exception;
+
+        @Override
+        public CreateCompanionPostResult create(final CreateCompanionPostCommand command) {
             this.command = command;
             if (exception != null) {
                 throw exception;

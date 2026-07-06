@@ -2,12 +2,17 @@
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.code.CompanionSuccessCode;
+import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionPostRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.NearbyCompanionPostsRequest;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionPostResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.NearbyCompanionPostsResponse;
+import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import java.security.Principal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,9 +26,14 @@ public class CompanionPostController implements CompanionPostApi {
     private static final String DEFAULT_SORT = "LATEST";
 
     private final ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase;
+    private final CreateCompanionPostUseCase createCompanionPostUseCase;
 
-    public CompanionPostController(final ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase) {
+    public CompanionPostController(
+            final ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase,
+            final CreateCompanionPostUseCase createCompanionPostUseCase
+    ) {
         this.readNearbyCompanionPostsUseCase = readNearbyCompanionPostsUseCase;
+        this.createCompanionPostUseCase = createCompanionPostUseCase;
     }
 
     @Override
@@ -47,6 +57,20 @@ public class CompanionPostController implements CompanionPostApi {
         return CommonResponse.success(
                 CompanionSuccessCode.COMPANION_POSTS_FOUND,
                 NearbyCompanionPostsResponse.from(readNearbyCompanionPostsUseCase.read(
+                        request.toCommand(Long.valueOf(principal.getName()))
+                ))
+        );
+    }
+
+    @Override
+    @PostMapping
+    public CommonResponse<CreatedCompanionPostResponse> createPost(
+            @RequestBody final CreateCompanionPostRequest request,
+            final Principal principal
+    ) {
+        return CommonResponse.success(
+                CompanionSuccessCode.COMPANION_POST_CREATED,
+                CreatedCompanionPostResponse.from(createCompanionPostUseCase.create(
                         request.toCommand(Long.valueOf(principal.getName()))
                 ))
         );

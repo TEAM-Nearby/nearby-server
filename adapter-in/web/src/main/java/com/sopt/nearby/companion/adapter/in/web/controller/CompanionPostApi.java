@@ -1,8 +1,12 @@
 // 동행 모집글 API 문서를 정의한다.
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
+import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionPostRequest;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionPostResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.NearbyCompanionPostsResponse;
+import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequestException;
+import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,6 +58,21 @@ public interface CompanionPostApi {
             String placeCategory,
             @Parameter(description = "목록 정렬 기준", example = "LATEST")
             String sort,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            InvalidCompanionPostCreateRequestException.class,
+            InvalidOpenChatUrlException.class
+    })
+    @Operation(
+            summary = "동행 모집글 작성",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글을 작성합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CreatedCompanionPostResponse> createPost(
+            CreateCompanionPostRequest request,
             @Parameter(hidden = true)
             Principal principal
     );
