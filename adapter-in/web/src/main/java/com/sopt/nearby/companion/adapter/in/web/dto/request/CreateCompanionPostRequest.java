@@ -35,7 +35,7 @@ public record CreateCompanionPostRequest(
                     content,
                     openChatUrl
             );
-        } catch (RuntimeException exception) {
+        } catch (IllegalArgumentException exception) {
             throw new InvalidCompanionPostCreateRequestException();
         }
     }

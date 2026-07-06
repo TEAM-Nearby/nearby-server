@@ -199,6 +199,30 @@ class CreateCompanionPostServiceTest {
                 true,
                 List.of()
         )));
+
+        CreateCompanionPostCommand tooFewParticipants = withMaxParticipants(command(
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                true,
+                List.of()
+        ), 0);
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(tooFewParticipants));
+
+        CreateCompanionPostCommand tooManyParticipants = withMaxParticipants(command(
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                true,
+                List.of()
+        ), 8);
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(tooManyParticipants));
+
+        CreateCompanionPostCommand allCategory = withPlaceCategory(command(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                NOW.plusHours(1),
+                true,
+                List.of()
+        ), CompanionPostPlaceCategory.ALL);
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(allCategory));
     }
 
     @Test
@@ -306,6 +330,47 @@ class CreateCompanionPostServiceTest {
                 command.styleKeywords(),
                 command.content(),
                 openChatUrl
+        );
+    }
+
+    private CreateCompanionPostCommand withMaxParticipants(
+            final CreateCompanionPostCommand command,
+            final int maxParticipants
+    ) {
+        return new CreateCompanionPostCommand(
+                command.hostUserId(),
+                command.place(),
+                command.meetingTimeType(),
+                command.meetingAt(),
+                maxParticipants,
+                command.departEvenIfNotFull(),
+                command.styleKeywords(),
+                command.content(),
+                command.openChatUrl()
+        );
+    }
+
+    private CreateCompanionPostCommand withPlaceCategory(
+            final CreateCompanionPostCommand command,
+            final CompanionPostPlaceCategory category
+    ) {
+        return new CreateCompanionPostCommand(
+                command.hostUserId(),
+                new CreateCompanionPostCommand.Place(
+                        command.place().googlePlaceId(),
+                        command.place().name(),
+                        command.place().address(),
+                        command.place().latitude(),
+                        command.place().longitude(),
+                        category
+                ),
+                command.meetingTimeType(),
+                command.meetingAt(),
+                command.maxParticipants(),
+                command.departEvenIfNotFull(),
+                command.styleKeywords(),
+                command.content(),
+                command.openChatUrl()
         );
     }
 
