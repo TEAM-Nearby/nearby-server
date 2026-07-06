@@ -150,7 +150,7 @@ jobs:
               "sudo systemctl daemon-reload",
               "sudo systemctl restart \($app_service_name)",
               "sudo systemctl is-active \($app_service_name)",
-              "for i in $(seq 1 30); do curl -fsS --connect-timeout 3 --max-time 5 http://127.0.0.1:\($app_port)\($healthcheck_path) && exit 0; sleep 2; done; echo health check timed out >&2; exit 1"
+              "for i in $(seq 1 30); do curl -fsS --connect-timeout 3 --max-time 5 http://127.0.0.1:\($app_port)\($healthcheck_path) && exit 0; sleep 2; done; echo health check timed out >&2; sudo systemctl status \($app_service_name) --no-pager >&2 || true; sudo journalctl -u \($app_service_name) -n 200 --no-pager >&2 || true; exit 1"
             ]}')"
 
           command_id="$(aws ssm send-command \
