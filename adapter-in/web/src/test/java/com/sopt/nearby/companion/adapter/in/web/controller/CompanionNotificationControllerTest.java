@@ -1,19 +1,22 @@
-// 동행 알림 목록 조회 컨트롤러의 요청 파싱과 응답 형식을 검증하는 테스트
+// 동행 알림 컨트롤러의 요청 파싱과 응답 형식을 검증하는 테스트
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadResult;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationHostProfile;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
+import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.security.Principal;
@@ -29,12 +32,14 @@ class CompanionNotificationControllerTest {
 
     private MockMvc mockMvc;
     private FakeReadCompanionNotificationsUseCase useCase;
+    private FakeMarkCompanionNotificationAsReadUseCase markUseCase;
 
     @BeforeEach
     void setUp() {
         useCase = new FakeReadCompanionNotificationsUseCase();
+        markUseCase = new FakeMarkCompanionNotificationAsReadUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionNotificationController(useCase))
+                .standaloneSetup(new CompanionNotificationController(useCase, markUseCase))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -122,6 +127,28 @@ class CompanionNotificationControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
+    @Test
+    void marksNotificationAsReadAndPassesAuthenticatedUserIdToUseCase() throws Exception {
+        markUseCase.result = new MarkCompanionNotificationAsReadResult(
+                99L,
+                true,
+                LocalDateTime.of(2026, 7, 6, 20, 30)
+        );
+
+        mockMvc.perform(patch("/api/users/me/companion-requests/{notificationId}/read", 99L)
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("MARK_COMPANION_NOTIFICATION_AS_READ"))
+                .andExpect(jsonPath("$.message").value("동행 알림을 읽음 처리했어요."))
+                .andExpect(jsonPath("$.data.notificationId").value(99))
+                .andExpect(jsonPath("$.data.isRead").value(true))
+                .andExpect(jsonPath("$.data.readAt").value("2026-07-06T20:30:00"));
+
+        assertEquals(7L, markUseCase.userId);
+        assertEquals(99L, markUseCase.notificationId);
+    }
+
     private Principal principal(final String name) {
         return () -> name;
     }
@@ -146,6 +173,24 @@ class CompanionNotificationControllerTest {
         ) {
             this.userId = userId;
             this.direction = direction;
+            return result;
+        }
+    }
+
+    private static final class FakeMarkCompanionNotificationAsReadUseCase
+            implements MarkCompanionNotificationAsReadUseCase {
+
+        private MarkCompanionNotificationAsReadResult result;
+        private Long userId;
+        private Long notificationId;
+
+        @Override
+        public MarkCompanionNotificationAsReadResult markAsRead(
+                final Long userId,
+                final Long notificationId
+        ) {
+            this.userId = userId;
+            this.notificationId = notificationId;
             return result;
         }
     }

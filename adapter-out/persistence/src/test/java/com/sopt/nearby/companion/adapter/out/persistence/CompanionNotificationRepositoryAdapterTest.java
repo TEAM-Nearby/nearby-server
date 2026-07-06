@@ -65,6 +65,28 @@ class CompanionNotificationRepositoryAdapterTest {
     }
 
     @Test
+    void updatesReadAtWhenNotificationIsMarkedAsRead() {
+        CompanionNotificationRepositoryAdapter adapter = new CompanionNotificationRepositoryAdapter(jpaRepository);
+        CompanionNotification saved = adapter.save(notification(
+                null,
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                1L,
+                null,
+                NOW
+        ));
+
+        CompanionNotification readNotification = saved.markAsRead(NOW.plusMinutes(30));
+        CompanionNotification updated = adapter.save(readNotification);
+
+        assertThat(updated.id()).isEqualTo(saved.id());
+        assertThat(updated.readAt()).isEqualTo(NOW.plusMinutes(30));
+        assertThat(adapter.findById(saved.id())).get()
+                .extracting(CompanionNotification::readAt)
+                .isEqualTo(NOW.plusMinutes(30));
+    }
+
+    @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void returnsExistingNotificationWhenSaveConflictsWithUniqueKey() {
         CompanionNotificationRepositoryAdapter adapter = new CompanionNotificationRepositoryAdapter(jpaRepository);
