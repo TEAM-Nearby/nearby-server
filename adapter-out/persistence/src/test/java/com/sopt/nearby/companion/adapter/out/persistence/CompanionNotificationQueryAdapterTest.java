@@ -1,0 +1,360 @@
+// 동행 알림 목록 조회 어댑터의 조인 쿼리와 매핑을 검증하는 테스트
+package com.sopt.nearby.companion.adapter.out.persistence;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplicationEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplicationReadStatusEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchParticipantEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApplicationJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchParticipantJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionNotificationJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
+import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationActionType;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
+import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRepository;
+import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+@DataJpaTest
+class CompanionNotificationQueryAdapterTest {
+
+    private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 4, 12, 0);
+
+    @Autowired
+    private CompanionApplicationJpaRepository applicationJpaRepository;
+
+    @Autowired
+    private TestEntityManager entityManager;
+
+    @Autowired
+    private CompanionMatchJpaRepository matchJpaRepository;
+
+    @Autowired
+    private CompanionMatchParticipantJpaRepository participantJpaRepository;
+
+    @Autowired
+    private CompanionNotificationJpaRepository notificationJpaRepository;
+
+    @Autowired
+    private CompanionPostJpaRepository postJpaRepository;
+
+    @Autowired
+    private CompanionProfileJpaRepository profileJpaRepository;
+
+    @Autowired
+    private PlaceCacheJpaRepository placeCacheJpaRepository;
+
+    @Test
+    void findsSentNotificationsWithHostProfileReadStatusMatchIdAndLatestOrder() {
+        CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
+
+        CompanionProfileEntity hostA = profileJpaRepository.saveAndFlush(profile(100L, "호스트A", "host-a.png"));
+        profileJpaRepository.saveAndFlush(profile(200L, "호스트B", null));
+
+        PlaceCacheEntity placeA = placeCacheJpaRepository.saveAndFlush(place("google-place-a", "오노테라"));
+        PlaceCacheEntity placeB = placeCacheJpaRepository.saveAndFlush(place("google-place-b", "시우다드 콘달"));
+
+        CompanionPostEntity recentPost = postJpaRepository.saveAndFlush(post(
+                hostA.getUserId(),
+                placeA.getId(),
+                NOW.plusDays(1)
+        ));
+        CompanionApplicationEntity recentApplication = applicationJpaRepository.saveAndFlush(application(
+                recentPost.getId(),
+                7L,
+                CompanionApplicationStatus.ACCEPTED,
+                NOW.plusHours(2)
+        ));
+        CompanionMatchEntity match = matchJpaRepository.saveAndFlush(match(recentPost.getId()));
+        participantJpaRepository.saveAndFlush(participant(
+                match.getId(),
+                7L,
+                recentApplication.getId()
+        ));
+        entityManager.persistAndFlush(readStatus(recentApplication.getId(), 7L));
+
+        CompanionPostEntity oldPost = postJpaRepository.saveAndFlush(post(
+                200L,
+                placeB.getId(),
+                NOW.plusDays(2)
+        ));
+        CompanionApplicationEntity oldApplication = applicationJpaRepository.saveAndFlush(application(
+                oldPost.getId(),
+                7L,
+                CompanionApplicationStatus.REJECTED,
+                NOW.minusHours(1)
+        ));
+
+        CompanionApplicationEntity otherUserApplication = applicationJpaRepository.saveAndFlush(application(
+                recentPost.getId(),
+                999L,
+                CompanionApplicationStatus.ACCEPTED,
+                NOW.plusHours(3)
+        ));
+        entityManager.persistAndFlush(readStatus(otherUserApplication.getId(), 999L));
+
+        List<CompanionNotificationSummary> result = adapter.findAllByUserIdAndDirection(
+                7L,
+                CompanionNotificationDirection.SENT
+        );
+
+        assertThat(result).hasSize(2);
+
+        CompanionNotificationSummary first = result.get(0);
+        assertThat(first.applicationId()).isEqualTo(recentApplication.getId());
+        assertThat(first.applicationStatus()).isEqualTo(CompanionApplicationStatus.ACCEPTED);
+        assertThat(first.host().userId()).isEqualTo(100L);
+        assertThat(first.host().profileImageUrl()).isEqualTo("host-a.png");
+        assertThat(first.host().nickname()).isEqualTo("호스트A");
+        assertThat(first.placeName()).isEqualTo("오노테라");
+        assertThat(first.meetingAt()).isEqualTo(NOW.plusDays(1));
+        assertThat(first.matchId()).isEqualTo(match.getId());
+        assertThat(first.actionType()).isEqualTo(CompanionNotificationActionType.CONFIRM_SCHEDULE);
+        assertThat(first.isRead()).isTrue();
+
+        CompanionNotificationSummary second = result.get(1);
+        assertThat(second.applicationId()).isEqualTo(oldApplication.getId());
+        assertThat(second.applicationStatus()).isEqualTo(CompanionApplicationStatus.REJECTED);
+        assertThat(second.host().userId()).isEqualTo(200L);
+        assertThat(second.host().profileImageUrl()).isNull();
+        assertThat(second.host().nickname()).isEqualTo("호스트B");
+        assertThat(second.placeName()).isEqualTo("시우다드 콘달");
+        assertThat(second.matchId()).isNull();
+        assertThat(second.actionType()).isEqualTo(CompanionNotificationActionType.VIEW_REJECTION);
+        assertThat(second.isRead()).isFalse();
+    }
+
+    @Test
+    void findsReceivedNotificationsForHostAndMapsActionTypes() {
+        CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
+
+        profileJpaRepository.saveAndFlush(profile(100L, "호스트", "host.png"));
+
+        PlaceCacheEntity placeA = placeCacheJpaRepository.saveAndFlush(place("google-place-a", "오노테라"));
+        PlaceCacheEntity placeB = placeCacheJpaRepository.saveAndFlush(place("google-place-b", "BRAMS"));
+        PlaceCacheEntity placeC = placeCacheJpaRepository.saveAndFlush(place("google-place-c", "시우다드 콘달"));
+
+        CompanionPostEntity recentPost = postJpaRepository.saveAndFlush(post(
+                100L,
+                placeA.getId(),
+                NOW.plusDays(1)
+        ));
+        CompanionApplicationEntity pendingApplication = applicationJpaRepository.saveAndFlush(application(
+                recentPost.getId(),
+                7L,
+                CompanionApplicationStatus.PENDING,
+                NOW.plusHours(3)
+        ));
+
+        CompanionPostEntity acceptedPost = postJpaRepository.saveAndFlush(post(
+                100L,
+                placeB.getId(),
+                NOW.plusDays(2)
+        ));
+        CompanionApplicationEntity acceptedApplication = applicationJpaRepository.saveAndFlush(application(
+                acceptedPost.getId(),
+                8L,
+                CompanionApplicationStatus.ACCEPTED,
+                NOW.plusHours(2)
+        ));
+        CompanionMatchEntity match = matchJpaRepository.saveAndFlush(match(acceptedPost.getId()));
+        participantJpaRepository.saveAndFlush(participant(
+                match.getId(),
+                8L,
+                acceptedApplication.getId()
+        ));
+        entityManager.persistAndFlush(readStatus(acceptedApplication.getId(), 100L));
+
+        CompanionPostEntity rejectedPost = postJpaRepository.saveAndFlush(post(
+                100L,
+                placeC.getId(),
+                NOW.plusDays(3)
+        ));
+        CompanionApplicationEntity rejectedApplication = applicationJpaRepository.saveAndFlush(application(
+                rejectedPost.getId(),
+                9L,
+                CompanionApplicationStatus.REJECTED,
+                NOW.plusHours(1)
+        ));
+
+        CompanionPostEntity otherHostPost = postJpaRepository.saveAndFlush(post(
+                200L,
+                placeA.getId(),
+                NOW.plusDays(4)
+        ));
+        applicationJpaRepository.saveAndFlush(application(
+                otherHostPost.getId(),
+                7L,
+                CompanionApplicationStatus.PENDING,
+                NOW.plusHours(4)
+        ));
+
+        List<CompanionNotificationSummary> result = adapter.findAllByUserIdAndDirection(
+                100L,
+                CompanionNotificationDirection.RECEIVED
+        );
+
+        assertThat(result).hasSize(3);
+        assertThat(result.get(0).applicationId()).isEqualTo(pendingApplication.getId());
+        assertThat(result.get(0).actionType()).isEqualTo(CompanionNotificationActionType.ACCEPT_REQUEST);
+        assertThat(result.get(0).isRead()).isFalse();
+
+        assertThat(result.get(1).applicationId()).isEqualTo(acceptedApplication.getId());
+        assertThat(result.get(1).matchId()).isEqualTo(match.getId());
+        assertThat(result.get(1).actionType()).isEqualTo(CompanionNotificationActionType.CONFIRM_SCHEDULE);
+        assertThat(result.get(1).isRead()).isTrue();
+
+        assertThat(result.get(2).applicationId()).isEqualTo(rejectedApplication.getId());
+        assertThat(result.get(2).actionType()).isEqualTo(CompanionNotificationActionType.NONE);
+        assertThat(result.get(2).isRead()).isFalse();
+    }
+
+    private PlaceCacheEntity place(final String googlePlaceId, final String name) {
+        return new PlaceCacheEntity(
+                null,
+                googlePlaceId,
+                name,
+                "서울시 어딘가",
+                new BigDecimal("37.56650000"),
+                new BigDecimal("126.97800000"),
+                "restaurant",
+                null,
+                new BigDecimal("4.50"),
+                10,
+                null,
+                PlaceBusinessStatus.OPERATIONAL
+        );
+    }
+
+    private CompanionProfileEntity profile(
+            final Long userId,
+            final String nickname,
+            final String profileImageUrl
+    ) {
+        return new CompanionProfileEntity(
+                null,
+                userId,
+                nickname,
+                UserGender.FEMALE,
+                2000,
+                profileImageUrl,
+                "반가워요.",
+                new BigDecimal("4.50"),
+                0,
+                CompanionProfileStatus.ACTIVE
+        );
+    }
+
+    private CompanionPostEntity post(
+            final Long hostUserId,
+            final Long placeId,
+            final LocalDateTime meetingAt
+    ) {
+        return new CompanionPostEntity(
+                null,
+                hostUserId,
+                placeId,
+                meetingAt,
+                4,
+                "같이 밥 먹어요.",
+                "https://openchat.example",
+                CompanionPostStatus.CLOSED,
+                NOW
+        );
+    }
+
+    private CompanionApplicationEntity application(
+            final Long postId,
+            final Long applicantUserId,
+            final CompanionApplicationStatus status,
+            final LocalDateTime createdAt
+    ) {
+        return new CompanionApplicationEntity(
+                null,
+                postId,
+                applicantUserId,
+                status,
+                null,
+                createdAt
+        );
+    }
+
+    private CompanionMatchEntity match(final Long postId) {
+        return new CompanionMatchEntity(
+                null,
+                postId,
+                CompanionMatchStatus.MATCHED,
+                NOW
+        );
+    }
+
+    private CompanionMatchParticipantEntity participant(
+            final Long matchId,
+            final Long userId,
+            final Long acceptedApplicationId
+    ) {
+        return new CompanionMatchParticipantEntity(
+                null,
+                matchId,
+                userId,
+                acceptedApplicationId,
+                MatchParticipantRole.GUEST
+        );
+    }
+
+    private CompanionApplicationReadStatusEntity readStatus(final Long applicationId, final Long userId) {
+        return new CompanionApplicationReadStatusEntity(
+                null,
+                applicationId,
+                userId,
+                NOW
+        );
+    }
+
+    @SpringBootConfiguration
+    @EnableAutoConfiguration
+    @EntityScan(basePackageClasses = {
+            CompanionApplicationEntity.class,
+            CompanionApplicationReadStatusEntity.class,
+            CompanionMatchEntity.class,
+            CompanionMatchParticipantEntity.class,
+            CompanionPostEntity.class,
+            CompanionProfileEntity.class,
+            PlaceCacheEntity.class
+    })
+    @EnableJpaRepositories(basePackageClasses = {
+            CompanionApplicationJpaRepository.class,
+            CompanionMatchJpaRepository.class,
+            CompanionMatchParticipantJpaRepository.class,
+            CompanionNotificationJpaRepository.class,
+            CompanionPostJpaRepository.class,
+            CompanionProfileJpaRepository.class,
+            PlaceCacheJpaRepository.class
+    })
+    static class TestApplication {
+    }
+}
