@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import java.time.LocalDateTime;
 
 public record CompanionNotificationSummary(
+        Long notificationId,
         Long applicationId,
         CompanionApplicationStatus applicationStatus,
         CompanionNotificationHostProfile host,
@@ -17,6 +18,7 @@ public record CompanionNotificationSummary(
 
     public static CompanionNotificationSummary of(
             final CompanionNotificationDirection direction,
+            final Long notificationId,
             final Long applicationId,
             final CompanionApplicationStatus applicationStatus,
             final CompanionNotificationHostProfile host,
@@ -26,6 +28,7 @@ public record CompanionNotificationSummary(
             final boolean isRead
     ) {
         return new CompanionNotificationSummary(
+                notificationId,
                 applicationId,
                 applicationStatus,
                 host,

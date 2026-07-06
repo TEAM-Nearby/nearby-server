@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import java.time.LocalDateTime;
 
 public record CompanionNotificationResponse(
+        Long notificationId,
         Long applicationId,
         CompanionApplicationStatus applicationStatus,
         CompanionNotificationHostResponse host,
@@ -19,6 +20,7 @@ public record CompanionNotificationResponse(
 
     public static CompanionNotificationResponse from(final CompanionNotificationSummary summary) {
         return new CompanionNotificationResponse(
+                summary.notificationId(),
                 summary.applicationId(),
                 summary.applicationStatus(),
                 CompanionNotificationHostResponse.from(summary.host()),
