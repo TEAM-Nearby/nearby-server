@@ -44,6 +44,7 @@ class CompanionNotificationControllerTest {
     void returnsSentNotificationsAndPassesAuthenticatedUserIdToUseCase() throws Exception {
         useCase.result = List.of(CompanionNotificationSummary.of(
                 CompanionNotificationDirection.SENT,
+                99L,
                 1L,
                 CompanionApplicationStatus.ACCEPTED,
                 new CompanionNotificationHostProfile(100L, "https://image.example/host.png", "호스트"),
@@ -61,6 +62,7 @@ class CompanionNotificationControllerTest {
                 .andExpect(jsonPath("$.code").value("READ_COMPANION_REQUESTS"))
                 .andExpect(jsonPath("$.message").value("동행 요청 목록을 조회했어요."))
                 .andExpect(jsonPath("$.data.direction").value("SENT"))
+                .andExpect(jsonPath("$.data.requests[0].notificationId").value(99))
                 .andExpect(jsonPath("$.data.requests[0].applicationId").value(1))
                 .andExpect(jsonPath("$.data.requests[0].applicationStatus").value("ACCEPTED"))
                 .andExpect(jsonPath("$.data.requests[0].host.userId").value(100))
@@ -81,6 +83,7 @@ class CompanionNotificationControllerTest {
     void returnsReceivedNotificationsWithAcceptRequestActionType() throws Exception {
         useCase.result = List.of(CompanionNotificationSummary.of(
                 CompanionNotificationDirection.RECEIVED,
+                100L,
                 2L,
                 CompanionApplicationStatus.PENDING,
                 new CompanionNotificationHostProfile(100L, null, "호스트"),
@@ -95,6 +98,7 @@ class CompanionNotificationControllerTest {
                         .principal(principal("100")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.direction").value("RECEIVED"))
+                .andExpect(jsonPath("$.data.requests[0].notificationId").value(100))
                 .andExpect(jsonPath("$.data.requests[0].applicationId").value(2))
                 .andExpect(jsonPath("$.data.requests[0].applicationStatus").value("PENDING"))
                 .andExpect(jsonPath("$.data.requests[0].host.profileImageUrl").value(nullValue()))

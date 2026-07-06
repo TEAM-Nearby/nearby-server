@@ -20,6 +20,7 @@ class ReadCompanionNotificationsServiceTest {
         ReadCompanionNotificationsService service = new ReadCompanionNotificationsService(queryPort);
         queryPort.result = List.of(CompanionNotificationSummary.of(
                 CompanionNotificationDirection.SENT,
+                99L,
                 1L,
                 CompanionApplicationStatus.ACCEPTED,
                 new CompanionNotificationHostProfile(100L, null, "호스트"),
