@@ -104,7 +104,7 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
                 contentPreview,
                 summary.content() != null && summary.content().length() > CONTENT_PREVIEW_LENGTH,
                 summary.meetingAt(),
-                DATE_TIME_TEXT_FORMATTER.format(summary.meetingAt()),
+                meetingAtText(summary.meetingAt()),
                 summary.participantCount(),
                 summary.maxParticipants(),
                 summary.participantCount() + "/" + summary.maxParticipants() + " 모집 중",
@@ -112,6 +112,10 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
                 createdAgoText(summary.createdAt()),
                 mapMarkerText(summary.meetingAt(), summary.placeName())
         );
+    }
+
+    private String meetingAtText(final LocalDateTime meetingAt) {
+        return meetingAt == null ? null : DATE_TIME_TEXT_FORMATTER.format(meetingAt);
     }
 
     private String contentPreview(final String content) {
@@ -137,6 +141,9 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
     }
 
     private String mapMarkerText(final LocalDateTime meetingAt, final String placeName) {
+        if (meetingAt == null) {
+            return placeName + " 동행";
+        }
         String timeText = meetingAt.getMinute() == 0
                 ? meetingAt.getHour() + "시"
                 : meetingAt.getHour() + "시 " + meetingAt.getMinute() + "분";

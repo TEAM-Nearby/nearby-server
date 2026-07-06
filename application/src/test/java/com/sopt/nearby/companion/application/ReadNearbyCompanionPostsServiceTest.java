@@ -138,6 +138,35 @@ class ReadNearbyCompanionPostsServiceTest {
     }
 
     @Test
+    void handlesPostWithoutMeetingAt() {
+        queryPort.result = List.of(new NearbyCompanionPostSummary(
+                101L,
+                CompanionPostStatus.RECRUITING,
+                "니어바이",
+                UserGender.FEMALE,
+                20L,
+                "google-place-id",
+                "니어바이스시",
+                CompanionPostPlaceCategory.RESTAURANT,
+                new BigDecimal("37.56710000"),
+                new BigDecimal("126.97920000"),
+                320,
+                null,
+                "지금 같이 스시 먹어요",
+                null,
+                1,
+                4,
+                LocalDateTime.of(2026, 7, 2, 3, 30)
+        ));
+
+        NearbyCompanionPostsResult result = service.read(validCommand());
+
+        assertEquals(null, result.posts().get(0).meetingAt());
+        assertEquals(null, result.posts().get(0).meetingAtText());
+        assertEquals("니어바이스시 동행", result.posts().get(0).mapMarkerText());
+    }
+
+    @Test
     void rejectsInvalidSearchCondition() {
         assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(new ReadNearbyCompanionPostsCommand(
                 7L,
