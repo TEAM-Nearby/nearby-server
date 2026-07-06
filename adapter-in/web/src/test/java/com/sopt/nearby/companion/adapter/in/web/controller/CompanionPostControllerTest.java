@@ -15,6 +15,7 @@ import com.sopt.nearby.companion.application.CreateCompanionPostCommand;
 import com.sopt.nearby.companion.application.CreateCompanionPostResult;
 import com.sopt.nearby.companion.application.NearbyCompanionPostsResult;
 import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsCommand;
+import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
@@ -287,6 +288,31 @@ class CompanionPostControllerTest {
     }
 
     @Test
+    void returnsValidationErrorForNullCreateRequestBody() throws Exception {
+        mockMvc.perform(post("/api/companion-posts")
+                        .contentType("application/json")
+                        .content("null")
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("필수값 누락, 인원 범위 오류, 소개 글자 수 초과, 장소 좌표 오류, 만남 시간 입력 규칙 위반입니다."));
+
+        assertEquals(null, createUseCase.command);
+    }
+
+    @Test
+    void returnsValidationErrorForEmptyCreateRequestBody() throws Exception {
+        mockMvc.perform(post("/api/companion-posts")
+                        .contentType("application/json")
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("필수값 누락, 인원 범위 오류, 소개 글자 수 초과, 장소 좌표 오류, 만남 시간 입력 규칙 위반입니다."));
+
+        assertEquals(null, createUseCase.command);
+    }
+
+    @Test
     void returnsInvalidOpenChatUrl() throws Exception {
         createUseCase.exception = new InvalidOpenChatUrlException();
 
@@ -428,6 +454,9 @@ class CompanionPostControllerTest {
         @Override
         public CreateCompanionPostResult create(final CreateCompanionPostCommand command) {
             this.command = command;
+            if (command == null) {
+                throw new InvalidCompanionPostCreateRequestException();
+            }
             if (exception != null) {
                 throw exception;
             }

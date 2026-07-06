@@ -65,13 +65,13 @@ public class CompanionPostController implements CompanionPostApi {
     @Override
     @PostMapping
     public CommonResponse<CreatedCompanionPostResponse> createPost(
-            @RequestBody final CreateCompanionPostRequest request,
+            @RequestBody(required = false) final CreateCompanionPostRequest request,
             final Principal principal
     ) {
         return CommonResponse.success(
                 CompanionSuccessCode.COMPANION_POST_CREATED,
                 CreatedCompanionPostResponse.from(createCompanionPostUseCase.create(
-                        request.toCommand(Long.valueOf(principal.getName()))
+                        request == null ? null : request.toCommand(Long.valueOf(principal.getName()))
                 ))
         );
     }
