@@ -7,6 +7,14 @@ import com.sopt.nearby.companion.domain.code.CompanionErrorCode;
 public class CompanionPostNotFoundException extends NotFoundException {
 
     public CompanionPostNotFoundException() {
-        super(CompanionErrorCode.COMPANION_MATCH_POST_NOT_FOUND);
+        this(CompanionErrorCode.COMPANION_POST_NOT_FOUND);
+    }
+
+    public static CompanionPostNotFoundException matchPostNotFound() {
+        return new CompanionPostNotFoundException(CompanionErrorCode.COMPANION_MATCH_POST_NOT_FOUND);
+    }
+
+    private CompanionPostNotFoundException(final CompanionErrorCode errorCode) {
+        super(errorCode);
     }
 }
