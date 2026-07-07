@@ -86,6 +86,7 @@ public interface NearbyCompanionPostQueryJpaRepository extends Repository<Compan
             from post_rows
             where distanceMeters <= :radiusMeters
                 and (:placeCategory = 'ALL' or placeCategory = :placeCategory)
+                and (:placeId is null or placeId = :placeId)
             order by
                 case when :sort = 'LATEST' then createdAt end desc,
                 case when :sort = 'DISTANCE' then distanceMeters end asc,
@@ -98,6 +99,7 @@ public interface NearbyCompanionPostQueryJpaRepository extends Repository<Compan
             @Param("longitude") BigDecimal longitude,
             @Param("radiusMeters") int radiusMeters,
             @Param("placeCategory") String placeCategory,
+            @Param("placeId") Long placeId,
             @Param("sort") String sort
     );
 }

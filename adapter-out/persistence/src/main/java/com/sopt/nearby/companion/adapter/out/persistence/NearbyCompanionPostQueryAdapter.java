@@ -28,6 +28,7 @@ public class NearbyCompanionPostQueryAdapter implements NearbyCompanionPostQuery
                         command.longitude(),
                         command.radiusMeters(),
                         command.placeCategory().name(),
+                        command.placeId(),
                         command.sort().name()
                 )
                 .stream()

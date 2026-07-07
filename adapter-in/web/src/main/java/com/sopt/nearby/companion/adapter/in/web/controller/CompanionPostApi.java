@@ -59,6 +59,8 @@ public interface CompanionPostApi {
             String radiusMeters,
             @Parameter(description = "장소 카테고리 필터", example = "ALL")
             String placeCategory,
+            @Parameter(description = "특정 장소 ID 필터", example = "20")
+            String placeId,
             @Parameter(description = "목록 정렬 기준", example = "LATEST")
             String sort,
             @Parameter(hidden = true)

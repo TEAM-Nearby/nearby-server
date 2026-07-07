@@ -216,6 +216,56 @@ class NearbyCompanionPostQueryAdapterTest {
     }
 
     @Test
+    void filtersByPlaceId() {
+        NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
+
+        companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A", UserGender.FEMALE));
+        PlaceCacheEntity selectedPlace = placeCacheJpaRepository.saveAndFlush(place(
+                "selected-restaurant",
+                "선택한 식당",
+                "restaurant",
+                "37.56660000",
+                "126.97810000",
+                null
+        ));
+        PlaceCacheEntity otherPlace = placeCacheJpaRepository.saveAndFlush(place(
+                "other-restaurant",
+                "다른 식당",
+                "restaurant",
+                "37.56670000",
+                "126.97820000",
+                null
+        ));
+
+        CompanionPostEntity selectedPost = companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                selectedPlace.getId(),
+                CompanionPostStatus.RECRUITING,
+                FUTURE.plusDays(1),
+                NOW,
+                "선택한 식당 모집글"
+        ));
+        companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                otherPlace.getId(),
+                CompanionPostStatus.RECRUITING,
+                FUTURE.plusDays(1),
+                NOW.minusMinutes(1),
+                "다른 식당 모집글"
+        ));
+
+        List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
+                1000,
+                CompanionPostPlaceCategory.ALL,
+                selectedPlace.getId(),
+                CompanionPostSort.LATEST
+        ));
+
+        assertThat(result).extracting(NearbyCompanionPostSummary::postId)
+                .containsExactly(selectedPost.getId());
+    }
+
+    @Test
     void sortsByClosingSoon() {
         NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
 
@@ -362,12 +412,22 @@ class NearbyCompanionPostQueryAdapterTest {
             final CompanionPostPlaceCategory placeCategory,
             final CompanionPostSort sort
     ) {
+        return command(radiusMeters, placeCategory, null, sort);
+    }
+
+    private ReadNearbyCompanionPostsCommand command(
+            final int radiusMeters,
+            final CompanionPostPlaceCategory placeCategory,
+            final Long placeId,
+            final CompanionPostSort sort
+    ) {
         return new ReadNearbyCompanionPostsCommand(
                 7L,
                 CURRENT_LATITUDE,
                 CURRENT_LONGITUDE,
                 radiusMeters,
                 placeCategory,
+                placeId,
                 sort
         );
     }
