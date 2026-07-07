@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -16,10 +17,15 @@ import com.sopt.nearby.companion.application.CheckInCompanionMeetingResult;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
+import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
+import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -30,16 +36,57 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class CompanionMeetingControllerTest {
 
     private MockMvc mockMvc;
+    private FakeReadOngoingCompanionMeetingsUseCase readUseCase;
     private FakeCheckInCompanionMeetingUseCase useCase;
 
     @BeforeEach
     void setUp() {
+        readUseCase = new FakeReadOngoingCompanionMeetingsUseCase();
         useCase = new FakeCheckInCompanionMeetingUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionMeetingController(useCase))
+                .standaloneSetup(new CompanionMeetingController(readUseCase, useCase))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+    }
+
+    @Test
+    void returnsOngoingMeetingsAndPassesAuthenticatedUserIdToUseCase() throws Exception {
+        readUseCase.result = List.of(ongoingMeeting(false), ongoingMeeting(true));
+
+        mockMvc.perform(get("/api/companion-meetings")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("READ_ONGOING_COMPANION_MEETINGS"))
+                .andExpect(jsonPath("$.message").value("현재 진행 중인 동행 목록을 조회했어요."))
+                .andExpect(jsonPath("$.data.meetings[0].meetingId").value(1))
+                .andExpect(jsonPath("$.data.meetings[0].matchId").value(10))
+                .andExpect(jsonPath("$.data.meetings[0].companion.userId").value(7))
+                .andExpect(jsonPath("$.data.meetings[0].companion.profileImageUrl")
+                        .value("https://image.url/profile.png"))
+                .andExpect(jsonPath("$.data.meetings[0].companion.nickname").value("정지영"))
+                .andExpect(jsonPath("$.data.meetings[0].companion.gender").value("FEMALE"))
+                .andExpect(jsonPath("$.data.meetings[0].placeName").value("시우다드 콘달"))
+                .andExpect(jsonPath("$.data.meetings[0].meetingAt").value("2026-06-29T16:30:00"))
+                .andExpect(jsonPath("$.data.meetings[0].isCheckedIn").value(false))
+                .andExpect(jsonPath("$.data.meetings[0].meetingStatus").value("ONGOING"))
+                .andExpect(jsonPath("$.data.meetings[1].isCheckedIn").value(true));
+
+        assertEquals(7L, readUseCase.userId);
+    }
+
+    @Test
+    void returnsEmptyOngoingMeetingsWhenUseCaseReturnsNoMeetings() throws Exception {
+        readUseCase.result = List.of();
+
+        mockMvc.perform(get("/api/companion-meetings")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("READ_ONGOING_COMPANION_MEETINGS"))
+                .andExpect(jsonPath("$.data.meetings").isArray())
+                .andExpect(jsonPath("$.data.meetings").isEmpty());
     }
 
     @Test
@@ -151,6 +198,23 @@ class CompanionMeetingControllerTest {
         );
     }
 
+    private OngoingCompanionMeetingSummary ongoingMeeting(final boolean checkedIn) {
+        return new OngoingCompanionMeetingSummary(
+                checkedIn ? 2L : 1L,
+                checkedIn ? 20L : 10L,
+                new OngoingCompanionMeetingHostProfile(
+                        7L,
+                        "https://image.url/profile.png",
+                        "정지영",
+                        UserGender.FEMALE
+                ),
+                "시우다드 콘달",
+                LocalDateTime.of(2026, 6, 29, 16, 30),
+                checkedIn,
+                CompanionMeetingStatus.ONGOING
+        );
+    }
+
     private Principal principal(final String name) {
         return () -> name;
     }
@@ -160,6 +224,18 @@ class CompanionMeetingControllerTest {
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return new MappingJackson2HttpMessageConverter(objectMapper);
+    }
+
+    private static final class FakeReadOngoingCompanionMeetingsUseCase implements ReadOngoingCompanionMeetingsUseCase {
+
+        private Long userId;
+        private List<OngoingCompanionMeetingSummary> result = List.of();
+
+        @Override
+        public List<OngoingCompanionMeetingSummary> getOngoingMeetings(final Long userId) {
+            this.userId = userId;
+            return result;
+        }
     }
 
     private static final class FakeCheckInCompanionMeetingUseCase implements CheckInCompanionMeetingUseCase {

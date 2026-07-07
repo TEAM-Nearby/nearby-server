@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CheckInCompanionMeetingRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CheckInCompanionMeetingResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
 import com.sopt.nearby.companion.domain.exception.CheckInTimeNotAllowedException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyCompletedException;
@@ -21,6 +22,19 @@ import java.security.Principal;
 
 @Tag(name = "CompanionMeeting", description = "동행 만남 API")
 public interface CompanionMeetingApi {
+
+    @Operation(
+            summary = "현재 진행 중인 동행 목록 조회",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 ONGOING 만남 목록을 조회합니다.
+                    companion은 항상 HOST 프로필이며, 로그인 사용자가 HOST여도 자기 자신의 HOST 프로필을 반환합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<OngoingCompanionMeetingsResponse> getOngoingMeetings(
+            @Parameter(hidden = true)
+            Principal principal
+    );
 
     @ApiExceptions({
             InvalidCheckInRequestException.class,
