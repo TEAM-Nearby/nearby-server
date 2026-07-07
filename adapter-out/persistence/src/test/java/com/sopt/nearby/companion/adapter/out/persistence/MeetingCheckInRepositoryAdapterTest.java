@@ -15,9 +15,9 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
-import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -44,14 +44,11 @@ class MeetingCheckInRepositoryAdapterTest {
     private MeetingCheckInJpaRepository checkInJpaRepository;
 
     @Autowired
-    private EntityManager entityManager;
+    private DataSource dataSource;
 
     @Test
     void savesAndFindsCheckInByMeetingIdAndUserId() {
-        MeetingCheckInRepositoryAdapter adapter = new MeetingCheckInRepositoryAdapter(
-                checkInJpaRepository,
-                entityManager
-        );
+        MeetingCheckInRepositoryAdapter adapter = new MeetingCheckInRepositoryAdapter(checkInJpaRepository, dataSource);
         CompanionMeetingEntity meeting = meetingJpaRepository.saveAndFlush(meeting(match().getId()));
 
         MeetingCheckIn saved = adapter.saveIfAbsent(checkIn(meeting.getId(), 7L, NOW));
@@ -63,10 +60,7 @@ class MeetingCheckInRepositoryAdapterTest {
 
     @Test
     void returnsExistingCheckInWhenDuplicateSaveIsRequested() {
-        MeetingCheckInRepositoryAdapter adapter = new MeetingCheckInRepositoryAdapter(
-                checkInJpaRepository,
-                entityManager
-        );
+        MeetingCheckInRepositoryAdapter adapter = new MeetingCheckInRepositoryAdapter(checkInJpaRepository, dataSource);
         CompanionMeetingEntity meeting = meetingJpaRepository.saveAndFlush(meeting(match().getId()));
         MeetingCheckIn first = adapter.saveIfAbsent(checkIn(meeting.getId(), 7L, NOW.minusMinutes(5)));
 

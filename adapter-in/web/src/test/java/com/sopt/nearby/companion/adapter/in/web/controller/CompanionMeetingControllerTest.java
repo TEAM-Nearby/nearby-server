@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -12,6 +13,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingCommand;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingResult;
+import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
@@ -112,6 +114,23 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.code").value("OUT_OF_CHECK_IN_RADIUS"))
                 .andExpect(jsonPath("$.message").value("만남 인증 가능 반경 밖에 있습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsInvalidRequestWhenRequestBodyIsNull() throws Exception {
+        useCase.exception = new InvalidCheckInRequestException();
+
+        mockMvc.perform(post("/api/companion-meetings/{meetingId}/check-in", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("null")
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("INVALID_CHECK_IN_REQUEST"))
+                .andExpect(jsonPath("$.message").value("올바르지 않은 만남 인증 요청입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+
+        assertNull(useCase.command);
     }
 
     private CheckInCompanionMeetingResult result(final boolean alreadyCompleted) {

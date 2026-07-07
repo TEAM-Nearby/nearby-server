@@ -28,12 +28,12 @@ public class CompanionMeetingController implements CompanionMeetingApi {
     @PostMapping("/{meetingId}/check-in")
     public CommonResponse<CheckInCompanionMeetingResponse> checkIn(
             @PathVariable final Long meetingId,
-            @RequestBody final CheckInCompanionMeetingRequest request,
+            @RequestBody(required = false) final CheckInCompanionMeetingRequest request,
             final Principal principal
     ) {
         Long userId = Long.valueOf(principal.getName());
         CheckInCompanionMeetingResult result = checkInCompanionMeetingUseCase.checkIn(
-                request.toCommand(meetingId, userId)
+                request == null ? null : request.toCommand(meetingId, userId)
         );
 
         return CommonResponse.success(
