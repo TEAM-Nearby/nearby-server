@@ -22,10 +22,9 @@ import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
-import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
-import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
+import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -40,17 +39,17 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class CompanionMeetingControllerTest {
 
     private MockMvc mockMvc;
-    private FakeReadOngoingCompanionMeetingsUseCase readUseCase;
-    private FakeReadCompanionMeetingDetailUseCase readUseCase;
+    private FakeReadOngoingCompanionMeetingsUseCase ongoingReadUseCase;
+    private FakeReadCompanionMeetingDetailUseCase detailReadUseCase;
     private FakeCheckInCompanionMeetingUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        readUseCase = new FakeReadOngoingCompanionMeetingsUseCase();
-        readUseCase = new FakeReadCompanionMeetingDetailUseCase();
+        ongoingReadUseCase = new FakeReadOngoingCompanionMeetingsUseCase();
+        detailReadUseCase = new FakeReadCompanionMeetingDetailUseCase();
         useCase = new FakeCheckInCompanionMeetingUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionMeetingController(readUseCase, useCase))
+                .standaloneSetup(new CompanionMeetingController(ongoingReadUseCase, detailReadUseCase, useCase))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -58,7 +57,7 @@ class CompanionMeetingControllerTest {
 
     @Test
     void returnsOngoingMeetingsAndPassesAuthenticatedUserIdToUseCase() throws Exception {
-        readUseCase.result = List.of(ongoingMeeting(false), ongoingMeeting(true));
+        ongoingReadUseCase.result = List.of(ongoingMeeting(false), ongoingMeeting(true));
 
         mockMvc.perform(get("/api/companion-meetings")
                         .principal(principal("7")))
@@ -79,12 +78,12 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.data.meetings[0].meetingStatus").value("ONGOING"))
                 .andExpect(jsonPath("$.data.meetings[1].isCheckedIn").value(true));
 
-        assertEquals(7L, readUseCase.userId);
+        assertEquals(7L, ongoingReadUseCase.userId);
     }
 
     @Test
     void returnsEmptyOngoingMeetingsWhenUseCaseReturnsNoMeetings() throws Exception {
-        readUseCase.result = List.of();
+        ongoingReadUseCase.result = List.of();
 
         mockMvc.perform(get("/api/companion-meetings")
                         .principal(principal("7")))
@@ -97,7 +96,7 @@ class CompanionMeetingControllerTest {
 
     @Test
     void returnsOngoingMeetingDetailAndPassesAuthenticatedUserIdToUseCase() throws Exception {
-        readUseCase.result = detailResult(MatchParticipantRole.GUEST);
+        detailReadUseCase.result = detailResult(MatchParticipantRole.GUEST);
 
         mockMvc.perform(get("/api/companion-meetings/{meetingId}", 1L)
                         .principal(principal("7")))
@@ -118,13 +117,13 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.data.currentUserCheckedIn").value(false))
                 .andExpect(jsonPath("$.data.canCancelMeeting").value(true));
 
-        assertEquals(1L, readUseCase.meetingId);
-        assertEquals(7L, readUseCase.userId);
+        assertEquals(1L, detailReadUseCase.meetingId);
+        assertEquals(7L, detailReadUseCase.userId);
     }
 
     @Test
     void returnsHostProfileEvenWhenRequesterIsHost() throws Exception {
-        readUseCase.result = detailResult(MatchParticipantRole.HOST);
+        detailReadUseCase.result = detailResult(MatchParticipantRole.HOST);
 
         mockMvc.perform(get("/api/companion-meetings/{meetingId}", 1L)
                         .principal(principal("1")))
