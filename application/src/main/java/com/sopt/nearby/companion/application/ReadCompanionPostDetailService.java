@@ -33,7 +33,11 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
     @Override
     @Transactional(readOnly = true)
     public CompanionPostDetailResult read(final ReadCompanionPostDetailCommand command) {
-        if (command == null || command.userId() == null || command.postId() == null || command.postId() <= 0) {
+        if (command == null
+                || command.userId() == null
+                || command.userId() <= 0
+                || command.postId() == null
+                || command.postId() <= 0) {
             throw new CompanionPostNotFoundException();
         }
 

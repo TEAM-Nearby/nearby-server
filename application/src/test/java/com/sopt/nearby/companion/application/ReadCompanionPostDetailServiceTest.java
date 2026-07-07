@@ -156,6 +156,26 @@ class ReadCompanionPostDetailServiceTest {
     }
 
     @Test
+    void rejectsInvalidPostIdBeforeDependencies() {
+        assertThrows(
+                CompanionPostNotFoundException.class,
+                () -> service.read(new ReadCompanionPostDetailCommand(7L, 0L))
+        );
+        assertNull(onboardingUseCase.userId);
+        assertNull(queryPort.postId);
+    }
+
+    @Test
+    void rejectsInvalidUserIdBeforeDependencies() {
+        assertThrows(
+                CompanionPostNotFoundException.class,
+                () -> service.read(new ReadCompanionPostDetailCommand(0L, 101L))
+        );
+        assertNull(onboardingUseCase.userId);
+        assertNull(queryPort.postId);
+    }
+
+    @Test
     void rejectsUserWithoutCompletedOnboarding() {
         onboardingUseCase.exception = new OnboardingRequiredException();
 
