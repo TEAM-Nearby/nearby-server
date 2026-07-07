@@ -2,8 +2,11 @@
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionPostRequest;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostDetailResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionPostResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.NearbyCompanionPostsResponse;
+import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
@@ -58,6 +61,40 @@ public interface CompanionPostApi {
             String placeCategory,
             @Parameter(description = "목록 정렬 기준", example = "LATEST")
             String sort,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            CompanionPostNotFoundException.class,
+            CompanionPostExpiredException.class
+    })
+    @ApiResponse(
+            responseCode = "403",
+            description = "온보딩 과정이 완료되지 않았습니다.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "ONBOARDING_REQUIRED",
+                            value = """
+                                    {
+                                      "status": 403,
+                                      "code": "ONBOARDING_REQUIRED",
+                                      "message": "온보딩 과정이 완료되지 않았습니다.",
+                                      "data": null
+                                    }
+                                    """
+                    )
+            )
+    )
+    @Operation(
+            summary = "동행 모집글 상세 조회",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글 상세 정보를 조회합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CompanionPostDetailResponse> getPost(
+            @Parameter(description = "조회할 동행 모집 글 ID", required = true, example = "101")
+            Long postId,
             @Parameter(hidden = true)
             Principal principal
     );

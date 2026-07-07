@@ -14,6 +14,7 @@ public final class ApiExceptionStatusResolver {
     private static final String KAKAO_LOGIN_FAILED_CODE = "KAKAO_LOGIN_FAILED";
     private static final String INVALID_REFRESH_TOKEN_CODE = "INVALID_REFRESH_TOKEN";
     private static final String ONBOARDING_REQUIRED_CODE = "ONBOARDING_REQUIRED";
+    private static final String COMPANION_POST_EXPIRED_CODE = "COMPANION_POST_EXPIRED";
     private static final String PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE =
             "PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED";
     private static final String PHONE_VERIFICATION_EXPIRED_CODE = "PHONE_VERIFICATION_EXPIRED";
@@ -50,6 +51,9 @@ public final class ApiExceptionStatusResolver {
             return HttpStatus.INTERNAL_SERVER_ERROR;
         }
         if (errorCode.name().equals(PHONE_VERIFICATION_EXPIRED_CODE)) {
+            return HttpStatus.GONE;
+        }
+        if (errorCode.name().equals(COMPANION_POST_EXPIRED_CODE)) {
             return HttpStatus.GONE;
         }
 

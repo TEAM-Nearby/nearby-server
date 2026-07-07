@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
+import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
 import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
@@ -17,6 +18,7 @@ import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
@@ -27,6 +29,7 @@ import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
+import com.sopt.nearby.companion.port.out.CompanionPostDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
@@ -105,6 +108,18 @@ public class CompanionUseCaseConfig {
                 requireCompletedOnboardingUseCase,
                 Clock.systemDefaultZone(),
                 resolvePlaceImageUseCase
+        );
+    }
+
+    @Bean
+    ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase(
+            final CompanionPostDetailQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase
+    ) {
+        return new ReadCompanionPostDetailService(
+                queryPort,
+                requireCompletedOnboardingUseCase,
+                Clock.systemDefaultZone()
         );
     }
 

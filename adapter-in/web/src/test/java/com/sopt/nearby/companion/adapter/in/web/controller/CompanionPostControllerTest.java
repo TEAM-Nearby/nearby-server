@@ -13,10 +13,15 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.CreateCompanionPostCommand;
 import com.sopt.nearby.companion.application.CreateCompanionPostResult;
+import com.sopt.nearby.companion.application.CompanionPostDetailResult;
 import com.sopt.nearby.companion.application.NearbyCompanionPostsResult;
+import com.sopt.nearby.companion.application.ReadCompanionPostDetailCommand;
 import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsCommand;
+import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostApplyStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
@@ -24,6 +29,7 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import com.sopt.nearby.user.exception.OnboardingRequiredException;
@@ -42,13 +48,15 @@ class CompanionPostControllerTest {
     private MockMvc mockMvc;
     private FakeReadNearbyCompanionPostsUseCase readUseCase;
     private FakeCreateCompanionPostUseCase createUseCase;
+    private FakeReadCompanionPostDetailUseCase detailUseCase;
 
     @BeforeEach
     void setUp() {
         readUseCase = new FakeReadNearbyCompanionPostsUseCase();
         createUseCase = new FakeCreateCompanionPostUseCase();
+        detailUseCase = new FakeReadCompanionPostDetailUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionPostController(readUseCase, createUseCase))
+                .standaloneSetup(new CompanionPostController(readUseCase, createUseCase, detailUseCase))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -338,6 +346,89 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.message").value("카카오톡 오픈채팅 링크 형식이 올바르지 않습니다."));
     }
 
+    @Test
+    void getsCompanionPostDetail() throws Exception {
+        detailUseCase.result = detailResult(null, CompanionPostApplyStatus.NOT_APPLIED);
+
+        mockMvc.perform(get("/api/companion-posts/101")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("COMPANION_POST_FOUND"))
+                .andExpect(jsonPath("$.message").value("동행 모집 글 상세 조회에 성공했어요."))
+                .andExpect(jsonPath("$.data.postId").value(101))
+                .andExpect(jsonPath("$.data.hostUserId").value(1))
+                .andExpect(jsonPath("$.data.hostProfileId").value(5))
+                .andExpect(jsonPath("$.data.googlePlaceId").value("google-place-id"))
+                .andExpect(jsonPath("$.data.meetingAt").value("2026-07-03T14:00:00"))
+                .andExpect(jsonPath("$.data.maxParticipants").value(4))
+                .andExpect(jsonPath("$.data.content").value("같이 스시 먹으러 갈 사람 구해요."))
+                .andExpect(jsonPath("$.data.openChatUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.status").value("RECRUITING"))
+                .andExpect(jsonPath("$.data.createdAt").value("2026-07-02T13:30:00"))
+                .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
+                .andExpect(jsonPath("$.data.expiresAt").value(nullValue()))
+                .andExpect(jsonPath("$.data.participantCount").value(2))
+                .andExpect(jsonPath("$.data.applyStatus").value("NOT_APPLIED"))
+                .andExpect(jsonPath("$.data.place.name").value("니어바이 스시"))
+                .andExpect(jsonPath("$.data.place.address").value("서울시 어딘가"))
+                .andExpect(jsonPath("$.data.place.latitude").value(37.5671))
+                .andExpect(jsonPath("$.data.place.longitude").value(126.9792))
+                .andExpect(jsonPath("$.data.place.category").value("RESTAURANT"))
+                .andExpect(jsonPath("$.data.hostProfileSummary.profileId").value(5))
+                .andExpect(jsonPath("$.data.hostProfileSummary.nickname").value("니어바이"))
+                .andExpect(jsonPath("$.data.hostProfileSummary.gender").value("FEMALE"))
+                .andExpect(jsonPath("$.data.hostProfileSummary.birthYear").value(2001))
+                .andExpect(jsonPath("$.data.hostProfileSummary.profileImageUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.hostProfileSummary.mannerScore").value(4.0))
+                .andExpect(jsonPath("$.data.hostProfileSummary.phoneVerifiedAt").value("2026-07-01T10:00:00"))
+                .andExpect(jsonPath("$.data.hostProfileSummary.keywords[0]").value("PLANNED"))
+                .andExpect(jsonPath("$.data.hostProfileSummary.keywords[1]").value("FOODIE"));
+
+        assertEquals(7L, detailUseCase.command.userId());
+        assertEquals(101L, detailUseCase.command.postId());
+    }
+
+    @Test
+    void getsCompanionPostDetailWithOpenChatUrl() throws Exception {
+        detailUseCase.result = detailResult(
+                "https://open.kakao.com/o/nearby123",
+                CompanionPostApplyStatus.ACCEPTED
+        );
+
+        mockMvc.perform(get("/api/companion-posts/101")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/nearby123"))
+                .andExpect(jsonPath("$.data.applyStatus").value("ACCEPTED"));
+    }
+
+    @Test
+    void returnsNotFoundForMissingCompanionPostDetail() throws Exception {
+        detailUseCase.exception = new CompanionPostNotFoundException();
+
+        mockMvc.perform(get("/api/companion-posts/101")
+                        .principal(principal("7")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("COMPANION_POST_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("존재하지 않거나 삭제된 글입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsGoneForExpiredCompanionPostDetail() throws Exception {
+        detailUseCase.exception = new CompanionPostExpiredException();
+
+        mockMvc.perform(get("/api/companion-posts/101")
+                        .principal(principal("7")))
+                .andExpect(status().isGone())
+                .andExpect(jsonPath("$.status").value(410))
+                .andExpect(jsonPath("$.code").value("COMPANION_POST_EXPIRED"))
+                .andExpect(jsonPath("$.message").value("마감된 글입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
     private NearbyCompanionPostsResult result(
             final int radiusMeters,
             final CompanionPostPlaceCategory placeCategory,
@@ -418,6 +509,46 @@ class CompanionPostControllerTest {
         );
     }
 
+    private CompanionPostDetailResult detailResult(
+            final String openChatUrl,
+            final CompanionPostApplyStatus applyStatus
+    ) {
+        return new CompanionPostDetailResult(
+                101L,
+                1L,
+                5L,
+                "google-place-id",
+                LocalDateTime.of(2026, 7, 3, 14, 0),
+                4,
+                "같이 스시 먹으러 갈 사람 구해요.",
+                openChatUrl,
+                CompanionPostStatus.RECRUITING,
+                LocalDateTime.of(2026, 7, 2, 13, 30),
+                CompanionPostMeetingTimeType.SCHEDULED,
+                null,
+                2,
+                applyStatus,
+                new CompanionPostDetailResult.Place(
+                        "google-place-id",
+                        "니어바이 스시",
+                        "서울시 어딘가",
+                        new BigDecimal("37.56710000"),
+                        new BigDecimal("126.97920000"),
+                        CompanionPostPlaceCategory.RESTAURANT
+                ),
+                new CompanionPostDetailResult.HostProfileSummary(
+                        5L,
+                        "니어바이",
+                        UserGender.FEMALE,
+                        2001,
+                        null,
+                        new BigDecimal("4.00"),
+                        LocalDateTime.of(2026, 7, 1, 10, 0),
+                        List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE)
+                )
+        );
+    }
+
     private Principal principal(final String name) {
         return () -> name;
     }
@@ -457,6 +588,22 @@ class CompanionPostControllerTest {
             if (command == null) {
                 throw new InvalidCompanionPostCreateRequestException();
             }
+            if (exception != null) {
+                throw exception;
+            }
+            return result;
+        }
+    }
+
+    private static final class FakeReadCompanionPostDetailUseCase implements ReadCompanionPostDetailUseCase {
+
+        private CompanionPostDetailResult result;
+        private ReadCompanionPostDetailCommand command;
+        private RuntimeException exception;
+
+        @Override
+        public CompanionPostDetailResult read(final ReadCompanionPostDetailCommand command) {
+            this.command = command;
             if (exception != null) {
                 throw exception;
             }

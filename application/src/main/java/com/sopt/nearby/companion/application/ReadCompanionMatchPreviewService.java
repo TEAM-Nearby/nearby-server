@@ -55,7 +55,7 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
         }
 
         CompanionPost post = companionPostRepository.findById(match.postId()).orElseThrow(
-                CompanionPostNotFoundException::new);
+                CompanionPostNotFoundException::matchPostNotFound);
         List<CompanionMatchParticipant> participants = companionMatchParticipantRepository.findAllByMatchId(match.id());
         List<CompanionProfile> profiles = companionProfileRepository.findAllByUserIdIn(participants.stream().map(
                 CompanionMatchParticipant::userId
