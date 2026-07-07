@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
+import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
@@ -20,6 +21,7 @@ import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
+import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
@@ -38,6 +40,7 @@ import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
+import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
 import com.sopt.nearby.companion.port.out.ProfileImageUploadUrlIssuer;
 import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
@@ -196,5 +199,12 @@ public class CompanionUseCaseConfig {
                 checkInRepository,
                 Clock.systemDefaultZone()
         );
+    }
+
+    @Bean
+    ReadOngoingCompanionMeetingsUseCase readOngoingCompanionMeetingsUseCase(
+            final OngoingCompanionMeetingQueryPort queryPort
+    ) {
+        return new ReadOngoingCompanionMeetingsService(queryPort);
     }
 }
