@@ -14,9 +14,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.CreateCompanionPostCommand;
 import com.sopt.nearby.companion.application.CreateCompanionPostResult;
 import com.sopt.nearby.companion.application.CompanionPostDetailResult;
-import com.sopt.nearby.companion.application.NearbyCompanionPostsResult;
+import com.sopt.nearby.companion.application.CompanionPostsResult;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailCommand;
-import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsCommand;
+import com.sopt.nearby.companion.application.ReadCompanionPostsCommand;
 import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
@@ -30,7 +30,7 @@ import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
-import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import com.sopt.nearby.user.exception.OnboardingRequiredException;
 import java.math.BigDecimal;
@@ -46,13 +46,13 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class CompanionPostControllerTest {
 
     private MockMvc mockMvc;
-    private FakeReadNearbyCompanionPostsUseCase readUseCase;
+    private FakeReadCompanionPostsUseCase readUseCase;
     private FakeCreateCompanionPostUseCase createUseCase;
     private FakeReadCompanionPostDetailUseCase detailUseCase;
 
     @BeforeEach
     void setUp() {
-        readUseCase = new FakeReadNearbyCompanionPostsUseCase();
+        readUseCase = new FakeReadCompanionPostsUseCase();
         createUseCase = new FakeCreateCompanionPostUseCase();
         detailUseCase = new FakeReadCompanionPostDetailUseCase();
         mockMvc = MockMvcBuilders
@@ -431,13 +431,13 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
-    private NearbyCompanionPostsResult result(
+    private CompanionPostsResult result(
             final int radiusMeters,
             final CompanionPostPlaceCategory placeCategory,
             final CompanionPostSort sort
     ) {
-        return new NearbyCompanionPostsResult(
-                new NearbyCompanionPostsResult.CurrentLocation(
+        return new CompanionPostsResult(
+                new CompanionPostsResult.CurrentLocation(
                         new BigDecimal("37.56650000"),
                         new BigDecimal("126.97800000")
                 ),
@@ -447,11 +447,11 @@ class CompanionPostControllerTest {
                 sort,
                 1,
                 "내 주변 1개의 동행이 있어요",
-                List.of(new NearbyCompanionPostsResult.Post(
+                List.of(new CompanionPostsResult.Post(
                         101L,
                         CompanionPostStatus.RECRUITING,
-                        new NearbyCompanionPostsResult.Host("니어바이", UserGender.FEMALE),
-                        new NearbyCompanionPostsResult.Place(
+                        new CompanionPostsResult.Host("니어바이", UserGender.FEMALE),
+                        new CompanionPostsResult.Place(
                                 20L,
                                 "google-place-id",
                                 "니어바이스시",
@@ -562,14 +562,14 @@ class CompanionPostControllerTest {
         return new MappingJackson2HttpMessageConverter(objectMapper);
     }
 
-    private static final class FakeReadNearbyCompanionPostsUseCase implements ReadNearbyCompanionPostsUseCase {
+    private static final class FakeReadCompanionPostsUseCase implements ReadCompanionPostsUseCase {
 
-        private NearbyCompanionPostsResult result;
-        private ReadNearbyCompanionPostsCommand command;
+        private CompanionPostsResult result;
+        private ReadCompanionPostsCommand command;
         private RuntimeException exception;
 
         @Override
-        public NearbyCompanionPostsResult read(final ReadNearbyCompanionPostsCommand command) {
+        public CompanionPostsResult read(final ReadCompanionPostsCommand command) {
             this.command = command;
             if (exception != null) {
                 throw exception;

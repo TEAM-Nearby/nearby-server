@@ -1,4 +1,4 @@
-// 주변 동행 모집글 목록 조회 쿼리 어댑터를 검증한다.
+// 동행 모집글 목록 조회 쿼리 어댑터를 검증한다.
 package com.sopt.nearby.companion.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,14 +9,14 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfile
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApplicationJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
-import com.sopt.nearby.companion.adapter.out.persistence.repository.NearbyCompanionPostQueryJpaRepository;
-import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsCommand;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostQueryJpaRepository;
+import com.sopt.nearby.companion.application.ReadCompanionPostsCommand;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
-import com.sopt.nearby.companion.domain.model.post.NearbyCompanionPostSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostSummary;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
@@ -34,7 +34,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @DataJpaTest
-class NearbyCompanionPostQueryAdapterTest {
+class CompanionPostQueryAdapterTest {
 
     private static final BigDecimal CURRENT_LATITUDE = new BigDecimal("37.56650000");
     private static final BigDecimal CURRENT_LONGITUDE = new BigDecimal("126.97800000");
@@ -54,11 +54,11 @@ class NearbyCompanionPostQueryAdapterTest {
     private PlaceCacheJpaRepository placeCacheJpaRepository;
 
     @Autowired
-    private NearbyCompanionPostQueryJpaRepository queryJpaRepository;
+    private CompanionPostQueryJpaRepository queryJpaRepository;
 
     @Test
     void findsRecruitingPostsInRadiusWithHostPlaceAndParticipantCountByLatestOrder() {
-        NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
+        CompanionPostQueryAdapter adapter = new CompanionPostQueryAdapter(queryJpaRepository);
 
         companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A", UserGender.FEMALE));
         companionProfileJpaRepository.saveAndFlush(profile(200L, "호스트B", UserGender.MALE));
@@ -127,7 +127,7 @@ class NearbyCompanionPostQueryAdapterTest {
         companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 304L, CompanionApplicationStatus.ACCEPTED));
         companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 304L, CompanionApplicationStatus.CANCELED));
 
-        List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
+        List<CompanionPostSummary> result = adapter.find(command(
                 1000,
                 CompanionPostPlaceCategory.ALL,
                 CompanionPostSort.LATEST
@@ -151,7 +151,7 @@ class NearbyCompanionPostQueryAdapterTest {
 
     @Test
     void filtersCategoryAndSortsByDistance() {
-        NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
+        CompanionPostQueryAdapter adapter = new CompanionPostQueryAdapter(queryJpaRepository);
 
         companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A", UserGender.FEMALE));
         PlaceCacheEntity nearRestaurant = placeCacheJpaRepository.saveAndFlush(place(
@@ -204,20 +204,20 @@ class NearbyCompanionPostQueryAdapterTest {
                 "카페 모집글"
         ));
 
-        List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
+        List<CompanionPostSummary> result = adapter.find(command(
                 1000,
                 CompanionPostPlaceCategory.RESTAURANT,
                 CompanionPostSort.DISTANCE
         ));
 
-        assertThat(result).extracting(NearbyCompanionPostSummary::postId)
+        assertThat(result).extracting(CompanionPostSummary::postId)
                 .containsExactly(nearPost.getId(), farPost.getId());
         assertThat(result).allMatch(post -> post.placeCategory() == CompanionPostPlaceCategory.RESTAURANT);
     }
 
     @Test
     void filtersByPlaceId() {
-        NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
+        CompanionPostQueryAdapter adapter = new CompanionPostQueryAdapter(queryJpaRepository);
 
         companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A", UserGender.FEMALE));
         PlaceCacheEntity selectedPlace = placeCacheJpaRepository.saveAndFlush(place(
@@ -254,20 +254,20 @@ class NearbyCompanionPostQueryAdapterTest {
                 "다른 식당 모집글"
         ));
 
-        List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
+        List<CompanionPostSummary> result = adapter.find(command(
                 1000,
                 CompanionPostPlaceCategory.ALL,
                 selectedPlace.getId(),
                 CompanionPostSort.LATEST
         ));
 
-        assertThat(result).extracting(NearbyCompanionPostSummary::postId)
+        assertThat(result).extracting(CompanionPostSummary::postId)
                 .containsExactly(selectedPost.getId());
     }
 
     @Test
     void sortsByClosingSoon() {
-        NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
+        CompanionPostQueryAdapter adapter = new CompanionPostQueryAdapter(queryJpaRepository);
 
         companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A", UserGender.FEMALE));
         PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place(
@@ -306,19 +306,19 @@ class NearbyCompanionPostQueryAdapterTest {
                 "지금 모집글"
         ));
 
-        List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
+        List<CompanionPostSummary> result = adapter.find(command(
                 1000,
                 CompanionPostPlaceCategory.ALL,
                 CompanionPostSort.CLOSING_SOON
         ));
 
-        assertThat(result).extracting(NearbyCompanionPostSummary::postId)
+        assertThat(result).extracting(CompanionPostSummary::postId)
                 .containsExactly(nowPost.getId(), soonPost.getId(), latePost.getId());
     }
 
     @Test
     void excludesExpiredNowPosts() {
-        NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
+        CompanionPostQueryAdapter adapter = new CompanionPostQueryAdapter(queryJpaRepository);
 
         companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A", UserGender.FEMALE));
         PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place(
@@ -351,20 +351,20 @@ class NearbyCompanionPostQueryAdapterTest {
                 "노출 중인 지금 모집글"
         ));
 
-        List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
+        List<CompanionPostSummary> result = adapter.find(command(
                 1000,
                 CompanionPostPlaceCategory.ALL,
                 CompanionPostSort.LATEST
         ));
 
-        assertThat(result).extracting(NearbyCompanionPostSummary::postId)
+        assertThat(result).extracting(CompanionPostSummary::postId)
                 .containsExactly(activePost.getId());
         assertThat(result.get(0).meetingAt()).isNull();
     }
 
     @Test
     void excludesScheduledPostsAfterMeetingAt() {
-        NearbyCompanionPostQueryAdapter adapter = new NearbyCompanionPostQueryAdapter(queryJpaRepository);
+        CompanionPostQueryAdapter adapter = new CompanionPostQueryAdapter(queryJpaRepository);
 
         companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A", UserGender.FEMALE));
         PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place(
@@ -397,17 +397,17 @@ class NearbyCompanionPostQueryAdapterTest {
                 "예정된 예약 모집글"
         ));
 
-        List<NearbyCompanionPostSummary> result = adapter.findNearby(command(
+        List<CompanionPostSummary> result = adapter.find(command(
                 1000,
                 CompanionPostPlaceCategory.ALL,
                 CompanionPostSort.LATEST
         ));
 
-        assertThat(result).extracting(NearbyCompanionPostSummary::postId)
+        assertThat(result).extracting(CompanionPostSummary::postId)
                 .containsExactly(activePost.getId());
     }
 
-    private ReadNearbyCompanionPostsCommand command(
+    private ReadCompanionPostsCommand command(
             final int radiusMeters,
             final CompanionPostPlaceCategory placeCategory,
             final CompanionPostSort sort
@@ -415,13 +415,13 @@ class NearbyCompanionPostQueryAdapterTest {
         return command(radiusMeters, placeCategory, null, sort);
     }
 
-    private ReadNearbyCompanionPostsCommand command(
+    private ReadCompanionPostsCommand command(
             final int radiusMeters,
             final CompanionPostPlaceCategory placeCategory,
             final Long placeId,
             final CompanionPostSort sort
     ) {
-        return new ReadNearbyCompanionPostsCommand(
+        return new ReadCompanionPostsCommand(
                 7L,
                 CURRENT_LATITUDE,
                 CURRENT_LONGITUDE,
@@ -545,7 +545,7 @@ class NearbyCompanionPostQueryAdapterTest {
             CompanionApplicationJpaRepository.class,
             CompanionPostJpaRepository.class,
             CompanionProfileJpaRepository.class,
-            NearbyCompanionPostQueryJpaRepository.class,
+            CompanionPostQueryJpaRepository.class,
             PlaceCacheJpaRepository.class
     })
     static class TestApplication {

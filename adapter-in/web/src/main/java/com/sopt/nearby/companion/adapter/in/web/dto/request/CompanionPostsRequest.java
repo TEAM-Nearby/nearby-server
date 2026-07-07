@@ -1,14 +1,14 @@
-// 주변 동행 모집글 목록 조회 쿼리 파라미터를 유스케이스 명령으로 변환한다.
+// 동행 모집글 목록 조회 쿼리 파라미터를 유스케이스 명령으로 변환한다.
 package com.sopt.nearby.companion.adapter.in.web.dto.request;
 
-import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsCommand;
+import com.sopt.nearby.companion.application.ReadCompanionPostsCommand;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequestException;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
 import java.math.BigDecimal;
 import java.util.Locale;
 
-public record NearbyCompanionPostsRequest(
+public record CompanionPostsRequest(
         String latitude,
         String longitude,
         String radiusMeters,
@@ -17,9 +17,9 @@ public record NearbyCompanionPostsRequest(
         String sort
 ) {
 
-    public ReadNearbyCompanionPostsCommand toCommand(final Long userId) {
+    public ReadCompanionPostsCommand toCommand(final Long userId) {
         try {
-            return new ReadNearbyCompanionPostsCommand(
+            return new ReadCompanionPostsCommand(
                     userId,
                     parseDecimal(latitude),
                     parseDecimal(longitude),

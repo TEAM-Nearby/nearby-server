@@ -1,4 +1,4 @@
-// 주변 동행 모집글 목록 조회 결과를 표현한다.
+// 동행 모집글 목록 조회 결과를 표현한다.
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record NearbyCompanionPostsResult(
+public record CompanionPostsResult(
         CurrentLocation currentLocation,
         int radiusMeters,
         int maxRadiusMeters,
