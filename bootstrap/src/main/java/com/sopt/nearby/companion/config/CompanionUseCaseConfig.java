@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
+import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
@@ -21,6 +22,7 @@ import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
@@ -33,6 +35,7 @@ import com.sopt.nearby.companion.port.in.RegisterCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingCheckInQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
@@ -196,6 +199,13 @@ public class CompanionUseCaseConfig {
             final CompanionNotificationRepository repository
     ) {
         return new MarkCompanionNotificationAsReadService(repository, Clock.systemDefaultZone());
+    }
+
+    @Bean
+    ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase(
+            final CompanionMeetingDetailQueryPort queryPort
+    ) {
+        return new ReadCompanionMeetingDetailService(queryPort);
     }
 
     @Bean

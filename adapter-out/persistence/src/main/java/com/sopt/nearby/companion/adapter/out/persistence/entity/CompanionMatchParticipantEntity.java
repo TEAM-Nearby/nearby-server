@@ -13,9 +13,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "companion_match_participant")
+@Table(
+		name = "companion_match_participant",
+		uniqueConstraints = @UniqueConstraint(
+				name = "uk_companion_match_participant_match_user",
+				columnNames = {"match_id", "user_id"}
+		)
+)
 public class CompanionMatchParticipantEntity {
 
 	@Id

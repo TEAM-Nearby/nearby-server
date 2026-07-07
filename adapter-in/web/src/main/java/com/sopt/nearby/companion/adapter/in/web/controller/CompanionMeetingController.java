@@ -4,10 +4,13 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import com.sopt.nearby.companion.adapter.in.web.code.CompanionSuccessCode;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CheckInCompanionMeetingRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CheckInCompanionMeetingResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMeetingDetailResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingResult;
+import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailResult;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import java.security.Principal;
@@ -24,13 +27,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class CompanionMeetingController implements CompanionMeetingApi {
 
     private final ReadOngoingCompanionMeetingsUseCase readOngoingCompanionMeetingsUseCase;
+    private final ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase;
     private final CheckInCompanionMeetingUseCase checkInCompanionMeetingUseCase;
 
     public CompanionMeetingController(
             final ReadOngoingCompanionMeetingsUseCase readOngoingCompanionMeetingsUseCase,
+            final ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase,
             final CheckInCompanionMeetingUseCase checkInCompanionMeetingUseCase
     ) {
         this.readOngoingCompanionMeetingsUseCase = readOngoingCompanionMeetingsUseCase;
+        this.readCompanionMeetingDetailUseCase = readCompanionMeetingDetailUseCase;
         this.checkInCompanionMeetingUseCase = checkInCompanionMeetingUseCase;
     }
 
@@ -43,6 +49,21 @@ public class CompanionMeetingController implements CompanionMeetingApi {
         return CommonResponse.success(
                 CompanionSuccessCode.READ_ONGOING_COMPANION_MEETINGS,
                 OngoingCompanionMeetingsResponse.from(meetings)
+        );
+    }
+
+    @Override
+    @GetMapping("/{meetingId}")
+    public CommonResponse<CompanionMeetingDetailResponse> getDetail(
+            @PathVariable final Long meetingId,
+            final Principal principal
+    ) {
+        Long userId = Long.valueOf(principal.getName());
+        ReadCompanionMeetingDetailResult result = readCompanionMeetingDetailUseCase.getDetail(meetingId, userId);
+
+        return CommonResponse.success(
+                CompanionSuccessCode.READ_COMPANION_MEETING_DETAIL,
+                CompanionMeetingDetailResponse.from(result)
         );
     }
 
