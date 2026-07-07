@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.sopt.nearby.place.domain.exception.GooglePlaceApiException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlaceRequestException;
 import com.sopt.nearby.place.domain.exception.PlaceNotFoundException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
@@ -100,6 +101,14 @@ class ReadSoloDiningPlaceServiceTest {
 
         assertThrows(PlaceNotFoundException.class, () -> service.read(validCommand()));
         assertNull(detailsPort.googlePlaceId);
+    }
+
+    @Test
+    void throwsGooglePlaceApiExceptionWhenDetailsAreMissing() {
+        queryPort.result = List.of(summary());
+        detailsPort.result = null;
+
+        assertThrows(GooglePlaceApiException.class, () -> service.read(validCommand()));
     }
 
     @Test

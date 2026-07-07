@@ -83,7 +83,14 @@ public class GoogleSoloDiningPlaceDetailsAdapter implements SoloDiningPlaceDetai
                 .GET()
                 .build();
 
-        return toResult(send(request));
+        try {
+            return toResult(send(request));
+        } catch (GooglePlaceApiException exception) {
+            throw exception;
+        } catch (RuntimeException exception) {
+            log.debug("Google Places details mapping failed.", exception);
+            throw new GooglePlaceApiException();
+        }
     }
 
     private URI detailsUri(final String googlePlaceId) {
@@ -135,10 +142,11 @@ public class GoogleSoloDiningPlaceDetailsAdapter implements SoloDiningPlaceDetai
         if (place.types() != null) {
             types.addAll(place.types());
         }
-        if (types.stream().anyMatch(type -> type != null && (type.equals("cafe") || type.endsWith("_cafe")))) {
+        if (types.stream().anyMatch(type -> type != null
+                && (type.equals("cafe") || type.equals("coffee_shop") || type.endsWith("_cafe")))) {
             return SoloDiningPlaceCategory.CAFE;
         }
-        if (types.stream().anyMatch("pub"::equals)) {
+        if (types.stream().anyMatch(type -> type != null && (type.equals("pub") || type.equals("bar")))) {
             return SoloDiningPlaceCategory.PUB;
         }
         if (types.stream().anyMatch(type -> type != null && (type.equals("restaurant")

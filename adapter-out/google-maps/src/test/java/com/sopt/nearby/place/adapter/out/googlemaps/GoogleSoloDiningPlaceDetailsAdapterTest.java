@@ -133,6 +133,50 @@ class GoogleSoloDiningPlaceDetailsAdapterTest {
     }
 
     @Test
+    void mapsCoffeeShopAndBarTypes() {
+        server.createContext("/v1/places/coffee-place-id", exchange -> respond(exchange, 200, """
+                {
+                  "id": "coffee-place-id",
+                  "displayName": {"text": "커피집"},
+                  "location": {"latitude": 37.56612, "longitude": 126.97845},
+                  "primaryType": "coffee_shop",
+                  "types": ["coffee_shop", "food"]
+                }
+                """));
+        server.createContext("/v1/places/bar-place-id", exchange -> respond(exchange, 200, """
+                {
+                  "id": "bar-place-id",
+                  "displayName": {"text": "바"},
+                  "location": {"latitude": 37.56612, "longitude": 126.97845},
+                  "primaryType": "bar",
+                  "types": ["bar", "food"]
+                }
+                """));
+
+        SoloDiningPlaceDetailsResult coffee = adapter.findByGooglePlaceId("coffee-place-id");
+        SoloDiningPlaceDetailsResult bar = adapter.findByGooglePlaceId("bar-place-id");
+
+        assertEquals(SoloDiningPlaceCategory.CAFE, coffee.category());
+        assertEquals(SoloDiningPlaceCategory.PUB, bar.category());
+    }
+
+    @Test
+    void throwsGooglePlaceApiExceptionWhenMoneyUnitsAreInvalid() {
+        server.createContext("/v1/places/google-place-id", exchange -> respond(exchange, 200, """
+                {
+                  "id": "google-place-id",
+                  "displayName": {"text": "니어바이 식당"},
+                  "location": {"latitude": 37.56612, "longitude": 126.97845},
+                  "priceRange": {
+                    "startPrice": {"currencyCode": "KRW", "units": "not-number"}
+                  }
+                }
+                """));
+
+        assertThrows(GooglePlaceApiException.class, () -> adapter.findByGooglePlaceId("google-place-id"));
+    }
+
+    @Test
     void throwsGooglePlaceApiExceptionWhenGoogleReturnsError() {
         server.createContext("/v1/places/google-place-id", exchange -> respond(exchange, 500, "{}"));
 
