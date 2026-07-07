@@ -4,6 +4,7 @@ package com.sopt.nearby.place.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.sopt.nearby.place.domain.exception.DuplicatePlaceCacheException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.PlaceCache;
@@ -152,6 +153,33 @@ class ReadSoloDiningPlacesServiceTest {
     }
 
     @Test
+    void reloadsExistingPlaceWhenConcurrentSaveCreatesDuplicatePlaceCache() {
+        searchPort.result = List.of(searchResult("google-place-id", "니어바이 카페", SoloDiningPlaceCategory.CAFE));
+        queryPort.result = List.of(summary(3L, false));
+        placeCacheRepository.saveException = new DuplicatePlaceCacheException(new RuntimeException());
+        placeCacheRepository.existingAfterConflict = new PlaceCache(
+                3L,
+                "google-place-id",
+                "니어바이 카페",
+                "서울특별시 중구 세종대로 110",
+                new BigDecimal("37.56612000"),
+                new BigDecimal("126.97845000"),
+                "CAFE",
+                null,
+                new BigDecimal("4.30"),
+                22870,
+                "places/google-place-id/photos/photo-resource",
+                PlaceBusinessStatus.OPERATIONAL
+        );
+
+        service.read(validCommand());
+
+        assertEquals(1, placeCacheRepository.saveAttempts);
+        assertEquals(2, placeCacheRepository.findAttempts);
+        assertEquals(List.of(3L), queryPort.placeIds);
+    }
+
+    @Test
     void rejectsInvalidCommand() {
         assertThrows(InvalidSoloDiningPlacesRequestException.class, () -> service.read(new ReadSoloDiningPlacesCommand(
                 7L,
@@ -228,10 +256,19 @@ class ReadSoloDiningPlacesServiceTest {
     private static final class FakePlaceCacheRepository implements PlaceCacheRepository {
 
         private final Map<String, PlaceCache> places = new HashMap<>();
+        private DuplicatePlaceCacheException saveException;
+        private PlaceCache existingAfterConflict;
         private PlaceCache saved;
+        private int findAttempts;
+        private int saveAttempts;
 
         @Override
         public PlaceCache save(final PlaceCache model) {
+            saveAttempts++;
+            if (saveException != null) {
+                places.put(existingAfterConflict.googlePlaceId(), existingAfterConflict);
+                throw saveException;
+            }
             saved = model.id() == null ? withId(model, places.size() + 1L) : model;
             places.put(saved.googlePlaceId(), saved);
             return saved;
@@ -247,6 +284,7 @@ class ReadSoloDiningPlacesServiceTest {
 
         @Override
         public Optional<PlaceCache> findByGooglePlaceId(final String googlePlaceId) {
+            findAttempts++;
             return Optional.ofNullable(places.get(googlePlaceId));
         }
 

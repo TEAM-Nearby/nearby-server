@@ -2,9 +2,11 @@
 package com.sopt.nearby.place.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
 import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRepository;
+import com.sopt.nearby.place.domain.exception.DuplicatePlaceCacheException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.PlaceCache;
 import java.math.BigDecimal;
@@ -47,6 +49,49 @@ class PlaceCacheRepositoryAdapterTest {
         assertThat(result.get().id()).isEqualTo(place.getId());
         assertThat(result.get().name()).isEqualTo("Siutat condal");
         assertThat(adapter.findByGooglePlaceId("missing-place-id")).isEmpty();
+    }
+
+    @Test
+    void translatesDuplicateGooglePlaceIdViolation() {
+        PlaceCacheRepositoryAdapter adapter = new PlaceCacheRepositoryAdapter(placeCacheJpaRepository);
+        placeCacheJpaRepository.saveAndFlush(entity("google-place-id"));
+
+        assertThatThrownBy(() -> adapter.save(placeCache("google-place-id")))
+                .isInstanceOf(DuplicatePlaceCacheException.class);
+    }
+
+    private PlaceCacheEntity entity(final String googlePlaceId) {
+        return new PlaceCacheEntity(
+                null,
+                googlePlaceId,
+                "Siutat condal",
+                "Rambla de Catalunya, 16",
+                new BigDecimal("41.39020500"),
+                new BigDecimal("2.16354800"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                PlaceBusinessStatus.UNKNOWN
+        );
+    }
+
+    private PlaceCache placeCache(final String googlePlaceId) {
+        return new PlaceCache(
+                null,
+                googlePlaceId,
+                "Siutat condal",
+                "Rambla de Catalunya, 16",
+                new BigDecimal("41.39020500"),
+                new BigDecimal("2.16354800"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                PlaceBusinessStatus.UNKNOWN
+        );
     }
 
     @SpringBootConfiguration

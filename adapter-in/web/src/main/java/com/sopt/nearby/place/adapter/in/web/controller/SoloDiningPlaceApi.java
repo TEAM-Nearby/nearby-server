@@ -8,6 +8,9 @@ import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.security.Principal;
@@ -23,6 +26,38 @@ public interface SoloDiningPlaceApi {
             summary = "혼밥 맛집 목록 조회",
             description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치 주변의 혼밥 맛집 목록을 조회합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "혼밥 맛집 목록 조회에 성공했습니다.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(value = """
+                            {
+                              "status": 200,
+                              "code": "SOLO_DINING_PLACES_FOUND",
+                              "message": "혼밥 맛집 목록 조회에 성공했습니다.",
+                              "data": {
+                                "places": [
+                                  {
+                                    "placeId": 12,
+                                    "googlePlaceId": "ChIJxxxxxxxx",
+                                    "name": "르상크 바르셀로나점",
+                                    "photoReference": "places/ChIJxxxxxxxx/photos/ATKogp...",
+                                    "category": "CAFE",
+                                    "distanceMeters": 800,
+                                    "rating": 4.3,
+                                    "reviewCount": 22870,
+                                    "isFavorite": false,
+                                    "latitude": 37.56612000,
+                                    "longitude": 126.97845000,
+                                    "businessStatus": "OPERATIONAL"
+                                  }
+                                ]
+                              }
+                            }
+                            """)
+            )
     )
     CommonResponse<SoloDiningPlacesResponse> getPlaces(
             @Parameter(description = "사용자 현재 위치 위도", required = true, example = "37.56650000")

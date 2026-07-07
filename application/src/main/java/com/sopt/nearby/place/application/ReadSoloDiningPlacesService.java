@@ -1,6 +1,7 @@
 // 혼밥 맛집 목록 조회 유스케이스를 구현한다.
 package com.sopt.nearby.place.application;
 
+import com.sopt.nearby.place.domain.exception.DuplicatePlaceCacheException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.PlaceCache;
@@ -13,8 +14,6 @@ import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchRequest;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchResult;
 import java.math.BigDecimal;
 import java.util.List;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.transaction.annotation.Transactional;
 
 public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase {
 
@@ -41,7 +40,6 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
     }
 
     @Override
-    @Transactional
     public SoloDiningPlacesResult read(final ReadSoloDiningPlacesCommand command) {
         validate(command);
 
@@ -84,7 +82,7 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
     private PlaceCache saveNewOrReload(final SoloDiningPlaceSearchResult result) {
         try {
             return placeCacheRepository.save(toPlaceCache(null, null, null, result));
-        } catch (DataIntegrityViolationException exception) {
+        } catch (DuplicatePlaceCacheException exception) {
             return placeCacheRepository.findByGooglePlaceId(result.googlePlaceId())
                     .orElseThrow(() -> exception);
         }
