@@ -1,12 +1,16 @@
 // 장소 유스케이스 구현체를 Spring Bean으로 조립하는 설정 클래스다.
 package com.sopt.nearby.place.config;
 
+import com.sopt.nearby.place.application.ReadSoloDiningPlacesService;
 import com.sopt.nearby.place.application.ResolvePlaceCacheService;
 import com.sopt.nearby.place.application.ResolvePlaceImageService;
+import com.sopt.nearby.place.port.in.ReadSoloDiningPlacesUseCase;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.place.port.out.PlaceCacheRepository;
 import com.sopt.nearby.place.port.out.PlaceImageLookupPort;
+import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
+import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchPort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,5 +31,18 @@ public class PlaceUseCaseConfig {
             @Value("${nearby.place.default-image-url}") final String defaultPlaceImageUrl
     ) {
         return new ResolvePlaceImageService(placeImageLookupPort, defaultPlaceImageUrl);
+    }
+
+    @Bean
+    ReadSoloDiningPlacesUseCase readSoloDiningPlacesUseCase(
+            final SoloDiningPlaceSearchPort soloDiningPlaceSearchPort,
+            final PlaceCacheRepository placeCacheRepository,
+            final SoloDiningPlaceQueryPort soloDiningPlaceQueryPort
+    ) {
+        return new ReadSoloDiningPlacesService(
+                soloDiningPlaceSearchPort,
+                placeCacheRepository,
+                soloDiningPlaceQueryPort
+        );
     }
 }

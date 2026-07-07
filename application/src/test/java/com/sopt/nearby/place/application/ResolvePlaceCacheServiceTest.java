@@ -3,6 +3,7 @@ package com.sopt.nearby.place.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.sopt.nearby.place.domain.exception.DuplicatePlaceCacheException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.PlaceCache;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheCommand;
@@ -13,7 +14,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.DataIntegrityViolationException;
 
 class ResolvePlaceCacheServiceTest {
 
@@ -98,7 +98,7 @@ class ResolvePlaceCacheServiceTest {
         FakePlaceCacheRepository placeCacheRepository = new FakePlaceCacheRepository();
         ResolvePlaceCacheService service = new ResolvePlaceCacheService(placeCacheRepository);
         ResolvePlaceCacheCommand command = command();
-        placeCacheRepository.saveException = new DataIntegrityViolationException("duplicate google_place_id");
+        placeCacheRepository.saveException = new DuplicatePlaceCacheException(new RuntimeException());
         placeCacheRepository.existingAfterConflict = place(1L, command.googlePlaceId());
 
         ResolvedPlaceCache result = service.resolve(command);
@@ -151,7 +151,7 @@ class ResolvePlaceCacheServiceTest {
     private static final class FakePlaceCacheRepository implements PlaceCacheRepository {
 
         private final Map<String, PlaceCache> places = new HashMap<>();
-        private DataIntegrityViolationException saveException;
+        private DuplicatePlaceCacheException saveException;
         private PlaceCache existingAfterConflict;
         private int findAttempts;
         private int saveAttempts;
