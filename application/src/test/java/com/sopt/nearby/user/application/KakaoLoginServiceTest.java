@@ -297,5 +297,14 @@ class KakaoLoginServiceTest {
 					.filter(token -> token.tokenHash().equals(tokenHash))
 					.findFirst();
 		}
+
+		@Override
+		public boolean revokeByTokenHashIfActive(
+				final String tokenHash,
+				final Long userId,
+				final LocalDateTime revokedAt
+		) {
+			throw new UnsupportedOperationException("로그인 테스트에서는 리프레시 토큰 만료 처리를 사용하지 않습니다.");
+		}
 	}
 }

@@ -3,9 +3,12 @@ package com.sopt.nearby.user.port.out;
 
 import com.sopt.nearby.common.port.DomainRepository;
 import com.sopt.nearby.user.domain.model.RefreshToken;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface RefreshTokenRepository extends DomainRepository<RefreshToken, Long> {
 
 	Optional<RefreshToken> findByTokenHash(String tokenHash);
+
+	boolean revokeByTokenHashIfActive(String tokenHash, Long userId, LocalDateTime revokedAt);
 }

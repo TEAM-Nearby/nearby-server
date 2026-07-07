@@ -7,9 +7,11 @@ import com.sopt.nearby.user.adapter.out.persistence.mapper.UserPersistenceMapper
 import com.sopt.nearby.user.adapter.out.persistence.repository.RefreshTokenJpaRepository;
 import com.sopt.nearby.user.domain.model.RefreshToken;
 import com.sopt.nearby.user.port.out.RefreshTokenRepository;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class RefreshTokenRepositoryAdapter
@@ -27,5 +29,15 @@ public class RefreshTokenRepositoryAdapter
 	public Optional<RefreshToken> findByTokenHash(final String tokenHash) {
 		return jpaRepository.findByTokenHash(tokenHash)
 				.map(UserPersistenceMapper::toDomain);
+	}
+
+	@Override
+	@Transactional
+	public boolean revokeByTokenHashIfActive(
+			final String tokenHash,
+			final Long userId,
+			final LocalDateTime revokedAt
+	) {
+		return jpaRepository.revokeByTokenHashIfActive(tokenHash, userId, revokedAt) > 0;
 	}
 }
