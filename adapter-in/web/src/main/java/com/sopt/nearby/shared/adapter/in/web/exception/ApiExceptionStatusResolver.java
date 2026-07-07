@@ -15,6 +15,7 @@ public final class ApiExceptionStatusResolver {
     private static final String INVALID_REFRESH_TOKEN_CODE = "INVALID_REFRESH_TOKEN";
     private static final String ONBOARDING_REQUIRED_CODE = "ONBOARDING_REQUIRED";
     private static final String COMPANION_POST_EXPIRED_CODE = "COMPANION_POST_EXPIRED";
+    private static final String GOOGLE_PLACE_API_ERROR_CODE = "GOOGLE_PLACE_API_ERROR";
     private static final String PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE =
             "PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED";
     private static final String PHONE_VERIFICATION_EXPIRED_CODE = "PHONE_VERIFICATION_EXPIRED";
@@ -47,7 +48,8 @@ public final class ApiExceptionStatusResolver {
                 || errorCode.name().equals(INVALID_REFRESH_TOKEN_CODE)) {
             return HttpStatus.UNAUTHORIZED;
         }
-        if (errorCode.name().equals(PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE)) {
+        if (errorCode.name().equals(PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE)
+                || errorCode.name().equals(GOOGLE_PLACE_API_ERROR_CODE)) {
             return HttpStatus.INTERNAL_SERVER_ERROR;
         }
         if (errorCode.name().equals(PHONE_VERIFICATION_EXPIRED_CODE)) {
