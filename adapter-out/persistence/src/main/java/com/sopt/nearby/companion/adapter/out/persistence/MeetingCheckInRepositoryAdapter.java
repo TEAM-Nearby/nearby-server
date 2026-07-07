@@ -4,16 +4,16 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.MeetingCheckInEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.mapper.CompanionPersistenceMapper;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.MeetingCheckInJpaRepository;
-import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
-import jakarta.persistence.EntityManager;
-import java.sql.PreparedStatement;
-import java.sql.Savepoint;
+import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.function.Function;
-import org.hibernate.Session;
+import javax.sql.DataSource;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,17 +22,36 @@ public class MeetingCheckInRepositoryAdapter
 		extends SimpleJpaRepositoryAdapter<MeetingCheckIn, Long, MeetingCheckInEntity, Long>
 		implements MeetingCheckInRepository {
 
+	private static final String POSTGRES_INSERT_IGNORE_SQL = """
+			insert into meeting_check_in (meeting_id, user_id, latitude, longitude, checked_in_at)
+			values (:meetingId, :userId, :latitude, :longitude, :checkedInAt)
+			on conflict (meeting_id, user_id) do nothing
+			""";
+
+	private static final String H2_INSERT_IGNORE_SQL = """
+			insert into meeting_check_in (meeting_id, user_id, latitude, longitude, checked_in_at)
+			select :meetingId, :userId, :latitude, :longitude, :checkedInAt
+			where not exists (
+				select 1
+				from meeting_check_in
+				where meeting_id = :meetingId
+					and user_id = :userId
+			)
+			""";
+
 	private final MeetingCheckInJpaRepository jpaRepository;
-	private final EntityManager entityManager;
+	private final NamedParameterJdbcTemplate jdbcTemplate;
+	private final String insertIgnoreSql;
 
 	public MeetingCheckInRepositoryAdapter(
 			final MeetingCheckInJpaRepository jpaRepository,
-			final EntityManager entityManager
+			final DataSource dataSource
 	) {
 		super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
 				Function.identity());
 		this.jpaRepository = jpaRepository;
-		this.entityManager = entityManager;
+		this.jdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
+		this.insertIgnoreSql = insertIgnoreSql(dataSource);
 	}
 
 	@Override
@@ -49,39 +68,28 @@ public class MeetingCheckInRepositoryAdapter
 	@Override
 	@Transactional
 	public MeetingCheckIn saveIfAbsent(final MeetingCheckIn checkIn) {
-		Optional<MeetingCheckIn> existingCheckIn = findByMeetingIdAndUserId(checkIn.meetingId(), checkIn.userId());
-		if (existingCheckIn.isPresent()) {
-			return existingCheckIn.get();
-		}
-		insertWithSavepoint(checkIn);
+		insertIgnore(checkIn);
 		return findByMeetingIdAndUserId(checkIn.meetingId(), checkIn.userId())
 				.orElseThrow(() -> new IllegalStateException("만남 인증 저장 후 체크인 정보를 찾을 수 없습니다."));
 	}
 
-	private void insertWithSavepoint(final MeetingCheckIn checkIn) {
-		entityManager.unwrap(Session.class).doWork(connection -> {
-			Savepoint savepoint = connection.setSavepoint("meeting_check_in_insert");
-			try (PreparedStatement statement = connection.prepareStatement("""
-					insert into meeting_check_in (meeting_id, user_id, latitude, longitude, checked_in_at)
-					values (?, ?, ?, ?, ?)
-					""")) {
-				statement.setLong(1, checkIn.meetingId());
-				statement.setLong(2, checkIn.userId());
-				statement.setBigDecimal(3, checkIn.latitude());
-				statement.setBigDecimal(4, checkIn.longitude());
-				statement.setObject(5, checkIn.checkedInAt());
-				statement.executeUpdate();
-				connection.releaseSavepoint(savepoint);
-			} catch (SQLException exception) {
-				connection.rollback(savepoint);
-				if (!isUniqueConstraintViolation(exception)) {
-					throw exception;
-				}
-			}
-		});
+	private void insertIgnore(final MeetingCheckIn checkIn) {
+		jdbcTemplate.update(insertIgnoreSql, new MapSqlParameterSource()
+				.addValue("meetingId", checkIn.meetingId())
+				.addValue("userId", checkIn.userId())
+				.addValue("latitude", checkIn.latitude())
+				.addValue("longitude", checkIn.longitude())
+				.addValue("checkedInAt", checkIn.checkedInAt()));
 	}
 
-	private boolean isUniqueConstraintViolation(final SQLException exception) {
-		return "23505".equals(exception.getSQLState());
+	private String insertIgnoreSql(final DataSource dataSource) {
+		try (Connection connection = dataSource.getConnection()) {
+			if ("H2".equalsIgnoreCase(connection.getMetaData().getDatabaseProductName())) {
+				return H2_INSERT_IGNORE_SQL;
+			}
+			return POSTGRES_INSERT_IGNORE_SQL;
+		} catch (SQLException exception) {
+			throw new IllegalStateException("만남 인증 저장 SQL을 선택할 수 없습니다.", exception);
+		}
 	}
 }
