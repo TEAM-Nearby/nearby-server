@@ -14,14 +14,18 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingCommand;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingResult;
+import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailResult;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
+import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.security.Principal;
 import java.time.LocalDateTime;
@@ -37,11 +41,13 @@ class CompanionMeetingControllerTest {
 
     private MockMvc mockMvc;
     private FakeReadOngoingCompanionMeetingsUseCase readUseCase;
+    private FakeReadCompanionMeetingDetailUseCase readUseCase;
     private FakeCheckInCompanionMeetingUseCase useCase;
 
     @BeforeEach
     void setUp() {
         readUseCase = new FakeReadOngoingCompanionMeetingsUseCase();
+        readUseCase = new FakeReadCompanionMeetingDetailUseCase();
         useCase = new FakeCheckInCompanionMeetingUseCase();
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new CompanionMeetingController(readUseCase, useCase))
@@ -87,6 +93,45 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.code").value("READ_ONGOING_COMPANION_MEETINGS"))
                 .andExpect(jsonPath("$.data.meetings").isArray())
                 .andExpect(jsonPath("$.data.meetings").isEmpty());
+    }
+
+    @Test
+    void returnsOngoingMeetingDetailAndPassesAuthenticatedUserIdToUseCase() throws Exception {
+        readUseCase.result = detailResult(MatchParticipantRole.GUEST);
+
+        mockMvc.perform(get("/api/companion-meetings/{meetingId}", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("READ_COMPANION_MEETING_DETAIL"))
+                .andExpect(jsonPath("$.message").value("진행 중인 동행 상세 정보를 조회했어요."))
+                .andExpect(jsonPath("$.data.meetingId").value(1))
+                .andExpect(jsonPath("$.data.currentUserRole").value("GUEST"))
+                .andExpect(jsonPath("$.data.hostId").value(1))
+                .andExpect(jsonPath("$.data.hostGender").value("FEMALE"))
+                .andExpect(jsonPath("$.data.hostProfileImageUrl").value("https://image.url/profile.png"))
+                .andExpect(jsonPath("$.data.hostNickname").value("정지영"))
+                .andExpect(jsonPath("$.data.hostCheckedIn").value(true))
+                .andExpect(jsonPath("$.data.placeName").value("시우다드 콘달"))
+                .andExpect(jsonPath("$.data.meetingAt").value("2026-06-29T18:30:00"))
+                .andExpect(jsonPath("$.data.meetingStatus").value("ONGOING"))
+                .andExpect(jsonPath("$.data.currentUserCheckedIn").value(false))
+                .andExpect(jsonPath("$.data.canCancelMeeting").value(true));
+
+        assertEquals(1L, readUseCase.meetingId);
+        assertEquals(7L, readUseCase.userId);
+    }
+
+    @Test
+    void returnsHostProfileEvenWhenRequesterIsHost() throws Exception {
+        readUseCase.result = detailResult(MatchParticipantRole.HOST);
+
+        mockMvc.perform(get("/api/companion-meetings/{meetingId}", 1L)
+                        .principal(principal("1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.currentUserRole").value("HOST"))
+                .andExpect(jsonPath("$.data.hostId").value(1))
+                .andExpect(jsonPath("$.data.hostGender").value("FEMALE"));
     }
 
     @Test
@@ -215,6 +260,23 @@ class CompanionMeetingControllerTest {
         );
     }
 
+    private ReadCompanionMeetingDetailResult detailResult(final MatchParticipantRole currentUserRole) {
+        return new ReadCompanionMeetingDetailResult(
+                1L,
+                currentUserRole,
+                1L,
+                UserGender.FEMALE,
+                "https://image.url/profile.png",
+                "정지영",
+                true,
+                "시우다드 콘달",
+                LocalDateTime.of(2026, 6, 29, 18, 30),
+                CompanionMeetingStatus.ONGOING,
+                false,
+                true
+        );
+    }
+
     private Principal principal(final String name) {
         return () -> name;
     }
@@ -224,6 +286,20 @@ class CompanionMeetingControllerTest {
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return new MappingJackson2HttpMessageConverter(objectMapper);
+    }
+
+    private static final class FakeReadCompanionMeetingDetailUseCase implements ReadCompanionMeetingDetailUseCase {
+
+        private ReadCompanionMeetingDetailResult result;
+        private Long meetingId;
+        private Long userId;
+
+        @Override
+        public ReadCompanionMeetingDetailResult getDetail(final Long meetingId, final Long userId) {
+            this.meetingId = meetingId;
+            this.userId = userId;
+            return result;
+        }
     }
 
     private static final class FakeReadOngoingCompanionMeetingsUseCase implements ReadOngoingCompanionMeetingsUseCase {

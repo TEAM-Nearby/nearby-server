@@ -4,14 +4,19 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CheckInCompanionMeetingRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CheckInCompanionMeetingResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMeetingDetailResponse;
 import com.sopt.nearby.companion.domain.exception.CheckInTimeNotAllowedException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleNotConfirmedException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMeetingException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
+import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
+import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCompletedException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,6 +37,28 @@ public interface CompanionMeetingApi {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<OngoingCompanionMeetingsResponse> getOngoingMeetings(
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            InvalidCompanionMeetingIdException.class,
+            ForbiddenReadCompanionMeetingException.class,
+            CompanionMeetingNotFoundException.class,
+            ReadCompanionMeetingAlreadyCanceledException.class,
+            ReadCompanionMeetingAlreadyCompletedException.class
+    })
+    @Operation(
+            summary = "진행 중인 동행 상세 조회",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 ONGOING 동행 만남 상세 정보를 조회합니다.
+                    호스트 한 명의 프로필을 반환하며, 로그인 사용자가 HOST여도 HOST 본인의 프로필을 반환합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CompanionMeetingDetailResponse> getDetail(
+            @Parameter(description = "상세 조회할 진행 중인 동행 만남 ID", required = true, example = "1")
+            Long meetingId,
             @Parameter(hidden = true)
             Principal principal
     );
