@@ -1,12 +1,12 @@
-// 주변 동행 모집글 목록 조회 API 응답을 표현한다.
+// 동행 모집글 목록 조회 API 응답을 표현한다.
 package com.sopt.nearby.companion.adapter.in.web.dto.response;
 
-import com.sopt.nearby.companion.application.NearbyCompanionPostsResult;
+import com.sopt.nearby.companion.application.CompanionPostsResult;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record NearbyCompanionPostsResponse(
+public record CompanionPostsResponse(
         CurrentLocationResponse currentLocation,
         int radiusMeters,
         int maxRadiusMeters,
@@ -17,8 +17,8 @@ public record NearbyCompanionPostsResponse(
         List<PostResponse> posts
 ) {
 
-    public static NearbyCompanionPostsResponse from(final NearbyCompanionPostsResult result) {
-        return new NearbyCompanionPostsResponse(
+    public static CompanionPostsResponse from(final CompanionPostsResult result) {
+        return new CompanionPostsResponse(
                 CurrentLocationResponse.from(result.currentLocation()),
                 result.radiusMeters(),
                 result.maxRadiusMeters(),
@@ -36,7 +36,7 @@ public record NearbyCompanionPostsResponse(
             BigDecimal latitude,
             BigDecimal longitude
     ) {
-        static CurrentLocationResponse from(final NearbyCompanionPostsResult.CurrentLocation currentLocation) {
+        static CurrentLocationResponse from(final CompanionPostsResult.CurrentLocation currentLocation) {
             return new CurrentLocationResponse(currentLocation.latitude(), currentLocation.longitude());
         }
     }
@@ -57,7 +57,7 @@ public record NearbyCompanionPostsResponse(
             String createdAgoText,
             String mapMarkerText
     ) {
-        static PostResponse from(final NearbyCompanionPostsResult.Post post) {
+        static PostResponse from(final CompanionPostsResult.Post post) {
             return new PostResponse(
                     post.postId(),
                     post.status().name(),
@@ -81,7 +81,7 @@ public record NearbyCompanionPostsResponse(
             String nickname,
             String gender
     ) {
-        static HostResponse from(final NearbyCompanionPostsResult.Host host) {
+        static HostResponse from(final CompanionPostsResult.Host host) {
             return new HostResponse(host.nickname(), host.gender().name());
         }
     }
@@ -98,7 +98,7 @@ public record NearbyCompanionPostsResponse(
             String imageSource,
             List<ImageAttributionResponse> imageAttributions
     ) {
-        static PlaceResponse from(final NearbyCompanionPostsResult.Place place) {
+        static PlaceResponse from(final CompanionPostsResult.Place place) {
             return new PlaceResponse(
                     place.placeId(),
                     place.googlePlaceId(),
@@ -121,7 +121,7 @@ public record NearbyCompanionPostsResponse(
             String uri,
             String photoUri
     ) {
-        static ImageAttributionResponse from(final NearbyCompanionPostsResult.ImageAttribution attribution) {
+        static ImageAttributionResponse from(final CompanionPostsResult.ImageAttribution attribution) {
             return new ImageAttributionResponse(
                     attribution.displayName(),
                     attribution.uri(),

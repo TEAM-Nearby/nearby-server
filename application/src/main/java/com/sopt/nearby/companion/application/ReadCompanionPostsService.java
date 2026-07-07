@@ -1,11 +1,11 @@
-// 주변 동행 모집글 목록 조회 유스케이스를 구현한다.
+// 동행 모집글 목록 조회 유스케이스를 구현한다.
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequestException;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
-import com.sopt.nearby.companion.domain.model.post.NearbyCompanionPostSummary;
-import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
-import com.sopt.nearby.companion.port.out.NearbyCompanionPostQueryPort;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostSummary;
+import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
+import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
@@ -18,7 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
-public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPostsUseCase {
+public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
 
     public static final int MAX_RADIUS_METERS = 5000;
     private static final int CONTENT_PREVIEW_LENGTH = 49;
@@ -29,13 +29,13 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
     private static final DateTimeFormatter DATE_TIME_TEXT_FORMATTER = DateTimeFormatter.ofPattern("M월 d일 HH:mm");
     private static final DateTimeFormatter DATE_TEXT_FORMATTER = DateTimeFormatter.ofPattern("M월 d일");
 
-    private final NearbyCompanionPostQueryPort queryPort;
+    private final CompanionPostQueryPort queryPort;
     private final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase;
     private final Clock clock;
     private final ResolvePlaceImageUseCase resolvePlaceImageUseCase;
 
-    public ReadNearbyCompanionPostsService(
-            final NearbyCompanionPostQueryPort queryPort,
+    public ReadCompanionPostsService(
+            final CompanionPostQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final Clock clock,
             final ResolvePlaceImageUseCase resolvePlaceImageUseCase
@@ -48,17 +48,17 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
 
     @Override
     @Transactional(readOnly = true)
-    public NearbyCompanionPostsResult read(final ReadNearbyCompanionPostsCommand command) {
+    public CompanionPostsResult read(final ReadCompanionPostsCommand command) {
         validate(command);
         requireCompletedOnboardingUseCase.requireCompleted(command.userId());
 
-        List<NearbyCompanionPostSummary> summaries = queryPort.findNearby(command);
-        List<NearbyCompanionPostsResult.Post> posts = summaries.stream()
+        List<CompanionPostSummary> summaries = queryPort.find(command);
+        List<CompanionPostsResult.Post> posts = summaries.stream()
                 .map(this::toPost)
                 .toList();
 
-        return new NearbyCompanionPostsResult(
-                new NearbyCompanionPostsResult.CurrentLocation(command.latitude(), command.longitude()),
+        return new CompanionPostsResult(
+                new CompanionPostsResult.CurrentLocation(command.latitude(), command.longitude()),
                 command.radiusMeters(),
                 MAX_RADIUS_METERS,
                 command.placeCategory(),
@@ -69,14 +69,14 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
         );
     }
 
-    private NearbyCompanionPostsResult.Post toPost(final NearbyCompanionPostSummary summary) {
+    private CompanionPostsResult.Post toPost(final CompanionPostSummary summary) {
         String contentPreview = contentPreview(summary.content());
         ResolvedPlaceImage image = resolvePlaceImageUseCase.resolve(new ResolvePlaceImageCommand(
                 summary.googlePlaceId(),
                 summary.photoReference()
         ));
 
-        NearbyCompanionPostsResult.Place place = new NearbyCompanionPostsResult.Place(
+        CompanionPostsResult.Place place = new CompanionPostsResult.Place(
                 summary.placeId(),
                 summary.googlePlaceId(),
                 summary.placeName(),
@@ -88,7 +88,7 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
                 image.imageSource(),
                 image.imageAttributions()
                         .stream()
-                        .map(attribution -> new NearbyCompanionPostsResult.ImageAttribution(
+                        .map(attribution -> new CompanionPostsResult.ImageAttribution(
                                 attribution.displayName(),
                                 attribution.uri(),
                                 attribution.photoUri()
@@ -96,10 +96,10 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
                         .toList()
         );
 
-        return new NearbyCompanionPostsResult.Post(
+        return new CompanionPostsResult.Post(
                 summary.postId(),
                 summary.status(),
-                new NearbyCompanionPostsResult.Host(summary.hostNickname(), summary.hostGender()),
+                new CompanionPostsResult.Host(summary.hostNickname(), summary.hostGender()),
                 place,
                 contentPreview,
                 summary.content() != null && summary.content().length() > CONTENT_PREVIEW_LENGTH,
@@ -150,7 +150,7 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
         return DATE_TEXT_FORMATTER.format(meetingAt) + " " + timeText + " " + placeName + " 동행";
     }
 
-    private void validate(final ReadNearbyCompanionPostsCommand command) {
+    private void validate(final ReadCompanionPostsCommand command) {
         if (command == null
                 || command.userId() == null
                 || command.latitude() == null

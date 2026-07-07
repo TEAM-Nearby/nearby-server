@@ -1,4 +1,4 @@
-// 주변 동행 모집글 목록 조회 서비스의 검증과 응답 조립을 검증한다.
+// 동행 모집글 목록 조회 서비스의 검증과 응답 조립을 검증한다.
 package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -8,9 +8,9 @@ import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequ
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
-import com.sopt.nearby.companion.domain.model.post.NearbyCompanionPostSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostSummary;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
-import com.sopt.nearby.companion.port.out.NearbyCompanionPostQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
@@ -25,21 +25,21 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ReadNearbyCompanionPostsServiceTest {
+class ReadCompanionPostsServiceTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-02T04:00:00Z"), ZoneOffset.UTC);
 
-    private FakeNearbyCompanionPostQueryPort queryPort;
+    private FakeCompanionPostQueryPort queryPort;
     private FakeRequireCompletedOnboardingUseCase onboardingUseCase;
     private FakeResolvePlaceImageUseCase resolvePlaceImageUseCase;
-    private ReadNearbyCompanionPostsService service;
+    private ReadCompanionPostsService service;
 
     @BeforeEach
     void setUp() {
-        queryPort = new FakeNearbyCompanionPostQueryPort();
+        queryPort = new FakeCompanionPostQueryPort();
         onboardingUseCase = new FakeRequireCompletedOnboardingUseCase();
         resolvePlaceImageUseCase = new FakeResolvePlaceImageUseCase();
-        service = new ReadNearbyCompanionPostsService(
+        service = new ReadCompanionPostsService(
                 queryPort,
                 onboardingUseCase,
                 CLOCK,
@@ -48,8 +48,8 @@ class ReadNearbyCompanionPostsServiceTest {
     }
 
     @Test
-    void returnsNearbyCompanionPostsWithDisplayText() {
-        queryPort.result = List.of(new NearbyCompanionPostSummary(
+    void returnsCompanionPostsWithDisplayText() {
+        queryPort.result = List.of(new CompanionPostSummary(
                 101L,
                 CompanionPostStatus.RECRUITING,
                 "니어바이",
@@ -69,7 +69,7 @@ class ReadNearbyCompanionPostsServiceTest {
                 LocalDateTime.of(2026, 7, 2, 3, 30)
         ));
 
-        NearbyCompanionPostsResult result = service.read(new ReadNearbyCompanionPostsCommand(
+        CompanionPostsResult result = service.read(new ReadCompanionPostsCommand(
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
@@ -89,7 +89,7 @@ class ReadNearbyCompanionPostsServiceTest {
         assertEquals(1, result.totalCount());
         assertEquals("내 주변 1개의 동행이 있어요", result.summaryText());
 
-        NearbyCompanionPostsResult.Post post = result.posts().get(0);
+        CompanionPostsResult.Post post = result.posts().get(0);
         assertEquals(101L, post.postId());
         assertEquals("1234567890123456789012345678901234567890123456789", post.contentPreview());
         assertEquals(true, post.contentPreviewTruncated());
@@ -106,7 +106,7 @@ class ReadNearbyCompanionPostsServiceTest {
 
     @Test
     void usesDefaultImageWhenPlaceHasNoPhotoReference() {
-        queryPort.result = List.of(new NearbyCompanionPostSummary(
+        queryPort.result = List.of(new CompanionPostSummary(
                 101L,
                 CompanionPostStatus.RECRUITING,
                 "니어바이",
@@ -131,7 +131,7 @@ class ReadNearbyCompanionPostsServiceTest {
                 List.of()
         );
 
-        NearbyCompanionPostsResult result = service.read(validCommand());
+        CompanionPostsResult result = service.read(validCommand());
 
         assertEquals("https://cdn.nearby.test/default-place.png", result.posts().get(0).place().imageUrl());
         assertEquals("DEFAULT", result.posts().get(0).place().imageSource());
@@ -141,7 +141,7 @@ class ReadNearbyCompanionPostsServiceTest {
 
     @Test
     void handlesPostWithoutMeetingAt() {
-        queryPort.result = List.of(new NearbyCompanionPostSummary(
+        queryPort.result = List.of(new CompanionPostSummary(
                 101L,
                 CompanionPostStatus.RECRUITING,
                 "니어바이",
@@ -161,7 +161,7 @@ class ReadNearbyCompanionPostsServiceTest {
                 LocalDateTime.of(2026, 7, 2, 3, 30)
         ));
 
-        NearbyCompanionPostsResult result = service.read(validCommand());
+        CompanionPostsResult result = service.read(validCommand());
 
         assertEquals(null, result.posts().get(0).meetingAt());
         assertEquals(null, result.posts().get(0).meetingAtText());
@@ -170,7 +170,7 @@ class ReadNearbyCompanionPostsServiceTest {
 
     @Test
     void rejectsInvalidSearchCondition() {
-        assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(new ReadNearbyCompanionPostsCommand(
+        assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(new ReadCompanionPostsCommand(
                 7L,
                 new BigDecimal("91.00000000"),
                 new BigDecimal("126.97800000"),
@@ -180,7 +180,7 @@ class ReadNearbyCompanionPostsServiceTest {
                 CompanionPostSort.LATEST
         )));
 
-        assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(new ReadNearbyCompanionPostsCommand(
+        assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(new ReadCompanionPostsCommand(
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
@@ -190,7 +190,7 @@ class ReadNearbyCompanionPostsServiceTest {
                 CompanionPostSort.LATEST
         )));
 
-        assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(new ReadNearbyCompanionPostsCommand(
+        assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(new ReadCompanionPostsCommand(
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
@@ -208,8 +208,8 @@ class ReadNearbyCompanionPostsServiceTest {
         assertThrows(OnboardingRequiredException.class, () -> service.read(validCommand()));
     }
 
-    private ReadNearbyCompanionPostsCommand validCommand() {
-        return new ReadNearbyCompanionPostsCommand(
+    private ReadCompanionPostsCommand validCommand() {
+        return new ReadCompanionPostsCommand(
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
@@ -220,13 +220,13 @@ class ReadNearbyCompanionPostsServiceTest {
         );
     }
 
-    private static final class FakeNearbyCompanionPostQueryPort implements NearbyCompanionPostQueryPort {
+    private static final class FakeCompanionPostQueryPort implements CompanionPostQueryPort {
 
-        private List<NearbyCompanionPostSummary> result = List.of();
-        private ReadNearbyCompanionPostsCommand command;
+        private List<CompanionPostSummary> result = List.of();
+        private ReadCompanionPostsCommand command;
 
         @Override
-        public List<NearbyCompanionPostSummary> findNearby(final ReadNearbyCompanionPostsCommand command) {
+        public List<CompanionPostSummary> find(final ReadCompanionPostsCommand command) {
             this.command = command;
             return result;
         }

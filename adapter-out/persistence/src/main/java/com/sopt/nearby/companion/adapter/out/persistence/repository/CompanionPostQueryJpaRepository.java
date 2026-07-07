@@ -1,4 +1,4 @@
-// 주변 동행 모집글 목록 조회 네이티브 쿼리를 실행한다.
+// 동행 모집글 목록 조회 네이티브 쿼리를 실행한다.
 package com.sopt.nearby.companion.adapter.out.persistence.repository;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
-public interface NearbyCompanionPostQueryJpaRepository extends Repository<CompanionPostEntity, Long> {
+public interface CompanionPostQueryJpaRepository extends Repository<CompanionPostEntity, Long> {
 
     @Query(value = """
             with post_rows as (
@@ -94,7 +94,7 @@ public interface NearbyCompanionPostQueryJpaRepository extends Repository<Compan
                 case when :sort = 'CLOSING_SOON' then coalesce(meetingAt, exposureExpiresAt) end asc,
                 postId desc
             """, nativeQuery = true)
-    List<NearbyCompanionPostProjection> findNearby(
+    List<CompanionPostProjection> find(
             @Param("latitude") BigDecimal latitude,
             @Param("longitude") BigDecimal longitude,
             @Param("radiusMeters") int radiusMeters,

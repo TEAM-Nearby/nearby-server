@@ -3,14 +3,14 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.code.CompanionSuccessCode;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionPostRequest;
-import com.sopt.nearby.companion.adapter.in.web.dto.request.NearbyCompanionPostsRequest;
+import com.sopt.nearby.companion.adapter.in.web.dto.request.CompanionPostsRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostDetailResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionPostResponse;
-import com.sopt.nearby.companion.adapter.in.web.dto.response.NearbyCompanionPostsResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostsResponse;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailCommand;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
-import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import java.security.Principal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,23 +29,23 @@ public class CompanionPostController implements CompanionPostApi {
     private static final String DEFAULT_PLACE_CATEGORY = "ALL";
     private static final String DEFAULT_SORT = "LATEST";
 
-    private final ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase;
+    private final ReadCompanionPostsUseCase readCompanionPostsUseCase;
     private final CreateCompanionPostUseCase createCompanionPostUseCase;
     private final ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase;
 
     public CompanionPostController(
-            final ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase,
+            final ReadCompanionPostsUseCase readCompanionPostsUseCase,
             final CreateCompanionPostUseCase createCompanionPostUseCase,
             final ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase
     ) {
-        this.readNearbyCompanionPostsUseCase = readNearbyCompanionPostsUseCase;
+        this.readCompanionPostsUseCase = readCompanionPostsUseCase;
         this.createCompanionPostUseCase = createCompanionPostUseCase;
         this.readCompanionPostDetailUseCase = readCompanionPostDetailUseCase;
     }
 
     @Override
     @GetMapping
-    public CommonResponse<NearbyCompanionPostsResponse> getPosts(
+    public CommonResponse<CompanionPostsResponse> getPosts(
             @RequestParam(required = false) final String latitude,
             @RequestParam(required = false) final String longitude,
             @RequestParam(defaultValue = DEFAULT_RADIUS_METERS) final String radiusMeters,
@@ -54,7 +54,7 @@ public class CompanionPostController implements CompanionPostApi {
             @RequestParam(defaultValue = DEFAULT_SORT) final String sort,
             final Principal principal
     ) {
-        NearbyCompanionPostsRequest request = new NearbyCompanionPostsRequest(
+        CompanionPostsRequest request = new CompanionPostsRequest(
                 latitude,
                 longitude,
                 radiusMeters,
@@ -65,7 +65,7 @@ public class CompanionPostController implements CompanionPostApi {
 
         return CommonResponse.success(
                 CompanionSuccessCode.COMPANION_POSTS_FOUND,
-                NearbyCompanionPostsResponse.from(readNearbyCompanionPostsUseCase.read(
+                CompanionPostsResponse.from(readCompanionPostsUseCase.read(
                         request.toCommand(Long.valueOf(principal.getName()))
                 ))
         );

@@ -4,7 +4,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionPostRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostDetailResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionPostResponse;
-import com.sopt.nearby.companion.adapter.in.web.dto.response.NearbyCompanionPostsResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostsResponse;
 import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
@@ -47,10 +47,10 @@ public interface CompanionPostApi {
     )
     @Operation(
             summary = "동행 모집글 목록 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치 주변 동행 모집글을 조회합니다.",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치와 필터 조건에 맞는 동행 모집글을 조회합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    CommonResponse<NearbyCompanionPostsResponse> getPosts(
+    CommonResponse<CompanionPostsResponse> getPosts(
             @Parameter(description = "사용자 현재 위치 위도", required = true, example = "37.56650000")
             String latitude,
             @Parameter(description = "사용자 현재 위치 경도", required = true, example = "126.97800000")

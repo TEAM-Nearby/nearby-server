@@ -9,7 +9,7 @@ import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
-import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsService;
+import com.sopt.nearby.companion.application.ReadCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
 import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
@@ -21,7 +21,7 @@ import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
-import com.sopt.nearby.companion.port.in.ReadNearbyCompanionPostsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
@@ -37,7 +37,7 @@ import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
-import com.sopt.nearby.companion.port.out.NearbyCompanionPostQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
 import com.sopt.nearby.companion.port.out.ProfileImageUploadUrlIssuer;
 import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
@@ -102,12 +102,12 @@ public class CompanionUseCaseConfig {
     }
 
     @Bean
-    ReadNearbyCompanionPostsUseCase readNearbyCompanionPostsUseCase(
-            final NearbyCompanionPostQueryPort queryPort,
+    ReadCompanionPostsUseCase readCompanionPostsUseCase(
+            final CompanionPostQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
-        return new ReadNearbyCompanionPostsService(
+        return new ReadCompanionPostsService(
                 queryPort,
                 requireCompletedOnboardingUseCase,
                 Clock.systemDefaultZone(),

@@ -1,29 +1,29 @@
-// 주변 동행 모집글 목록 조회 쿼리 포트를 JPA로 구현한다.
+// 동행 모집글 목록 조회 쿼리 포트를 JPA로 구현한다.
 package com.sopt.nearby.companion.adapter.out.persistence;
 
-import com.sopt.nearby.companion.adapter.out.persistence.repository.NearbyCompanionPostProjection;
-import com.sopt.nearby.companion.adapter.out.persistence.repository.NearbyCompanionPostQueryJpaRepository;
-import com.sopt.nearby.companion.application.ReadNearbyCompanionPostsCommand;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostProjection;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostQueryJpaRepository;
+import com.sopt.nearby.companion.application.ReadCompanionPostsCommand;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
-import com.sopt.nearby.companion.domain.model.post.NearbyCompanionPostSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostSummary;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
-import com.sopt.nearby.companion.port.out.NearbyCompanionPostQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class NearbyCompanionPostQueryAdapter implements NearbyCompanionPostQueryPort {
+public class CompanionPostQueryAdapter implements CompanionPostQueryPort {
 
-    private final NearbyCompanionPostQueryJpaRepository repository;
+    private final CompanionPostQueryJpaRepository repository;
 
-    public NearbyCompanionPostQueryAdapter(final NearbyCompanionPostQueryJpaRepository repository) {
+    public CompanionPostQueryAdapter(final CompanionPostQueryJpaRepository repository) {
         this.repository = repository;
     }
 
     @Override
-    public List<NearbyCompanionPostSummary> findNearby(final ReadNearbyCompanionPostsCommand command) {
-        return repository.findNearby(
+    public List<CompanionPostSummary> find(final ReadCompanionPostsCommand command) {
+        return repository.find(
                         command.latitude(),
                         command.longitude(),
                         command.radiusMeters(),
@@ -36,8 +36,8 @@ public class NearbyCompanionPostQueryAdapter implements NearbyCompanionPostQuery
                 .toList();
     }
 
-    private NearbyCompanionPostSummary toSummary(final NearbyCompanionPostProjection row) {
-        return new NearbyCompanionPostSummary(
+    private CompanionPostSummary toSummary(final CompanionPostProjection row) {
+        return new CompanionPostSummary(
                 row.getPostId(),
                 CompanionPostStatus.valueOf(row.getStatus()),
                 row.getHostNickname(),
