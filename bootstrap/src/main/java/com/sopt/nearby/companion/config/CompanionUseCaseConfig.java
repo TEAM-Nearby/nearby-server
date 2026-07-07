@@ -9,6 +9,7 @@ import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
+import com.sopt.nearby.companion.application.ReadCompanionProfileService;
 import com.sopt.nearby.companion.application.ReadCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
@@ -21,6 +22,7 @@ import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
@@ -34,6 +36,7 @@ import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
+import com.sopt.nearby.companion.port.out.CompanionProfileDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
@@ -125,6 +128,14 @@ public class CompanionUseCaseConfig {
                 requireCompletedOnboardingUseCase,
                 Clock.systemDefaultZone()
         );
+    }
+
+    @Bean
+    ReadCompanionProfileUseCase readCompanionProfileUseCase(
+            final CompanionProfileDetailQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase
+    ) {
+        return new ReadCompanionProfileService(queryPort, requireCompletedOnboardingUseCase);
     }
 
     @Bean
