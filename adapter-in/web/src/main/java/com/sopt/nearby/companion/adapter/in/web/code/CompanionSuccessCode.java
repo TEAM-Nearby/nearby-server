@@ -13,6 +13,7 @@ public enum CompanionSuccessCode implements SuccessCode {
     READ_COMPANION_SCHEDULE("동행 일정 정보를 조회했어요."),
     PROFILE_IMAGE_UPLOAD_URL_ISSUED("Presigned URL 발급에 성공했습니다."),
     COMPANION_PROFILE_CREATED("동행 프로필 등록이 완료되었습니다."),
+    COMPANION_PROFILE_FOUND("동행 프로필 조회에 성공했어요."),
     READ_COMPANION_REQUESTS("동행 요청 목록을 조회했어요."),
     MARK_COMPANION_NOTIFICATION_AS_READ("동행 알림을 읽음 처리했어요."),
     CHECK_IN_COMPANION_MEETING("만남 인증이 완료되었어요."),
