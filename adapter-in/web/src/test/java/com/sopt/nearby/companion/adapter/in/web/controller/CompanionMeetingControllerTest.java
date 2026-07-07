@@ -77,6 +77,19 @@ class CompanionMeetingControllerTest {
     }
 
     @Test
+    void returnsEmptyOngoingMeetingsWhenUseCaseReturnsNoMeetings() throws Exception {
+        readUseCase.result = List.of();
+
+        mockMvc.perform(get("/api/companion-meetings")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("READ_ONGOING_COMPANION_MEETINGS"))
+                .andExpect(jsonPath("$.data.meetings").isArray())
+                .andExpect(jsonPath("$.data.meetings").isEmpty());
+    }
+
+    @Test
     void checksInMeetingAndPassesAuthenticatedUserIdToUseCase() throws Exception {
         useCase.result = result(false);
 
