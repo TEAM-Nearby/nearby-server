@@ -26,7 +26,15 @@ public enum CompanionErrorCode implements ErrorCode {
     INVALID_REQUEST_DIRECTION("올바르지 않은 요청 방향입니다."),
     INVALID_NOTIFICATION_ID("올바르지 않은 알림 ID입니다."),
     FORBIDDEN_COMPANION_NOTIFICATION("동행 알림을 읽음 처리할 권한이 없습니다."),
-    COMPANION_NOTIFICATION_NOT_FOUND("동행 알림을 찾을 수 없습니다.");
+    COMPANION_NOTIFICATION_NOT_FOUND("동행 알림을 찾을 수 없습니다."),
+    INVALID_CHECK_IN_REQUEST("올바르지 않은 만남 인증 요청입니다."),
+    OUT_OF_CHECK_IN_RADIUS("만남 인증 가능 반경 밖에 있습니다."),
+    FORBIDDEN_COMPANION_MEETING("해당 동행의 참여자만 만남 인증을 할 수 있습니다."),
+    COMPANION_MEETING_NOT_FOUND("진행 중인 동행 정보를 찾을 수 없습니다."),
+    COMPANION_MEETING_ALREADY_CANCELED("취소된 동행은 만남 인증을 할 수 없습니다."),
+    COMPANION_MEETING_ALREADY_COMPLETED("완료된 동행은 만남 인증을 할 수 없습니다."),
+    COMPANION_SCHEDULE_NOT_CONFIRMED("확정된 일정이 없어 만남 인증을 할 수 없습니다."),
+    CHECK_IN_TIME_NOT_ALLOWED("만남 인증 가능 시간이 아닙니다.");
 
     private final String message;
 
