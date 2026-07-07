@@ -175,6 +175,28 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void eleventhMigrationAddsMeetingCheckInUniquenessConstraint() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource meetingCheckInMigration = new ClassPathResource(
+				"db/migration/V11__add_meeting_check_in_meeting_user_unique_constraint.sql"
+		);
+
+		assertThat(meetingCheckInMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_meeting_check_in_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, meetingCheckInMigration);
+
+			assertThat(indexNames(connection, "meeting_check_in"))
+					.anyMatch(indexName -> indexName.startsWith("uk_meeting_check_in_meeting_user"));
+		}
+	}
+
 	private static List<String> tableNames(final Connection connection) throws SQLException {
 		List<String> names = new ArrayList<>();
 		try (ResultSet tables = connection.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {
