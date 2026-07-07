@@ -158,6 +158,7 @@ public class ReadNearbyCompanionPostsService implements ReadNearbyCompanionPosts
                 || command.radiusMeters() <= 0
                 || command.radiusMeters() > MAX_RADIUS_METERS
                 || command.placeCategory() == null
+                || (command.placeId() != null && command.placeId() <= 0)
                 || command.sort() == null
                 || command.latitude().compareTo(MIN_LATITUDE) < 0
                 || command.latitude().compareTo(MAX_LATITUDE) > 0

@@ -11,6 +11,7 @@ public record ReadNearbyCompanionPostsCommand(
         BigDecimal longitude,
         int radiusMeters,
         CompanionPostPlaceCategory placeCategory,
+        Long placeId,
         CompanionPostSort sort
 ) {
 }

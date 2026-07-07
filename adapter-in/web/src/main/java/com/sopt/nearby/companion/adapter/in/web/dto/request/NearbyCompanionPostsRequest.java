@@ -13,6 +13,7 @@ public record NearbyCompanionPostsRequest(
         String longitude,
         String radiusMeters,
         String placeCategory,
+        String placeId,
         String sort
 ) {
 
@@ -24,6 +25,7 @@ public record NearbyCompanionPostsRequest(
                     parseDecimal(longitude),
                     Integer.parseInt(required(radiusMeters)),
                     CompanionPostPlaceCategory.valueOf(required(placeCategory).toUpperCase(Locale.ROOT)),
+                    parseOptionalLong(placeId),
                     CompanionPostSort.valueOf(required(sort).toUpperCase(Locale.ROOT))
             );
         } catch (RuntimeException exception) {
@@ -33,6 +35,13 @@ public record NearbyCompanionPostsRequest(
 
     private BigDecimal parseDecimal(final String value) {
         return new BigDecimal(required(value));
+    }
+
+    private Long parseOptionalLong(final String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return Long.valueOf(value);
     }
 
     private String required(final String value) {

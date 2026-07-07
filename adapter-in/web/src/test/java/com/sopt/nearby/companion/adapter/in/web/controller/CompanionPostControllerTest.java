@@ -121,6 +121,7 @@ class CompanionPostControllerTest {
                         .queryParam("longitude", "126.97800000")
                         .queryParam("radiusMeters", "3000")
                         .queryParam("placeCategory", "CAFE")
+                        .queryParam("placeId", "20")
                         .queryParam("sort", "DISTANCE")
                         .principal(principal("7")))
                 .andExpect(status().isOk())
@@ -130,6 +131,7 @@ class CompanionPostControllerTest {
 
         assertEquals(3000, readUseCase.command.radiusMeters());
         assertEquals(CompanionPostPlaceCategory.CAFE, readUseCase.command.placeCategory());
+        assertEquals(20L, readUseCase.command.placeId());
         assertEquals(CompanionPostSort.DISTANCE, readUseCase.command.sort());
     }
 

@@ -50,6 +50,7 @@ public class CompanionPostController implements CompanionPostApi {
             @RequestParam(required = false) final String longitude,
             @RequestParam(defaultValue = DEFAULT_RADIUS_METERS) final String radiusMeters,
             @RequestParam(defaultValue = DEFAULT_PLACE_CATEGORY) final String placeCategory,
+            @RequestParam(required = false) final String placeId,
             @RequestParam(defaultValue = DEFAULT_SORT) final String sort,
             final Principal principal
     ) {
@@ -58,6 +59,7 @@ public class CompanionPostController implements CompanionPostApi {
                 longitude,
                 radiusMeters,
                 placeCategory,
+                placeId,
                 sort
         );
 

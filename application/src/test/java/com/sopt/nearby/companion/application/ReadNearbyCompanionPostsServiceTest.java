@@ -75,11 +75,13 @@ class ReadNearbyCompanionPostsServiceTest {
                 new BigDecimal("126.97800000"),
                 1000,
                 CompanionPostPlaceCategory.ALL,
+                null,
                 CompanionPostSort.LATEST
         ));
 
         assertEquals(7L, onboardingUseCase.userId);
         assertEquals(new BigDecimal("37.56650000"), queryPort.command.latitude());
+        assertEquals(null, queryPort.command.placeId());
         assertEquals(1000, result.radiusMeters());
         assertEquals(5000, result.maxRadiusMeters());
         assertEquals(CompanionPostPlaceCategory.ALL, result.placeCategory());
@@ -174,6 +176,7 @@ class ReadNearbyCompanionPostsServiceTest {
                 new BigDecimal("126.97800000"),
                 1000,
                 CompanionPostPlaceCategory.ALL,
+                null,
                 CompanionPostSort.LATEST
         )));
 
@@ -183,6 +186,17 @@ class ReadNearbyCompanionPostsServiceTest {
                 new BigDecimal("126.97800000"),
                 5001,
                 CompanionPostPlaceCategory.ALL,
+                null,
+                CompanionPostSort.LATEST
+        )));
+
+        assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(new ReadNearbyCompanionPostsCommand(
+                7L,
+                new BigDecimal("37.56650000"),
+                new BigDecimal("126.97800000"),
+                1000,
+                CompanionPostPlaceCategory.ALL,
+                0L,
                 CompanionPostSort.LATEST
         )));
     }
@@ -201,6 +215,7 @@ class ReadNearbyCompanionPostsServiceTest {
                 new BigDecimal("126.97800000"),
                 1000,
                 CompanionPostPlaceCategory.ALL,
+                null,
                 CompanionPostSort.LATEST
         );
     }
