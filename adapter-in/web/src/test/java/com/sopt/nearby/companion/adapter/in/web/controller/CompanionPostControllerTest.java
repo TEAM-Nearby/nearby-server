@@ -372,8 +372,8 @@ class CompanionPostControllerTest {
 
         mockMvc.perform(post("/api/companion-posts/{postId}/companion-requests", 10L)
                         .principal(principal("7")))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value(201))
                 .andExpect(jsonPath("$.code").value("CREATE_COMPANION_REQUEST"))
                 .andExpect(jsonPath("$.message").value("동행 신청이 완료되었어요."))
                 .andExpect(jsonPath("$.data.applicationId").value(1))

@@ -16,12 +16,14 @@ import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import java.security.Principal;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -110,11 +112,12 @@ public class CompanionPostController implements CompanionPostApi {
 
     @Override
     @PostMapping("/{postId}/companion-requests")
+    @ResponseStatus(HttpStatus.CREATED)
     public CommonResponse<CreatedCompanionRequestResponse> createCompanionRequest(
             @PathVariable final Long postId,
             final Principal principal
     ) {
-        return CommonResponse.success(
+        return CommonResponse.created(
                 CompanionSuccessCode.CREATE_COMPANION_REQUEST,
                 CreatedCompanionRequestResponse.from(createCompanionRequestUseCase.create(
                         new CreateCompanionRequestCommand(
