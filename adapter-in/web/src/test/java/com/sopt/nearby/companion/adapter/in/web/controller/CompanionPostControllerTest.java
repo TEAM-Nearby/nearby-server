@@ -13,14 +13,19 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.CreateCompanionPostCommand;
 import com.sopt.nearby.companion.application.CreateCompanionPostResult;
+import com.sopt.nearby.companion.application.CreateCompanionRequestCommand;
+import com.sopt.nearby.companion.application.CreateCompanionRequestResult;
 import com.sopt.nearby.companion.application.CompanionPostDetailResult;
 import com.sopt.nearby.companion.application.CompanionPostsResult;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailCommand;
 import com.sopt.nearby.companion.application.ReadCompanionPostsCommand;
 import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
+import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
+import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostApplyStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
@@ -29,6 +34,7 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
@@ -49,14 +55,21 @@ class CompanionPostControllerTest {
     private FakeReadCompanionPostsUseCase readUseCase;
     private FakeCreateCompanionPostUseCase createUseCase;
     private FakeReadCompanionPostDetailUseCase detailUseCase;
+    private FakeCreateCompanionRequestUseCase createRequestUseCase;
 
     @BeforeEach
     void setUp() {
         readUseCase = new FakeReadCompanionPostsUseCase();
         createUseCase = new FakeCreateCompanionPostUseCase();
         detailUseCase = new FakeReadCompanionPostDetailUseCase();
+        createRequestUseCase = new FakeCreateCompanionRequestUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionPostController(readUseCase, createUseCase, detailUseCase))
+                .standaloneSetup(new CompanionPostController(
+                        readUseCase,
+                        createUseCase,
+                        detailUseCase,
+                        createRequestUseCase
+                ))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -349,6 +362,69 @@ class CompanionPostControllerTest {
     }
 
     @Test
+    void createsCompanionRequest() throws Exception {
+        createRequestUseCase.result = new CreateCompanionRequestResult(
+                1L,
+                10L,
+                CompanionApplicationStatus.PENDING,
+                LocalDateTime.of(2026, 7, 15, 12, 30)
+        );
+
+        mockMvc.perform(post("/api/companion-posts/{postId}/companion-requests", 10L)
+                        .principal(principal("7")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value(201))
+                .andExpect(jsonPath("$.code").value("CREATE_COMPANION_REQUEST"))
+                .andExpect(jsonPath("$.message").value("동행 신청이 완료되었어요."))
+                .andExpect(jsonPath("$.data.applicationId").value(1))
+                .andExpect(jsonPath("$.data.postId").value(10))
+                .andExpect(jsonPath("$.data.applicationStatus").value("PENDING"))
+                .andExpect(jsonPath("$.data.createdAt").value("2026-07-15T12:30:00"));
+
+        assertEquals(7L, createRequestUseCase.command.applicantUserId());
+        assertEquals(10L, createRequestUseCase.command.postId());
+    }
+
+    @Test
+    void returnsNotFoundWhenCompanionRequestPostIsMissing() throws Exception {
+        createRequestUseCase.exception = new CompanionPostNotFoundException();
+
+        mockMvc.perform(post("/api/companion-posts/{postId}/companion-requests", 10L)
+                        .principal(principal("7")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("COMPANION_POST_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("동행 모집글을 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsConflictWhenCompanionRequestAlreadyExists() throws Exception {
+        createRequestUseCase.exception = new CompanionRequestAlreadyExistsException();
+
+        mockMvc.perform(post("/api/companion-posts/{postId}/companion-requests", 10L)
+                        .principal(principal("7")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("COMPANION_REQUEST_ALREADY_EXISTS"))
+                .andExpect(jsonPath("$.message").value("이미 신청한 동행입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsConflictWhenCompanionPostIsNotRecruiting() throws Exception {
+        createRequestUseCase.exception = new CompanionPostNotRecruitingException();
+
+        mockMvc.perform(post("/api/companion-posts/{postId}/companion-requests", 10L)
+                        .principal(principal("7")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("COMPANION_POST_NOT_RECRUITING"))
+                .andExpect(jsonPath("$.message").value("모집 중인 동행이 아닙니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
     void getsCompanionPostDetail() throws Exception {
         detailUseCase.result = detailResult(null, CompanionPostApplyStatus.NOT_APPLIED);
 
@@ -414,7 +490,7 @@ class CompanionPostControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.code").value("COMPANION_POST_NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value("존재하지 않거나 삭제된 글입니다."))
+                .andExpect(jsonPath("$.message").value("동행 모집글을 찾을 수 없습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
@@ -605,6 +681,22 @@ class CompanionPostControllerTest {
 
         @Override
         public CompanionPostDetailResult read(final ReadCompanionPostDetailCommand command) {
+            this.command = command;
+            if (exception != null) {
+                throw exception;
+            }
+            return result;
+        }
+    }
+
+    private static final class FakeCreateCompanionRequestUseCase implements CreateCompanionRequestUseCase {
+
+        private CreateCompanionRequestResult result;
+        private CreateCompanionRequestCommand command;
+        private RuntimeException exception;
+
+        @Override
+        public CreateCompanionRequestResult create(final CreateCompanionRequestCommand command) {
             this.command = command;
             if (exception != null) {
                 throw exception;

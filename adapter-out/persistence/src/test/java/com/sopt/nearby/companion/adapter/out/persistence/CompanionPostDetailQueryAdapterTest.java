@@ -92,12 +92,6 @@ class CompanionPostDetailQueryAdapterTest {
         applicationJpaRepository.saveAndFlush(application(
                 post.getId(),
                 7L,
-                CompanionApplicationStatus.PENDING,
-                NOW.minusHours(2)
-        ));
-        applicationJpaRepository.saveAndFlush(application(
-                post.getId(),
-                7L,
                 CompanionApplicationStatus.ACCEPTED,
                 NOW.minusHours(1)
         ));
@@ -112,12 +106,6 @@ class CompanionPostDetailQueryAdapterTest {
                 9L,
                 CompanionApplicationStatus.REJECTED,
                 NOW.minusMinutes(20)
-        ));
-        applicationJpaRepository.saveAndFlush(application(
-                post.getId(),
-                10L,
-                CompanionApplicationStatus.ACCEPTED,
-                NOW.minusMinutes(15)
         ));
         applicationJpaRepository.saveAndFlush(application(
                 post.getId(),

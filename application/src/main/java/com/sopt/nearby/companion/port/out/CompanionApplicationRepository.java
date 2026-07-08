@@ -5,4 +5,6 @@ import com.sopt.nearby.common.port.DomainRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 
 public interface CompanionApplicationRepository extends DomainRepository<CompanionApplication, Long> {
+
+    boolean existsByPostIdAndApplicantUserId(Long postId, Long applicantUserId);
 }

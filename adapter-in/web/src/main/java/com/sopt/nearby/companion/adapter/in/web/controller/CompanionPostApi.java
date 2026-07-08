@@ -4,9 +4,12 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionPostRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostDetailResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionPostResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionRequestResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostsResponse;
 import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
+import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
@@ -130,6 +133,41 @@ public interface CompanionPostApi {
     )
     CommonResponse<CreatedCompanionPostResponse> createPost(
             CreateCompanionPostRequest request,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            CompanionPostNotFoundException.class,
+            CompanionRequestAlreadyExistsException.class,
+            CompanionPostNotRecruitingException.class
+    })
+    @ApiResponse(
+            responseCode = "403",
+            description = "온보딩 과정이 완료되지 않았습니다.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "ONBOARDING_REQUIRED",
+                            value = """
+                                    {
+                                      "status": 403,
+                                      "code": "ONBOARDING_REQUIRED",
+                                      "message": "온보딩 과정이 완료되지 않았습니다.",
+                                      "data": null
+                                    }
+                                    """
+                    )
+            )
+    )
+    @Operation(
+            summary = "동행 신청하기",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글에 신청합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CreatedCompanionRequestResponse> createCompanionRequest(
+            @Parameter(description = "신청할 동행 모집 글 ID", required = true, example = "10")
+            Long postId,
             @Parameter(hidden = true)
             Principal principal
     );

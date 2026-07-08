@@ -41,21 +41,10 @@ public interface CompanionPostQueryJpaRepository extends Repository<CompanionPos
                 join place_cache place
                     on place.id = post.place_id
                 left join (
-                    select latest.post_id, count(*) as accepted_count
-                    from (
-                        select
-                            app.post_id,
-                            app.applicant_user_id,
-                            app.status,
-                            row_number() over (
-                                partition by app.post_id, app.applicant_user_id
-                                order by app.created_at desc, app.id desc
-                            ) as rn
-                        from companion_application app
-                    ) latest
-                    where latest.rn = 1
-                        and latest.status = 'ACCEPTED'
-                    group by latest.post_id
+                    select app.post_id, count(*) as accepted_count
+                    from companion_application app
+                    where app.status = 'ACCEPTED'
+                    group by app.post_id
                 ) accepted
                     on accepted.post_id = post.id
                 where post.status = 'RECRUITING'

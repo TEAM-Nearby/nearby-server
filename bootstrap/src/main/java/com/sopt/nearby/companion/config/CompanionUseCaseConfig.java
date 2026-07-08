@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.config;
 
 import com.sopt.nearby.companion.application.CreateCompanionPostService;
+import com.sopt.nearby.companion.application.CreateCompanionRequestService;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsService;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingService;
 import com.sopt.nearby.companion.application.CompleteCompanionMeetingService;
@@ -20,6 +21,7 @@ import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
 import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.CompleteCompanionMeetingUseCase;
@@ -44,6 +46,7 @@ import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingCheckInQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
+import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostDetailQueryPort;
@@ -86,6 +89,22 @@ public class CompanionUseCaseConfig {
                 resolvePlaceCacheUseCase,
                 companionPostRepository,
                 companionPostStyleRepository,
+                Clock.systemDefaultZone()
+        );
+    }
+
+    @Bean
+    CreateCompanionRequestUseCase createCompanionRequestUseCase(
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final CompanionPostRepository companionPostRepository,
+            final CompanionApplicationRepository companionApplicationRepository,
+            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase
+    ) {
+        return new CreateCompanionRequestService(
+                requireCompletedOnboardingUseCase,
+                companionPostRepository,
+                companionApplicationRepository,
+                createCompanionNotificationUseCase,
                 Clock.systemDefaultZone()
         );
     }
