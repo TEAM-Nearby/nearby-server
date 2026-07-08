@@ -4,12 +4,16 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CheckInCompanionMeetingRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionReviewsRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CheckInCompanionMeetingResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompleteCompanionMeetingResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMeetingDetailResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionReviewTargetsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreateCompanionReviewsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
 import com.sopt.nearby.companion.domain.exception.CannotReviewSelfException;
 import com.sopt.nearby.companion.domain.exception.CheckInTimeNotAllowedException;
+import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCompletedException;
+import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingCurrentUserNotCheckedInException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
@@ -19,6 +23,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionScheduleNotConfirmedE
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewTargetException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompleteCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
@@ -121,6 +126,30 @@ public interface CompanionMeetingApi {
             @Parameter(description = "인증할 진행 중인 동행 만남 ID", required = true, example = "1")
             Long meetingId,
             CheckInCompanionMeetingRequest request,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            InvalidCompanionMeetingIdException.class,
+            ForbiddenCompleteCompanionMeetingException.class,
+            CompanionMeetingNotFoundException.class,
+            CompleteCompanionMeetingCurrentUserNotCheckedInException.class,
+            CompleteCompanionMeetingAlreadyCanceledException.class,
+            CompleteCompanionMeetingAlreadyCompletedException.class
+    })
+    @Operation(
+            summary = "동행 마치기",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 동행을 완료 처리합니다.
+                    현재 사용자가 해당 동행 참여자이고 만남 인증을 완료했다면 HOST/GUEST 역할과 리뷰 작성 여부에 관계없이 동행을 마칠 수 있습니다.
+                    성공 시 동행 만남과 매칭 상태를 COMPLETED로 변경합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CompleteCompanionMeetingResponse> complete(
+            @Parameter(description = "완료 처리할 동행 만남 ID", required = true, example = "1")
+            Long meetingId,
             @Parameter(hidden = true)
             Principal principal
     );

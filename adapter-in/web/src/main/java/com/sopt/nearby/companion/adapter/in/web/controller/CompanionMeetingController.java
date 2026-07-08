@@ -5,16 +5,19 @@ import com.sopt.nearby.companion.adapter.in.web.code.CompanionSuccessCode;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CheckInCompanionMeetingRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionReviewsRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CheckInCompanionMeetingResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompleteCompanionMeetingResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMeetingDetailResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionReviewTargetsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreateCompanionReviewsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingResult;
+import com.sopt.nearby.companion.application.CompleteCompanionMeetingResult;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsResult;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailResult;
 import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsResult;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
+import com.sopt.nearby.companion.port.in.CompleteCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
@@ -24,6 +27,7 @@ import java.security.Principal;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,6 +43,7 @@ public class CompanionMeetingController implements CompanionMeetingApi {
     private final ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase;
     private final ReadCompanionReviewTargetsUseCase readCompanionReviewTargetsUseCase;
     private final CheckInCompanionMeetingUseCase checkInCompanionMeetingUseCase;
+    private final CompleteCompanionMeetingUseCase completeCompanionMeetingUseCase;
     private final CreateCompanionReviewsUseCase createCompanionReviewsUseCase;
 
     public CompanionMeetingController(
@@ -46,12 +51,14 @@ public class CompanionMeetingController implements CompanionMeetingApi {
             final ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase,
             final ReadCompanionReviewTargetsUseCase readCompanionReviewTargetsUseCase,
             final CheckInCompanionMeetingUseCase checkInCompanionMeetingUseCase,
+            final CompleteCompanionMeetingUseCase completeCompanionMeetingUseCase,
             final CreateCompanionReviewsUseCase createCompanionReviewsUseCase
     ) {
         this.readOngoingCompanionMeetingsUseCase = readOngoingCompanionMeetingsUseCase;
         this.readCompanionMeetingDetailUseCase = readCompanionMeetingDetailUseCase;
         this.readCompanionReviewTargetsUseCase = readCompanionReviewTargetsUseCase;
         this.checkInCompanionMeetingUseCase = checkInCompanionMeetingUseCase;
+        this.completeCompanionMeetingUseCase = completeCompanionMeetingUseCase;
         this.createCompanionReviewsUseCase = createCompanionReviewsUseCase;
     }
 
@@ -112,6 +119,21 @@ public class CompanionMeetingController implements CompanionMeetingApi {
         return CommonResponse.success(
                 successCode(result),
                 CheckInCompanionMeetingResponse.from(result)
+        );
+    }
+
+    @Override
+    @PatchMapping("/{meetingId}/complete")
+    public CommonResponse<CompleteCompanionMeetingResponse> complete(
+            @PathVariable final Long meetingId,
+            final Principal principal
+    ) {
+        Long userId = Long.valueOf(principal.getName());
+        CompleteCompanionMeetingResult result = completeCompanionMeetingUseCase.complete(meetingId, userId);
+
+        return CommonResponse.success(
+                CompanionSuccessCode.COMPLETE_COMPANION_MEETING,
+                CompleteCompanionMeetingResponse.from(result)
         );
     }
 
