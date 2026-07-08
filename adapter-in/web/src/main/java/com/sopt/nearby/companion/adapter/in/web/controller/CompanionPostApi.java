@@ -142,6 +142,24 @@ public interface CompanionPostApi {
             CompanionRequestAlreadyExistsException.class,
             CompanionPostNotRecruitingException.class
     })
+    @ApiResponse(
+            responseCode = "403",
+            description = "온보딩 과정이 완료되지 않았습니다.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "ONBOARDING_REQUIRED",
+                            value = """
+                                    {
+                                      "status": 403,
+                                      "code": "ONBOARDING_REQUIRED",
+                                      "message": "온보딩 과정이 완료되지 않았습니다.",
+                                      "data": null
+                                    }
+                                    """
+                    )
+            )
+    )
     @Operation(
             summary = "동행 신청하기",
             description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글에 신청합니다.",
