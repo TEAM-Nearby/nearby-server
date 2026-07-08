@@ -42,6 +42,7 @@ public enum CompanionErrorCode implements ErrorCode {
     INVALID_REVIEW_KEYWORD_COUNT("배려 소통은 1개 이상 3개 이하, 시간 약속은 1개를 선택해야 합니다."),
     CANNOT_REVIEW_SELF("자기 자신에게 후기를 남길 수 없습니다."),
     FORBIDDEN_COMPANION_REVIEW("해당 동행의 참여자만 후기를 등록할 수 있습니다."),
+    FORBIDDEN_COMPANION_REVIEW_TARGET("해당 동행의 참여자만 후기 대상 목록을 조회할 수 있습니다."),
     REVIEWEE_NOT_FOUND("후기 대상 사용자를 찾을 수 없습니다."),
     COMPANION_REVIEW_MEETING_ALREADY_CANCELED("취소된 동행에는 후기를 남길 수 없습니다."),
     COMPANION_REVIEW_ALREADY_EXISTS("이미 해당 사용자에게 후기를 남겼습니다."),
