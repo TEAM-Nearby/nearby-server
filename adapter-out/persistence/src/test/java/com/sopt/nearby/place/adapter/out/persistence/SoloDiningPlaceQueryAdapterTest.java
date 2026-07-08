@@ -67,12 +67,6 @@ class SoloDiningPlaceQueryAdapterTest {
                 farRestaurant.getId(),
                 LocalDateTime.of(2026, 7, 7, 12, 0)
         ));
-        favoriteJpaRepository.saveAndFlush(new SoloDiningFavoriteEntity(
-                null,
-                7L,
-                farRestaurant.getId(),
-                LocalDateTime.of(2026, 7, 7, 12, 1)
-        ));
 
         List<SoloDiningPlaceSummary> result = adapter.findAllByPlaceIds(
                 7L,

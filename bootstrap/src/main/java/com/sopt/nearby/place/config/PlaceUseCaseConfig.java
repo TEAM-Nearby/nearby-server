@@ -3,14 +3,17 @@ package com.sopt.nearby.place.config;
 
 import com.sopt.nearby.place.application.ReadSoloDiningPlaceService;
 import com.sopt.nearby.place.application.ReadSoloDiningPlacesService;
+import com.sopt.nearby.place.application.ManageSoloDiningFavoriteService;
 import com.sopt.nearby.place.application.ResolvePlaceCacheService;
 import com.sopt.nearby.place.application.ResolvePlaceImageService;
+import com.sopt.nearby.place.port.in.ManageSoloDiningFavoriteUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlacesUseCase;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.place.port.out.PlaceCacheRepository;
 import com.sopt.nearby.place.port.out.PlaceImageLookupPort;
+import com.sopt.nearby.place.port.out.SoloDiningFavoriteRepository;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchPort;
@@ -55,5 +58,13 @@ public class PlaceUseCaseConfig {
             final SoloDiningPlaceDetailsPort soloDiningPlaceDetailsPort
     ) {
         return new ReadSoloDiningPlaceService(soloDiningPlaceQueryPort, soloDiningPlaceDetailsPort);
+    }
+
+    @Bean
+    ManageSoloDiningFavoriteUseCase manageSoloDiningFavoriteUseCase(
+            final PlaceCacheRepository placeCacheRepository,
+            final SoloDiningFavoriteRepository soloDiningFavoriteRepository
+    ) {
+        return new ManageSoloDiningFavoriteService(placeCacheRepository, soloDiningFavoriteRepository);
     }
 }
