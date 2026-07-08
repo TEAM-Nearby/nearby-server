@@ -255,7 +255,6 @@ public class CompanionUseCaseConfig {
     @Bean
     CreateCompanionReviewsUseCase createCompanionReviewsUseCase(
             final CompanionMeetingRepository meetingRepository,
-            final CompanionMatchRepository matchRepository,
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
             final CompanionReviewRepository reviewRepository,
@@ -263,7 +262,6 @@ public class CompanionUseCaseConfig {
     ) {
         return new CreateCompanionReviewsService(
                 meetingRepository,
-                matchRepository,
                 participantRepository,
                 checkInRepository,
                 reviewRepository,

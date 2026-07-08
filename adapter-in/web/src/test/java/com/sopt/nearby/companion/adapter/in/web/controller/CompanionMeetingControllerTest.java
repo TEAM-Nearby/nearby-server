@@ -299,7 +299,7 @@ class CompanionMeetingControllerTest {
         reviewUseCase.result = new CreateCompanionReviewsResult(
                 1L,
                 10L,
-                CompanionMeetingStatus.COMPLETED
+                CompanionMeetingStatus.ONGOING
         );
 
         mockMvc.perform(post("/api/companion-meetings/{meetingId}/reviews", 1L)
@@ -322,7 +322,7 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.message").value("동행 후기가 등록되었어요."))
                 .andExpect(jsonPath("$.data.meetingId").value(1))
                 .andExpect(jsonPath("$.data.reviewId").value(10))
-                .andExpect(jsonPath("$.data.meetingStatus").value("COMPLETED"));
+                .andExpect(jsonPath("$.data.meetingStatus").value("ONGOING"));
 
         assertEquals(7L, reviewUseCase.command.reviewerUserId());
         assertEquals(1L, reviewUseCase.command.meetingId());

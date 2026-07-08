@@ -3,7 +3,6 @@ package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionReviewTargetMeetingAlreadyCanceledException;
-import com.sopt.nearby.companion.domain.exception.CompanionReviewTargetMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CurrentUserNotCheckedInException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewTargetException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
@@ -50,7 +49,7 @@ public class ReadCompanionReviewTargetsService implements ReadCompanionReviewTar
 				.findFirst()
 				.orElseThrow(ForbiddenCompanionReviewTargetException::new);
 
-		validateMeetingStatus(meeting.status(), currentUser.role());
+		validateMeetingStatus(meeting.status());
 		validateCurrentUserCheckedIn(meeting.id(), userId);
 
 		List<CompanionReviewTarget> targets = queryPort.findAllByMeetingIdAndReviewerUserIdAndTargetRole(
@@ -73,15 +72,9 @@ public class ReadCompanionReviewTargetsService implements ReadCompanionReviewTar
 		}
 	}
 
-	private void validateMeetingStatus(
-			final CompanionMeetingStatus meetingStatus,
-			final MatchParticipantRole currentUserRole
-	) {
+	private void validateMeetingStatus(final CompanionMeetingStatus meetingStatus) {
 		if (meetingStatus == CompanionMeetingStatus.CANCELED) {
 			throw new CompanionReviewTargetMeetingAlreadyCanceledException();
-		}
-		if (meetingStatus == CompanionMeetingStatus.COMPLETED && currentUserRole == MatchParticipantRole.GUEST) {
-			throw new CompanionReviewTargetMeetingAlreadyCompletedException();
 		}
 	}
 

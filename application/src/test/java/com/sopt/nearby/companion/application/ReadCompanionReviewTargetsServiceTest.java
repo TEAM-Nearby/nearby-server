@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionReviewTargetMeetingAlreadyCanceledException;
-import com.sopt.nearby.companion.domain.exception.CompanionReviewTargetMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CurrentUserNotCheckedInException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewTargetException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
@@ -134,13 +133,14 @@ class ReadCompanionReviewTargetsServiceTest {
 	}
 
 	@Test
-	void rejectsCompletedMeetingOnlyForGuest() {
+	void allowsCompletedMeetingForGuest() {
 		meetingRepository.save(meeting(CompanionMeetingStatus.COMPLETED));
 
-		assertThrows(
-				CompanionReviewTargetMeetingAlreadyCompletedException.class,
-				() -> service.getTargets(MEETING_ID, FIRST_GUEST_ID)
-		);
+		ReadCompanionReviewTargetsResult result = service.getTargets(MEETING_ID, FIRST_GUEST_ID);
+
+		assertEquals(CompanionMeetingStatus.COMPLETED, result.meetingStatus());
+		assertEquals(MatchParticipantRole.GUEST, result.currentUserRole());
+		assertTrue(result.canCompleteMeeting());
 	}
 
 	@Test

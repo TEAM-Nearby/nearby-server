@@ -8,9 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.sopt.nearby.companion.domain.exception.CompanionReviewAlreadyExistsException;
 import com.sopt.nearby.companion.domain.exception.InvalidReviewKeywordCountException;
 import com.sopt.nearby.companion.domain.exception.InvalidReviewTargetException;
-import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
-import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
@@ -19,7 +17,6 @@ import com.sopt.nearby.companion.domain.model.review.CompanionReview;
 import com.sopt.nearby.companion.domain.model.review.CompanionReviewKeyword;
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
-import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewKeywordRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
@@ -50,7 +47,6 @@ class CreateCompanionReviewsServiceTest {
 	private static final Long SECOND_GUEST_ID = 3L;
 
 	private FakeCompanionMeetingRepository meetingRepository;
-	private FakeCompanionMatchRepository matchRepository;
 	private FakeCompanionMatchParticipantRepository participantRepository;
 	private FakeMeetingCheckInRepository checkInRepository;
 	private FakeCompanionReviewRepository reviewRepository;
@@ -60,14 +56,12 @@ class CreateCompanionReviewsServiceTest {
 	@BeforeEach
 	void setUp() {
 		meetingRepository = new FakeCompanionMeetingRepository();
-		matchRepository = new FakeCompanionMatchRepository();
 		participantRepository = new FakeCompanionMatchParticipantRepository();
 		checkInRepository = new FakeMeetingCheckInRepository();
 		reviewRepository = new FakeCompanionReviewRepository();
 		reviewKeywordRepository = new FakeCompanionReviewKeywordRepository();
 		service = new CreateCompanionReviewsService(
 				meetingRepository,
-				matchRepository,
 				participantRepository,
 				checkInRepository,
 				reviewRepository,
@@ -76,7 +70,6 @@ class CreateCompanionReviewsServiceTest {
 		);
 
 		meetingRepository.save(meeting(CompanionMeetingStatus.ONGOING));
-		matchRepository.save(new CompanionMatch(MATCH_ID, 100L, CompanionMatchStatus.SCHEDULE_CONFIRMED, NOW.minusDays(1)));
 		participantRepository.put(MATCH_ID, List.of(
 				participant(HOST_ID, MatchParticipantRole.HOST),
 				participant(FIRST_GUEST_ID, MatchParticipantRole.GUEST),
@@ -88,14 +81,13 @@ class CreateCompanionReviewsServiceTest {
 	}
 
 	@Test
-	void hostReviewsCheckedInGuestAndCompletesMeetingAndMatch() {
+	void hostReviewsCheckedInGuestWithoutCompletingMeeting() {
 		CreateCompanionReviewsResult result = service.create(command(HOST_ID, FIRST_GUEST_ID, keywords()));
 
 		assertEquals(MEETING_ID, result.meetingId());
 		assertEquals(1L, result.reviewId());
-		assertEquals(CompanionMeetingStatus.COMPLETED, result.meetingStatus());
-		assertEquals(CompanionMeetingStatus.COMPLETED, meetingRepository.findById(MEETING_ID).orElseThrow().status());
-		assertEquals(CompanionMatchStatus.COMPLETED, matchRepository.findById(MATCH_ID).orElseThrow().status());
+		assertEquals(CompanionMeetingStatus.ONGOING, result.meetingStatus());
+		assertEquals(CompanionMeetingStatus.ONGOING, meetingRepository.findById(MEETING_ID).orElseThrow().status());
 		assertEquals(1, reviewRepository.savedReviews.size());
 		assertEquals(3, reviewKeywordRepository.savedKeywords.size());
 	}
@@ -117,6 +109,17 @@ class CreateCompanionReviewsServiceTest {
 
 		assertEquals(1L, result.reviewId());
 		assertEquals(HOST_ID, reviewRepository.savedReviews.get(0).revieweeUserId());
+	}
+
+	@Test
+	void allowsReviewOnCompletedMeetingWithoutChangingStatus() {
+		meetingRepository.save(meeting(CompanionMeetingStatus.COMPLETED));
+
+		CreateCompanionReviewsResult result = service.create(command(HOST_ID, FIRST_GUEST_ID, keywords()));
+
+		assertEquals(CompanionMeetingStatus.COMPLETED, result.meetingStatus());
+		assertEquals(CompanionMeetingStatus.COMPLETED, meetingRepository.findById(MEETING_ID).orElseThrow().status());
+		assertEquals(1, reviewRepository.savedReviews.size());
 	}
 
 	@Test
@@ -198,27 +201,6 @@ class CreateCompanionReviewsServiceTest {
 		@Override
 		public Optional<CompanionMeeting> findById(final Long id) {
 			return Optional.ofNullable(meetings.get(id));
-		}
-	}
-
-	private static final class FakeCompanionMatchRepository implements CompanionMatchRepository {
-
-		private final Map<Long, CompanionMatch> matches = new HashMap<>();
-
-		@Override
-		public CompanionMatch save(final CompanionMatch model) {
-			matches.put(model.id(), model);
-			return model;
-		}
-
-		@Override
-		public Optional<CompanionMatch> findById(final Long id) {
-			return Optional.ofNullable(matches.get(id));
-		}
-
-		@Override
-		public boolean confirmScheduleIfMatched(final Long matchId) {
-			return false;
 		}
 	}
 
