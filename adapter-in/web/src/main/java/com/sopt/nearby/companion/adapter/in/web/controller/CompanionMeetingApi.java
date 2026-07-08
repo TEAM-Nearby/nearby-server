@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.adapter.in.web.dto.request.CheckInCompanionMeet
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionReviewsRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CheckInCompanionMeetingResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMeetingDetailResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionReviewTargetsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreateCompanionReviewsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
 import com.sopt.nearby.companion.domain.exception.CannotReviewSelfException;
@@ -14,9 +15,12 @@ import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyComplet
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionReviewAlreadyExistsException;
 import com.sopt.nearby.companion.domain.exception.CompanionReviewMeetingAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionReviewTargetMeetingAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionReviewTargetMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleNotConfirmedException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewTargetException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
@@ -72,6 +76,30 @@ public interface CompanionMeetingApi {
     )
     CommonResponse<CompanionMeetingDetailResponse> getDetail(
             @Parameter(description = "상세 조회할 진행 중인 동행 만남 ID", required = true, example = "1")
+            Long meetingId,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            InvalidCompanionMeetingIdException.class,
+            ForbiddenCompanionReviewTargetException.class,
+            CompanionMeetingNotFoundException.class,
+            CurrentUserNotCheckedInException.class,
+            CompanionReviewTargetMeetingAlreadyCanceledException.class,
+            CompanionReviewTargetMeetingAlreadyCompletedException.class
+    })
+    @Operation(
+            summary = "동행 후기 대상 목록 조회",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 동행의 후기 작성 대상 목록을 조회합니다.
+                    HOST는 체크인을 완료한 GUEST 목록을 조회하고, GUEST는 체크인을 완료한 HOST만 조회합니다.
+                    GUEST는 이미 완료된 동행에서는 후기 대상 목록을 조회할 수 없으며, HOST는 완료 상태에서도 남은 GUEST 후기를 이어서 작성할 수 있습니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CompanionReviewTargetsResponse> getReviewTargets(
+            @Parameter(description = "후기 대상 목록을 조회할 동행 만남 ID", required = true, example = "1")
             Long meetingId,
             @Parameter(hidden = true)
             Principal principal
