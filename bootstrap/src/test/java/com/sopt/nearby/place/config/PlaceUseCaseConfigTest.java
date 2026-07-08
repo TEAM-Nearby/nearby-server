@@ -3,8 +3,13 @@ package com.sopt.nearby.place.config;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSort;
+import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSummary;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
+import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.port.in.ReadSoloDiningFavoritesUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
+import com.sopt.nearby.place.port.out.SoloDiningFavoriteQueryPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsResult;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
@@ -18,6 +23,14 @@ class PlaceUseCaseConfigTest {
     void createsReadSoloDiningPlaceUseCase() {
         ReadSoloDiningPlaceUseCase useCase = new PlaceUseCaseConfig()
                 .readSoloDiningPlaceUseCase(new FakeSoloDiningPlaceQueryPort(), new FakeSoloDiningPlaceDetailsPort());
+
+        assertNotNull(useCase);
+    }
+
+    @Test
+    void createsReadSoloDiningFavoritesUseCase() {
+        ReadSoloDiningFavoritesUseCase useCase = new PlaceUseCaseConfig()
+                .readSoloDiningFavoritesUseCase(new FakeSoloDiningFavoriteQueryPort());
 
         assertNotNull(useCase);
     }
@@ -40,6 +53,20 @@ class PlaceUseCaseConfigTest {
         @Override
         public SoloDiningPlaceDetailsResult findByGooglePlaceId(final String googlePlaceId) {
             return null;
+        }
+    }
+
+    private static final class FakeSoloDiningFavoriteQueryPort implements SoloDiningFavoriteQueryPort {
+
+        @Override
+        public List<SoloDiningFavoriteSummary> findAllByUserId(
+                final Long userId,
+                final BigDecimal latitude,
+                final BigDecimal longitude,
+                final SoloDiningPlaceCategory category,
+                final SoloDiningFavoriteSort sort
+        ) {
+            return List.of();
         }
     }
 }
