@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -197,7 +198,7 @@ class GoogleSoloDiningPlaceDetailsAdapterTest {
     }
 
     private static void respond(final HttpExchange exchange, final int status, final String body) throws IOException {
-        byte[] bytes = body.getBytes();
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.sendResponseHeaders(status, bytes.length);
         exchange.getResponseBody().write(bytes);
         exchange.close();

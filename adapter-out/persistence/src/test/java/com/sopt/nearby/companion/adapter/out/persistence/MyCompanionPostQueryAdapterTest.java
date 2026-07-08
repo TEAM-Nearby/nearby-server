@@ -119,7 +119,6 @@ class MyCompanionPostQueryAdapterTest {
 		));
 
 		applicationJpaRepository.saveAndFlush(application(olderPost.getId(), 2L, CompanionApplicationStatus.ACCEPTED, NOW));
-		applicationJpaRepository.saveAndFlush(application(olderPost.getId(), 3L, CompanionApplicationStatus.ACCEPTED, NOW));
 		applicationJpaRepository.saveAndFlush(application(olderPost.getId(), 3L, CompanionApplicationStatus.CANCELED, NOW.plusMinutes(1)));
 
 		CompanionMatchEntity match = matchJpaRepository.saveAndFlush(new CompanionMatchEntity(
