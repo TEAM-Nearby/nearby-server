@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReviewTargetProjection;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReviewTargetQueryJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.review.CompanionReviewTarget;
 import com.sopt.nearby.companion.port.out.CompanionReviewTargetQueryPort;
 import java.util.List;
@@ -39,22 +40,10 @@ public class CompanionReviewTargetQueryAdapter implements CompanionReviewTargetQ
 				row.getRevieweeUserId(),
 				row.getProfileImageUrl(),
 				row.getNickname(),
-				cityName(row.getPlaceAddress()),
+				CompanionPlaceCityNameResolver.resolve(row.getPlaceAddress()),
 				row.getMeetingAt().toLocalDate(),
 				Boolean.TRUE.equals(row.getCheckedIn()),
 				Boolean.TRUE.equals(row.getHasWrittenReview())
 		);
-	}
-
-	private String cityName(final String placeAddress) {
-		if (placeAddress == null || placeAddress.isBlank()) {
-			return "";
-		}
-		String normalized = placeAddress.trim().replace(",", " ");
-		int firstBlankIndex = normalized.indexOf(' ');
-		if (firstBlankIndex < 0) {
-			return normalized;
-		}
-		return normalized.substring(0, firstBlankIndex);
 	}
 }
