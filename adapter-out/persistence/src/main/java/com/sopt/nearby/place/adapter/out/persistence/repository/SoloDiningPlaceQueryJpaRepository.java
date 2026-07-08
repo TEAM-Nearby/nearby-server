@@ -43,4 +43,39 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
             @Param("longitude") BigDecimal longitude,
             @Param("placeIds") List<Long> placeIds
     );
+
+    @Query(value = """
+            select
+                favorite.id as favoriteId,
+                favorite.created_at as createdAt,
+                place.id as placeId,
+                place.google_place_id as googlePlaceId,
+                place.name as name,
+                place.photo_reference as photoReference,
+                upper(place.category) as category,
+                cast(round(6371000 * acos(least(1.0, greatest(-1.0,
+                    cos(radians(:latitude)) * cos(radians(cast(place.latitude as double precision)))
+                    * cos(radians(cast(place.longitude as double precision)) - radians(:longitude))
+                    + sin(radians(:latitude)) * sin(radians(cast(place.latitude as double precision)))
+                )))) as integer) as distanceMeters,
+                place.rating as rating,
+                place.review_count as reviewCount,
+                place.business_status as businessStatus
+            from solo_dining_favorite favorite
+            join place_cache place on place.id = favorite.place_id
+            where favorite.user_id = :userId
+                and (:category is null or upper(place.category) = :category)
+            order by
+                case when :sort = 'LATEST' then favorite.created_at end desc,
+                case when :sort = 'LATEST' then favorite.id end desc,
+                case when :sort = 'OLDEST' then favorite.created_at end asc,
+                case when :sort = 'OLDEST' then favorite.id end asc
+            """, nativeQuery = true)
+    List<SoloDiningFavoriteProjection> findAllFavoritesByUserId(
+            @Param("userId") Long userId,
+            @Param("latitude") BigDecimal latitude,
+            @Param("longitude") BigDecimal longitude,
+            @Param("category") String category,
+            @Param("sort") String sort
+    );
 }
