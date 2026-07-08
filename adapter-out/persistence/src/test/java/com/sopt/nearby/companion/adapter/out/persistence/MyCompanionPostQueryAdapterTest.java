@@ -175,6 +175,81 @@ class MyCompanionPostQueryAdapterTest {
 		assertThat(result.get(1).reviewKeywords()).containsExactly(ReviewKeyword.GOOD_MANNERS, ReviewKeyword.PUNCTUAL);
 	}
 
+	@Test
+	void keepsRawPlaceAddressWhenAddressIsMissing() {
+		MyCompanionPostQueryAdapter adapter = new MyCompanionPostQueryAdapter(queryJpaRepository);
+		PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place(
+				"place-without-address",
+				"시우다드 콘달",
+				null,
+				null
+		));
+		postJpaRepository.saveAndFlush(post(
+				HOST_USER_ID,
+				place.getId(),
+				CompanionPostStatus.RECRUITING,
+				NOW,
+				"주소가 없는 장소의 모집글"
+		));
+
+		List<MyCompanionPostSummary> result = adapter.findAllByHostUserId(HOST_USER_ID);
+
+		assertThat(result).hasSize(1);
+		assertThat(result.get(0).place().name()).isEqualTo("시우다드 콘달");
+		assertThat(result.get(0).place().address()).isNull();
+	}
+
+	@Test
+	void usesLatestNonCanceledMatchScheduleForScheduledAt() {
+		MyCompanionPostQueryAdapter adapter = new MyCompanionPostQueryAdapter(queryJpaRepository);
+		PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place(
+				"schedule-place",
+				"시우다드 콘달",
+				"바르셀로나 Rambla de Catalunya, 16",
+				null
+		));
+		CompanionPostEntity post = postJpaRepository.saveAndFlush(post(
+				HOST_USER_ID,
+				place.getId(),
+				CompanionPostStatus.CLOSED,
+				NOW,
+				"여러 매칭이 있는 모집글"
+		));
+		CompanionMatchEntity oldMatch = matchJpaRepository.saveAndFlush(new CompanionMatchEntity(
+				null,
+				post.getId(),
+				CompanionMatchStatus.COMPLETED,
+				NOW.minusDays(2)
+		));
+		CompanionMatchEntity latestMatch = matchJpaRepository.saveAndFlush(new CompanionMatchEntity(
+				null,
+				post.getId(),
+				CompanionMatchStatus.SCHEDULE_CONFIRMED,
+				NOW.minusDays(1)
+		));
+		scheduleJpaRepository.saveAndFlush(new CompanionScheduleEntity(
+				null,
+				oldMatch.getId(),
+				place.getId(),
+				LocalDateTime.of(2026, 7, 10, 19, 0),
+				null,
+				true
+		));
+		scheduleJpaRepository.saveAndFlush(new CompanionScheduleEntity(
+				null,
+				latestMatch.getId(),
+				place.getId(),
+				LocalDateTime.of(2026, 6, 29, 19, 0),
+				null,
+				true
+		));
+
+		List<MyCompanionPostSummary> result = adapter.findAllByHostUserId(HOST_USER_ID);
+
+		assertThat(result).hasSize(1);
+		assertThat(result.get(0).scheduledAt()).isEqualTo(LocalDateTime.of(2026, 6, 29, 19, 0));
+	}
+
 	private PlaceCacheEntity place(
 			final String googlePlaceId,
 			final String name,

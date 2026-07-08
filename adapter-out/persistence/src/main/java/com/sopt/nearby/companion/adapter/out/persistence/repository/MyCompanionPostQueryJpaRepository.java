@@ -12,10 +12,10 @@ public interface MyCompanionPostQueryJpaRepository extends Repository<CompanionP
 	@Query(value = """
 			select
 				post.id as postId,
-				max(schedule.scheduled_at) as scheduledAt,
+				schedule.scheduled_at as scheduledAt,
 				place.google_place_id as googlePlaceId,
 				place.name as placeName,
-				coalesce(nullif(place.address, ''), place.name, '') as placeAddress,
+				place.address as placeAddress,
 				place.latitude as latitude,
 				place.longitude as longitude,
 				cast(1 + coalesce(accepted.accepted_count, 0) as integer) as currentParticipants,
@@ -42,11 +42,24 @@ public interface MyCompanionPostQueryJpaRepository extends Repository<CompanionP
 				group by latest.post_id
 			) accepted
 				on accepted.post_id = post.id
-			left join companion_match match
-				on match.post_id = post.id
-				and match.status <> 'CANCELED'
+			left join (
+				select latest_match.post_id, latest_match.id as match_id
+				from (
+					select
+						match.id,
+						match.post_id,
+						row_number() over (
+							partition by match.post_id
+							order by match.created_at desc, match.id desc
+						) as rn
+					from companion_match match
+					where match.status <> 'CANCELED'
+				) latest_match
+				where latest_match.rn = 1
+			) selected_match
+				on selected_match.post_id = post.id
 			left join companion_schedule schedule
-				on schedule.match_id = match.id
+				on schedule.match_id = selected_match.match_id
 				and schedule.confirmed = true
 			where post.host_user_id = :hostUserId
 				and post.status <> 'CANCELED'
@@ -58,6 +71,7 @@ public interface MyCompanionPostQueryJpaRepository extends Repository<CompanionP
 				place.address,
 				place.latitude,
 				place.longitude,
+				schedule.scheduled_at,
 				accepted.accepted_count,
 				post.max_participants,
 				post.content,
