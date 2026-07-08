@@ -5,4 +5,6 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplica
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CompanionApplicationJpaRepository extends JpaRepository<CompanionApplicationEntity, Long> {
+
+	boolean existsByPostIdAndApplicantUserId(Long postId, Long applicantUserId);
 }

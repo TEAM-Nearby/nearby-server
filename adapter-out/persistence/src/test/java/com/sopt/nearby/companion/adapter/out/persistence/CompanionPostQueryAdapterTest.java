@@ -124,7 +124,6 @@ class CompanionPostQueryAdapterTest {
         companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 301L, CompanionApplicationStatus.ACCEPTED));
         companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 302L, CompanionApplicationStatus.ACCEPTED));
         companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 303L, CompanionApplicationStatus.PENDING));
-        companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 304L, CompanionApplicationStatus.ACCEPTED));
         companionApplicationJpaRepository.saveAndFlush(application(recentPost.getId(), 304L, CompanionApplicationStatus.CANCELED));
 
         List<CompanionPostSummary> result = adapter.find(command(

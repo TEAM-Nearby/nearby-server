@@ -245,6 +245,44 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void fifteenthMigrationAddsCompanionApplicationPostApplicantUniquenessConstraint() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource readStatusMigration = new ClassPathResource(
+				"db/migration/V7__create_companion_application_read_status.sql"
+		);
+		ClassPathResource notificationMigration = new ClassPathResource(
+				"db/migration/V8__create_companion_notification.sql"
+		);
+		ClassPathResource applicationMigration = new ClassPathResource(
+				"db/migration/V15__add_companion_application_post_applicant_unique_constraint.sql"
+		);
+
+		assertThat(applicationMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_companion_application_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, readStatusMigration);
+			ScriptUtils.executeSqlScript(connection, notificationMigration);
+			insertDuplicateCompanionApplications(connection);
+			ScriptUtils.executeSqlScript(connection, applicationMigration);
+
+			assertThat(indexNames(connection, "companion_application"))
+					.anyMatch(indexName -> indexName.startsWith("uk_companion_application_post_applicant"));
+			assertThat(companionApplicationCount(connection)).isEqualTo(1);
+			assertThat(remainingCompanionApplicationId(connection)).isEqualTo(2L);
+			assertThat(remainingMatchParticipantApplicationId(connection)).isEqualTo(2L);
+			assertThat(companionApplicationReadStatusApplicationIds(connection))
+					.containsExactly(2L, 2L);
+			assertThat(companionNotificationTargetIds(connection))
+					.containsExactly(2L, 2L);
+		}
+	}
+
 	private static void insertDuplicateSoloDiningFavorites(final Connection connection) throws SQLException {
 		try (Statement statement = connection.createStatement()) {
 			statement.executeUpdate("""
@@ -287,6 +325,192 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	private static void insertDuplicateCompanionApplications(final Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement()) {
+			statement.executeUpdate("""
+					insert into companion_post (
+					    id,
+					    host_user_id,
+					    place_id,
+					    meeting_at,
+					    max_participants,
+					    content,
+					    open_chat_url,
+					    status,
+					    created_at
+					) values (
+					    10,
+					    100,
+					    20,
+					    timestamp '2026-07-15 14:30:00',
+					    4,
+					    '같이 밥 먹을 동행을 구해요.',
+					    'https://open.kakao.com/o/nearby123',
+					    'RECRUITING',
+					    timestamp '2026-07-15 11:30:00'
+					)
+					""");
+				statement.executeUpdate("""
+						insert into companion_application (
+						    id,
+					    post_id,
+					    applicant_user_id,
+					    status,
+					    rejection_reason,
+					    created_at
+					) values (
+					    1,
+					    10,
+					    7,
+					    'PENDING',
+					    null,
+					    timestamp '2026-07-15 12:00:00'
+					)
+					""");
+			statement.executeUpdate("""
+					insert into companion_application (
+					    id,
+					    post_id,
+					    applicant_user_id,
+					    status,
+					    rejection_reason,
+					    created_at
+					) values (
+					    2,
+					    10,
+					    7,
+					    'ACCEPTED',
+					    null,
+					    timestamp '2026-07-15 12:30:00'
+						)
+						""");
+				statement.executeUpdate("""
+						insert into companion_match (
+						    id,
+						    post_id,
+						    status,
+						    created_at
+						) values (
+						    30,
+						    10,
+						    'MATCHED',
+						    timestamp '2026-07-15 12:40:00'
+						)
+						""");
+				statement.executeUpdate("""
+						insert into companion_match_participant (
+						    id,
+						    match_id,
+						    user_id,
+						    accepted_application_id,
+						    role
+						) values (
+						    40,
+						    30,
+						    7,
+						    1,
+						    'GUEST'
+						)
+						""");
+				statement.executeUpdate("""
+						insert into companion_application_read_status (
+						    id,
+						    application_id,
+						    user_id,
+						    read_at
+						) values (
+						    50,
+						    1,
+						    100,
+						    timestamp '2026-07-15 12:10:00'
+						)
+						""");
+				statement.executeUpdate("""
+						insert into companion_application_read_status (
+						    id,
+						    application_id,
+						    user_id,
+						    read_at
+						) values (
+						    51,
+						    2,
+						    100,
+						    timestamp '2026-07-15 12:20:00'
+						)
+						""");
+				statement.executeUpdate("""
+						insert into companion_application_read_status (
+						    id,
+						    application_id,
+						    user_id,
+						    read_at
+						) values (
+						    52,
+						    1,
+						    101,
+						    timestamp '2026-07-15 12:15:00'
+						)
+						""");
+				statement.executeUpdate("""
+						insert into companion_notification (
+						    id,
+						    recipient_user_id,
+						    notification_type,
+						    target_type,
+						    target_id,
+						    read_at,
+						    created_at
+						) values (
+						    60,
+						    100,
+						    'COMPANION_APPLICATION_CREATED',
+						    'COMPANION_APPLICATION',
+						    1,
+						    null,
+						    timestamp '2026-07-15 12:10:00'
+						)
+						""");
+				statement.executeUpdate("""
+						insert into companion_notification (
+						    id,
+						    recipient_user_id,
+						    notification_type,
+						    target_type,
+						    target_id,
+						    read_at,
+						    created_at
+						) values (
+						    61,
+						    100,
+						    'COMPANION_APPLICATION_CREATED',
+						    'COMPANION_APPLICATION',
+						    2,
+						    null,
+						    timestamp '2026-07-15 12:20:00'
+						)
+						""");
+				statement.executeUpdate("""
+						insert into companion_notification (
+						    id,
+						    recipient_user_id,
+						    notification_type,
+						    target_type,
+						    target_id,
+						    read_at,
+						    created_at
+						) values (
+						    62,
+						    101,
+						    'COMPANION_APPLICATION_CREATED',
+						    'COMPANION_APPLICATION',
+						    1,
+						    null,
+						    timestamp '2026-07-15 12:15:00'
+						)
+						""");
+			}
+		}
+
 	private static List<String> tableNames(final Connection connection) throws SQLException {
 		List<String> names = new ArrayList<>();
 		try (ResultSet tables = connection.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {
@@ -326,6 +550,63 @@ class InitialSchemaMigrationTest {
 			resultSet.next();
 			return resultSet.getLong(1);
 		}
+	}
+
+	private static long companionApplicationCount(final Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("select count(*) from companion_application")) {
+			resultSet.next();
+			return resultSet.getLong(1);
+		}
+	}
+
+	private static long remainingCompanionApplicationId(final Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("select id from companion_application")) {
+			resultSet.next();
+			return resultSet.getLong(1);
+		}
+	}
+
+	private static long remainingMatchParticipantApplicationId(final Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery(
+						"select accepted_application_id from companion_match_participant"
+				)) {
+			resultSet.next();
+			return resultSet.getLong(1);
+		}
+	}
+
+	private static List<Long> companionApplicationReadStatusApplicationIds(final Connection connection)
+			throws SQLException {
+		List<Long> applicationIds = new ArrayList<>();
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("""
+						select application_id
+						from companion_application_read_status
+						order by id
+						""")) {
+			while (resultSet.next()) {
+				applicationIds.add(resultSet.getLong(1));
+			}
+		}
+		return applicationIds;
+	}
+
+	private static List<Long> companionNotificationTargetIds(final Connection connection) throws SQLException {
+		List<Long> targetIds = new ArrayList<>();
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("""
+						select target_id
+						from companion_notification
+						order by id
+						""")) {
+			while (resultSet.next()) {
+				targetIds.add(resultSet.getLong(1));
+			}
+		}
+		return targetIds;
 	}
 
 	private static long remainingSoloDiningFavoriteId(final Connection connection) throws SQLException {
