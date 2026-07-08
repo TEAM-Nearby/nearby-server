@@ -5,7 +5,8 @@ import com.sopt.nearby.shared.adapter.in.web.response.SuccessCode;
 
 public enum PlaceSuccessCode implements SuccessCode {
 
-    SOLO_DINING_PLACES_FOUND("혼밥 맛집 목록 조회에 성공했습니다.");
+    SOLO_DINING_PLACES_FOUND("혼밥 맛집 목록 조회에 성공했습니다."),
+    SOLO_DINING_PLACE_FOUND("혼밥 맛집 상세 조회에 성공했습니다.");
 
     private final String message;
 
