@@ -1,6 +1,7 @@
 // 혼밥 장소 즐겨찾기 저장소 어댑터의 중복 저장 예외 변환을 검증한다.
 package com.sopt.nearby.place.adapter.out.persistence;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
@@ -46,6 +47,56 @@ class SoloDiningFavoriteRepositoryAdapterTest {
                 place.getId(),
                 LocalDateTime.of(2026, 7, 3, 13, 21)
         ))).isInstanceOf(DuplicateSoloDiningFavoriteException.class);
+    }
+
+    @Test
+    void findsFavoriteByUserIdAndPlaceId() {
+        SoloDiningFavoriteRepositoryAdapter adapter = new SoloDiningFavoriteRepositoryAdapter(favoriteJpaRepository);
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place());
+        favoriteJpaRepository.saveAndFlush(new SoloDiningFavoriteEntity(
+                null,
+                7L,
+                place.getId(),
+                LocalDateTime.of(2026, 7, 3, 13, 20)
+        ));
+
+        SoloDiningFavorite favorite = adapter.findByUserIdAndPlaceId(7L, place.getId()).orElseThrow();
+
+        assertThat(favorite.userId()).isEqualTo(7L);
+        assertThat(favorite.placeId()).isEqualTo(place.getId());
+    }
+
+    @Test
+    void returnsEmptyWhenFavoriteDoesNotExist() {
+        SoloDiningFavoriteRepositoryAdapter adapter = new SoloDiningFavoriteRepositoryAdapter(favoriteJpaRepository);
+
+        assertThat(adapter.findByUserIdAndPlaceId(7L, 12L)).isEmpty();
+    }
+
+    @Test
+    void deletesFavoriteByUserIdAndPlaceId() {
+        SoloDiningFavoriteRepositoryAdapter adapter = new SoloDiningFavoriteRepositoryAdapter(favoriteJpaRepository);
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place());
+        SoloDiningFavoriteEntity favorite = favoriteJpaRepository.saveAndFlush(new SoloDiningFavoriteEntity(
+                null,
+                7L,
+                place.getId(),
+                LocalDateTime.of(2026, 7, 3, 13, 20)
+        ));
+
+        adapter.deleteByUserIdAndPlaceId(7L, place.getId());
+        favoriteJpaRepository.flush();
+
+        assertThat(favoriteJpaRepository.findById(favorite.getId())).isEmpty();
+    }
+
+    @Test
+    void ignoresDeleteWhenFavoriteDoesNotExist() {
+        SoloDiningFavoriteRepositoryAdapter adapter = new SoloDiningFavoriteRepositoryAdapter(favoriteJpaRepository);
+
+        adapter.deleteByUserIdAndPlaceId(7L, 12L);
+
+        assertThat(favoriteJpaRepository.count()).isZero();
     }
 
     private PlaceCacheEntity place() {

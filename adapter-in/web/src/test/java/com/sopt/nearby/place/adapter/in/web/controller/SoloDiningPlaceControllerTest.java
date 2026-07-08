@@ -263,6 +263,30 @@ class SoloDiningPlaceControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
+    @Test
+    void returnsValidationErrorForInvalidRemoveFavoriteRequest() throws Exception {
+        mockMvc.perform(delete("/api/solo-dining/places/0/favorite")
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("placeId 요청값 오류가 발생했습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsNotFoundForMissingFavoritePlaceOnRemove() throws Exception {
+        favoriteUseCase.exception = new PlaceNotFoundException();
+
+        mockMvc.perform(delete("/api/solo-dining/places/12/favorite")
+                        .principal(principal("7")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("PLACE_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("장소를 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
     private SoloDiningPlacesResult result() {
         return new SoloDiningPlacesResult(List.of(new SoloDiningPlaceSummary(
                 12L,

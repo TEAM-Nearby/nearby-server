@@ -241,6 +241,7 @@ class InitialSchemaMigrationTest {
 			assertThat(indexNames(connection, "solo_dining_favorite"))
 					.anyMatch(indexName -> indexName.startsWith("uk_solo_dining_favorite_user_place"));
 			assertThat(soloDiningFavoriteCount(connection)).isEqualTo(1);
+			assertThat(remainingSoloDiningFavoriteId(connection)).isEqualTo(1L);
 		}
 	}
 
@@ -322,6 +323,14 @@ class InitialSchemaMigrationTest {
 	private static long soloDiningFavoriteCount(final Connection connection) throws SQLException {
 		try (Statement statement = connection.createStatement();
 				ResultSet resultSet = statement.executeQuery("select count(*) from solo_dining_favorite")) {
+			resultSet.next();
+			return resultSet.getLong(1);
+		}
+	}
+
+	private static long remainingSoloDiningFavoriteId(final Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("select id from solo_dining_favorite")) {
 			resultSet.next();
 			return resultSet.getLong(1);
 		}

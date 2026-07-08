@@ -70,12 +70,14 @@ class ManageSoloDiningFavoriteServiceTest {
     @Test
     void removesFavoriteWhenPlaceExists() {
         placeCacheRepository.place = place();
+        favoriteRepository.favorite = new SoloDiningFavorite(5L, 7L, 12L, LocalDateTime.now());
 
         SoloDiningFavoriteResult result = service.remove(new SoloDiningFavoriteCommand(7L, 12L));
 
         assertEquals(false, result.isFavorite());
         assertEquals(7L, favoriteRepository.deletedUserId);
         assertEquals(12L, favoriteRepository.deletedPlaceId);
+        assertEquals(null, favoriteRepository.favorite);
     }
 
     @Test
@@ -176,6 +178,9 @@ class ManageSoloDiningFavoriteServiceTest {
         public void deleteByUserIdAndPlaceId(final Long userId, final Long placeId) {
             this.deletedUserId = userId;
             this.deletedPlaceId = placeId;
+            if (favorite != null && favorite.userId().equals(userId) && favorite.placeId().equals(placeId)) {
+                favorite = null;
+            }
         }
     }
 }
