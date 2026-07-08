@@ -186,6 +186,16 @@ class CompleteCompanionMeetingServiceTest {
 		);
 	}
 
+	@Test
+	void rejectsCanceledMatch() {
+		matchRepository.save(new CompanionMatch(MATCH_ID, 100L, CompanionMatchStatus.CANCELED, NOW.minusDays(1)));
+
+		assertThrows(
+				CompleteCompanionMeetingAlreadyCanceledException.class,
+				() -> service.complete(MEETING_ID, HOST_ID)
+		);
+	}
+
 	private CompanionMeeting meeting(final CompanionMeetingStatus status) {
 		return new CompanionMeeting(MEETING_ID, MATCH_ID, status, NOW.minusHours(1), null);
 	}

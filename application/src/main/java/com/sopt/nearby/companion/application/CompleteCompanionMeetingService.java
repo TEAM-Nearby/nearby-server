@@ -105,8 +105,10 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 	private void completeMatch(final Long matchId) {
 		CompanionMatch match = matchRepository.findById(matchId)
 				.orElseThrow(CompanionMatchNotFoundException::new);
-		if (match.status() == CompanionMatchStatus.CANCELED
-				|| match.status() == CompanionMatchStatus.COMPLETED) {
+		if (match.status() == CompanionMatchStatus.CANCELED) {
+			throw new CompleteCompanionMeetingAlreadyCanceledException();
+		}
+		if (match.status() == CompanionMatchStatus.COMPLETED) {
 			return;
 		}
 		matchRepository.save(completed(match));
