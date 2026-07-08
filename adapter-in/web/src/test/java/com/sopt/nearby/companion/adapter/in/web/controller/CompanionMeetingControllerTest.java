@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -14,6 +15,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingCommand;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingResult;
+import com.sopt.nearby.companion.application.CreateCompanionReviewsCommand;
+import com.sopt.nearby.companion.application.CreateCompanionReviewsResult;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailResult;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
@@ -22,7 +25,9 @@ import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
@@ -42,14 +47,21 @@ class CompanionMeetingControllerTest {
     private FakeReadOngoingCompanionMeetingsUseCase ongoingReadUseCase;
     private FakeReadCompanionMeetingDetailUseCase detailReadUseCase;
     private FakeCheckInCompanionMeetingUseCase useCase;
+    private FakeCreateCompanionReviewsUseCase reviewUseCase;
 
     @BeforeEach
     void setUp() {
         ongoingReadUseCase = new FakeReadOngoingCompanionMeetingsUseCase();
         detailReadUseCase = new FakeReadCompanionMeetingDetailUseCase();
         useCase = new FakeCheckInCompanionMeetingUseCase();
+        reviewUseCase = new FakeCreateCompanionReviewsUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionMeetingController(ongoingReadUseCase, detailReadUseCase, useCase))
+                .standaloneSetup(new CompanionMeetingController(
+                        ongoingReadUseCase,
+                        detailReadUseCase,
+                        useCase,
+                        reviewUseCase
+                ))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -224,6 +236,69 @@ class CompanionMeetingControllerTest {
         assertNull(useCase.command);
     }
 
+    @Test
+    void createsCompanionReviewsAndPassesAuthenticatedUserIdToUseCase() throws Exception {
+        reviewUseCase.result = new CreateCompanionReviewsResult(
+                1L,
+                10L,
+                CompanionMeetingStatus.COMPLETED
+        );
+
+        mockMvc.perform(post("/api/companion-meetings/{meetingId}/reviews", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "revieweeUserId": 2,
+                                  "rating": 5,
+                                  "keywords": [
+                                    "FAST_RESPONSE",
+                                    "GOOD_MANNERS",
+                                    "PUNCTUAL"
+                                  ]
+                                }
+                                """)
+                        .principal(principal("7")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value(201))
+                .andExpect(jsonPath("$.code").value("CREATE_COMPANION_REVIEWS"))
+                .andExpect(jsonPath("$.message").value("동행 후기가 등록되었어요."))
+                .andExpect(jsonPath("$.data.meetingId").value(1))
+                .andExpect(jsonPath("$.data.reviewId").value(10))
+                .andExpect(jsonPath("$.data.meetingStatus").value("COMPLETED"));
+
+        assertEquals(7L, reviewUseCase.command.reviewerUserId());
+        assertEquals(1L, reviewUseCase.command.meetingId());
+        assertEquals(2L, reviewUseCase.command.revieweeUserId());
+        assertEquals(5, reviewUseCase.command.rating());
+        assertIterableEquals(
+                List.of(ReviewKeyword.FAST_RESPONSE, ReviewKeyword.GOOD_MANNERS, ReviewKeyword.PUNCTUAL),
+                reviewUseCase.command.keywords()
+        );
+    }
+
+    @Test
+    void returnsInvalidReviewKeywordWhenKeywordIsUnknown() throws Exception {
+        mockMvc.perform(post("/api/companion-meetings/{meetingId}/reviews", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "revieweeUserId": 2,
+                                  "rating": 5,
+                                  "keywords": [
+                                    "UNKNOWN"
+                                  ]
+                                }
+                                """)
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("INVALID_REVIEW_KEYWORD"))
+                .andExpect(jsonPath("$.message").value("올바르지 않은 후기 키워드입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+
+        assertNull(reviewUseCase.command);
+    }
+
     private CheckInCompanionMeetingResult result(final boolean alreadyCompleted) {
         return new CheckInCompanionMeetingResult(
                 1L,
@@ -321,6 +396,22 @@ class CompanionMeetingControllerTest {
 
         @Override
         public CheckInCompanionMeetingResult checkIn(final CheckInCompanionMeetingCommand command) {
+            this.command = command;
+            if (exception != null) {
+                throw exception;
+            }
+            return result;
+        }
+    }
+
+    private static final class FakeCreateCompanionReviewsUseCase implements CreateCompanionReviewsUseCase {
+
+        private CreateCompanionReviewsResult result;
+        private RuntimeException exception;
+        private CreateCompanionReviewsCommand command;
+
+        @Override
+        public CreateCompanionReviewsResult create(final CreateCompanionReviewsCommand command) {
             this.command = command;
             if (exception != null) {
                 throw exception;

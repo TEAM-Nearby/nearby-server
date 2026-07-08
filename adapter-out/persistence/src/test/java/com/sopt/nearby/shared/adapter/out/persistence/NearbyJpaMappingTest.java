@@ -111,6 +111,16 @@ class NearbyJpaMappingTest {
 				.satisfies(NearbyJpaMappingTest::assertCompanionReportUniqueConstraint);
 	}
 
+	@Test
+	void companionReviewPreventsDuplicateReviewsForSameMeetingReviewerAndReviewee() {
+		Table table = CompanionReviewEntity.class.getAnnotation(Table.class);
+
+		assertThat(table).isNotNull();
+		assertThat(table.uniqueConstraints())
+				.singleElement()
+				.satisfies(NearbyJpaMappingTest::assertCompanionReviewUniqueConstraint);
+	}
+
 	private void assertCoordinateColumn(final Class<?> entityType, final String fieldName) throws NoSuchFieldException {
 		Column column = entityType.getDeclaredField(fieldName).getAnnotation(Column.class);
 
@@ -123,6 +133,12 @@ class NearbyJpaMappingTest {
 		assertThat(uniqueConstraint.name()).isEqualTo("uk_companion_report_meeting_reporter_reported");
 		assertThat(uniqueConstraint.columnNames())
 				.containsExactly("meeting_id", "reporter_user_id", "reported_user_id");
+	}
+
+	private static void assertCompanionReviewUniqueConstraint(final UniqueConstraint uniqueConstraint) {
+		assertThat(uniqueConstraint.name()).isEqualTo("uk_companion_review_meeting_reviewer_reviewee");
+		assertThat(uniqueConstraint.columnNames())
+				.containsExactly("meeting_id", "reviewer_user_id", "reviewee_user_id");
 	}
 
 	private void assertPublicNoArgConstructor(final Class<?> idClass) throws NoSuchMethodException {

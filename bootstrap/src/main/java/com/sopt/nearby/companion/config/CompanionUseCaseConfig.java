@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.config;
 
 import com.sopt.nearby.companion.application.CreateCompanionPostService;
+import com.sopt.nearby.companion.application.CreateCompanionReviewsService;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingService;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
@@ -17,6 +18,7 @@ import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
 import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
@@ -34,6 +36,7 @@ import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.RegisterCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingCheckInQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
@@ -44,6 +47,8 @@ import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
+import com.sopt.nearby.companion.port.out.CompanionReviewKeywordRepository;
+import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
@@ -227,5 +232,25 @@ public class CompanionUseCaseConfig {
             final OngoingCompanionMeetingQueryPort queryPort
     ) {
         return new ReadOngoingCompanionMeetingsService(queryPort);
+    }
+
+    @Bean
+    CreateCompanionReviewsUseCase createCompanionReviewsUseCase(
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchRepository matchRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final MeetingCheckInRepository checkInRepository,
+            final CompanionReviewRepository reviewRepository,
+            final CompanionReviewKeywordRepository reviewKeywordRepository
+    ) {
+        return new CreateCompanionReviewsService(
+                meetingRepository,
+                matchRepository,
+                participantRepository,
+                checkInRepository,
+                reviewRepository,
+                reviewKeywordRepository,
+                Clock.systemDefaultZone()
+        );
     }
 }
