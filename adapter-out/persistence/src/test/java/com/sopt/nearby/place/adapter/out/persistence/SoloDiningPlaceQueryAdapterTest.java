@@ -9,6 +9,8 @@ import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRep
 import com.sopt.nearby.place.adapter.out.persistence.repository.SoloDiningFavoriteJpaRepository;
 import com.sopt.nearby.place.adapter.out.persistence.repository.SoloDiningPlaceQueryJpaRepository;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
+import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSort;
+import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSummary;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import java.math.BigDecimal;
@@ -106,12 +108,139 @@ class SoloDiningPlaceQueryAdapterTest {
         assertThat(result.get(0).category()).isEqualTo(SoloDiningPlaceCategory.OTHER);
     }
 
+    @Test
+    void findsUserFavoritesFilteredByCategorySortedByLatest() {
+        SoloDiningPlaceQueryAdapter adapter = new SoloDiningPlaceQueryAdapter(queryJpaRepository);
+        PlaceCacheEntity oldCafe = placeCacheJpaRepository.saveAndFlush(place(
+                "old-cafe",
+                "오래된 카페",
+                "cafe",
+                "37.56652000",
+                "126.97802000"
+        ));
+        PlaceCacheEntity recentCafe = placeCacheJpaRepository.saveAndFlush(place(
+                "recent-cafe",
+                "최근 카페",
+                "cafe",
+                "37.57000000",
+                "126.98200000"
+        ));
+        PlaceCacheEntity restaurant = placeCacheJpaRepository.saveAndFlush(place(
+                "restaurant",
+                "식당",
+                "restaurant",
+                "37.56651000",
+                "126.97801000"
+        ));
+        PlaceCacheEntity otherUserCafe = placeCacheJpaRepository.saveAndFlush(place(
+                "other-user-cafe",
+                "다른 사용자 카페",
+                "cafe",
+                "37.56651000",
+                "126.97801000"
+        ));
+        SoloDiningFavoriteEntity oldFavorite = favoriteJpaRepository.saveAndFlush(favorite(
+                7L,
+                oldCafe.getId(),
+                LocalDateTime.of(2026, 7, 1, 12, 0)
+        ));
+        SoloDiningFavoriteEntity recentFavorite = favoriteJpaRepository.saveAndFlush(favorite(
+                7L,
+                recentCafe.getId(),
+                LocalDateTime.of(2026, 7, 2, 12, 0)
+        ));
+        favoriteJpaRepository.saveAndFlush(favorite(
+                7L,
+                restaurant.getId(),
+                LocalDateTime.of(2026, 7, 3, 12, 0)
+        ));
+        favoriteJpaRepository.saveAndFlush(favorite(
+                8L,
+                otherUserCafe.getId(),
+                LocalDateTime.of(2026, 7, 4, 12, 0)
+        ));
+
+        List<SoloDiningFavoriteSummary> result = adapter.findAllByUserId(
+                7L,
+                CURRENT_LATITUDE,
+                CURRENT_LONGITUDE,
+                SoloDiningPlaceCategory.CAFE,
+                SoloDiningFavoriteSort.LATEST
+        );
+
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(SoloDiningFavoriteSummary::favoriteId)
+                .containsExactly(recentFavorite.getId(), oldFavorite.getId());
+        assertThat(result).extracting(SoloDiningFavoriteSummary::placeId)
+                .containsExactly(recentCafe.getId(), oldCafe.getId());
+        assertThat(result).allMatch(SoloDiningFavoriteSummary::isFavorite);
+        assertThat(result).extracting(SoloDiningFavoriteSummary::category)
+                .containsExactly(SoloDiningPlaceCategory.CAFE, SoloDiningPlaceCategory.CAFE);
+        assertThat(result.get(0).distanceMeters()).isGreaterThan(result.get(1).distanceMeters());
+    }
+
+    @Test
+    void findsUserFavoritesSortedByOldestWithNullableCategory() {
+        SoloDiningPlaceQueryAdapter adapter = new SoloDiningPlaceQueryAdapter(queryJpaRepository);
+        PlaceCacheEntity uncategorized = placeCacheJpaRepository.saveAndFlush(place(
+                "uncategorized",
+                "카테고리 없음",
+                null,
+                "37.56652000",
+                "126.97802000",
+                PlaceBusinessStatus.UNKNOWN
+        ));
+        PlaceCacheEntity cafe = placeCacheJpaRepository.saveAndFlush(place(
+                "cafe",
+                "카페",
+                "cafe",
+                "37.57000000",
+                "126.98200000"
+        ));
+        SoloDiningFavoriteEntity first = favoriteJpaRepository.saveAndFlush(favorite(
+                7L,
+                uncategorized.getId(),
+                LocalDateTime.of(2026, 7, 1, 12, 0)
+        ));
+        SoloDiningFavoriteEntity second = favoriteJpaRepository.saveAndFlush(favorite(
+                7L,
+                cafe.getId(),
+                LocalDateTime.of(2026, 7, 2, 12, 0)
+        ));
+
+        List<SoloDiningFavoriteSummary> result = adapter.findAllByUserId(
+                7L,
+                CURRENT_LATITUDE,
+                CURRENT_LONGITUDE,
+                null,
+                SoloDiningFavoriteSort.OLDEST
+        );
+
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(SoloDiningFavoriteSummary::favoriteId)
+                .containsExactly(first.getId(), second.getId());
+        assertThat(result.get(0).category()).isNull();
+        assertThat(result.get(0).businessStatus()).isEqualTo(PlaceBusinessStatus.UNKNOWN);
+        assertThat(result.get(0).photoReference()).isEqualTo("places/uncategorized/photos/photo-resource");
+    }
+
     private PlaceCacheEntity place(
             final String googlePlaceId,
             final String name,
             final String category,
             final String latitude,
             final String longitude
+    ) {
+        return place(googlePlaceId, name, category, latitude, longitude, PlaceBusinessStatus.OPERATIONAL);
+    }
+
+    private PlaceCacheEntity place(
+            final String googlePlaceId,
+            final String name,
+            final String category,
+            final String latitude,
+            final String longitude,
+            final PlaceBusinessStatus businessStatus
     ) {
         return new PlaceCacheEntity(
                 null,
@@ -125,8 +254,16 @@ class SoloDiningPlaceQueryAdapterTest {
                 new BigDecimal("4.30"),
                 100,
                 "places/" + googlePlaceId + "/photos/photo-resource",
-                PlaceBusinessStatus.OPERATIONAL
+                businessStatus
         );
+    }
+
+    private SoloDiningFavoriteEntity favorite(
+            final Long userId,
+            final Long placeId,
+            final LocalDateTime createdAt
+    ) {
+        return new SoloDiningFavoriteEntity(null, userId, placeId, createdAt);
     }
 
     @SpringBootConfiguration
