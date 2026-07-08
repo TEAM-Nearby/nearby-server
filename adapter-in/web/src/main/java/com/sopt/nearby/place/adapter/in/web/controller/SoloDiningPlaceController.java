@@ -2,16 +2,21 @@
 package com.sopt.nearby.place.adapter.in.web.controller;
 
 import com.sopt.nearby.place.adapter.in.web.code.PlaceSuccessCode;
+import com.sopt.nearby.place.adapter.in.web.dto.request.SoloDiningFavoriteRequest;
 import com.sopt.nearby.place.adapter.in.web.dto.request.SoloDiningPlaceRequest;
 import com.sopt.nearby.place.adapter.in.web.dto.request.SoloDiningPlacesRequest;
+import com.sopt.nearby.place.adapter.in.web.dto.response.SoloDiningFavoriteResponse;
 import com.sopt.nearby.place.adapter.in.web.dto.response.SoloDiningPlaceResponse;
 import com.sopt.nearby.place.adapter.in.web.dto.response.SoloDiningPlacesResponse;
+import com.sopt.nearby.place.port.in.ManageSoloDiningFavoriteUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlacesUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import java.security.Principal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,13 +27,16 @@ public class SoloDiningPlaceController implements SoloDiningPlaceApi {
 
     private final ReadSoloDiningPlacesUseCase readSoloDiningPlacesUseCase;
     private final ReadSoloDiningPlaceUseCase readSoloDiningPlaceUseCase;
+    private final ManageSoloDiningFavoriteUseCase manageSoloDiningFavoriteUseCase;
 
     public SoloDiningPlaceController(
             final ReadSoloDiningPlacesUseCase readSoloDiningPlacesUseCase,
-            final ReadSoloDiningPlaceUseCase readSoloDiningPlaceUseCase
+            final ReadSoloDiningPlaceUseCase readSoloDiningPlaceUseCase,
+            final ManageSoloDiningFavoriteUseCase manageSoloDiningFavoriteUseCase
     ) {
         this.readSoloDiningPlacesUseCase = readSoloDiningPlacesUseCase;
         this.readSoloDiningPlaceUseCase = readSoloDiningPlaceUseCase;
+        this.manageSoloDiningFavoriteUseCase = manageSoloDiningFavoriteUseCase;
     }
 
     @Override
@@ -62,6 +70,38 @@ public class SoloDiningPlaceController implements SoloDiningPlaceApi {
         return CommonResponse.success(
                 PlaceSuccessCode.SOLO_DINING_PLACE_FOUND,
                 SoloDiningPlaceResponse.from(readSoloDiningPlaceUseCase.read(
+                        request.toCommand(Long.valueOf(principal.getName()))
+                ))
+        );
+    }
+
+    @Override
+    @PutMapping("/{placeId}/favorite")
+    public CommonResponse<SoloDiningFavoriteResponse> registerFavorite(
+            @PathVariable final String placeId,
+            final Principal principal
+    ) {
+        SoloDiningFavoriteRequest request = new SoloDiningFavoriteRequest(placeId);
+
+        return CommonResponse.success(
+                PlaceSuccessCode.SOLO_DINING_FAVORITE_REGISTERED,
+                SoloDiningFavoriteResponse.from(manageSoloDiningFavoriteUseCase.register(
+                        request.toCommand(Long.valueOf(principal.getName()))
+                ))
+        );
+    }
+
+    @Override
+    @DeleteMapping("/{placeId}/favorite")
+    public CommonResponse<SoloDiningFavoriteResponse> removeFavorite(
+            @PathVariable final String placeId,
+            final Principal principal
+    ) {
+        SoloDiningFavoriteRequest request = new SoloDiningFavoriteRequest(placeId);
+
+        return CommonResponse.success(
+                PlaceSuccessCode.SOLO_DINING_FAVORITE_REMOVED,
+                SoloDiningFavoriteResponse.from(manageSoloDiningFavoriteUseCase.remove(
                         request.toCommand(Long.valueOf(principal.getName()))
                 ))
         );
