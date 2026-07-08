@@ -2,21 +2,35 @@
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CheckInCompanionMeetingRequest;
+import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionReviewsRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CheckInCompanionMeetingResponse;
-import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMeetingDetailResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CreateCompanionReviewsResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
+import com.sopt.nearby.companion.domain.exception.CannotReviewSelfException;
 import com.sopt.nearby.companion.domain.exception.CheckInTimeNotAllowedException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionReviewAlreadyExistsException;
+import com.sopt.nearby.companion.domain.exception.CompanionReviewMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleNotConfirmedException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMeetingException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
+import com.sopt.nearby.companion.domain.exception.InvalidReviewKeywordCountException;
+import com.sopt.nearby.companion.domain.exception.InvalidReviewKeywordException;
+import com.sopt.nearby.companion.domain.exception.InvalidReviewRatingException;
+import com.sopt.nearby.companion.domain.exception.InvalidReviewRequestException;
+import com.sopt.nearby.companion.domain.exception.InvalidReviewTargetException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
 import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCompletedException;
+import com.sopt.nearby.companion.domain.exception.CurrentUserNotCheckedInException;
+import com.sopt.nearby.companion.domain.exception.RevieweeNotCheckedInException;
+import com.sopt.nearby.companion.domain.exception.RevieweeNotFoundException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -82,6 +96,39 @@ public interface CompanionMeetingApi {
             @Parameter(description = "인증할 진행 중인 동행 만남 ID", required = true, example = "1")
             Long meetingId,
             CheckInCompanionMeetingRequest request,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            InvalidReviewRequestException.class,
+            InvalidReviewTargetException.class,
+            InvalidReviewRatingException.class,
+            InvalidReviewKeywordException.class,
+            InvalidReviewKeywordCountException.class,
+            CannotReviewSelfException.class,
+            ForbiddenCompanionReviewException.class,
+            CompanionMeetingNotFoundException.class,
+            RevieweeNotFoundException.class,
+            CompanionReviewAlreadyExistsException.class,
+            CurrentUserNotCheckedInException.class,
+            RevieweeNotCheckedInException.class,
+            CompanionReviewMeetingAlreadyCanceledException.class
+    })
+    @Operation(
+            summary = "동행 후기 등록",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 체크인을 완료한 동행 참여자 한 명에게 후기를 등록합니다.
+                    HOST는 체크인을 완료한 GUEST에게 대상별로 후기를 등록할 수 있고, GUEST는 HOST에게만 후기를 등록할 수 있습니다.
+                    후기 대상 revieweeUserId는 진행 중 목록의 matchId로 매칭 미리보기를 조회한 뒤 members[].memberId에서 선택합니다.
+                    동일 만남에서 같은 reviewer-reviewee 조합은 한 번만 등록할 수 있으며, 성공 시 만남과 매칭 상태를 COMPLETED로 변경합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CreateCompanionReviewsResponse> createReviews(
+            @Parameter(description = "후기를 등록할 동행 만남 ID", required = true, example = "1")
+            Long meetingId,
+            CreateCompanionReviewsRequest request,
             @Parameter(hidden = true)
             Principal principal
     );

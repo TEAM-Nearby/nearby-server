@@ -5,4 +5,10 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewE
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CompanionReviewJpaRepository extends JpaRepository<CompanionReviewEntity, Long> {
+
+	boolean existsByMeetingIdAndReviewerUserIdAndRevieweeUserId(
+			Long meetingId,
+			Long reviewerUserId,
+			Long revieweeUserId
+	);
 }

@@ -12,6 +12,7 @@ public record CommonResponse<T>(
 ) {
 
 	private static final int SUCCESS_STATUS = 200;
+	private static final int CREATED_STATUS = 201;
 	private static final int VALIDATION_ERROR_STATUS = 400;
 	private static final String VALIDATION_ERROR_CODE = "VALIDATION_ERROR";
 
@@ -21,6 +22,10 @@ public record CommonResponse<T>(
 
 	public static CommonResponse<Void> success(final SuccessCode successCode) {
 		return success(successCode, null);
+	}
+
+	public static <T> CommonResponse<T> created(final SuccessCode successCode, final T data) {
+		return new CommonResponse<>(CREATED_STATUS, successCode.name(), successCode.message(), data);
 	}
 
 	public static CommonResponse<Void> error(final int status,final ErrorCode errorCode) {
