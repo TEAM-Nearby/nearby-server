@@ -6,9 +6,12 @@ import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionPostR
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CompanionPostsRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostDetailResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionPostResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CreatedCompanionRequestResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostsResponse;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailCommand;
+import com.sopt.nearby.companion.application.CreateCompanionRequestCommand;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
@@ -32,15 +35,18 @@ public class CompanionPostController implements CompanionPostApi {
     private final ReadCompanionPostsUseCase readCompanionPostsUseCase;
     private final CreateCompanionPostUseCase createCompanionPostUseCase;
     private final ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase;
+    private final CreateCompanionRequestUseCase createCompanionRequestUseCase;
 
     public CompanionPostController(
             final ReadCompanionPostsUseCase readCompanionPostsUseCase,
             final CreateCompanionPostUseCase createCompanionPostUseCase,
-            final ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase
+            final ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase,
+            final CreateCompanionRequestUseCase createCompanionRequestUseCase
     ) {
         this.readCompanionPostsUseCase = readCompanionPostsUseCase;
         this.createCompanionPostUseCase = createCompanionPostUseCase;
         this.readCompanionPostDetailUseCase = readCompanionPostDetailUseCase;
+        this.createCompanionRequestUseCase = createCompanionRequestUseCase;
     }
 
     @Override
@@ -95,6 +101,23 @@ public class CompanionPostController implements CompanionPostApi {
                 CompanionSuccessCode.COMPANION_POST_FOUND,
                 CompanionPostDetailResponse.from(readCompanionPostDetailUseCase.read(
                         new ReadCompanionPostDetailCommand(
+                                Long.valueOf(principal.getName()),
+                                postId
+                        )
+                ))
+        );
+    }
+
+    @Override
+    @PostMapping("/{postId}/companion-requests")
+    public CommonResponse<CreatedCompanionRequestResponse> createCompanionRequest(
+            @PathVariable final Long postId,
+            final Principal principal
+    ) {
+        return CommonResponse.success(
+                CompanionSuccessCode.CREATE_COMPANION_REQUEST,
+                CreatedCompanionRequestResponse.from(createCompanionRequestUseCase.create(
+                        new CreateCompanionRequestCommand(
                                 Long.valueOf(principal.getName()),
                                 postId
                         )

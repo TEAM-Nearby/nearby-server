@@ -7,6 +7,7 @@ public enum CompanionSuccessCode implements SuccessCode {
     COMPANION_POST_CREATED("동행 모집 글 작성에 성공했습니다."),
     COMPANION_POSTS_FOUND("동행 모집 글 목록 조회에 성공했습니다."),
     COMPANION_POST_FOUND("동행 모집 글 상세 조회에 성공했어요."),
+    CREATE_COMPANION_REQUEST("동행 신청이 완료되었어요."),
     READ_COMPANION_MATCH_PREVIEW("매칭된 동행 미리보기 정보를 조회했어요."),
     READ_COMPANION_MATCHES("매칭된 동행 목록을 조회했어요."),
     CONFIRM_COMPANION_SCHEDULE("동행 일정이 확정되었어요."),
