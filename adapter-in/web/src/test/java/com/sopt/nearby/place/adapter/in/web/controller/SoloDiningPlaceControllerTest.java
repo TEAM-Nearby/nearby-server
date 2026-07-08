@@ -3,12 +3,16 @@ package com.sopt.nearby.place.adapter.in.web.controller;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sopt.nearby.place.application.ReadSoloDiningPlacesCommand;
 import com.sopt.nearby.place.application.ReadSoloDiningPlaceCommand;
+import com.sopt.nearby.place.application.SoloDiningFavoriteCommand;
+import com.sopt.nearby.place.application.SoloDiningFavoriteResult;
 import com.sopt.nearby.place.application.SoloDiningPlaceResult;
 import com.sopt.nearby.place.application.SoloDiningPlacesResult;
 import com.sopt.nearby.place.domain.exception.GooglePlaceApiException;
@@ -16,6 +20,7 @@ import com.sopt.nearby.place.domain.exception.PlaceNotFoundException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
+import com.sopt.nearby.place.port.in.ManageSoloDiningFavoriteUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlacesUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
@@ -32,13 +37,15 @@ class SoloDiningPlaceControllerTest {
     private MockMvc mockMvc;
     private FakeReadSoloDiningPlacesUseCase readUseCase;
     private FakeReadSoloDiningPlaceUseCase readDetailUseCase;
+    private FakeManageSoloDiningFavoriteUseCase favoriteUseCase;
 
     @BeforeEach
     void setUp() {
         readUseCase = new FakeReadSoloDiningPlacesUseCase();
         readDetailUseCase = new FakeReadSoloDiningPlaceUseCase();
+        favoriteUseCase = new FakeManageSoloDiningFavoriteUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new SoloDiningPlaceController(readUseCase, readDetailUseCase))
+                .standaloneSetup(new SoloDiningPlaceController(readUseCase, readDetailUseCase, favoriteUseCase))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -200,6 +207,86 @@ class SoloDiningPlaceControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
+    @Test
+    void registersSoloDiningFavorite() throws Exception {
+        favoriteUseCase.result = new SoloDiningFavoriteResult(true);
+
+        mockMvc.perform(put("/api/solo-dining/places/12/favorite")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("SOLO_DINING_FAVORITE_REGISTERED"))
+                .andExpect(jsonPath("$.message").value("식당 즐겨찾기 등록에 성공했습니다."))
+                .andExpect(jsonPath("$.data.isFavorite").value(true));
+
+        assertEquals(7L, favoriteUseCase.registerCommand.userId());
+        assertEquals(12L, favoriteUseCase.registerCommand.placeId());
+    }
+
+    @Test
+    void removesSoloDiningFavorite() throws Exception {
+        favoriteUseCase.result = new SoloDiningFavoriteResult(false);
+
+        mockMvc.perform(delete("/api/solo-dining/places/12/favorite")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("SOLO_DINING_FAVORITE_REMOVED"))
+                .andExpect(jsonPath("$.message").value("식당 즐겨찾기 해제에 성공했습니다."))
+                .andExpect(jsonPath("$.data.isFavorite").value(false));
+
+        assertEquals(7L, favoriteUseCase.removeCommand.userId());
+        assertEquals(12L, favoriteUseCase.removeCommand.placeId());
+    }
+
+    @Test
+    void returnsValidationErrorForInvalidFavoriteRequest() throws Exception {
+        mockMvc.perform(put("/api/solo-dining/places/0/favorite")
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("placeId 요청값 오류가 발생했습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsNotFoundForMissingFavoritePlace() throws Exception {
+        favoriteUseCase.exception = new PlaceNotFoundException();
+
+        mockMvc.perform(put("/api/solo-dining/places/12/favorite")
+                        .principal(principal("7")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("PLACE_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("장소를 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsValidationErrorForInvalidRemoveFavoriteRequest() throws Exception {
+        mockMvc.perform(delete("/api/solo-dining/places/0/favorite")
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.message").value("placeId 요청값 오류가 발생했습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsNotFoundForMissingFavoritePlaceOnRemove() throws Exception {
+        favoriteUseCase.exception = new PlaceNotFoundException();
+
+        mockMvc.perform(delete("/api/solo-dining/places/12/favorite")
+                        .principal(principal("7")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.code").value("PLACE_NOT_FOUND"))
+                .andExpect(jsonPath("$.message").value("장소를 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
     private SoloDiningPlacesResult result() {
         return new SoloDiningPlacesResult(List.of(new SoloDiningPlaceSummary(
                 12L,
@@ -270,6 +357,32 @@ class SoloDiningPlaceControllerTest {
         @Override
         public SoloDiningPlaceResult read(final ReadSoloDiningPlaceCommand command) {
             this.command = command;
+            if (exception != null) {
+                throw exception;
+            }
+            return result;
+        }
+    }
+
+    private static final class FakeManageSoloDiningFavoriteUseCase implements ManageSoloDiningFavoriteUseCase {
+
+        private SoloDiningFavoriteCommand registerCommand;
+        private SoloDiningFavoriteCommand removeCommand;
+        private SoloDiningFavoriteResult result;
+        private RuntimeException exception;
+
+        @Override
+        public SoloDiningFavoriteResult register(final SoloDiningFavoriteCommand command) {
+            this.registerCommand = command;
+            if (exception != null) {
+                throw exception;
+            }
+            return result;
+        }
+
+        @Override
+        public SoloDiningFavoriteResult remove(final SoloDiningFavoriteCommand command) {
+            this.removeCommand = command;
             if (exception != null) {
                 throw exception;
             }

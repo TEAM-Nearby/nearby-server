@@ -23,7 +23,9 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPro
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReportJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReviewJpaRepository;
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
+import com.sopt.nearby.place.adapter.out.persistence.entity.SoloDiningFavoriteEntity;
 import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRepository;
+import com.sopt.nearby.place.adapter.out.persistence.repository.SoloDiningFavoriteJpaRepository;
 import com.sopt.nearby.user.adapter.out.persistence.entity.UserAccountEntity;
 import com.sopt.nearby.user.adapter.out.persistence.repository.UserAccountJpaRepository;
 import com.sopt.nearby.user.domain.model.UserAccountStatus;
@@ -55,6 +57,7 @@ class NearbyJpaMappingTest {
 	void loadsJpaMappingsAndRepositories() {
 		assertThat(applicationContext.getBean(UserAccountJpaRepository.class)).isNotNull();
 		assertThat(applicationContext.getBean(PlaceCacheJpaRepository.class)).isNotNull();
+		assertThat(applicationContext.getBean(SoloDiningFavoriteJpaRepository.class)).isNotNull();
 		assertThat(applicationContext.getBean(CompanionProfileJpaRepository.class)).isNotNull();
 		assertThat(applicationContext.getBean(CompanionPostJpaRepository.class)).isNotNull();
 		assertThat(applicationContext.getBean(CompanionApplicationJpaRepository.class)).isNotNull();
@@ -112,6 +115,16 @@ class NearbyJpaMappingTest {
 	}
 
 	@Test
+	void soloDiningFavoritePreventsDuplicateFavoriteForSamePlaceAndUser() {
+		Table table = SoloDiningFavoriteEntity.class.getAnnotation(Table.class);
+
+		assertThat(table).isNotNull();
+		assertThat(table.uniqueConstraints())
+				.singleElement()
+				.satisfies(NearbyJpaMappingTest::assertSoloDiningFavoriteUniqueConstraint);
+	}
+
+	@Test
 	void companionReviewPreventsDuplicateReviewsForSameMeetingReviewerAndReviewee() {
 		Table table = CompanionReviewEntity.class.getAnnotation(Table.class);
 
@@ -133,6 +146,12 @@ class NearbyJpaMappingTest {
 		assertThat(uniqueConstraint.name()).isEqualTo("uk_companion_report_meeting_reporter_reported");
 		assertThat(uniqueConstraint.columnNames())
 				.containsExactly("meeting_id", "reporter_user_id", "reported_user_id");
+	}
+
+	private static void assertSoloDiningFavoriteUniqueConstraint(final UniqueConstraint uniqueConstraint) {
+		assertThat(uniqueConstraint.name()).isEqualTo("uk_solo_dining_favorite_user_place");
+		assertThat(uniqueConstraint.columnNames())
+				.containsExactly("user_id", "place_id");
 	}
 
 	private static void assertCompanionReviewUniqueConstraint(final UniqueConstraint uniqueConstraint) {

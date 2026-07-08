@@ -2,8 +2,10 @@
 package com.sopt.nearby.place.adapter.in.web.controller;
 
 import com.sopt.nearby.place.adapter.in.web.dto.response.SoloDiningPlaceResponse;
+import com.sopt.nearby.place.adapter.in.web.dto.response.SoloDiningFavoriteResponse;
 import com.sopt.nearby.place.adapter.in.web.dto.response.SoloDiningPlacesResponse;
 import com.sopt.nearby.place.domain.exception.GooglePlaceApiException;
+import com.sopt.nearby.place.domain.exception.InvalidSoloDiningFavoriteRequestException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlaceRequestException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
 import com.sopt.nearby.place.domain.exception.PlaceNotFoundException;
@@ -125,6 +127,72 @@ public interface SoloDiningPlaceApi {
             String latitude,
             @Parameter(description = "사용자 현재 위치 경도", required = true, example = "126.97800000")
             String longitude,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            InvalidSoloDiningFavoriteRequestException.class,
+            PlaceNotFoundException.class
+    })
+    @Operation(
+            summary = "혼밥 맛집 즐겨찾기 등록",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 혼밥 맛집을 즐겨찾기에 등록합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "혼밥 맛집 즐겨찾기 등록에 성공했습니다.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(value = """
+                            {
+                              "status": 200,
+                              "code": "SOLO_DINING_FAVORITE_REGISTERED",
+                              "message": "식당 즐겨찾기 등록에 성공했습니다.",
+                              "data": {
+                                "isFavorite": true
+                              }
+                            }
+                            """)
+            )
+    )
+    CommonResponse<SoloDiningFavoriteResponse> registerFavorite(
+            @Parameter(description = "Nearby 내부 장소 ID", required = true, example = "12")
+            String placeId,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
+            InvalidSoloDiningFavoriteRequestException.class,
+            PlaceNotFoundException.class
+    })
+    @Operation(
+            summary = "혼밥 맛집 즐겨찾기 해제",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 혼밥 맛집 즐겨찾기를 해제합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "혼밥 맛집 즐겨찾기 해제에 성공했습니다.",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(value = """
+                            {
+                              "status": 200,
+                              "code": "SOLO_DINING_FAVORITE_REMOVED",
+                              "message": "식당 즐겨찾기 해제에 성공했습니다.",
+                              "data": {
+                                "isFavorite": false
+                              }
+                            }
+                            """)
+            )
+    )
+    CommonResponse<SoloDiningFavoriteResponse> removeFavorite(
+            @Parameter(description = "Nearby 내부 장소 ID", required = true, example = "12")
+            String placeId,
             @Parameter(hidden = true)
             Principal principal
     );

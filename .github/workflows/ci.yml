@@ -51,6 +51,15 @@ jobs:
           java-version: 21
           cache: gradle
 
+      - name: Create swap space
+        run: |
+          swapfile="$RUNNER_TEMP/nearby-swapfile"
+          sudo fallocate -l 4G "$swapfile"
+          sudo chmod 600 "$swapfile"
+          sudo mkswap "$swapfile"
+          sudo swapon "$swapfile"
+          free -h
+
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 

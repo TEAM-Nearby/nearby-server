@@ -2,7 +2,12 @@
 package com.sopt.nearby.place.adapter.out.persistence.repository;
 
 import com.sopt.nearby.place.adapter.out.persistence.entity.SoloDiningFavoriteEntity;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SoloDiningFavoriteJpaRepository extends JpaRepository<SoloDiningFavoriteEntity, Long> {
+
+    Optional<SoloDiningFavoriteEntity> findByUserIdAndPlaceId(Long userId, Long placeId);
+
+    void deleteByUserIdAndPlaceId(Long userId, Long placeId);
 }
