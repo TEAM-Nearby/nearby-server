@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.application;
 import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingCurrentUserNotCheckedInException;
+import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompleteCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
@@ -54,20 +55,16 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 		validateCurrentUserCheckedIn(meeting.id(), userId);
 
 		LocalDateTime completedAt = LocalDateTime.now(clock);
-		CompanionMeeting completedMeeting = meetingRepository.save(new CompanionMeeting(
-				meeting.id(),
-				meeting.matchId(),
-				CompanionMeetingStatus.COMPLETED,
-				meeting.startedAt(),
-				completedAt
-		));
+		if (!meetingRepository.completeIfOngoing(meeting.id(), completedAt)) {
+			handleCompletionConflict(meeting.id());
+		}
 		completeMatch(meeting.matchId());
 
 		return new CompleteCompanionMeetingResult(
-				completedMeeting.id(),
-				completedMeeting.matchId(),
-				completedMeeting.status(),
-				completedMeeting.completedAt()
+				meeting.id(),
+				meeting.matchId(),
+				CompanionMeetingStatus.COMPLETED,
+				completedAt
 		);
 	}
 
@@ -98,12 +95,21 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 		}
 	}
 
+	private void handleCompletionConflict(final Long meetingId) {
+		CompanionMeeting currentMeeting = meetingRepository.findById(meetingId)
+				.orElseThrow(CompanionMeetingNotFoundException::new);
+		validateMeetingStatus(currentMeeting.status());
+		throw new CompleteCompanionMeetingAlreadyCompletedException();
+	}
+
 	private void completeMatch(final Long matchId) {
-		matchRepository.findById(matchId)
-				.filter(match -> match.status() != CompanionMatchStatus.CANCELED)
-				.filter(match -> match.status() != CompanionMatchStatus.COMPLETED)
-				.map(this::completed)
-				.ifPresent(matchRepository::save);
+		CompanionMatch match = matchRepository.findById(matchId)
+				.orElseThrow(CompanionMatchNotFoundException::new);
+		if (match.status() == CompanionMatchStatus.CANCELED
+				|| match.status() == CompanionMatchStatus.COMPLETED) {
+			return;
+		}
+		matchRepository.save(completed(match));
 	}
 
 	private CompanionMatch completed(final CompanionMatch match) {

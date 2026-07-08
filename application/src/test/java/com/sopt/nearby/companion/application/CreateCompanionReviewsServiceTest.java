@@ -202,6 +202,22 @@ class CreateCompanionReviewsServiceTest {
 		public Optional<CompanionMeeting> findById(final Long id) {
 			return Optional.ofNullable(meetings.get(id));
 		}
+
+		@Override
+		public boolean completeIfOngoing(final Long meetingId, final LocalDateTime completedAt) {
+			CompanionMeeting meeting = meetings.get(meetingId);
+			if (meeting == null || meeting.status() != CompanionMeetingStatus.ONGOING) {
+				return false;
+			}
+			meetings.put(meetingId, new CompanionMeeting(
+					meeting.id(),
+					meeting.matchId(),
+					CompanionMeetingStatus.COMPLETED,
+					meeting.startedAt(),
+					completedAt
+			));
+			return true;
+		}
 	}
 
 	private static final class FakeCompanionMatchParticipantRepository

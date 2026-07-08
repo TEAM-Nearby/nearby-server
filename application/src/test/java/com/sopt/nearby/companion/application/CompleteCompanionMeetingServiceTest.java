@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingCurrentUserNotCheckedInException;
+import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompleteCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
@@ -31,6 +32,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -93,6 +100,32 @@ class CompleteCompanionMeetingServiceTest {
 	}
 
 	@Test
+	void concurrentHostAndGuestCompletionAllowsOnlyOneTransition() throws Exception {
+		meetingRepository.completeBarrier = new CountDownLatch(2);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+
+		try {
+			Future<CompleteCompanionMeetingResult> hostCompletion =
+					executor.submit(() -> service.complete(MEETING_ID, HOST_ID));
+			Future<CompleteCompanionMeetingResult> guestCompletion =
+					executor.submit(() -> service.complete(MEETING_ID, GUEST_ID));
+
+			List<Object> outcomes = List.of(outcome(hostCompletion), outcome(guestCompletion));
+
+			assertEquals(1L, outcomes.stream()
+					.filter(CompleteCompanionMeetingResult.class::isInstance)
+					.count());
+			assertEquals(1L, outcomes.stream()
+					.filter(CompleteCompanionMeetingAlreadyCompletedException.class::isInstance)
+					.count());
+			assertEquals(CompanionMeetingStatus.COMPLETED, meetingRepository.findById(MEETING_ID).orElseThrow().status());
+			assertEquals(CompanionMatchStatus.COMPLETED, matchRepository.findById(MATCH_ID).orElseThrow().status());
+		} finally {
+			executor.shutdownNow();
+		}
+	}
+
+	@Test
 	void rejectsInvalidMeetingId() {
 		assertThrows(InvalidCompanionMeetingIdException.class, () -> service.complete(null, HOST_ID));
 		assertThrows(InvalidCompanionMeetingIdException.class, () -> service.complete(0L, HOST_ID));
@@ -143,6 +176,16 @@ class CompleteCompanionMeetingServiceTest {
 		);
 	}
 
+	@Test
+	void rejectsMissingMatch() {
+		matchRepository.matches.clear();
+
+		assertThrows(
+				CompanionMatchNotFoundException.class,
+				() -> service.complete(MEETING_ID, HOST_ID)
+		);
+	}
+
 	private CompanionMeeting meeting(final CompanionMeetingStatus status) {
 		return new CompanionMeeting(MEETING_ID, MATCH_ID, status, NOW.minusHours(1), null);
 	}
@@ -162,19 +205,63 @@ class CompleteCompanionMeetingServiceTest {
 		);
 	}
 
+	private Object outcome(final Future<CompleteCompanionMeetingResult> future) throws Exception {
+		try {
+			return future.get(3, TimeUnit.SECONDS);
+		} catch (ExecutionException exception) {
+			return exception.getCause();
+		}
+	}
+
 	private static final class FakeCompanionMeetingRepository implements CompanionMeetingRepository {
 
 		private final Map<Long, CompanionMeeting> meetings = new HashMap<>();
+		private CountDownLatch completeBarrier;
 
 		@Override
-		public CompanionMeeting save(final CompanionMeeting model) {
+		public synchronized CompanionMeeting save(final CompanionMeeting model) {
 			meetings.put(model.id(), model);
 			return model;
 		}
 
 		@Override
-		public Optional<CompanionMeeting> findById(final Long id) {
+		public synchronized Optional<CompanionMeeting> findById(final Long id) {
 			return Optional.ofNullable(meetings.get(id));
+		}
+
+		@Override
+		public boolean completeIfOngoing(final Long meetingId, final LocalDateTime completedAt) {
+			awaitCompleteBarrier();
+			synchronized (this) {
+				CompanionMeeting meeting = meetings.get(meetingId);
+				if (meeting == null || meeting.status() != CompanionMeetingStatus.ONGOING) {
+					return false;
+				}
+				meetings.put(meetingId, new CompanionMeeting(
+						meeting.id(),
+						meeting.matchId(),
+						CompanionMeetingStatus.COMPLETED,
+						meeting.startedAt(),
+						completedAt
+				));
+				return true;
+			}
+		}
+
+		private void awaitCompleteBarrier() {
+			CountDownLatch barrier = completeBarrier;
+			if (barrier == null) {
+				return;
+			}
+			barrier.countDown();
+			try {
+				if (!barrier.await(2, TimeUnit.SECONDS)) {
+					throw new IllegalStateException("Timed out waiting for concurrent completion attempts.");
+				}
+			} catch (InterruptedException exception) {
+				Thread.currentThread().interrupt();
+				throw new IllegalStateException(exception);
+			}
 		}
 	}
 

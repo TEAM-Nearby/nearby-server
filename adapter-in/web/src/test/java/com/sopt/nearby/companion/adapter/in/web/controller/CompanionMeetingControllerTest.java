@@ -21,6 +21,10 @@ import com.sopt.nearby.companion.application.CreateCompanionReviewsCommand;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsResult;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailResult;
 import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsResult;
+import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCompletedException;
+import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingCurrentUserNotCheckedInException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompleteCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
@@ -285,6 +289,58 @@ class CompanionMeetingControllerTest {
 
         assertEquals(1L, completeUseCase.meetingId);
         assertEquals(7L, completeUseCase.userId);
+    }
+
+    @Test
+    void returnsForbiddenErrorWhenCompletingMeetingAsNonParticipant() throws Exception {
+        completeUseCase.exception = new ForbiddenCompleteCompanionMeetingException();
+
+        mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_COMPLETE_COMPANION_MEETING"))
+                .andExpect(jsonPath("$.message").value("해당 동행의 참여자만 동행을 마칠 수 있습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsAlreadyCanceledErrorWhenCompletingCanceledMeeting() throws Exception {
+        completeUseCase.exception = new CompleteCompanionMeetingAlreadyCanceledException();
+
+        mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("COMPLETE_COMPANION_MEETING_ALREADY_CANCELED"))
+                .andExpect(jsonPath("$.message").value("취소된 동행은 완료할 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsAlreadyCompletedErrorWhenCompletingCompletedMeeting() throws Exception {
+        completeUseCase.exception = new CompleteCompanionMeetingAlreadyCompletedException();
+
+        mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("COMPLETE_COMPANION_MEETING_ALREADY_COMPLETED"))
+                .andExpect(jsonPath("$.message").value("이미 완료된 동행입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsCurrentUserNotCheckedInErrorWhenCompletingMeeting() throws Exception {
+        completeUseCase.exception = new CompleteCompanionMeetingCurrentUserNotCheckedInException();
+
+        mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("COMPLETE_COMPANION_MEETING_CURRENT_USER_NOT_CHECKED_IN"))
+                .andExpect(jsonPath("$.message").value("만남 인증을 완료한 후 동행을 마칠 수 있습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
     @Test
