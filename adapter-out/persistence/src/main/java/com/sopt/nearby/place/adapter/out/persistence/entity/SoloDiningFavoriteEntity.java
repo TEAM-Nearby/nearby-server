@@ -10,10 +10,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "solo_dining_favorite")
+@Table(
+		name = "solo_dining_favorite",
+		uniqueConstraints = @UniqueConstraint(
+				name = "uk_solo_dining_favorite_user_place",
+				columnNames = {"user_id", "place_id"}
+		)
+)
 public class SoloDiningFavoriteEntity {
 
 	@Id

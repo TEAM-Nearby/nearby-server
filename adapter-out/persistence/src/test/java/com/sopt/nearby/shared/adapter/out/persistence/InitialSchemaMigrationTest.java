@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -197,6 +198,72 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void thirteenthMigrationAddsSoloDiningFavoriteUserPlaceUniquenessConstraint() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource favoriteMigration = new ClassPathResource(
+				"db/migration/V13__add_solo_dining_favorite_user_place_unique_constraint.sql"
+		);
+
+		assertThat(favoriteMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_solo_dining_favorite_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			insertDuplicateSoloDiningFavorites(connection);
+			ScriptUtils.executeSqlScript(connection, favoriteMigration);
+
+			assertThat(indexNames(connection, "solo_dining_favorite"))
+					.anyMatch(indexName -> indexName.startsWith("uk_solo_dining_favorite_user_place"));
+			assertThat(soloDiningFavoriteCount(connection)).isEqualTo(1);
+		}
+	}
+
+	private static void insertDuplicateSoloDiningFavorites(final Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement()) {
+			statement.executeUpdate("""
+					insert into place_cache (
+					    id,
+					    google_place_id,
+					    name,
+					    address,
+					    latitude,
+					    longitude,
+					    category,
+					    phone_number,
+					    rating,
+					    review_count,
+					    photo_reference,
+					    business_status
+					) values (
+					    12,
+					    'google-place-id',
+					    '니어바이 카페',
+					    '서울특별시 중구 세종대로 110',
+					    37.56612000,
+					    126.97845000,
+					    'CAFE',
+					    null,
+					    4.30,
+					    22870,
+					    'places/google-place-id/photos/photo-resource',
+					    'OPERATIONAL'
+					)
+					""");
+			statement.executeUpdate("""
+					insert into solo_dining_favorite (id, user_id, place_id, created_at)
+					values (1, 7, 12, timestamp '2026-07-03 13:20:00')
+					""");
+			statement.executeUpdate("""
+					insert into solo_dining_favorite (id, user_id, place_id, created_at)
+					values (2, 7, 12, timestamp '2026-07-03 13:21:00')
+					""");
+		}
+	}
+
 	private static List<String> tableNames(final Connection connection) throws SQLException {
 		List<String> names = new ArrayList<>();
 		try (ResultSet tables = connection.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {
@@ -228,5 +295,13 @@ class InitialSchemaMigrationTest {
 			}
 		}
 		return names;
+	}
+
+	private static long soloDiningFavoriteCount(final Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement();
+				ResultSet resultSet = statement.executeQuery("select count(*) from solo_dining_favorite")) {
+			resultSet.next();
+			return resultSet.getLong(1);
+		}
 	}
 }
