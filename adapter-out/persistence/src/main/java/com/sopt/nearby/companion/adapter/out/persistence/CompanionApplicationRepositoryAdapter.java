@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsE
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
+import java.sql.SQLException;
 import java.util.Locale;
 import java.util.function.Function;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -19,6 +20,7 @@ public class CompanionApplicationRepositoryAdapter
 		implements CompanionApplicationRepository {
 
 	private static final String APPLICATION_UNIQUE_CONSTRAINT_NAME = "uk_companion_application_post_applicant";
+	private static final String UNIQUE_VIOLATION_SQL_STATE = "23505";
 
 	private final CompanionApplicationJpaRepository jpaRepository;
 
@@ -52,6 +54,22 @@ public class CompanionApplicationRepositoryAdapter
 	}
 
 	private boolean isApplicationUniqueConstraintViolation(final DataIntegrityViolationException exception) {
+		return hasSqlState(exception, UNIQUE_VIOLATION_SQL_STATE)
+				|| hasApplicationUniqueConstraintMessage(exception);
+	}
+
+	private boolean hasSqlState(final Throwable exception, final String sqlState) {
+		Throwable current = exception;
+		while (current != null) {
+			if (current instanceof SQLException sqlException && sqlState.equals(sqlException.getSQLState())) {
+				return true;
+			}
+			current = current.getCause();
+		}
+		return false;
+	}
+
+	private boolean hasApplicationUniqueConstraintMessage(final Throwable exception) {
 		String normalizedMessage = String.valueOf(exception.getMessage()).toLowerCase(Locale.ROOT);
 		return normalizedMessage.contains(APPLICATION_UNIQUE_CONSTRAINT_NAME)
 				|| (normalizedMessage.contains("unique")
