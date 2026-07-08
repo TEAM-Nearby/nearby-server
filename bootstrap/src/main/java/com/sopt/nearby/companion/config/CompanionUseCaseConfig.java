@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.config;
 import com.sopt.nearby.companion.application.CreateCompanionPostService;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsService;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingService;
+import com.sopt.nearby.companion.application.CompleteCompanionMeetingService;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
@@ -21,6 +22,7 @@ import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
+import com.sopt.nearby.companion.port.in.CompleteCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
@@ -239,6 +241,22 @@ public class CompanionUseCaseConfig {
     ) {
         return new CheckInCompanionMeetingService(
                 queryPort,
+                participantRepository,
+                checkInRepository,
+                Clock.systemDefaultZone()
+        );
+    }
+
+    @Bean
+    CompleteCompanionMeetingUseCase completeCompanionMeetingUseCase(
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchRepository matchRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final MeetingCheckInRepository checkInRepository
+    ) {
+        return new CompleteCompanionMeetingService(
+                meetingRepository,
+                matchRepository,
                 participantRepository,
                 checkInRepository,
                 Clock.systemDefaultZone()

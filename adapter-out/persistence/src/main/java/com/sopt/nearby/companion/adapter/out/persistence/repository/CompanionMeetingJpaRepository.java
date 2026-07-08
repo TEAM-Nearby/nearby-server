@@ -2,7 +2,24 @@
 package com.sopt.nearby.companion.adapter.out.persistence.repository;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMeetingEntity;
+import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface CompanionMeetingJpaRepository extends JpaRepository<CompanionMeetingEntity, Long> {
+
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query(value = """
+			update companion_meeting
+			set status = 'COMPLETED',
+				completed_at = :completedAt
+			where id = :meetingId
+				and status = 'ONGOING'
+			""", nativeQuery = true)
+	int completeIfOngoing(
+			@Param("meetingId") Long meetingId,
+			@Param("completedAt") LocalDateTime completedAt
+	);
 }

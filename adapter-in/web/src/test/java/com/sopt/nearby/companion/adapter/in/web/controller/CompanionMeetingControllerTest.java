@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -15,10 +16,15 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingCommand;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingResult;
+import com.sopt.nearby.companion.application.CompleteCompanionMeetingResult;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsCommand;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsResult;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailResult;
 import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsResult;
+import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingAlreadyCompletedException;
+import com.sopt.nearby.companion.domain.exception.CompleteCompanionMeetingCurrentUserNotCheckedInException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompleteCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
@@ -29,6 +35,7 @@ import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.domain.model.review.CompanionReviewTarget;
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
+import com.sopt.nearby.companion.port.in.CompleteCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
@@ -52,6 +59,7 @@ class CompanionMeetingControllerTest {
     private FakeReadCompanionMeetingDetailUseCase detailReadUseCase;
     private FakeReadCompanionReviewTargetsUseCase reviewTargetsUseCase;
     private FakeCheckInCompanionMeetingUseCase useCase;
+    private FakeCompleteCompanionMeetingUseCase completeUseCase;
     private FakeCreateCompanionReviewsUseCase reviewUseCase;
 
     @BeforeEach
@@ -60,6 +68,7 @@ class CompanionMeetingControllerTest {
         detailReadUseCase = new FakeReadCompanionMeetingDetailUseCase();
         reviewTargetsUseCase = new FakeReadCompanionReviewTargetsUseCase();
         useCase = new FakeCheckInCompanionMeetingUseCase();
+        completeUseCase = new FakeCompleteCompanionMeetingUseCase();
         reviewUseCase = new FakeCreateCompanionReviewsUseCase();
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new CompanionMeetingController(
@@ -67,6 +76,7 @@ class CompanionMeetingControllerTest {
                         detailReadUseCase,
                         reviewTargetsUseCase,
                         useCase,
+                        completeUseCase,
                         reviewUseCase
                 ))
                 .setMessageConverters(jsonMessageConverter())
@@ -192,7 +202,7 @@ class CompanionMeetingControllerTest {
         reviewTargetsUseCase.result = new ReadCompanionReviewTargetsResult(
                 CompanionMeetingStatus.COMPLETED,
                 MatchParticipantRole.HOST,
-                true,
+                false,
                 List.of()
         );
 
@@ -255,6 +265,82 @@ class CompanionMeetingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("CHECK_IN_COMPANION_MEETING_ALREADY_COMPLETED"))
                 .andExpect(jsonPath("$.message").value("이미 만남 인증이 완료되어 있어요."));
+    }
+
+    @Test
+    void completesCompanionMeetingAndPassesAuthenticatedUserIdToUseCase() throws Exception {
+        completeUseCase.result = new CompleteCompanionMeetingResult(
+                1L,
+                10L,
+                CompanionMeetingStatus.COMPLETED,
+                LocalDateTime.of(2026, 6, 29, 19, 0)
+        );
+
+        mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("COMPLETE_COMPANION_MEETING"))
+                .andExpect(jsonPath("$.message").value("동행이 완료되었어요."))
+                .andExpect(jsonPath("$.data.meetingId").value(1))
+                .andExpect(jsonPath("$.data.matchId").value(10))
+                .andExpect(jsonPath("$.data.meetingStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.completedAt").value("2026-06-29T19:00:00"));
+
+        assertEquals(1L, completeUseCase.meetingId);
+        assertEquals(7L, completeUseCase.userId);
+    }
+
+    @Test
+    void returnsForbiddenErrorWhenCompletingMeetingAsNonParticipant() throws Exception {
+        completeUseCase.exception = new ForbiddenCompleteCompanionMeetingException();
+
+        mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.code").value("FORBIDDEN_COMPLETE_COMPANION_MEETING"))
+                .andExpect(jsonPath("$.message").value("해당 동행의 참여자만 동행을 마칠 수 있습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsAlreadyCanceledErrorWhenCompletingCanceledMeeting() throws Exception {
+        completeUseCase.exception = new CompleteCompanionMeetingAlreadyCanceledException();
+
+        mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("COMPLETE_COMPANION_MEETING_ALREADY_CANCELED"))
+                .andExpect(jsonPath("$.message").value("취소된 동행은 완료할 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsAlreadyCompletedErrorWhenCompletingCompletedMeeting() throws Exception {
+        completeUseCase.exception = new CompleteCompanionMeetingAlreadyCompletedException();
+
+        mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("COMPLETE_COMPANION_MEETING_ALREADY_COMPLETED"))
+                .andExpect(jsonPath("$.message").value("이미 완료된 동행입니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void returnsCurrentUserNotCheckedInErrorWhenCompletingMeeting() throws Exception {
+        completeUseCase.exception = new CompleteCompanionMeetingCurrentUserNotCheckedInException();
+
+        mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("COMPLETE_COMPANION_MEETING_CURRENT_USER_NOT_CHECKED_IN"))
+                .andExpect(jsonPath("$.message").value("만남 인증을 완료한 후 동행을 마칠 수 있습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
     @Test
@@ -485,6 +571,24 @@ class CompanionMeetingControllerTest {
         @Override
         public CheckInCompanionMeetingResult checkIn(final CheckInCompanionMeetingCommand command) {
             this.command = command;
+            if (exception != null) {
+                throw exception;
+            }
+            return result;
+        }
+    }
+
+    private static final class FakeCompleteCompanionMeetingUseCase implements CompleteCompanionMeetingUseCase {
+
+        private CompleteCompanionMeetingResult result;
+        private RuntimeException exception;
+        private Long meetingId;
+        private Long userId;
+
+        @Override
+        public CompleteCompanionMeetingResult complete(final Long meetingId, final Long userId) {
+            this.meetingId = meetingId;
+            this.userId = userId;
             if (exception != null) {
                 throw exception;
             }
