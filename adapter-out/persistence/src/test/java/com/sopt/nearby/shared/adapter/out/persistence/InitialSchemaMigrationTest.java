@@ -199,10 +199,32 @@ class InitialSchemaMigrationTest {
 	}
 
 	@Test
-	void thirteenthMigrationAddsSoloDiningFavoriteUserPlaceUniquenessConstraint() throws SQLException {
+	void thirteenthMigrationAddsCompanionReviewUniquenessConstraint() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource companionReviewMigration = new ClassPathResource(
+				"db/migration/V13__add_companion_review_meeting_reviewer_reviewee_unique_constraint.sql"
+		);
+
+		assertThat(companionReviewMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_companion_review_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, companionReviewMigration);
+
+			assertThat(indexNames(connection, "companion_review"))
+					.anyMatch(indexName -> indexName.startsWith("uk_companion_review_meeting_reviewer_reviewee"));
+		}
+	}
+
+	@Test
+	void fourteenthMigrationAddsSoloDiningFavoriteUserPlaceUniquenessConstraint() throws SQLException {
 		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
 		ClassPathResource favoriteMigration = new ClassPathResource(
-				"db/migration/V13__add_solo_dining_favorite_user_place_unique_constraint.sql"
+				"db/migration/V14__add_solo_dining_favorite_user_place_unique_constraint.sql"
 		);
 
 		assertThat(favoriteMigration.exists()).isTrue();

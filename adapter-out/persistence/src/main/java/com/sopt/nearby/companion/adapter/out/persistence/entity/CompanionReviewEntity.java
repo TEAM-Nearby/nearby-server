@@ -10,10 +10,17 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "companion_review")
+@Table(
+		name = "companion_review",
+		uniqueConstraints = @UniqueConstraint(
+				name = "uk_companion_review_meeting_reviewer_reviewee",
+				columnNames = {"meeting_id", "reviewer_user_id", "reviewee_user_id"}
+		)
+)
 public class CompanionReviewEntity {
 
 	@Id
