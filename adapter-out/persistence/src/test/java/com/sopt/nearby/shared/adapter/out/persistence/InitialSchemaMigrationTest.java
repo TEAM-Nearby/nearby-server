@@ -197,6 +197,28 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void thirteenthMigrationAddsCompanionReviewUniquenessConstraint() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource companionReviewMigration = new ClassPathResource(
+				"db/migration/V13__add_companion_review_meeting_reviewer_reviewee_unique_constraint.sql"
+		);
+
+		assertThat(companionReviewMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_companion_review_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, companionReviewMigration);
+
+			assertThat(indexNames(connection, "companion_review"))
+					.anyMatch(indexName -> indexName.startsWith("uk_companion_review_meeting_reviewer_reviewee"));
+		}
+	}
+
 	private static List<String> tableNames(final Connection connection) throws SQLException {
 		List<String> names = new ArrayList<>();
 		try (ResultSet tables = connection.getMetaData().getTables(null, null, null, new String[]{"TABLE"})) {
