@@ -13,6 +13,7 @@ import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadServ
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
+import com.sopt.nearby.companion.application.ReadCompanionRequestReviewService;
 import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsService;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
 import com.sopt.nearby.companion.application.ReadMyCompanionPostsService;
@@ -33,6 +34,7 @@ import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadMyCompanionPostsUseCase;
@@ -56,6 +58,7 @@ import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
+import com.sopt.nearby.companion.port.out.CompanionRequestReviewQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionReviewKeywordRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewTargetQueryPort;
@@ -224,6 +227,13 @@ public class CompanionUseCaseConfig {
             final CompanionNotificationQueryPort queryPort
     ) {
         return new ReadCompanionNotificationsService(queryPort);
+    }
+
+    @Bean
+    ReadCompanionRequestReviewUseCase readCompanionRequestReviewUseCase(
+            final CompanionRequestReviewQueryPort queryPort
+    ) {
+        return new ReadCompanionRequestReviewService(queryPort);
     }
 
     @Bean
