@@ -52,7 +52,7 @@ public class SoloDiningPlaceController implements SoloDiningPlaceApi {
         return CommonResponse.success(
                 PlaceSuccessCode.SOLO_DINING_PLACES_FOUND,
                 SoloDiningPlacesResponse.from(readSoloDiningPlacesUseCase.read(
-                        request.toCommand(Long.valueOf(principal.getName()))
+                        request.toCommand(resolveUserId(principal))
                 ))
         );
     }
@@ -70,7 +70,7 @@ public class SoloDiningPlaceController implements SoloDiningPlaceApi {
         return CommonResponse.success(
                 PlaceSuccessCode.SOLO_DINING_PLACE_FOUND,
                 SoloDiningPlaceResponse.from(readSoloDiningPlaceUseCase.read(
-                        request.toCommand(Long.valueOf(principal.getName()))
+                        request.toCommand(resolveUserId(principal))
                 ))
         );
     }
@@ -86,7 +86,7 @@ public class SoloDiningPlaceController implements SoloDiningPlaceApi {
         return CommonResponse.success(
                 PlaceSuccessCode.SOLO_DINING_FAVORITE_REGISTERED,
                 SoloDiningFavoriteResponse.from(manageSoloDiningFavoriteUseCase.register(
-                        request.toCommand(Long.valueOf(principal.getName()))
+                        request.toCommand(resolveUserId(principal))
                 ))
         );
     }
@@ -102,8 +102,12 @@ public class SoloDiningPlaceController implements SoloDiningPlaceApi {
         return CommonResponse.success(
                 PlaceSuccessCode.SOLO_DINING_FAVORITE_REMOVED,
                 SoloDiningFavoriteResponse.from(manageSoloDiningFavoriteUseCase.remove(
-                        request.toCommand(Long.valueOf(principal.getName()))
+                        request.toCommand(resolveUserId(principal))
                 ))
         );
+    }
+
+    private Long resolveUserId(final Principal principal) {
+        return Long.valueOf(principal.getName());
     }
 }

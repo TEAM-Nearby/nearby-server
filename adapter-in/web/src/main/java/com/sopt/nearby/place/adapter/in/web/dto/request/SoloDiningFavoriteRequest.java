@@ -9,13 +9,14 @@ public record SoloDiningFavoriteRequest(
 ) {
 
     public SoloDiningFavoriteCommand toCommand(final Long userId) {
+        String value = required(placeId);
         try {
-            Long parsedPlaceId = Long.valueOf(required(placeId));
+            Long parsedPlaceId = Long.valueOf(value);
             if (parsedPlaceId <= 0) {
                 throw new InvalidSoloDiningFavoriteRequestException();
             }
             return new SoloDiningFavoriteCommand(userId, parsedPlaceId);
-        } catch (RuntimeException exception) {
+        } catch (NumberFormatException exception) {
             throw new InvalidSoloDiningFavoriteRequestException();
         }
     }

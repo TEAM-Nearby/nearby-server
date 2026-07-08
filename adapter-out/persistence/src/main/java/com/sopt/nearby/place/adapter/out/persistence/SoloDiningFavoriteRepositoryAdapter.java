@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class SoloDiningFavoriteRepositoryAdapter
 		extends SimpleJpaRepositoryAdapter<SoloDiningFavorite, Long, SoloDiningFavoriteEntity, Long>
 		implements SoloDiningFavoriteRepository {
+	private static final String USER_PLACE_UNIQUE_CONSTRAINT = "uk_solo_dining_favorite_user_place";
+
 	private final SoloDiningFavoriteJpaRepository jpaRepository;
 
 	public SoloDiningFavoriteRepositoryAdapter(final SoloDiningFavoriteJpaRepository jpaRepository) {
@@ -49,11 +51,21 @@ public class SoloDiningFavoriteRepositoryAdapter
 	}
 
 	private RuntimeException mapUniqueConstraintViolation(final DataIntegrityViolationException exception) {
-		String normalizedConstraint = String.valueOf(exception.getMessage()).toLowerCase();
-		if (normalizedConstraint.contains("uk_solo_dining_favorite_user_place")
-				|| (normalizedConstraint.contains("user_id") && normalizedConstraint.contains("place_id"))) {
+		if (isUserPlaceUniqueConstraintViolation(exception)) {
 			return new DuplicateSoloDiningFavoriteException(exception);
 		}
 		return exception;
+	}
+
+	private boolean isUserPlaceUniqueConstraintViolation(final Throwable exception) {
+		Throwable current = exception;
+		while (current != null) {
+			String message = String.valueOf(current.getMessage()).toLowerCase();
+			if (message.contains(USER_PLACE_UNIQUE_CONSTRAINT)) {
+				return true;
+			}
+			current = current.getCause();
+		}
+		return false;
 	}
 }
