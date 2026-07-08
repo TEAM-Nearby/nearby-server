@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -132,7 +133,7 @@ class GooglePlacesImageLookupAdapterTest {
     }
 
     private static void respond(final HttpExchange exchange, final int status, final String body) throws IOException {
-        byte[] bytes = body.getBytes();
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.sendResponseHeaders(status, bytes.length);
         exchange.getResponseBody().write(bytes);
         exchange.close();
