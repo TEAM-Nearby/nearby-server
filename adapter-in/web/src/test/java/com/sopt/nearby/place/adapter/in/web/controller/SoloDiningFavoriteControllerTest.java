@@ -7,6 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.place.application.ReadSoloDiningFavoritesCommand;
 import com.sopt.nearby.place.application.SoloDiningFavoritesResult;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
@@ -21,6 +24,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -34,6 +38,7 @@ class SoloDiningFavoriteControllerTest {
         readUseCase = new FakeReadSoloDiningFavoritesUseCase();
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new SoloDiningFavoriteController(readUseCase))
+                .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -136,6 +141,13 @@ class SoloDiningFavoriteControllerTest {
 
     private Principal principal(final String name) {
         return () -> name;
+    }
+
+    private MappingJackson2HttpMessageConverter jsonMessageConverter() {
+        ObjectMapper objectMapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        return new MappingJackson2HttpMessageConverter(objectMapper);
     }
 
     private static final class FakeReadSoloDiningFavoritesUseCase implements ReadSoloDiningFavoritesUseCase {

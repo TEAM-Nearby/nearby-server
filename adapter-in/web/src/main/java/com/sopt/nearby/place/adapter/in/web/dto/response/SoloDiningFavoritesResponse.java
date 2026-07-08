@@ -4,15 +4,13 @@ package com.sopt.nearby.place.adapter.in.web.dto.response;
 import com.sopt.nearby.place.application.SoloDiningFavoritesResult;
 import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSummary;
 import java.math.BigDecimal;
-import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record SoloDiningFavoritesResponse(
         int totalCount,
         List<FavoriteResponse> favorites
 ) {
-
-    private static final DateTimeFormatter CREATED_AT_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     public static SoloDiningFavoritesResponse from(final SoloDiningFavoritesResult result) {
         List<FavoriteResponse> favorites = result.favorites().stream()
@@ -23,7 +21,7 @@ public record SoloDiningFavoritesResponse(
 
     public record FavoriteResponse(
             Long favoriteId,
-            String createdAt,
+            LocalDateTime createdAt,
             Long placeId,
             String googlePlaceId,
             String name,
@@ -39,7 +37,7 @@ public record SoloDiningFavoritesResponse(
         static FavoriteResponse from(final SoloDiningFavoriteSummary favorite) {
             return new FavoriteResponse(
                     favorite.favoriteId(),
-                    favorite.createdAt().format(CREATED_AT_FORMATTER),
+                    favorite.createdAt(),
                     favorite.placeId(),
                     favorite.googlePlaceId(),
                     favorite.name(),
