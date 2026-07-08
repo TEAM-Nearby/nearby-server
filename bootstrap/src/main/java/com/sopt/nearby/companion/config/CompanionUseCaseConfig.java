@@ -11,6 +11,7 @@ import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadServ
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
+import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsService;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionProfileService;
 import com.sopt.nearby.companion.application.ReadCompanionPostsService;
@@ -27,6 +28,7 @@ import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
@@ -49,6 +51,7 @@ import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewKeywordRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
+import com.sopt.nearby.companion.port.out.CompanionReviewTargetQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
@@ -214,6 +217,21 @@ public class CompanionUseCaseConfig {
     }
 
     @Bean
+    ReadCompanionReviewTargetsUseCase readCompanionReviewTargetsUseCase(
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final MeetingCheckInRepository checkInRepository,
+            final CompanionReviewTargetQueryPort queryPort
+    ) {
+        return new ReadCompanionReviewTargetsService(
+                meetingRepository,
+                participantRepository,
+                checkInRepository,
+                queryPort
+        );
+    }
+
+    @Bean
     CheckInCompanionMeetingUseCase checkInCompanionMeetingUseCase(
             final CompanionMeetingCheckInQueryPort queryPort,
             final CompanionMatchParticipantRepository participantRepository,
@@ -237,7 +255,6 @@ public class CompanionUseCaseConfig {
     @Bean
     CreateCompanionReviewsUseCase createCompanionReviewsUseCase(
             final CompanionMeetingRepository meetingRepository,
-            final CompanionMatchRepository matchRepository,
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
             final CompanionReviewRepository reviewRepository,
@@ -245,7 +262,6 @@ public class CompanionUseCaseConfig {
     ) {
         return new CreateCompanionReviewsService(
                 meetingRepository,
-                matchRepository,
                 participantRepository,
                 checkInRepository,
                 reviewRepository,

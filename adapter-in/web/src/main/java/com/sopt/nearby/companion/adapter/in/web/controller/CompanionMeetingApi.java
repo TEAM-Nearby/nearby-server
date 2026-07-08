@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.adapter.in.web.dto.request.CheckInCompanionMeet
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionReviewsRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CheckInCompanionMeetingResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMeetingDetailResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionReviewTargetsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreateCompanionReviewsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
 import com.sopt.nearby.companion.domain.exception.CannotReviewSelfException;
@@ -17,6 +18,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionReviewMeetingAlreadyC
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleNotConfirmedException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewTargetException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
@@ -78,6 +80,29 @@ public interface CompanionMeetingApi {
     );
 
     @ApiExceptions({
+            InvalidCompanionMeetingIdException.class,
+            ForbiddenCompanionReviewTargetException.class,
+            CompanionMeetingNotFoundException.class,
+            CurrentUserNotCheckedInException.class,
+            CompanionReviewMeetingAlreadyCanceledException.class
+    })
+    @Operation(
+            summary = "동행 후기 대상 목록 조회",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 동행의 후기 작성 대상 목록을 조회합니다.
+                    HOST는 체크인을 완료한 GUEST 목록을 조회하고, GUEST는 체크인을 완료한 HOST만 조회합니다.
+                    완료된 동행에서도 체크인과 대상 조건을 만족하면 후기를 이어서 작성할 수 있습니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CompanionReviewTargetsResponse> getReviewTargets(
+            @Parameter(description = "후기 대상 목록을 조회할 동행 만남 ID", required = true, example = "1")
+            Long meetingId,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
             InvalidCheckInRequestException.class,
             OutOfCheckInRadiusException.class,
             ForbiddenCompanionMeetingException.class,
@@ -121,7 +146,7 @@ public interface CompanionMeetingApi {
                     JWT 액세스 토큰으로 인증된 사용자가 체크인을 완료한 동행 참여자 한 명에게 후기를 등록합니다.
                     HOST는 체크인을 완료한 GUEST에게 대상별로 후기를 등록할 수 있고, GUEST는 HOST에게만 후기를 등록할 수 있습니다.
                     후기 대상 revieweeUserId는 진행 중 목록의 matchId로 매칭 미리보기를 조회한 뒤 members[].memberId에서 선택합니다.
-                    동일 만남에서 같은 reviewer-reviewee 조합은 한 번만 등록할 수 있으며, 성공 시 만남과 매칭 상태를 COMPLETED로 변경합니다.
+                    동일 만남에서 같은 reviewer-reviewee 조합은 한 번만 등록할 수 있으며, 동행 완료 처리는 별도 동행 마치기 API에서 수행합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )

@@ -6,15 +6,18 @@ import com.sopt.nearby.companion.adapter.in.web.dto.request.CheckInCompanionMeet
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionReviewsRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CheckInCompanionMeetingResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMeetingDetailResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionReviewTargetsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreateCompanionReviewsResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.OngoingCompanionMeetingsResponse;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingResult;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsResult;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailResult;
+import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsResult;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import java.security.Principal;
@@ -34,17 +37,20 @@ public class CompanionMeetingController implements CompanionMeetingApi {
 
     private final ReadOngoingCompanionMeetingsUseCase readOngoingCompanionMeetingsUseCase;
     private final ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase;
+    private final ReadCompanionReviewTargetsUseCase readCompanionReviewTargetsUseCase;
     private final CheckInCompanionMeetingUseCase checkInCompanionMeetingUseCase;
     private final CreateCompanionReviewsUseCase createCompanionReviewsUseCase;
 
     public CompanionMeetingController(
             final ReadOngoingCompanionMeetingsUseCase readOngoingCompanionMeetingsUseCase,
             final ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase,
+            final ReadCompanionReviewTargetsUseCase readCompanionReviewTargetsUseCase,
             final CheckInCompanionMeetingUseCase checkInCompanionMeetingUseCase,
             final CreateCompanionReviewsUseCase createCompanionReviewsUseCase
     ) {
         this.readOngoingCompanionMeetingsUseCase = readOngoingCompanionMeetingsUseCase;
         this.readCompanionMeetingDetailUseCase = readCompanionMeetingDetailUseCase;
+        this.readCompanionReviewTargetsUseCase = readCompanionReviewTargetsUseCase;
         this.checkInCompanionMeetingUseCase = checkInCompanionMeetingUseCase;
         this.createCompanionReviewsUseCase = createCompanionReviewsUseCase;
     }
@@ -73,6 +79,21 @@ public class CompanionMeetingController implements CompanionMeetingApi {
         return CommonResponse.success(
                 CompanionSuccessCode.READ_COMPANION_MEETING_DETAIL,
                 CompanionMeetingDetailResponse.from(result)
+        );
+    }
+
+    @Override
+    @GetMapping("/{meetingId}/review-targets")
+    public CommonResponse<CompanionReviewTargetsResponse> getReviewTargets(
+            @PathVariable final Long meetingId,
+            final Principal principal
+    ) {
+        Long userId = Long.valueOf(principal.getName());
+        ReadCompanionReviewTargetsResult result = readCompanionReviewTargetsUseCase.getTargets(meetingId, userId);
+
+        return CommonResponse.success(
+                CompanionSuccessCode.READ_COMPANION_REVIEW_TARGETS,
+                CompanionReviewTargetsResponse.from(result)
         );
     }
 

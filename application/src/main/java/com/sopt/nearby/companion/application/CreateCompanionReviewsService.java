@@ -14,9 +14,7 @@ import com.sopt.nearby.companion.domain.exception.InvalidReviewRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidReviewTargetException;
 import com.sopt.nearby.companion.domain.exception.RevieweeNotCheckedInException;
 import com.sopt.nearby.companion.domain.exception.RevieweeNotFoundException;
-import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
-import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
@@ -26,7 +24,6 @@ import com.sopt.nearby.companion.domain.model.review.CompanionReviewKeywordCateg
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
-import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewKeywordRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
@@ -46,7 +43,6 @@ public class CreateCompanionReviewsService implements CreateCompanionReviewsUseC
 	private static final int REQUIRED_TIME_PROMISE_KEYWORD_COUNT = 1;
 
 	private final CompanionMeetingRepository meetingRepository;
-	private final CompanionMatchRepository matchRepository;
 	private final CompanionMatchParticipantRepository participantRepository;
 	private final MeetingCheckInRepository checkInRepository;
 	private final CompanionReviewRepository reviewRepository;
@@ -55,7 +51,6 @@ public class CreateCompanionReviewsService implements CreateCompanionReviewsUseC
 
 	public CreateCompanionReviewsService(
 			final CompanionMeetingRepository meetingRepository,
-			final CompanionMatchRepository matchRepository,
 			final CompanionMatchParticipantRepository participantRepository,
 			final MeetingCheckInRepository checkInRepository,
 			final CompanionReviewRepository reviewRepository,
@@ -63,7 +58,6 @@ public class CreateCompanionReviewsService implements CreateCompanionReviewsUseC
 			final Clock clock
 	) {
 		this.meetingRepository = meetingRepository;
-		this.matchRepository = matchRepository;
 		this.participantRepository = participantRepository;
 		this.checkInRepository = checkInRepository;
 		this.reviewRepository = reviewRepository;
@@ -106,13 +100,11 @@ public class CreateCompanionReviewsService implements CreateCompanionReviewsUseC
 				keywords,
 				now
 		);
-		CompanionMeeting completedMeeting = completeMeeting(meeting, now);
-		completeMatch(meeting.matchId());
 
 		return new CreateCompanionReviewsResult(
 				meeting.id(),
 				reviewId,
-				completedMeeting.status()
+				meeting.status()
 		);
 	}
 
@@ -231,35 +223,5 @@ public class CreateCompanionReviewsService implements CreateCompanionReviewsUseC
 				new CompanionReviewKeyword(savedReview.id(), keyword)
 		));
 		return savedReview.id();
-	}
-
-	private CompanionMeeting completeMeeting(final CompanionMeeting meeting, final LocalDateTime completedAt) {
-		if (meeting.status() == CompanionMeetingStatus.COMPLETED) {
-			return meeting;
-		}
-		return meetingRepository.save(new CompanionMeeting(
-				meeting.id(),
-				meeting.matchId(),
-				CompanionMeetingStatus.COMPLETED,
-				meeting.startedAt(),
-				completedAt
-		));
-	}
-
-	private void completeMatch(final Long matchId) {
-		matchRepository.findById(matchId)
-				.filter(match -> match.status() != CompanionMatchStatus.CANCELED)
-				.filter(match -> match.status() != CompanionMatchStatus.COMPLETED)
-				.map(this::completed)
-				.ifPresent(matchRepository::save);
-	}
-
-	private CompanionMatch completed(final CompanionMatch match) {
-		return new CompanionMatch(
-				match.id(),
-				match.postId(),
-				CompanionMatchStatus.COMPLETED,
-				match.createdAt()
-		);
 	}
 }

@@ -18,6 +18,7 @@ import com.sopt.nearby.companion.application.CheckInCompanionMeetingResult;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsCommand;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsResult;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailResult;
+import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsResult;
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
@@ -25,13 +26,16 @@ import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.review.CompanionReviewTarget;
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.security.Principal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +50,7 @@ class CompanionMeetingControllerTest {
     private MockMvc mockMvc;
     private FakeReadOngoingCompanionMeetingsUseCase ongoingReadUseCase;
     private FakeReadCompanionMeetingDetailUseCase detailReadUseCase;
+    private FakeReadCompanionReviewTargetsUseCase reviewTargetsUseCase;
     private FakeCheckInCompanionMeetingUseCase useCase;
     private FakeCreateCompanionReviewsUseCase reviewUseCase;
 
@@ -53,12 +58,14 @@ class CompanionMeetingControllerTest {
     void setUp() {
         ongoingReadUseCase = new FakeReadOngoingCompanionMeetingsUseCase();
         detailReadUseCase = new FakeReadCompanionMeetingDetailUseCase();
+        reviewTargetsUseCase = new FakeReadCompanionReviewTargetsUseCase();
         useCase = new FakeCheckInCompanionMeetingUseCase();
         reviewUseCase = new FakeCreateCompanionReviewsUseCase();
         mockMvc = MockMvcBuilders
                 .standaloneSetup(new CompanionMeetingController(
                         ongoingReadUseCase,
                         detailReadUseCase,
+                        reviewTargetsUseCase,
                         useCase,
                         reviewUseCase
                 ))
@@ -143,6 +150,57 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.data.currentUserRole").value("HOST"))
                 .andExpect(jsonPath("$.data.hostId").value(1))
                 .andExpect(jsonPath("$.data.hostGender").value("FEMALE"));
+    }
+
+    @Test
+    void returnsReviewTargetsAndPassesAuthenticatedUserIdToUseCase() throws Exception {
+        reviewTargetsUseCase.result = new ReadCompanionReviewTargetsResult(
+                CompanionMeetingStatus.COMPLETED,
+                MatchParticipantRole.HOST,
+                false,
+                List.of(
+                        reviewTarget(2L, "조예원", false),
+                        reviewTarget(3L, "김솝트", true)
+                )
+        );
+
+        mockMvc.perform(get("/api/companion-meetings/{meetingId}/review-targets", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("READ_COMPANION_REVIEW_TARGETS"))
+                .andExpect(jsonPath("$.message").value("동행 후기 대상 목록을 조회했어요."))
+                .andExpect(jsonPath("$.data.meetingStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.currentUserRole").value("HOST"))
+                .andExpect(jsonPath("$.data.canCompleteMeeting").value(false))
+                .andExpect(jsonPath("$.data.reviewTargets[0].revieweeUserId").value(2))
+                .andExpect(jsonPath("$.data.reviewTargets[0].profileImageUrl")
+                        .value("https://image.url/profile-2.png"))
+                .andExpect(jsonPath("$.data.reviewTargets[0].nickname").value("조예원"))
+                .andExpect(jsonPath("$.data.reviewTargets[0].cityName").value("바르셀로나"))
+                .andExpect(jsonPath("$.data.reviewTargets[0].meetingDate").value("2026-06-18"))
+                .andExpect(jsonPath("$.data.reviewTargets[0].isCheckedIn").value(true))
+                .andExpect(jsonPath("$.data.reviewTargets[0].hasWrittenReview").value(false))
+                .andExpect(jsonPath("$.data.reviewTargets[1].hasWrittenReview").value(true));
+
+        assertEquals(1L, reviewTargetsUseCase.meetingId);
+        assertEquals(7L, reviewTargetsUseCase.userId);
+    }
+
+    @Test
+    void returnsEmptyReviewTargets() throws Exception {
+        reviewTargetsUseCase.result = new ReadCompanionReviewTargetsResult(
+                CompanionMeetingStatus.COMPLETED,
+                MatchParticipantRole.HOST,
+                true,
+                List.of()
+        );
+
+        mockMvc.perform(get("/api/companion-meetings/{meetingId}/review-targets", 1L)
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reviewTargets").isArray())
+                .andExpect(jsonPath("$.data.reviewTargets").isEmpty());
     }
 
     @Test
@@ -241,7 +299,7 @@ class CompanionMeetingControllerTest {
         reviewUseCase.result = new CreateCompanionReviewsResult(
                 1L,
                 10L,
-                CompanionMeetingStatus.COMPLETED
+                CompanionMeetingStatus.ONGOING
         );
 
         mockMvc.perform(post("/api/companion-meetings/{meetingId}/reviews", 1L)
@@ -264,7 +322,7 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.message").value("동행 후기가 등록되었어요."))
                 .andExpect(jsonPath("$.data.meetingId").value(1))
                 .andExpect(jsonPath("$.data.reviewId").value(10))
-                .andExpect(jsonPath("$.data.meetingStatus").value("COMPLETED"));
+                .andExpect(jsonPath("$.data.meetingStatus").value("ONGOING"));
 
         assertEquals(7L, reviewUseCase.command.reviewerUserId());
         assertEquals(1L, reviewUseCase.command.meetingId());
@@ -351,6 +409,22 @@ class CompanionMeetingControllerTest {
         );
     }
 
+    private CompanionReviewTarget reviewTarget(
+            final Long revieweeUserId,
+            final String nickname,
+            final boolean hasWrittenReview
+    ) {
+        return new CompanionReviewTarget(
+                revieweeUserId,
+                "https://image.url/profile-" + revieweeUserId + ".png",
+                nickname,
+                "바르셀로나",
+                LocalDate.of(2026, 6, 18),
+                true,
+                hasWrittenReview
+        );
+    }
+
     private Principal principal(final String name) {
         return () -> name;
     }
@@ -383,6 +457,20 @@ class CompanionMeetingControllerTest {
 
         @Override
         public List<OngoingCompanionMeetingSummary> getOngoingMeetings(final Long userId) {
+            this.userId = userId;
+            return result;
+        }
+    }
+
+    private static final class FakeReadCompanionReviewTargetsUseCase implements ReadCompanionReviewTargetsUseCase {
+
+        private ReadCompanionReviewTargetsResult result;
+        private Long meetingId;
+        private Long userId;
+
+        @Override
+        public ReadCompanionReviewTargetsResult getTargets(final Long meetingId, final Long userId) {
+            this.meetingId = meetingId;
             this.userId = userId;
             return result;
         }
