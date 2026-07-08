@@ -15,6 +15,7 @@ import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
 import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsService;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
+import com.sopt.nearby.companion.application.ReadMyCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionProfileService;
 import com.sopt.nearby.companion.application.ReadCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
@@ -34,6 +35,7 @@ import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
+import com.sopt.nearby.companion.port.in.ReadMyCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
@@ -59,6 +61,7 @@ import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewTargetQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
+import com.sopt.nearby.companion.port.out.MyCompanionPostQueryPort;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
 import com.sopt.nearby.companion.port.out.ProfileImageUploadUrlIssuer;
 import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
@@ -163,6 +166,13 @@ public class CompanionUseCaseConfig {
                 requireCompletedOnboardingUseCase,
                 Clock.systemDefaultZone()
         );
+    }
+
+    @Bean
+    ReadMyCompanionPostsUseCase readMyCompanionPostsUseCase(
+            final MyCompanionPostQueryPort queryPort
+    ) {
+        return new ReadMyCompanionPostsService(queryPort);
     }
 
     @Bean
