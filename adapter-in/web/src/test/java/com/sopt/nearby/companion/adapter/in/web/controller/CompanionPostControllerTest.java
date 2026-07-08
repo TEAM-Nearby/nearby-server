@@ -414,7 +414,7 @@ class CompanionPostControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.code").value("COMPANION_POST_NOT_FOUND"))
-                .andExpect(jsonPath("$.message").value("존재하지 않거나 삭제된 글입니다."))
+                .andExpect(jsonPath("$.message").value("동행 모집글을 찾을 수 없습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 

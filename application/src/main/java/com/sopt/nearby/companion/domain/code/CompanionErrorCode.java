@@ -5,7 +5,7 @@ import com.sopt.nearby.common.exception.ErrorCode;
 public enum CompanionErrorCode implements ErrorCode {
 
     VALIDATION_ERROR("위도, 경도, 반경, 카테고리, 정렬 기준이 올바르지 않습니다."),
-    COMPANION_POST_NOT_FOUND("존재하지 않거나 삭제된 글입니다."),
+    COMPANION_POST_NOT_FOUND("동행 모집글을 찾을 수 없습니다."),
     COMPANION_POST_EXPIRED("마감된 글입니다."),
     COMPANION_REQUEST_ALREADY_EXISTS("이미 신청한 동행입니다."),
     COMPANION_POST_NOT_RECRUITING("모집 중인 동행이 아닙니다."),
