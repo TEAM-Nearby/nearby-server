@@ -157,7 +157,7 @@ class CompanionMeetingControllerTest {
         reviewTargetsUseCase.result = new ReadCompanionReviewTargetsResult(
                 CompanionMeetingStatus.COMPLETED,
                 MatchParticipantRole.HOST,
-                true,
+                false,
                 List.of(
                         reviewTarget(2L, "조예원", false),
                         reviewTarget(3L, "김솝트", true)
@@ -172,7 +172,7 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.message").value("동행 후기 대상 목록을 조회했어요."))
                 .andExpect(jsonPath("$.data.meetingStatus").value("COMPLETED"))
                 .andExpect(jsonPath("$.data.currentUserRole").value("HOST"))
-                .andExpect(jsonPath("$.data.canCompleteMeeting").value(true))
+                .andExpect(jsonPath("$.data.canCompleteMeeting").value(false))
                 .andExpect(jsonPath("$.data.reviewTargets[0].revieweeUserId").value(2))
                 .andExpect(jsonPath("$.data.reviewTargets[0].profileImageUrl")
                         .value("https://image.url/profile-2.png"))

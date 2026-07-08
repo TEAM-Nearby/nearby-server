@@ -2,7 +2,7 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
-import com.sopt.nearby.companion.domain.exception.CompanionReviewTargetMeetingAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionReviewMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CurrentUserNotCheckedInException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewTargetException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
@@ -61,7 +61,7 @@ public class ReadCompanionReviewTargetsService implements ReadCompanionReviewTar
 		return new ReadCompanionReviewTargetsResult(
 				meeting.status(),
 				currentUser.role(),
-				true,
+				canCompleteMeeting(meeting.status()),
 				targets
 		);
 	}
@@ -74,8 +74,12 @@ public class ReadCompanionReviewTargetsService implements ReadCompanionReviewTar
 
 	private void validateMeetingStatus(final CompanionMeetingStatus meetingStatus) {
 		if (meetingStatus == CompanionMeetingStatus.CANCELED) {
-			throw new CompanionReviewTargetMeetingAlreadyCanceledException();
+			throw new CompanionReviewMeetingAlreadyCanceledException();
 		}
+	}
+
+	private boolean canCompleteMeeting(final CompanionMeetingStatus meetingStatus) {
+		return meetingStatus == CompanionMeetingStatus.ONGOING;
 	}
 
 	private void validateCurrentUserCheckedIn(final Long meetingId, final Long userId) {

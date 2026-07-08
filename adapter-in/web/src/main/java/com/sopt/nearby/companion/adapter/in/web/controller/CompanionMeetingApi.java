@@ -15,7 +15,6 @@ import com.sopt.nearby.companion.domain.exception.CompanionMeetingAlreadyComplet
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionReviewAlreadyExistsException;
 import com.sopt.nearby.companion.domain.exception.CompanionReviewMeetingAlreadyCanceledException;
-import com.sopt.nearby.companion.domain.exception.CompanionReviewTargetMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleNotConfirmedException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewException;
@@ -85,7 +84,7 @@ public interface CompanionMeetingApi {
             ForbiddenCompanionReviewTargetException.class,
             CompanionMeetingNotFoundException.class,
             CurrentUserNotCheckedInException.class,
-            CompanionReviewTargetMeetingAlreadyCanceledException.class
+            CompanionReviewMeetingAlreadyCanceledException.class
     })
     @Operation(
             summary = "동행 후기 대상 목록 조회",

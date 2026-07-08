@@ -2,11 +2,12 @@
 package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
-import com.sopt.nearby.companion.domain.exception.CompanionReviewTargetMeetingAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionReviewMeetingAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CurrentUserNotCheckedInException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReviewTargetException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
@@ -127,7 +128,7 @@ class ReadCompanionReviewTargetsServiceTest {
 		meetingRepository.save(meeting(CompanionMeetingStatus.CANCELED));
 
 		assertThrows(
-				CompanionReviewTargetMeetingAlreadyCanceledException.class,
+				CompanionReviewMeetingAlreadyCanceledException.class,
 				() -> service.getTargets(MEETING_ID, HOST_ID)
 		);
 	}
@@ -140,7 +141,7 @@ class ReadCompanionReviewTargetsServiceTest {
 
 		assertEquals(CompanionMeetingStatus.COMPLETED, result.meetingStatus());
 		assertEquals(MatchParticipantRole.GUEST, result.currentUserRole());
-		assertTrue(result.canCompleteMeeting());
+		assertFalse(result.canCompleteMeeting());
 	}
 
 	@Test
@@ -151,7 +152,7 @@ class ReadCompanionReviewTargetsServiceTest {
 
 		assertEquals(CompanionMeetingStatus.COMPLETED, result.meetingStatus());
 		assertEquals(MatchParticipantRole.HOST, result.currentUserRole());
-		assertTrue(result.canCompleteMeeting());
+		assertFalse(result.canCompleteMeeting());
 	}
 
 	private CompanionMeeting meeting(final CompanionMeetingStatus status) {
