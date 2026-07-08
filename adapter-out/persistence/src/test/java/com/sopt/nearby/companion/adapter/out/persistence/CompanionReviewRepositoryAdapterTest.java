@@ -24,6 +24,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @DataJpaTest
@@ -63,6 +64,14 @@ class CompanionReviewRepositoryAdapterTest {
 
 		assertThatThrownBy(() -> adapter.save(review(meeting.getId(), 1L, 2L)))
 				.isInstanceOf(CompanionReviewAlreadyExistsException.class);
+	}
+
+	@Test
+	void rethrowsDataIntegrityViolationWhenMeetingDoesNotExist() {
+		CompanionReviewRepositoryAdapter adapter = new CompanionReviewRepositoryAdapter(reviewJpaRepository);
+
+		assertThatThrownBy(() -> adapter.save(review(999L, 1L, 2L)))
+				.isInstanceOf(DataIntegrityViolationException.class);
 	}
 
 	private CompanionMatchEntity match() {

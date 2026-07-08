@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionReviewAlreadyExistsEx
 import com.sopt.nearby.companion.domain.model.review.CompanionReview;
 import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
+import java.util.Locale;
 import java.util.function.Function;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,8 @@ import org.springframework.stereotype.Repository;
 public class CompanionReviewRepositoryAdapter
 		extends SimpleJpaRepositoryAdapter<CompanionReview, Long, CompanionReviewEntity, Long>
 		implements CompanionReviewRepository {
+
+	private static final String REVIEW_UNIQUE_CONSTRAINT_NAME = "uk_companion_review_meeting_reviewer_reviewee";
 
 	private final CompanionReviewJpaRepository jpaRepository;
 
@@ -27,13 +30,14 @@ public class CompanionReviewRepositoryAdapter
 
 	@Override
 	public CompanionReview save(final CompanionReview model) {
+		CompanionReviewEntity entity = CompanionPersistenceMapper.toEntity(model);
+		CompanionReviewEntity savedEntity;
 		try {
-			return CompanionPersistenceMapper.toDomain(
-					jpaRepository.saveAndFlush(CompanionPersistenceMapper.toEntity(model))
-			);
+			savedEntity = jpaRepository.saveAndFlush(entity);
 		} catch (DataIntegrityViolationException exception) {
-			throw new CompanionReviewAlreadyExistsException();
+			throw mapUniqueConstraintViolation(exception);
 		}
+		return CompanionPersistenceMapper.toDomain(savedEntity);
 	}
 
 	@Override
@@ -47,5 +51,22 @@ public class CompanionReviewRepositoryAdapter
 				reviewerUserId,
 				revieweeUserId
 		);
+	}
+
+	private RuntimeException mapUniqueConstraintViolation(final DataIntegrityViolationException exception) {
+		if (isReviewUniqueConstraintViolation(exception)) {
+			return new CompanionReviewAlreadyExistsException();
+		}
+		return exception;
+	}
+
+	private boolean isReviewUniqueConstraintViolation(final DataIntegrityViolationException exception) {
+		String normalizedMessage = String.valueOf(exception.getMessage()).toLowerCase(Locale.ROOT);
+		return normalizedMessage.contains(REVIEW_UNIQUE_CONSTRAINT_NAME)
+				|| (normalizedMessage.contains("unique")
+				&& normalizedMessage.contains("companion_review")
+				&& normalizedMessage.contains("meeting_id")
+				&& normalizedMessage.contains("reviewer_user_id")
+				&& normalizedMessage.contains("reviewee_user_id"));
 	}
 }

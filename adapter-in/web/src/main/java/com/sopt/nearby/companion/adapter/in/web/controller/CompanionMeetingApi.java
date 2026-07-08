@@ -120,6 +120,7 @@ public interface CompanionMeetingApi {
             description = """
                     JWT 액세스 토큰으로 인증된 사용자가 체크인을 완료한 동행 참여자 한 명에게 후기를 등록합니다.
                     HOST는 체크인을 완료한 GUEST에게 대상별로 후기를 등록할 수 있고, GUEST는 HOST에게만 후기를 등록할 수 있습니다.
+                    후기 대상 revieweeUserId는 진행 중 목록의 matchId로 매칭 미리보기를 조회한 뒤 members[].memberId에서 선택합니다.
                     동일 만남에서 같은 reviewer-reviewee 조합은 한 번만 등록할 수 있으며, 성공 시 만남과 매칭 상태를 COMPLETED로 변경합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")

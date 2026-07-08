@@ -175,16 +175,13 @@ public class CreateCompanionReviewsService implements CreateCompanionReviewsUseC
 		if (reviewee.userId().equals(reviewerUserId)) {
 			throw new CannotReviewSelfException();
 		}
-		if (reviewer.role() == MatchParticipantRole.HOST) {
-			if (reviewee.role() == MatchParticipantRole.GUEST) {
-				return;
-			}
+		boolean allowedReviewTarget = (reviewer.role() == MatchParticipantRole.HOST
+				&& reviewee.role() == MatchParticipantRole.GUEST)
+				|| (reviewer.role() == MatchParticipantRole.GUEST
+				&& reviewee.role() == MatchParticipantRole.HOST);
+		if (!allowedReviewTarget) {
 			throw new InvalidReviewTargetException();
 		}
-		if (reviewer.role() == MatchParticipantRole.GUEST && reviewee.role() == MatchParticipantRole.HOST) {
-			return;
-		}
-		throw new InvalidReviewTargetException();
 	}
 
 	private void validateCheckIns(

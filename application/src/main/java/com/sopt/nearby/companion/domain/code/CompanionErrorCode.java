@@ -43,6 +43,7 @@ public enum CompanionErrorCode implements ErrorCode {
     CANNOT_REVIEW_SELF("자기 자신에게 후기를 남길 수 없습니다."),
     FORBIDDEN_COMPANION_REVIEW("해당 동행의 참여자만 후기를 등록할 수 있습니다."),
     REVIEWEE_NOT_FOUND("후기 대상 사용자를 찾을 수 없습니다."),
+    COMPANION_REVIEW_MEETING_ALREADY_CANCELED("취소된 동행에는 후기를 남길 수 없습니다."),
     COMPANION_REVIEW_ALREADY_EXISTS("이미 해당 사용자에게 후기를 남겼습니다."),
     CURRENT_USER_NOT_CHECKED_IN("만남 인증을 완료한 후 후기를 남길 수 있습니다."),
     REVIEWEE_NOT_CHECKED_IN("만남 인증을 완료한 사용자에게만 후기를 남길 수 있습니다.");
