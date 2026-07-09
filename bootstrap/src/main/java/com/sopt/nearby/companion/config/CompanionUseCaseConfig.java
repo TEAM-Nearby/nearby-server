@@ -121,13 +121,15 @@ public class CompanionUseCaseConfig {
             CompanionMatchRepository companionMatchRepository,
             CompanionPostRepository companionPostRepository,
             CompanionMatchParticipantRepository companionMatchParticipantRepository,
-            CompanionProfileRepository companionProfileRepository
+            CompanionProfileRepository companionProfileRepository,
+            CompanionScheduleRepository companionScheduleRepository
     ) {
         return new ReadCompanionMatchPreviewService(
                 companionMatchRepository,
                 companionPostRepository,
                 companionMatchParticipantRepository,
-                companionProfileRepository
+                companionProfileRepository,
+                companionScheduleRepository
         );
     }
 

@@ -69,7 +69,12 @@ class CompanionMatchControllerTest {
                         new CompanionMatchPreview.Member(7L, "https://image.example/a.png", "여행자A"),
                         new CompanionMatchPreview.Member(8L, null, "여행자B")
                 ),
-                new CompanionMatchPreview.Post(20L, "함께 밥 먹을 동행을 구해요.")
+                new CompanionMatchPreview.Post(
+                        20L,
+                        "함께 밥 먹을 동행을 구해요.",
+                        CompanionPostMeetingTimeType.SCHEDULED,
+                        LocalDateTime.of(2026, 6, 29, 18, 30)
+                )
         );
 
         mockMvc.perform(get("/api/companion-matches/{matchId}/preview", 10L)
@@ -86,7 +91,9 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.data.members[1].profileImageUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data.members[1].nickname").value("여행자B"))
                 .andExpect(jsonPath("$.data.companionPost.postId").value(20))
-                .andExpect(jsonPath("$.data.companionPost.content").value("함께 밥 먹을 동행을 구해요."));
+                .andExpect(jsonPath("$.data.companionPost.content").value("함께 밥 먹을 동행을 구해요."))
+                .andExpect(jsonPath("$.data.companionPost.meetingTimeType").value("SCHEDULED"))
+                .andExpect(jsonPath("$.data.companionPost.meetingAt").value("2026-06-29T18:30:00"));
 
         assertEquals(10L, useCase.matchId);
         assertEquals(7L, useCase.userId);
