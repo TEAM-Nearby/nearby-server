@@ -16,6 +16,7 @@ import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
 import com.sopt.nearby.companion.application.ReadCompanionRequestReviewService;
 import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsService;
+import com.sopt.nearby.companion.application.ReadMyPageService;
 import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
 import com.sopt.nearby.companion.application.ReadMyCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionProfileService;
@@ -39,6 +40,7 @@ import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadMyCompanionPostsUseCase;
+import com.sopt.nearby.companion.port.in.ReadMyPageUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
@@ -66,6 +68,7 @@ import com.sopt.nearby.companion.port.out.CompanionReviewTargetQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
 import com.sopt.nearby.companion.port.out.MyCompanionPostQueryPort;
+import com.sopt.nearby.companion.port.out.MyPageQueryPort;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
 import com.sopt.nearby.companion.port.out.ProfileImageUploadUrlIssuer;
 import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
@@ -179,6 +182,14 @@ public class CompanionUseCaseConfig {
             final MyCompanionPostQueryPort queryPort
     ) {
         return new ReadMyCompanionPostsService(queryPort);
+    }
+
+    @Bean
+    ReadMyPageUseCase readMyPageUseCase(
+            final MyPageQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase
+    ) {
+        return new ReadMyPageService(queryPort, requireCompletedOnboardingUseCase, Clock.systemDefaultZone());
     }
 
     @Bean
