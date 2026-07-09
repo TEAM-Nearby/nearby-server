@@ -9,12 +9,14 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchPa
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionNotificationEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApplicationJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchParticipantJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionNotificationQueryJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
@@ -23,6 +25,7 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
@@ -68,6 +71,9 @@ class CompanionNotificationQueryAdapterTest {
     private CompanionProfileJpaRepository profileJpaRepository;
 
     @Autowired
+    private CompanionScheduleJpaRepository scheduleJpaRepository;
+
+    @Autowired
     private PlaceCacheJpaRepository placeCacheJpaRepository;
 
     @Test
@@ -79,11 +85,15 @@ class CompanionNotificationQueryAdapterTest {
 
         PlaceCacheEntity placeA = placeCacheJpaRepository.saveAndFlush(place("google-place-a", "오노테라"));
         PlaceCacheEntity placeB = placeCacheJpaRepository.saveAndFlush(place("google-place-b", "시우다드 콘달"));
+        PlaceCacheEntity schedulePlace = placeCacheJpaRepository.saveAndFlush(place(
+                "google-schedule-place",
+                "확정 장소"
+        ));
 
-        CompanionPostEntity recentPost = postJpaRepository.saveAndFlush(post(
+        CompanionPostEntity recentPost = postJpaRepository.saveAndFlush(nowPost(
                 hostA.getUserId(),
                 placeA.getId(),
-                NOW.plusDays(1)
+                NOW.plusHours(1)
         ));
         CompanionApplicationEntity recentApplication = applicationJpaRepository.saveAndFlush(application(
                 recentPost.getId(),
@@ -92,6 +102,8 @@ class CompanionNotificationQueryAdapterTest {
                 NOW.plusHours(2)
         ));
         CompanionMatchEntity match = matchJpaRepository.saveAndFlush(match(recentPost.getId()));
+        LocalDateTime scheduledAt = NOW.plusMinutes(20);
+        scheduleJpaRepository.saveAndFlush(schedule(match.getId(), schedulePlace.getId(), scheduledAt));
         participantJpaRepository.saveAndFlush(participant(
                 match.getId(),
                 7L,
@@ -162,8 +174,8 @@ class CompanionNotificationQueryAdapterTest {
         assertThat(first.host().userId()).isEqualTo(100L);
         assertThat(first.host().profileImageUrl()).isEqualTo("host-a.png");
         assertThat(first.host().nickname()).isEqualTo("호스트A");
-        assertThat(first.placeName()).isEqualTo("오노테라");
-        assertThat(first.meetingAt()).isEqualTo(NOW.plusDays(1));
+        assertThat(first.placeName()).isEqualTo("확정 장소");
+        assertThat(first.meetingAt()).isEqualTo(scheduledAt);
         assertThat(first.matchId()).isEqualTo(match.getId());
         assertThat(first.actionType()).isEqualTo(CompanionNotificationActionType.CONFIRM_SCHEDULE);
         assertThat(first.isRead()).isTrue();
@@ -191,6 +203,10 @@ class CompanionNotificationQueryAdapterTest {
         PlaceCacheEntity placeA = placeCacheJpaRepository.saveAndFlush(place("google-place-a", "오노테라"));
         PlaceCacheEntity placeB = placeCacheJpaRepository.saveAndFlush(place("google-place-b", "BRAMS"));
         PlaceCacheEntity placeC = placeCacheJpaRepository.saveAndFlush(place("google-place-c", "시우다드 콘달"));
+        PlaceCacheEntity schedulePlace = placeCacheJpaRepository.saveAndFlush(place(
+                "google-schedule-place",
+                "확정 장소"
+        ));
 
         CompanionPostEntity recentPost = postJpaRepository.saveAndFlush(post(
                 100L,
@@ -223,6 +239,7 @@ class CompanionNotificationQueryAdapterTest {
                 NOW.plusHours(2)
         ));
         CompanionMatchEntity match = matchJpaRepository.saveAndFlush(match(acceptedPost.getId()));
+        scheduleJpaRepository.saveAndFlush(schedule(match.getId(), schedulePlace.getId(), NOW.plusHours(1)));
         participantJpaRepository.saveAndFlush(participant(
                 match.getId(),
                 8L,
@@ -302,6 +319,7 @@ class CompanionNotificationQueryAdapterTest {
         assertThat(result.get(1).notificationId()).isEqualTo(acceptedNotification.getId());
         assertThat(result.get(1).applicationId()).isEqualTo(acceptedApplication.getId());
         assertThat(result.get(1).matchId()).isEqualTo(match.getId());
+        assertThat(result.get(1).placeName()).isEqualTo("확정 장소");
         assertThat(result.get(1).actionType()).isEqualTo(CompanionNotificationActionType.CONFIRM_SCHEDULE);
         assertThat(result.get(1).isRead()).isTrue();
 
@@ -365,6 +383,27 @@ class CompanionNotificationQueryAdapterTest {
         );
     }
 
+    private CompanionPostEntity nowPost(
+            final Long hostUserId,
+            final Long placeId,
+            final LocalDateTime exposureExpiresAt
+    ) {
+        return new CompanionPostEntity(
+                null,
+                hostUserId,
+                placeId,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                exposureExpiresAt,
+                4,
+                true,
+                "지금 같이 밥 먹어요.",
+                "https://openchat.example",
+                CompanionPostStatus.CLOSED,
+                NOW
+        );
+    }
+
     private CompanionApplicationEntity application(
             final Long postId,
             final Long applicantUserId,
@@ -404,6 +443,14 @@ class CompanionNotificationQueryAdapterTest {
         );
     }
 
+    private CompanionScheduleEntity schedule(
+            final Long matchId,
+            final Long placeId,
+            final LocalDateTime scheduledAt
+    ) {
+        return new CompanionScheduleEntity(null, matchId, placeId, scheduledAt, 120, true);
+    }
+
     private CompanionNotificationEntity notification(
             final Long recipientUserId,
             final CompanionNotificationType notificationType,
@@ -431,6 +478,7 @@ class CompanionNotificationQueryAdapterTest {
             CompanionNotificationEntity.class,
             CompanionPostEntity.class,
             CompanionProfileEntity.class,
+            CompanionScheduleEntity.class,
             PlaceCacheEntity.class
     })
     @EnableJpaRepositories(basePackageClasses = {
@@ -440,6 +488,7 @@ class CompanionNotificationQueryAdapterTest {
             CompanionNotificationQueryJpaRepository.class,
             CompanionPostJpaRepository.class,
             CompanionProfileJpaRepository.class,
+            CompanionScheduleJpaRepository.class,
             PlaceCacheJpaRepository.class
     })
     static class TestApplication {

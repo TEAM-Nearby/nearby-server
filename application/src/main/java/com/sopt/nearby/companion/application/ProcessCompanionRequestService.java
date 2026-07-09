@@ -79,7 +79,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
                 context.application().id(),
                 MatchParticipantRole.GUEST
         );
-        match = confirmNowScheduleIfNeeded(match, context.post());
+        match = confirmNowScheduleIfNeeded(match, context);
         notifyApplicant(context.application(), CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED);
 
         return new AcceptedCompanionRequestResult(
@@ -87,7 +87,8 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
                 context.application().postId(),
                 CompanionApplicationStatus.ACCEPTED,
                 match.id(),
-                match.status()
+                match.status(),
+                resolveMeetingAt(match.id(), context)
         );
     }
 
@@ -165,14 +166,14 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
                 )));
     }
 
-    private CompanionMatch confirmNowScheduleIfNeeded(final CompanionMatch match, final CompanionPost post) {
-        if (post.meetingTimeType() != CompanionPostMeetingTimeType.NOW) {
+    private CompanionMatch confirmNowScheduleIfNeeded(final CompanionMatch match, final RequestContext context) {
+        if (context.post().meetingTimeType() != CompanionPostMeetingTimeType.NOW) {
             return match;
         }
 
         CompanionMatch confirmedMatch = confirmMatchIfNeeded(match);
         if (confirmedMatch.status() == CompanionMatchStatus.SCHEDULE_CONFIRMED) {
-            ensureNowSchedule(confirmedMatch.id(), post);
+            ensureNowSchedule(confirmedMatch.id(), context);
         }
         return confirmedMatch;
     }
@@ -205,16 +206,26 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
         };
     }
 
-    private void ensureNowSchedule(final Long matchId, final CompanionPost post) {
+    private void ensureNowSchedule(final Long matchId, final RequestContext context) {
         scheduleRepository.findConfirmedByMatchId(matchId)
                 .orElseGet(() -> scheduleRepository.save(new CompanionSchedule(
                         null,
                         matchId,
-                        post.placeId(),
-                        post.exposureExpiresAt(),
+                        context.post().placeId(),
+                        context.application().createdAt(),
                         null,
                         true
                 )));
+    }
+
+    private LocalDateTime resolveMeetingAt(final Long matchId, final RequestContext context) {
+        return switch (context.post().meetingTimeType()) {
+            case NOW -> scheduleRepository.findConfirmedByMatchId(matchId)
+                    .map(CompanionSchedule::scheduledAt)
+                    .orElse(context.application().createdAt());
+            case SCHEDULED -> context.post().meetingAt();
+            case UNDECIDED -> null;
+        };
     }
 
     private void addParticipantIfMissing(

@@ -18,10 +18,7 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
                 host_profile.nickname as hostNickname,
                 host_profile.gender as hostGender,
                 place.name as placeName,
-                case
-                    when post.meeting_time_type = 'NOW' then post.exposure_expires_at
-                    else schedule.scheduled_at
-                end as meetingAt,
+                schedule.scheduled_at as meetingAt,
                 case
                     when post.meeting_time_type = 'NOW' then 'NOW'
                     else 'SCHEDULED'
@@ -54,10 +51,7 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
                 and check_in.user_id = :userId
             where meeting.status = 'ONGOING'
             order by
-                case
-                    when post.meeting_time_type = 'NOW' then post.exposure_expires_at
-                    else schedule.scheduled_at
-                end desc,
+                schedule.scheduled_at desc,
                 meeting.id desc
             """, nativeQuery = true)
     List<OngoingCompanionMeetingProjection> findAllByParticipantUserId(@Param("userId") Long userId);

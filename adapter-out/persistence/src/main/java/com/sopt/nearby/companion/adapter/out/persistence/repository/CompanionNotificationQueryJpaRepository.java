@@ -18,7 +18,7 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 host_profile.profile_image_url as hostProfileImageUrl,
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
-                post.meeting_at as meetingAt,
+                coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case
                     when notification.read_at is null then false
@@ -32,10 +32,13 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 on post.id = app.post_id
             join companion_profile host_profile
                 on host_profile.user_id = post.host_user_id
-            left join place_cache place
-                on place.id = post.place_id
             left join companion_match_participant participant
                 on participant.accepted_application_id = app.id
+            left join companion_schedule schedule
+                on schedule.match_id = participant.match_id
+                and schedule.confirmed = true
+            left join place_cache place
+                on place.id = coalesce(schedule.place_id, post.place_id)
             where notification.recipient_user_id = :userId
                 and app.applicant_user_id = :userId
                 and notification.notification_type in (
@@ -55,7 +58,7 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 host_profile.profile_image_url as hostProfileImageUrl,
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
-                post.meeting_at as meetingAt,
+                coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case
                     when notification.read_at is null then false
@@ -69,10 +72,13 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 on post.id = app.post_id
             join companion_profile host_profile
                 on host_profile.user_id = post.host_user_id
-            left join place_cache place
-                on place.id = post.place_id
             left join companion_match_participant participant
                 on participant.accepted_application_id = app.id
+            left join companion_schedule schedule
+                on schedule.match_id = participant.match_id
+                and schedule.confirmed = true
+            left join place_cache place
+                on place.id = coalesce(schedule.place_id, post.place_id)
             where notification.recipient_user_id = :userId
                 and post.host_user_id = :userId
                 and notification.notification_type = 'COMPANION_APPLICATION_CREATED'
