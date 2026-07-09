@@ -19,6 +19,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
@@ -104,8 +105,12 @@ class CompanionMatchControllerTest {
         readCompanionMatchesUseCase.result = List.of(new CompanionMatchSummary(
                 1L,
                 "호스트A",
+                "https://image.example/host-a.png",
+                UserGender.FEMALE,
                 "시우다드콘달",
                 LocalDateTime.of(2026, 6, 29, 18, 30),
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 6, 29, 18, 15),
                 "오늘 저녁 바르셀로나에서 같이 타파스 드실 분 구해요",
                 CompanionMatchStatus.MATCHED
         ));
@@ -118,8 +123,13 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.message").value("매칭된 동행 목록을 조회했어요."))
                 .andExpect(jsonPath("$.data.matches[0].matchId").value(1))
                 .andExpect(jsonPath("$.data.matches[0].hostNickname").value("호스트A"))
+                .andExpect(jsonPath("$.data.matches[0].hostProfileImageUrl")
+                        .value("https://image.example/host-a.png"))
+                .andExpect(jsonPath("$.data.matches[0].hostGender").value("FEMALE"))
                 .andExpect(jsonPath("$.data.matches[0].placeName").value("시우다드콘달"))
                 .andExpect(jsonPath("$.data.matches[0].meetingAt").value("2026-06-29T18:30:00"))
+                .andExpect(jsonPath("$.data.matches[0].meetingTimeType").value("SCHEDULED"))
+                .andExpect(jsonPath("$.data.matches[0].createdAt").value("2026-06-29T18:15:00"))
                 .andExpect(jsonPath("$.data.matches[0].content")
                         .value("오늘 저녁 바르셀로나에서 같이 타파스 드실 분 구해요"))
                 .andExpect(jsonPath("$.data.matches[0].matchStatus").value("MATCHED"));

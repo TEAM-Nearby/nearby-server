@@ -6,8 +6,12 @@ import java.time.LocalDateTime;
 public interface CompanionMatchSummaryProjection {
     Long getMatchId();
     String getHostNickname();
+    String getHostProfileImageUrl();
+    String getHostGender();
     String getPlaceName();
     LocalDateTime getMeetingAt();
+    String getMeetingTimeType();
+    LocalDateTime getCreatedAt();
     String getContent();
     String getMatchStatus();
 }

@@ -13,8 +13,18 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
             select
                 m.id as matchId,
                 host_profile.nickname as hostNickname,
+                host_profile.profile_image_url as hostProfileImageUrl,
+                host_profile.gender as hostGender,
                 place.name as placeName,
-                coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
+                coalesce(
+                    schedule.scheduled_at,
+                    case
+                        when post.meeting_time_type = 'NOW' then post.exposure_expires_at
+                        else post.meeting_at
+                    end
+                ) as meetingAt,
+                post.meeting_time_type as meetingTimeType,
+                post.created_at as createdAt,
                 post.content as content,
                 m.status as matchStatus
             from companion_match m
@@ -30,7 +40,7 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
             left join place_cache place
                 on place.id = coalesce(schedule.place_id, post.place_id)
             where participant.user_id = :userId
-                        and m.status in ('MATCHED', 'SCHEDULE_CONFIRMED')
+                and m.status in ('MATCHED', 'SCHEDULE_CONFIRMED')
             order by m.created_at desc
             """, nativeQuery = true)
     List<CompanionMatchSummaryProjection> findAllByParticipantUserId(@Param("userId") Long userId);
