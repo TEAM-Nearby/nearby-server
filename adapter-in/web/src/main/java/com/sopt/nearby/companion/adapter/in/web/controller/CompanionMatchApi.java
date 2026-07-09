@@ -36,7 +36,12 @@ public interface CompanionMatchApi {
 
     @Operation(
             summary = "매칭된 동행 목록 보기",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭 목록을 조회합니다.",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭 목록을 조회합니다.
+                    MATCHED 또는 SCHEDULE_CONFIRMED 상태만 반환합니다.
+                    meetingTimeType이 NOW인 신규 수락 흐름은 일정이 자동 확정되어 SCHEDULE_CONFIRMED 상태로 반환됩니다.
+                    createdAt과 meetingAt의 화면 표기 문구는 클라이언트에서 포맷팅합니다.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionMatchesResponse> getMatches(

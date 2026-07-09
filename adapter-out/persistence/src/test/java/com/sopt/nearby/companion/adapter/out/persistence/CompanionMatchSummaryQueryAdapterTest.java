@@ -17,6 +17,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionSch
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
@@ -116,6 +117,19 @@ class CompanionMatchSummaryQueryAdapterTest {
         ));
         participantJpaRepository.saveAndFlush(participant(otherUserMatch.getId(), 999L));
 
+        CompanionPostEntity canceledPost = companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                postPlace.getId(),
+                NOW.plusDays(10),
+                "취소된 매칭"
+        ));
+        CompanionMatchEntity canceledMatch = companionMatchJpaRepository.saveAndFlush(match(
+                canceledPost.getId(),
+                CompanionMatchStatus.CANCELED,
+                NOW.plusHours(4)
+        ));
+        participantJpaRepository.saveAndFlush(participant(canceledMatch.getId(), 7L));
+
         List<CompanionMatchSummary> result = adapter.findAllByParticipantUserId(7L);
 
         assertThat(result).hasSize(2);
@@ -123,16 +137,24 @@ class CompanionMatchSummaryQueryAdapterTest {
         CompanionMatchSummary first = result.get(0);
         assertThat(first.matchId()).isEqualTo(recentMatch.getId());
         assertThat(first.hostNickname()).isEqualTo("호스트A");
+        assertThat(first.hostProfileImageUrl()).isEqualTo("https://image.example/100.png");
+        assertThat(first.hostGender()).isEqualTo(UserGender.FEMALE);
         assertThat(first.placeName()).isEqualTo("확정 장소");
         assertThat(first.meetingAt()).isEqualTo(NOW.plusDays(3));
+        assertThat(first.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
+        assertThat(first.createdAt()).isEqualTo(NOW);
         assertThat(first.content()).isEqualTo("확정 일정이 있는 모집글");
         assertThat(first.matchStatus()).isEqualTo(CompanionMatchStatus.SCHEDULE_CONFIRMED);
 
         CompanionMatchSummary second = result.get(1);
         assertThat(second.matchId()).isEqualTo(oldMatch.getId());
         assertThat(second.hostNickname()).isEqualTo("호스트B");
+        assertThat(second.hostProfileImageUrl()).isEqualTo("https://image.example/200.png");
+        assertThat(second.hostGender()).isEqualTo(UserGender.FEMALE);
         assertThat(second.placeName()).isEqualTo("오래된 모집글 장소");
         assertThat(second.meetingAt()).isEqualTo(NOW.plusDays(5));
+        assertThat(second.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
+        assertThat(second.createdAt()).isEqualTo(NOW);
         assertThat(second.content()).isEqualTo("확정 일정이 없는 모집글");
         assertThat(second.matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
     }
@@ -161,7 +183,7 @@ class CompanionMatchSummaryQueryAdapterTest {
                 nickname,
                 UserGender.FEMALE,
                 2000,
-                null,
+                "https://image.example/" + userId + ".png",
                 "반가워요.",
                 new BigDecimal("4.50"),
                 0,

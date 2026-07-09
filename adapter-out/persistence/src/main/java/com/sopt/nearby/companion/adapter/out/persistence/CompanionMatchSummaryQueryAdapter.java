@@ -4,6 +4,8 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchSummaryJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import java.util.List;
 import org.springframework.stereotype.Repository;
@@ -24,8 +26,12 @@ public class CompanionMatchSummaryQueryAdapter implements CompanionMatchSummaryQ
                 .map(row -> new CompanionMatchSummary(
                         row.getMatchId(),
                         row.getHostNickname(),
+                        row.getHostProfileImageUrl(),
+                        UserGender.valueOf(row.getHostGender()),
                         row.getPlaceName(),
                         row.getMeetingAt(),
+                        CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
+                        row.getCreatedAt(),
                         row.getContent(),
                         CompanionMatchStatus.valueOf(row.getMatchStatus())
                 ))
