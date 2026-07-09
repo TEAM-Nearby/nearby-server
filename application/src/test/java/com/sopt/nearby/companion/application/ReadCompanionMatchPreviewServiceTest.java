@@ -16,6 +16,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
@@ -65,22 +66,7 @@ class ReadCompanionMatchPreviewServiceTest {
     @Test
     void returnsPreviewWhenRequesterIsMatchParticipant() {
         saveDefaultMatch();
-        companionMatchParticipantRepository.save(new CompanionMatchParticipant(
-                1L,
-                10L,
-                7L,
-                null,
-                MatchParticipantRole.HOST
-        ));
-        companionMatchParticipantRepository.save(new CompanionMatchParticipant(
-                2L,
-                10L,
-                8L,
-                null,
-                MatchParticipantRole.GUEST
-        ));
-        companionProfileRepository.save(profile(1L, 7L, "여행자A", "https://image.example/a.png"));
-        companionProfileRepository.save(profile(2L, 8L, "여행자B", null));
+        saveDefaultParticipantsAndProfiles();
 
         CompanionMatchPreview preview = service.getPreview(10L, 7L);
 
@@ -94,6 +80,77 @@ class ReadCompanionMatchPreviewServiceTest {
         assertEquals("여행자B", preview.members().get(1).nickname());
         assertEquals(20L, preview.companionPost().postId());
         assertEquals("함께 밥 먹을 동행을 구해요.", preview.companionPost().content());
+        assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
+        assertEquals(NOW.plusDays(1), preview.companionPost().meetingAt());
+    }
+
+    @Test
+    void returnsConfirmedScheduleMeetingAtBeforePostMeetingAt() {
+        saveDefaultMatch();
+        saveDefaultParticipantsAndProfiles();
+        LocalDateTime confirmedScheduleAt = NOW.plusHours(3);
+        companionScheduleRepository.save(new CompanionSchedule(
+                1L,
+                10L,
+                30L,
+                confirmedScheduleAt,
+                90,
+                true
+        ));
+
+        CompanionMatchPreview preview = service.getPreview(10L, 7L);
+
+        assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
+        assertEquals(confirmedScheduleAt, preview.companionPost().meetingAt());
+    }
+
+    @Test
+    void returnsExposureExpiresAtAsMeetingAtForNowPostWithoutConfirmedSchedule() {
+        LocalDateTime exposureExpiresAt = NOW.plusHours(2);
+        saveMatchWithPost(new CompanionPost(
+                20L,
+                7L,
+                30L,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                exposureExpiresAt,
+                4,
+                true,
+                "함께 밥 먹을 동행을 구해요.",
+                "https://openchat.example",
+                CompanionPostStatus.CLOSED,
+                NOW
+        ));
+        saveDefaultParticipantsAndProfiles();
+
+        CompanionMatchPreview preview = service.getPreview(10L, 7L);
+
+        assertEquals(CompanionPostMeetingTimeType.NOW, preview.companionPost().meetingTimeType());
+        assertEquals(exposureExpiresAt, preview.companionPost().meetingAt());
+    }
+
+    @Test
+    void returnsNullMeetingAtForUndecidedPostWithoutConfirmedSchedule() {
+        saveMatchWithPost(new CompanionPost(
+                20L,
+                7L,
+                30L,
+                CompanionPostMeetingTimeType.UNDECIDED,
+                null,
+                null,
+                4,
+                true,
+                "함께 밥 먹을 동행을 구해요.",
+                "https://openchat.example",
+                CompanionPostStatus.CLOSED,
+                NOW
+        ));
+        saveDefaultParticipantsAndProfiles();
+
+        CompanionMatchPreview preview = service.getPreview(10L, 7L);
+
+        assertEquals(CompanionPostMeetingTimeType.UNDECIDED, preview.companionPost().meetingTimeType());
+        assertNull(preview.companionPost().meetingAt());
     }
 
     @Test
@@ -152,13 +209,7 @@ class ReadCompanionMatchPreviewServiceTest {
     }
 
     private void saveDefaultMatch() {
-        companionMatchRepository.save(new CompanionMatch(
-                10L,
-                20L,
-                CompanionMatchStatus.MATCHED,
-                NOW
-        ));
-        companionPostRepository.save(new CompanionPost(
+        saveMatchWithPost(new CompanionPost(
                 20L,
                 7L,
                 30L,
@@ -169,6 +220,35 @@ class ReadCompanionMatchPreviewServiceTest {
                 CompanionPostStatus.CLOSED,
                 NOW
         ));
+    }
+
+    private void saveMatchWithPost(final CompanionPost post) {
+        companionMatchRepository.save(new CompanionMatch(
+                10L,
+                post.id(),
+                CompanionMatchStatus.MATCHED,
+                NOW
+        ));
+        companionPostRepository.save(post);
+    }
+
+    private void saveDefaultParticipantsAndProfiles() {
+        companionMatchParticipantRepository.save(new CompanionMatchParticipant(
+                1L,
+                10L,
+                7L,
+                null,
+                MatchParticipantRole.HOST
+        ));
+        companionMatchParticipantRepository.save(new CompanionMatchParticipant(
+                2L,
+                10L,
+                8L,
+                null,
+                MatchParticipantRole.GUEST
+        ));
+        companionProfileRepository.save(profile(1L, 7L, "여행자A", "https://image.example/a.png"));
+        companionProfileRepository.save(profile(2L, 8L, "여행자B", null));
     }
 
     private CompanionProfile profile(
