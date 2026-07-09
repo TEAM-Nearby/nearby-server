@@ -21,6 +21,8 @@ public interface OngoingCompanionMeetingProjection {
 
     LocalDateTime getMeetingAt();
 
+    String getMeetingTimeType();
+
     Boolean getCheckedIn();
 
     String getMeetingStatus();

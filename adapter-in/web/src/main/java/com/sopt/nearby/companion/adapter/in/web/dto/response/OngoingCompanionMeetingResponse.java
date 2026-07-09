@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.in.web.dto.response;
 
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import java.time.LocalDateTime;
 
 public record OngoingCompanionMeetingResponse(
@@ -11,6 +12,7 @@ public record OngoingCompanionMeetingResponse(
         OngoingCompanionMeetingHostResponse companion,
         String placeName,
         LocalDateTime meetingAt,
+        CompanionPostMeetingTimeType meetingTimeType,
         boolean isCheckedIn,
         CompanionMeetingStatus meetingStatus
 ) {
@@ -22,6 +24,7 @@ public record OngoingCompanionMeetingResponse(
                 OngoingCompanionMeetingHostResponse.from(summary.companion()),
                 summary.placeName(),
                 summary.meetingAt(),
+                summary.meetingTimeType(),
                 summary.checkedIn(),
                 summary.meetingStatus()
         );

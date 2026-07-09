@@ -31,6 +31,7 @@ import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.domain.model.review.CompanionReviewTarget;
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
@@ -103,6 +104,7 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.data.meetings[0].companion.gender").value("FEMALE"))
                 .andExpect(jsonPath("$.data.meetings[0].placeName").value("시우다드 콘달"))
                 .andExpect(jsonPath("$.data.meetings[0].meetingAt").value("2026-06-29T16:30:00"))
+                .andExpect(jsonPath("$.data.meetings[0].meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.meetings[0].isCheckedIn").value(false))
                 .andExpect(jsonPath("$.data.meetings[0].meetingStatus").value("ONGOING"))
                 .andExpect(jsonPath("$.data.meetings[1].isCheckedIn").value(true));
@@ -473,6 +475,7 @@ class CompanionMeetingControllerTest {
                 ),
                 "시우다드 콘달",
                 LocalDateTime.of(2026, 6, 29, 16, 30),
+                CompanionPostMeetingTimeType.SCHEDULED,
                 checkedIn,
                 CompanionMeetingStatus.ONGOING
         );
