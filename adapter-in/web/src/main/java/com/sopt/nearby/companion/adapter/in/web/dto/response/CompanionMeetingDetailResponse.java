@@ -14,6 +14,7 @@ public record CompanionMeetingDetailResponse(
         boolean hostCheckedIn,
         String placeName,
         LocalDateTime meetingAt,
+        String meetingTimeType,
         String meetingStatus,
         boolean currentUserCheckedIn,
         boolean canCancelMeeting
@@ -30,6 +31,7 @@ public record CompanionMeetingDetailResponse(
                 result.hostCheckedIn(),
                 result.placeName(),
                 result.meetingAt(),
+                result.meetingTimeType().name(),
                 result.meetingStatus().name(),
                 result.currentUserCheckedIn(),
                 result.canCancelMeeting()

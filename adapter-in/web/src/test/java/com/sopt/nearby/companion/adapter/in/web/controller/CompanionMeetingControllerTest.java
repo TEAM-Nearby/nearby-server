@@ -144,6 +144,7 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.data.hostCheckedIn").value(true))
                 .andExpect(jsonPath("$.data.placeName").value("시우다드 콘달"))
                 .andExpect(jsonPath("$.data.meetingAt").value("2026-06-29T18:30:00"))
+                .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.meetingStatus").value("ONGOING"))
                 .andExpect(jsonPath("$.data.currentUserCheckedIn").value(false))
                 .andExpect(jsonPath("$.data.canCancelMeeting").value(true));
@@ -492,6 +493,7 @@ class CompanionMeetingControllerTest {
                 true,
                 "시우다드 콘달",
                 LocalDateTime.of(2026, 6, 29, 18, 30),
+                CompanionPostMeetingTimeType.SCHEDULED,
                 CompanionMeetingStatus.ONGOING,
                 false,
                 true

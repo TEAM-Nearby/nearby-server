@@ -22,7 +22,14 @@ public interface CompanionMeetingDetailQueryJpaRepository extends Repository<Com
                     else true
                 end as hostCheckedIn,
                 place.name as placeName,
-                schedule.scheduled_at as meetingAt,
+                case
+                    when post.meeting_time_type = 'NOW' then post.exposure_expires_at
+                    else schedule.scheduled_at
+                end as meetingAt,
+                case
+                    when post.meeting_time_type = 'NOW' then 'NOW'
+                    else 'SCHEDULED'
+                end as meetingTimeType,
                 meeting.status as meetingStatus,
                 case
                     when current_check_in.id is null then false
@@ -34,6 +41,10 @@ public interface CompanionMeetingDetailQueryJpaRepository extends Repository<Com
                 and host_participant.role = 'HOST'
             join companion_profile host_profile
                 on host_profile.user_id = host_participant.user_id
+            join companion_match m
+                on m.id = meeting.match_id
+            join companion_post post
+                on post.id = m.post_id
             join companion_schedule schedule
                 on schedule.match_id = meeting.match_id
                 and schedule.confirmed = true

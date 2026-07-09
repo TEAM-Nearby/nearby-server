@@ -23,6 +23,8 @@ public interface CompanionMeetingDetailProjection {
 
     LocalDateTime getMeetingAt();
 
+    String getMeetingTimeType();
+
     String getMeetingStatus();
 
     Boolean getCurrentUserCheckedIn();

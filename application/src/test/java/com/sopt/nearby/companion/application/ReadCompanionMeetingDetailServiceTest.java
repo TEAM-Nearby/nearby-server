@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCom
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingDetail;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
 import java.time.LocalDateTime;
@@ -49,6 +50,7 @@ class ReadCompanionMeetingDetailServiceTest {
         assertEquals(true, result.hostCheckedIn());
         assertEquals("시우다드 콘달", result.placeName());
         assertEquals(LocalDateTime.of(2026, 6, 29, 18, 30), result.meetingAt());
+        assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.meetingTimeType());
         assertEquals(CompanionMeetingStatus.ONGOING, result.meetingStatus());
         assertEquals(false, result.currentUserCheckedIn());
         assertEquals(true, result.canCancelMeeting());
@@ -107,6 +109,7 @@ class ReadCompanionMeetingDetailServiceTest {
                 true,
                 "시우다드 콘달",
                 LocalDateTime.of(2026, 6, 29, 18, 30),
+                CompanionPostMeetingTimeType.SCHEDULED,
                 meetingStatus,
                 false
         );
