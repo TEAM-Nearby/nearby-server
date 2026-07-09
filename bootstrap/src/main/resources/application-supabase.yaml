@@ -5,6 +5,9 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
       maximum-pool-size: ${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:5}
+  data:
+    redis:
+      url: ${SPRING_DATA_REDIS_URL}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -17,4 +20,4 @@ management:
       show-components: always
   health:
     redis:
-      enabled: false
+      enabled: true

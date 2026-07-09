@@ -26,9 +26,10 @@ class SupabaseProfileConfigurationTest {
 		assertThat(properties.getProperty("spring.datasource.password")).isEqualTo("${SPRING_DATASOURCE_PASSWORD}");
 		assertThat(properties.getProperty("spring.datasource.hikari.maximum-pool-size"))
 				.isEqualTo("${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:5}");
+		assertThat(properties.getProperty("spring.data.redis.url")).isEqualTo("${SPRING_DATA_REDIS_URL}");
 		assertThat(properties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
 		assertThat(properties.getProperty("spring.flyway.enabled")).isEqualTo(true);
 		assertThat(properties.getProperty("management.endpoint.health.show-components")).isEqualTo("always");
-		assertThat(properties.getProperty("management.health.redis.enabled")).isEqualTo(false);
+		assertThat(properties.getProperty("management.health.redis.enabled")).isEqualTo(true);
 	}
 }
