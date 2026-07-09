@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.application;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
@@ -105,10 +106,13 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
     ) {
         CompanionApplication application = applicationRepository.findById(applicationId)
                 .orElseThrow(CompanionRequestNotFoundException::new);
-        CompanionPost post = postRepository.findById(application.postId())
-                .orElseThrow(CompanionRequestNotFoundException::new);
+        CompanionPost post = findPost(application.postId(), status == CompanionApplicationStatus.ACCEPTED);
         if (!post.hostUserId().equals(hostUserId)) {
             throw new ForbiddenCompanionRequestHostOnlyException();
+        }
+        if (status == CompanionApplicationStatus.ACCEPTED
+                && post.hostUserId().equals(application.applicantUserId())) {
+            throw new ForbiddenCompanionRequestSelfException();
         }
         if (application.status() != CompanionApplicationStatus.PENDING) {
             throw new CompanionRequestNotPendingException();
@@ -117,6 +121,11 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
             throw new CompanionRequestNotPendingException();
         }
         return new RequestContext(application, post);
+    }
+
+    private CompanionPost findPost(final Long postId, final boolean forUpdate) {
+        return (forUpdate ? postRepository.findByIdForUpdate(postId) : postRepository.findById(postId))
+                .orElseThrow(CompanionRequestNotFoundException::new);
     }
 
     private CompanionMatch findOrCreateMatchedGroup(final Long postId) {
@@ -160,21 +169,21 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
     }
 
     private void validate(final AcceptCompanionRequestCommand command) {
-        if (command == null
-                || command.hostUserId() == null
-                || command.hostUserId() <= 0
-                || command.applicationId() == null
-                || command.applicationId() <= 0) {
+        if (command == null) {
             throw new CompanionRequestNotFoundException();
         }
+        validateIds(command.hostUserId(), command.applicationId());
     }
 
     private void validate(final RejectCompanionRequestCommand command) {
-        if (command == null
-                || command.hostUserId() == null
-                || command.hostUserId() <= 0
-                || command.applicationId() == null
-                || command.applicationId() <= 0) {
+        if (command == null) {
+            throw new CompanionRequestNotFoundException();
+        }
+        validateIds(command.hostUserId(), command.applicationId());
+    }
+
+    private void validateIds(final Long hostUserId, final Long applicationId) {
+        if (hostUserId == null || hostUserId <= 0 || applicationId == null || applicationId <= 0) {
             throw new CompanionRequestNotFoundException();
         }
     }

@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
@@ -80,6 +81,7 @@ class ProcessCompanionRequestServiceTest {
         assertEquals(CompanionApplicationStatus.ACCEPTED, result.applicationStatus());
         assertEquals(1L, result.matchId());
         assertEquals(CompanionMatchStatus.MATCHED, result.matchStatus());
+        assertEquals(List.of(10L), postRepository.lockedPostIds);
         assertEquals(CompanionApplicationStatus.ACCEPTED, applicationRepository.findById(3L).get().status());
         assertEquals(1, matchRepository.matches.size());
         assertTrue(participantRepository.existsByMatchIdAndUserId(1L, 100L));
@@ -148,6 +150,21 @@ class ProcessCompanionRequestServiceTest {
                 () -> service.reject(new RejectCompanionRequestCommand(99L, 3L, null))
         );
         assertEquals(CompanionApplicationStatus.PENDING, applicationRepository.findById(3L).get().status());
+        assertTrue(notificationUseCase.commands.isEmpty());
+    }
+
+    @Test
+    void rejectsHostSelfApplicationBeforeStatusChange() {
+        applicationRepository.save(application(3L, 10L, 100L, CompanionApplicationStatus.PENDING, null));
+        postRepository.save(post(10L, 100L));
+
+        assertThrows(
+                ForbiddenCompanionRequestSelfException.class,
+                () -> service.accept(new AcceptCompanionRequestCommand(100L, 3L))
+        );
+        assertEquals(CompanionApplicationStatus.PENDING, applicationRepository.findById(3L).get().status());
+        assertTrue(matchRepository.matches.isEmpty());
+        assertTrue(participantRepository.participants.isEmpty());
         assertTrue(notificationUseCase.commands.isEmpty());
     }
 
@@ -255,6 +272,7 @@ class ProcessCompanionRequestServiceTest {
     private static final class FakeCompanionPostRepository implements CompanionPostRepository {
 
         private final Map<Long, CompanionPost> posts = new HashMap<>();
+        private final List<Long> lockedPostIds = new ArrayList<>();
 
         @Override
         public CompanionPost save(final CompanionPost model) {
@@ -265,6 +283,11 @@ class ProcessCompanionRequestServiceTest {
         @Override
         public Optional<CompanionPost> findById(final Long id) {
             return Optional.ofNullable(posts.get(id));
+        }
+
+        public Optional<CompanionPost> findByIdForUpdate(final Long id) {
+            lockedPostIds.add(id);
+            return findById(id);
         }
     }
 

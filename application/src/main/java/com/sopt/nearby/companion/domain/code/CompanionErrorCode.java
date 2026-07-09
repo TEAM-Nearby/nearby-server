@@ -9,6 +9,7 @@ public enum CompanionErrorCode implements ErrorCode {
     COMPANION_POST_EXPIRED("마감된 글입니다."),
     COMPANION_REQUEST_NOT_FOUND("동행 신청을 찾을 수 없습니다."),
     COMPANION_REQUEST_ALREADY_EXISTS("이미 신청한 동행입니다."),
+    FORBIDDEN_COMPANION_REQUEST_SELF("자신의 동행 모집글에는 신청할 수 없습니다."),
     COMPANION_REQUEST_NOT_PENDING("대기 중인 신청만 처리할 수 있습니다."),
     FORBIDDEN_COMPANION_REQUEST_HOST_ONLY("해당 동행의 호스트만 처리할 수 있습니다."),
     COMPANION_POST_NOT_RECRUITING("모집 중인 동행이 아닙니다."),
