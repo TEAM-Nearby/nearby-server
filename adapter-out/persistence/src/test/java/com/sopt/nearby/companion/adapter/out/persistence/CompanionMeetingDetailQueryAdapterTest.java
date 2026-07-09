@@ -102,7 +102,7 @@ class CompanionMeetingDetailQueryAdapterTest {
     }
 
     @Test
-    void resolvesNowMeetingAtFromExposureExpiresAtAndReturnsMeetingTimeType() {
+    void resolvesNowMeetingAtFromConfirmedScheduleAndReturnsMeetingTimeType() {
         CompanionMeetingDetailQueryAdapter adapter = new CompanionMeetingDetailQueryAdapter(queryJpaRepository);
         LocalDateTime exposureExpiresAt = MEETING_AT.minusHours(1);
         TestFixture fixture = saveFixture(
@@ -119,7 +119,7 @@ class CompanionMeetingDetailQueryAdapterTest {
         );
 
         assertThat(result).isPresent();
-        assertThat(result.get().meetingAt()).isEqualTo(exposureExpiresAt);
+        assertThat(result.get().meetingAt()).isEqualTo(MEETING_AT);
         assertThat(result.get().meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.NOW);
     }
 

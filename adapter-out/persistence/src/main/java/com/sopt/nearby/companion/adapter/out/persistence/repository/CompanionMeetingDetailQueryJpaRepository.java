@@ -22,10 +22,7 @@ public interface CompanionMeetingDetailQueryJpaRepository extends Repository<Com
                     else true
                 end as hostCheckedIn,
                 place.name as placeName,
-                case
-                    when post.meeting_time_type = 'NOW' then post.exposure_expires_at
-                    else schedule.scheduled_at
-                end as meetingAt,
+                schedule.scheduled_at as meetingAt,
                 case
                     when post.meeting_time_type = 'NOW' then 'NOW'
                     else 'SCHEDULED'
