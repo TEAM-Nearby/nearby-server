@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview.Member;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview.Post;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
@@ -20,6 +21,8 @@ import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
+import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -28,15 +31,18 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
     private final CompanionPostRepository companionPostRepository;
     private final CompanionMatchParticipantRepository companionMatchParticipantRepository;
     private final CompanionProfileRepository companionProfileRepository;
+    private final CompanionScheduleRepository companionScheduleRepository;
 
     public ReadCompanionMatchPreviewService(CompanionMatchRepository companionMatchRepository,
                                             CompanionPostRepository companionPostRepository,
                                             CompanionMatchParticipantRepository companionMatchParticipantRepository,
-                                            CompanionProfileRepository companionProfileRepository) {
+                                            CompanionProfileRepository companionProfileRepository,
+                                            CompanionScheduleRepository companionScheduleRepository) {
         this.companionMatchRepository = companionMatchRepository;
         this.companionPostRepository = companionPostRepository;
         this.companionMatchParticipantRepository = companionMatchParticipantRepository;
         this.companionProfileRepository = companionProfileRepository;
+        this.companionScheduleRepository = companionScheduleRepository;
     }
 
     @Override
@@ -75,10 +81,25 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
                 }
         ).toList();
 
+        LocalDateTime meetingAt = companionScheduleRepository.findConfirmedByMatchId(match.id())
+                .map(CompanionSchedule::scheduledAt)
+                .orElseGet(() -> resolveMeetingAt(post));
+
         Post previewPost = new Post(
-                post.id(), post.content()
+                post.id(),
+                post.content(),
+                post.meetingTimeType(),
+                meetingAt
         );
 
         return new CompanionMatchPreview(match.id(), members, previewPost);
+    }
+
+    private LocalDateTime resolveMeetingAt(final CompanionPost post) {
+        return switch (post.meetingTimeType()) {
+            case NOW -> post.exposureExpiresAt();
+            case SCHEDULED -> post.meetingAt();
+            case UNDECIDED -> null;
+        };
     }
 }

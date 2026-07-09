@@ -2,6 +2,8 @@
 package com.sopt.nearby.companion.domain.model.match;
 
 
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record CompanionMatchPreview(
@@ -19,7 +21,9 @@ public record CompanionMatchPreview(
 
     public record Post(
             Long postId,
-            String content
+            String content,
+            CompanionPostMeetingTimeType meetingTimeType,
+            LocalDateTime meetingAt
     ) {
 
     }
