@@ -1,7 +1,7 @@
 // 동행 모집글 성향 테이블을 매핑하는 JPA 엔티티
 package com.sopt.nearby.companion.adapter.out.persistence.entity;
 
-import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -25,7 +25,7 @@ public class CompanionPostStyleEntity {
 	@Id
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
-	private TravelStyleKeyword keyword;
+	private CompanionPostKeyword keyword;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "post_id", insertable = false, updatable = false)
@@ -34,7 +34,7 @@ public class CompanionPostStyleEntity {
 	protected CompanionPostStyleEntity() {
 	}
 
-	public CompanionPostStyleEntity(final Long postId, final TravelStyleKeyword keyword) {
+	public CompanionPostStyleEntity(final Long postId, final CompanionPostKeyword keyword) {
 		this.postId = postId;
 		this.keyword = keyword;
 	}
@@ -43,7 +43,7 @@ public class CompanionPostStyleEntity {
 		return postId;
 	}
 
-	public TravelStyleKeyword getKeyword() {
+	public CompanionPostKeyword getKeyword() {
 		return keyword;
 	}
 }

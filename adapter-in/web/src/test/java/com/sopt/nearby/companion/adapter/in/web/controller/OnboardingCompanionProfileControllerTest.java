@@ -70,7 +70,7 @@ class OnboardingCompanionProfileControllerTest {
 				UserGender.FEMALE,
 				"혼자 여행도 같이 여행도 좋아해요",
 				"https://cdn.nearby.com/profiles/1/profile.jpg",
-				List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE),
+				List.of(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.CAFE_TOUR),
 				"COMPLETED"
 		);
 	}
@@ -112,7 +112,7 @@ class OnboardingCompanionProfileControllerTest {
 								"FEMALE",
 								"혼자 여행도 같이 여행도 좋아해요",
 								"https://cdn.nearby.com/profiles/1/profile.jpg",
-								List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE)
+								List.of(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.CAFE_TOUR)
 						))))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status", is(200)))
@@ -123,8 +123,8 @@ class OnboardingCompanionProfileControllerTest {
 				.andExpect(jsonPath("$.data.gender", is("FEMALE")))
 				.andExpect(jsonPath("$.data.intro", is("혼자 여행도 같이 여행도 좋아해요")))
 				.andExpect(jsonPath("$.data.profileImageUrl", is("https://cdn.nearby.com/profiles/1/profile.jpg")))
-				.andExpect(jsonPath("$.data.travelStyleKeywords[0]", is("PLANNED")))
-				.andExpect(jsonPath("$.data.travelStyleKeywords[1]", is("FOODIE")))
+				.andExpect(jsonPath("$.data.travelStyleKeywords[0]", is("EXTROVERTED")))
+				.andExpect(jsonPath("$.data.travelStyleKeywords[1]", is("CAFE_TOUR")))
 				.andExpect(jsonPath("$.data.onboardingStatus", is("COMPLETED")));
 
 		assertNotNull(registerUseCase.command);
@@ -134,7 +134,7 @@ class OnboardingCompanionProfileControllerTest {
 		assertEquals("혼자 여행도 같이 여행도 좋아해요", registerUseCase.command.intro());
 		assertEquals("https://cdn.nearby.com/profiles/1/profile.jpg", registerUseCase.command.profileImageUrl());
 		assertIterableEquals(
-				List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE),
+				List.of(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.CAFE_TOUR),
 				registerUseCase.command.travelStyleKeywords()
 		);
 	}
@@ -148,7 +148,7 @@ class OnboardingCompanionProfileControllerTest {
 								"FEMALE",
 								null,
 								null,
-								List.of(TravelStyleKeyword.FOODIE, TravelStyleKeyword.FOODIE)
+								List.of(TravelStyleKeyword.DESSERT_LOVER, TravelStyleKeyword.DESSERT_LOVER)
 						))))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", is(400)))
@@ -165,7 +165,7 @@ class OnboardingCompanionProfileControllerTest {
 								"FEMALE",
 								null,
 								"https://cdn.nearby.com/" + "a".repeat(256),
-								List.of(TravelStyleKeyword.FOODIE)
+								List.of(TravelStyleKeyword.DESSERT_LOVER)
 						))))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.status", is(400)))
@@ -216,7 +216,7 @@ class OnboardingCompanionProfileControllerTest {
 								"FEMALE",
 								null,
 								null,
-								List.of(TravelStyleKeyword.FOODIE)
+								List.of(TravelStyleKeyword.DESSERT_LOVER)
 						))))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.status", is(409)))
@@ -235,7 +235,7 @@ class OnboardingCompanionProfileControllerTest {
 								"FEMALE",
 								null,
 								null,
-								List.of(TravelStyleKeyword.FOODIE)
+								List.of(TravelStyleKeyword.DESSERT_LOVER)
 						))))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.status", is(409)))

@@ -4,8 +4,8 @@ package com.sopt.nearby.companion.adapter.in.web.dto.request;
 import com.sopt.nearby.companion.application.CreateCompanionPostCommand;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
-import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,12 +44,12 @@ public record CreateCompanionPostRequest(
         return CompanionPostMeetingTimeType.valueOf(required(value).toUpperCase(Locale.ROOT));
     }
 
-    private List<TravelStyleKeyword> parseStyleKeywords(final List<String> values) {
+    private List<CompanionPostKeyword> parseStyleKeywords(final List<String> values) {
         if (values == null) {
             return null;
         }
         return values.stream()
-                .map(value -> TravelStyleKeyword.valueOf(required(value).toUpperCase(Locale.ROOT)))
+                .map(value -> CompanionPostKeyword.valueOf(required(value).toUpperCase(Locale.ROOT)))
                 .toList();
     }
 

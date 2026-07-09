@@ -28,6 +28,7 @@ import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostApplyStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
@@ -183,7 +184,7 @@ class CompanionPostControllerTest {
                 LocalDateTime.of(2026, 7, 3, 14, 0),
                 null,
                 true,
-                List.of(TravelStyleKeyword.FOODIE, TravelStyleKeyword.PHOTO),
+                List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
                 CompanionPostPlaceCategory.RESTAURANT
         );
 
@@ -203,7 +204,7 @@ class CompanionPostControllerTest {
                                   "meetingAt": "2026-07-03T14:00:00",
                                   "maxParticipants": 4,
                                   "departEvenIfNotFull": true,
-                                  "styleKeywords": ["FOODIE", "PHOTO"],
+                                  "styleKeywords": ["NEW_FOOD_CHALLENGE", "PHOTO_LOVER"],
                                   "content": "같이 스시 먹으러 갈 사람 구해요.",
                                   "openChatUrl": "https://open.kakao.com/o/nearby123"
                                 }
@@ -229,8 +230,8 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.maxParticipants").value(4))
                 .andExpect(jsonPath("$.data.participantCount").value(1))
                 .andExpect(jsonPath("$.data.departEvenIfNotFull").value(true))
-                .andExpect(jsonPath("$.data.styleKeywords[0]").value("FOODIE"))
-                .andExpect(jsonPath("$.data.styleKeywords[1]").value("PHOTO"))
+                .andExpect(jsonPath("$.data.styleKeywords[0]").value("NEW_FOOD_CHALLENGE"))
+                .andExpect(jsonPath("$.data.styleKeywords[1]").value("PHOTO_LOVER"))
                 .andExpect(jsonPath("$.data.content").value("같이 스시 먹으러 갈 사람 구해요."))
                 .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/nearby123"))
                 .andExpect(jsonPath("$.data.createdAt").value("2026-07-02T14:00:00"));
@@ -242,7 +243,10 @@ class CompanionPostControllerTest {
         assertEquals(LocalDateTime.of(2026, 7, 3, 14, 0), createUseCase.command.meetingAt());
         assertEquals(4, createUseCase.command.maxParticipants());
         assertEquals(true, createUseCase.command.departEvenIfNotFull());
-        assertEquals(List.of(TravelStyleKeyword.FOODIE, TravelStyleKeyword.PHOTO), createUseCase.command.styleKeywords());
+        assertEquals(
+                List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
+                createUseCase.command.styleKeywords()
+        );
     }
 
     @Test
@@ -558,7 +562,7 @@ class CompanionPostControllerTest {
             final LocalDateTime meetingAt,
             final LocalDateTime exposureExpiresAt,
             final boolean departEvenIfNotFull,
-            final List<TravelStyleKeyword> styleKeywords,
+            final List<CompanionPostKeyword> styleKeywords,
             final CompanionPostPlaceCategory category
     ) {
         return new CreateCompanionPostResult(

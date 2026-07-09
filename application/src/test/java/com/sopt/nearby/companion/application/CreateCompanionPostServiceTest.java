@@ -10,10 +10,10 @@ import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequ
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStyle;
-import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheCommand;
@@ -64,7 +64,8 @@ class CreateCompanionPostServiceTest {
                 CompanionPostMeetingTimeType.SCHEDULED,
                 LocalDateTime.of(2026, 7, 3, 14, 0),
                 true,
-                List.of(TravelStyleKeyword.FOODIE, TravelStyleKeyword.PHOTO, TravelStyleKeyword.FOODIE)
+                List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER,
+                        CompanionPostKeyword.NEW_FOOD_CHALLENGE)
         ));
 
         assertEquals(7L, onboardingUseCase.userId);
@@ -81,7 +82,7 @@ class CreateCompanionPostServiceTest {
         assertEquals(1, result.participantCount());
         assertEquals(true, result.departEvenIfNotFull());
         assertIterableEquals(
-                List.of(TravelStyleKeyword.FOODIE, TravelStyleKeyword.PHOTO),
+                List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
                 result.styleKeywords()
         );
         assertEquals(NOW, result.createdAt());
@@ -91,7 +92,7 @@ class CreateCompanionPostServiceTest {
         assertEquals(LocalDateTime.of(2026, 7, 3, 14, 0), saved.meetingAt());
         assertEquals(CompanionPostStatus.RECRUITING, saved.status());
         assertIterableEquals(
-                List.of(TravelStyleKeyword.FOODIE, TravelStyleKeyword.PHOTO),
+                List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
                 styleRepository.savedStyles.stream().map(CompanionPostStyle::keyword).toList()
         );
     }
@@ -145,7 +146,7 @@ class CreateCompanionPostServiceTest {
                 CompanionPostMeetingTimeType.UNDECIDED,
                 null,
                 false,
-                List.of(TravelStyleKeyword.ACTIVE)
+                List.of(CompanionPostKeyword.POWER_P)
         ));
 
         assertNull(result.meetingAt());
@@ -253,7 +254,7 @@ class CreateCompanionPostServiceTest {
             final CompanionPostMeetingTimeType meetingTimeType,
             final LocalDateTime meetingAt,
             final Boolean departEvenIfNotFull,
-            final List<TravelStyleKeyword> styleKeywords
+            final List<CompanionPostKeyword> styleKeywords
     ) {
         return new CreateCompanionPostCommand(
                 7L,

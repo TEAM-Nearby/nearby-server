@@ -5,10 +5,10 @@ import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequ
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStyle;
-import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
@@ -63,7 +63,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
         requireCompletedOnboardingUseCase.requireCompleted(command.hostUserId());
 
         LocalDateTime createdAt = LocalDateTime.now(clock);
-        List<TravelStyleKeyword> styleKeywords = distinct(command.styleKeywords());
+        List<CompanionPostKeyword> styleKeywords = distinct(command.styleKeywords());
         LocalDateTime meetingAt = command.meetingTimeType() == CompanionPostMeetingTimeType.SCHEDULED
                 ? command.meetingAt()
                 : null;
@@ -173,7 +173,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
         return content.replaceAll("\\s", "").length();
     }
 
-    private List<TravelStyleKeyword> distinct(final List<TravelStyleKeyword> styleKeywords) {
+    private List<CompanionPostKeyword> distinct(final List<CompanionPostKeyword> styleKeywords) {
         if (styleKeywords == null) {
             return List.of();
         }
