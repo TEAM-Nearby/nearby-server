@@ -243,6 +243,7 @@ public class CompanionUseCaseConfig {
             final CompanionPostRepository postRepository,
             final CompanionMatchRepository matchRepository,
             final CompanionMatchParticipantRepository participantRepository,
+            final CompanionScheduleRepository companionScheduleRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase
     ) {
         return new ProcessCompanionRequestService(
@@ -250,6 +251,7 @@ public class CompanionUseCaseConfig {
                 postRepository,
                 matchRepository,
                 participantRepository,
+                companionScheduleRepository,
                 createCompanionNotificationUseCase,
                 Clock.systemDefaultZone()
         );

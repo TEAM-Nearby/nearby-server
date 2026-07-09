@@ -5,5 +5,5 @@ import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
 import java.util.Optional;
 
 public interface CompanionScheduleDetailQueryPort {
-    Optional<CompanionScheduleDetail> findByMatchId(Long matchId);
+    Optional<CompanionScheduleDetail> findByMatchIdAndUserId(Long matchId, Long userId);
 }

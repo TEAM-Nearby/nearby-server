@@ -53,7 +53,11 @@ public interface CompanionMatchApi {
     })
     @Operation(
             summary = "매칭된 동행 미리보기",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 미리보기를 조회합니다.",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 미리보기를 조회합니다.
+                    companionPost.meetingTimeType과 companionPost.meetingAt을 함께 반환합니다.
+                    일정 확정 후에는 companion_schedule.scheduledAt을 우선 반환하고, 미확정 NOW 모집글은 exposureExpiresAt을 meetingAt으로 반환합니다.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionMatchPreviewResponse> getPreview(
@@ -95,7 +99,13 @@ public interface CompanionMatchApi {
     })
     @Operation(
             summary = "내 동행 일정 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 동행 일정 정보를 조회합니다.",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 동행 일정 정보를 조회합니다.
+                    성공 응답은 MATCHED 또는 SCHEDULE_CONFIRMED 상태만 반환하며, 로그인 사용자의 닉네임과 모집글의 만남 시간 유형을 함께 반환합니다.
+                    meetingTimeType이 NOW인 신규 수락 흐름은 일정이 자동 확정되어 SCHEDULE_CONFIRMED 상태로 반환됩니다.
+                    기존 DB에 NOW + MATCHED 상태로 남아 있는 데이터는 조회 fallback으로 schedule을 구성하며, matchStatus는 저장된 DB 상태 그대로 반환될 수 있습니다.
+                    NOW 일정의 schedule.place는 모집글 장소, schedule.scheduledAt은 즉시 동행 노출 만료 시간입니다.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionScheduleDetailResponse> getSchedule(

@@ -1,8 +1,13 @@
 // 호스트의 동행 신청 수락과 거절 처리를 담당한다.
 package com.sopt.nearby.companion.application;
 
+import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCompletedException;
+import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
+import com.sopt.nearby.companion.domain.exception.CompanionScheduleAlreadyConfirmedException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
@@ -11,9 +16,11 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.port.in.AcceptCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.in.RejectCompanionRequestUseCase;
@@ -21,6 +28,7 @@ import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
+import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +39,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
     private final CompanionPostRepository postRepository;
     private final CompanionMatchRepository matchRepository;
     private final CompanionMatchParticipantRepository participantRepository;
+    private final CompanionScheduleRepository scheduleRepository;
     private final CreateCompanionNotificationUseCase notificationUseCase;
     private final Clock clock;
 
@@ -39,6 +48,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
             final CompanionPostRepository postRepository,
             final CompanionMatchRepository matchRepository,
             final CompanionMatchParticipantRepository participantRepository,
+            final CompanionScheduleRepository scheduleRepository,
             final CreateCompanionNotificationUseCase notificationUseCase,
             final Clock clock
     ) {
@@ -46,6 +56,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
         this.postRepository = postRepository;
         this.matchRepository = matchRepository;
         this.participantRepository = participantRepository;
+        this.scheduleRepository = scheduleRepository;
         this.notificationUseCase = notificationUseCase;
         this.clock = clock;
     }
@@ -60,7 +71,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
                 CompanionApplicationStatus.ACCEPTED,
                 null
         );
-        CompanionMatch match = findOrCreateMatchedGroup(context.application().postId());
+        CompanionMatch match = findOrCreateActiveMatchGroup(context.application().postId());
         addParticipantIfMissing(match.id(), context.post().hostUserId(), null, MatchParticipantRole.HOST);
         addParticipantIfMissing(
                 match.id(),
@@ -68,6 +79,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
                 context.application().id(),
                 MatchParticipantRole.GUEST
         );
+        match = confirmNowScheduleIfNeeded(match, context.post());
         notifyApplicant(context.application(), CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED);
 
         return new AcceptedCompanionRequestResult(
@@ -117,10 +129,24 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
         if (application.status() != CompanionApplicationStatus.PENDING) {
             throw new CompanionRequestNotPendingException();
         }
+        if (status == CompanionApplicationStatus.ACCEPTED) {
+            validateAcceptablePost(post);
+        }
         if (!applicationRepository.updateStatusIfPending(application.id(), status, rejectionReason)) {
             throw new CompanionRequestNotPendingException();
         }
         return new RequestContext(application, post);
+    }
+
+    private void validateAcceptablePost(final CompanionPost post) {
+        if (post.meetingTimeType() == CompanionPostMeetingTimeType.NOW
+                && isExpiredNowPost(post.exposureExpiresAt())) {
+            throw new CompanionPostNotRecruitingException();
+        }
+    }
+
+    private boolean isExpiredNowPost(final LocalDateTime exposureExpiresAt) {
+        return exposureExpiresAt == null || !exposureExpiresAt.isAfter(LocalDateTime.now(clock));
     }
 
     private CompanionPost findPost(final Long postId, final boolean forUpdate) {
@@ -128,13 +154,66 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
                 .orElseThrow(CompanionRequestNotFoundException::new);
     }
 
-    private CompanionMatch findOrCreateMatchedGroup(final Long postId) {
-        return matchRepository.findFirstByPostIdAndStatus(postId, CompanionMatchStatus.MATCHED)
+    private CompanionMatch findOrCreateActiveMatchGroup(final Long postId) {
+        return matchRepository.findFirstByPostIdAndStatus(postId, CompanionMatchStatus.SCHEDULE_CONFIRMED)
+                .or(() -> matchRepository.findFirstByPostIdAndStatus(postId, CompanionMatchStatus.MATCHED))
                 .orElseGet(() -> matchRepository.save(new CompanionMatch(
                         null,
                         postId,
                         CompanionMatchStatus.MATCHED,
                         LocalDateTime.now(clock)
+                )));
+    }
+
+    private CompanionMatch confirmNowScheduleIfNeeded(final CompanionMatch match, final CompanionPost post) {
+        if (post.meetingTimeType() != CompanionPostMeetingTimeType.NOW) {
+            return match;
+        }
+
+        CompanionMatch confirmedMatch = confirmMatchIfNeeded(match);
+        if (confirmedMatch.status() == CompanionMatchStatus.SCHEDULE_CONFIRMED) {
+            ensureNowSchedule(confirmedMatch.id(), post);
+        }
+        return confirmedMatch;
+    }
+
+    private CompanionMatch confirmMatchIfNeeded(final CompanionMatch match) {
+        if (match.status() == CompanionMatchStatus.SCHEDULE_CONFIRMED) {
+            return match;
+        }
+
+        if (matchRepository.confirmScheduleIfMatched(match.id())) {
+            return new CompanionMatch(
+                    match.id(),
+                    match.postId(),
+                    CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                    match.createdAt()
+            );
+        }
+
+        CompanionMatch latestMatch = matchRepository.findById(match.id())
+                .orElseThrow(CompanionMatchNotFoundException::new);
+        return validateLatestMatchAfterFailedConfirm(latestMatch);
+    }
+
+    private CompanionMatch validateLatestMatchAfterFailedConfirm(final CompanionMatch latestMatch) {
+        return switch (latestMatch.status()) {
+            case SCHEDULE_CONFIRMED -> latestMatch;
+            case CANCELED -> throw new CompanionMatchAlreadyCanceledException();
+            case COMPLETED -> throw new CompanionMatchAlreadyCompletedException();
+            case MATCHED -> throw new CompanionScheduleAlreadyConfirmedException();
+        };
+    }
+
+    private void ensureNowSchedule(final Long matchId, final CompanionPost post) {
+        scheduleRepository.findConfirmedByMatchId(matchId)
+                .orElseGet(() -> scheduleRepository.save(new CompanionSchedule(
+                        null,
+                        matchId,
+                        post.placeId(),
+                        post.exposureExpiresAt(),
+                        null,
+                        true
                 )));
     }
 

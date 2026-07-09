@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.in.web.dto.response;
 
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -10,19 +11,22 @@ public record CompanionScheduleDetailResponse(
         Long matchId,
         CompanionMatchStatus matchStatus,
         CompanionScheduleResponse schedule,
-        String openChatUrl
+        String openChatUrl,
+        String userNickname,
+        CompanionPostMeetingTimeType meetingTimeType
 ) {
     public static CompanionScheduleDetailResponse from(final CompanionScheduleDetail detail) {
         return new CompanionScheduleDetailResponse(
                 detail.matchId(),
                 detail.matchStatus(),
                 CompanionScheduleResponse.from(detail.schedule()),
-                detail.openChatUrl()
+                detail.openChatUrl(),
+                detail.userNickname(),
+                detail.meetingTimeType()
         );
     }
 
     public record CompanionScheduleResponse(
-            Long scheduleId,
             PlaceResponse place,
             LocalDateTime scheduledAt
     ) {
@@ -32,7 +36,6 @@ public record CompanionScheduleDetailResponse(
             }
 
             return new CompanionScheduleResponse(
-                    schedule.scheduleId(),
                     PlaceResponse.from(schedule.place()),
                     schedule.scheduledAt()
             );

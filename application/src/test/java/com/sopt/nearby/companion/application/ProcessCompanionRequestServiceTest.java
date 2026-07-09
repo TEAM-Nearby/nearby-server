@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
@@ -17,6 +19,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
@@ -28,6 +31,7 @@ import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
+import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -49,6 +53,7 @@ class ProcessCompanionRequestServiceTest {
     private FakeCompanionPostRepository postRepository;
     private FakeCompanionMatchRepository matchRepository;
     private FakeCompanionMatchParticipantRepository participantRepository;
+    private FakeCompanionScheduleRepository scheduleRepository;
     private FakeCreateCompanionNotificationUseCase notificationUseCase;
     private ProcessCompanionRequestService service;
 
@@ -58,12 +63,14 @@ class ProcessCompanionRequestServiceTest {
         postRepository = new FakeCompanionPostRepository();
         matchRepository = new FakeCompanionMatchRepository();
         participantRepository = new FakeCompanionMatchParticipantRepository();
+        scheduleRepository = new FakeCompanionScheduleRepository();
         notificationUseCase = new FakeCreateCompanionNotificationUseCase();
         service = new ProcessCompanionRequestService(
                 applicationRepository,
                 postRepository,
                 matchRepository,
                 participantRepository,
+                scheduleRepository,
                 notificationUseCase,
                 CLOCK
         );
@@ -109,6 +116,78 @@ class ProcessCompanionRequestServiceTest {
         assertTrue(participantRepository.existsByMatchIdAndUserId(50L, 100L));
         assertTrue(participantRepository.existsByMatchIdAndUserId(50L, 7L));
         assertEquals(3L, participantRepository.findByMatchIdAndUserId(50L, 7L).acceptedApplicationId());
+    }
+
+    @Test
+    void acceptsNowRequestAndConfirmsMatchScheduleAutomatically() {
+        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        postRepository.save(nowPost(10L, 100L));
+
+        AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
+
+        assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+        CompanionMatch match = matchRepository.findById(result.matchId()).orElseThrow();
+        assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, match.status());
+        CompanionSchedule schedule = scheduleRepository.findConfirmedByMatchId(result.matchId()).orElseThrow();
+        assertEquals(20L, schedule.placeId());
+        assertEquals(NOW.plusHours(1), schedule.scheduledAt());
+        assertTrue(schedule.confirmed());
+    }
+
+    @Test
+    void rejectsExpiredNowRequestBeforeAcceptingApplication() {
+        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        postRepository.save(nowPost(10L, 100L, NOW));
+
+        assertThrows(
+                CompanionPostNotRecruitingException.class,
+                () -> service.accept(new AcceptCompanionRequestCommand(100L, 3L))
+        );
+
+        assertEquals(CompanionApplicationStatus.PENDING, applicationRepository.findById(3L).orElseThrow().status());
+        assertTrue(matchRepository.matches.isEmpty());
+        assertTrue(participantRepository.participants.isEmpty());
+        assertTrue(scheduleRepository.schedules.isEmpty());
+        assertTrue(notificationUseCase.commands.isEmpty());
+    }
+
+    @Test
+    void acceptsNowRequestAndReusesExistingScheduleConfirmedMatchGroup() {
+        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        postRepository.save(nowPost(10L, 100L));
+        matchRepository.save(new CompanionMatch(50L, 10L, CompanionMatchStatus.SCHEDULE_CONFIRMED, NOW.minusMinutes(1)));
+        scheduleRepository.save(new CompanionSchedule(null, 50L, 20L, NOW.plusHours(1), null, true));
+        participantRepository.save(new CompanionMatchParticipant(null, 50L, 100L, null, MatchParticipantRole.HOST));
+
+        AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
+
+        assertEquals(50L, result.matchId());
+        assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+        assertEquals(1, matchRepository.matches.size());
+        assertEquals(1, scheduleRepository.schedules.size());
+        assertTrue(participantRepository.existsByMatchIdAndUserId(50L, 7L));
+    }
+
+    @Test
+    void rejectsNowRequestWhenMatchWasCanceledBeforeAutoConfirm() {
+        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        postRepository.save(nowPost(10L, 100L));
+        matchRepository.save(new CompanionMatch(50L, 10L, CompanionMatchStatus.MATCHED, NOW.minusMinutes(1)));
+        matchRepository.confirmScheduleResult = false;
+        matchRepository.latestAfterFailedConfirm = new CompanionMatch(
+                50L,
+                10L,
+                CompanionMatchStatus.CANCELED,
+                NOW.minusMinutes(1)
+        );
+
+        assertThrows(
+                CompanionMatchAlreadyCanceledException.class,
+                () -> service.accept(new AcceptCompanionRequestCommand(100L, 3L))
+        );
+
+        assertEquals(1, matchRepository.confirmScheduleAttempts);
+        assertTrue(scheduleRepository.schedules.isEmpty());
     }
 
     @Test
@@ -220,6 +299,27 @@ class ProcessCompanionRequestServiceTest {
         );
     }
 
+    private CompanionPost nowPost(final Long id, final Long hostUserId) {
+        return nowPost(id, hostUserId, NOW.plusHours(1));
+    }
+
+    private CompanionPost nowPost(final Long id, final Long hostUserId, final LocalDateTime exposureExpiresAt) {
+        return new CompanionPost(
+                id,
+                hostUserId,
+                20L,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                exposureExpiresAt,
+                4,
+                true,
+                "지금 바로 같이 밥 먹을 동행을 구해요.",
+                "https://open.kakao.com/o/nearby123",
+                CompanionPostStatus.RECRUITING,
+                NOW.minusHours(1)
+        );
+    }
+
     private static final class FakeCompanionApplicationRepository implements CompanionApplicationRepository {
 
         private final Map<Long, CompanionApplication> applications = new HashMap<>();
@@ -295,6 +395,9 @@ class ProcessCompanionRequestServiceTest {
 
         private final Map<Long, CompanionMatch> matches = new HashMap<>();
         private long nextId = 1L;
+        private boolean confirmScheduleResult = true;
+        private CompanionMatch latestAfterFailedConfirm;
+        private int confirmScheduleAttempts;
 
         @Override
         public CompanionMatch save(final CompanionMatch model) {
@@ -312,7 +415,24 @@ class ProcessCompanionRequestServiceTest {
 
         @Override
         public boolean confirmScheduleIfMatched(final Long matchId) {
-            return false;
+            confirmScheduleAttempts++;
+            CompanionMatch match = matches.get(matchId);
+            if (match == null || match.status() != CompanionMatchStatus.MATCHED) {
+                return false;
+            }
+            if (!confirmScheduleResult) {
+                if (latestAfterFailedConfirm != null) {
+                    matches.put(matchId, latestAfterFailedConfirm);
+                }
+                return false;
+            }
+            matches.put(matchId, new CompanionMatch(
+                    match.id(),
+                    match.postId(),
+                    CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                    match.createdAt()
+            ));
+            return true;
         }
 
         @Override
@@ -324,6 +444,42 @@ class ProcessCompanionRequestServiceTest {
                     .stream()
                     .filter(match -> match.postId().equals(postId))
                     .filter(match -> match.status() == status)
+                    .findFirst();
+        }
+    }
+
+    private static final class FakeCompanionScheduleRepository implements CompanionScheduleRepository {
+
+        private final Map<Long, CompanionSchedule> schedules = new HashMap<>();
+        private long nextId = 1L;
+
+        @Override
+        public CompanionSchedule save(final CompanionSchedule model) {
+            CompanionSchedule saved = model.id() == null
+                    ? new CompanionSchedule(
+                            nextId++,
+                            model.matchId(),
+                            model.placeId(),
+                            model.scheduledAt(),
+                            model.estimatedDurationMinutes(),
+                            model.confirmed()
+                    )
+                    : model;
+            schedules.put(saved.id(), saved);
+            return saved;
+        }
+
+        @Override
+        public Optional<CompanionSchedule> findById(final Long id) {
+            return Optional.ofNullable(schedules.get(id));
+        }
+
+        @Override
+        public Optional<CompanionSchedule> findConfirmedByMatchId(final Long matchId) {
+            return schedules.values()
+                    .stream()
+                    .filter(schedule -> schedule.matchId().equals(matchId))
+                    .filter(CompanionSchedule::confirmed)
                     .findFirst();
         }
     }

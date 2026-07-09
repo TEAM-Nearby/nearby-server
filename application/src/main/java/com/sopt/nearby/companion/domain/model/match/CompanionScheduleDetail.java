@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.domain.model.match;
 
 
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -10,11 +11,12 @@ public record CompanionScheduleDetail(
         Long matchId,
         CompanionMatchStatus matchStatus,
         Schedule schedule,
-        String openChatUrl
+        String openChatUrl,
+        String userNickname,
+        CompanionPostMeetingTimeType meetingTimeType
 
 ) {
     public record Schedule(
-            Long scheduleId,
             Place place,
             LocalDateTime scheduledAt
     ) {

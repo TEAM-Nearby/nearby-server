@@ -18,6 +18,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
@@ -182,7 +183,6 @@ class CompanionMatchControllerTest {
                 10L,
                 CompanionMatchStatus.SCHEDULE_CONFIRMED,
                 new CompanionScheduleDetail.Schedule(
-                        99L,
                         new CompanionScheduleDetail.Place(
                                 "google-place-id",
                                 "Siutat condal",
@@ -192,7 +192,9 @@ class CompanionMatchControllerTest {
                         ),
                         LocalDateTime.of(2026, 6, 18, 16, 30)
                 ),
-                "https://open.kakao.com/o/confirmed"
+                "https://open.kakao.com/o/confirmed",
+                "루피",
+                CompanionPostMeetingTimeType.SCHEDULED
         );
 
         mockMvc.perform(get("/api/companion-matches/{matchId}/schedule", 10L)
@@ -203,26 +205,38 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.message").value("동행 일정 정보를 조회했어요."))
                 .andExpect(jsonPath("$.data.matchId").value(10))
                 .andExpect(jsonPath("$.data.matchStatus").value("SCHEDULE_CONFIRMED"))
-                .andExpect(jsonPath("$.data.schedule.scheduleId").value(99))
                 .andExpect(jsonPath("$.data.schedule.place.googlePlaceId").value("google-place-id"))
                 .andExpect(jsonPath("$.data.schedule.place.name").value("Siutat condal"))
                 .andExpect(jsonPath("$.data.schedule.place.address").value("Rambla de Catalunya, 16"))
                 .andExpect(jsonPath("$.data.schedule.place.latitude").value(41.390205))
                 .andExpect(jsonPath("$.data.schedule.place.longitude").value(2.163548))
                 .andExpect(jsonPath("$.data.schedule.scheduledAt").value("2026-06-18T16:30:00"))
-                .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/confirmed"));
+                .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/confirmed"))
+                .andExpect(jsonPath("$.data.userNickname").value("루피"))
+                .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"));
 
         assertEquals(10L, readCompanionScheduleUseCase.matchId);
         assertEquals(7L, readCompanionScheduleUseCase.userId);
     }
 
     @Test
-    void returnsNullScheduleWhenCompanionScheduleIsNotConfirmed() throws Exception {
+    void returnsNowScheduleAndOpenChatUrlWhenCompanionScheduleIsNotConfirmed() throws Exception {
         readCompanionScheduleUseCase.result = new CompanionScheduleDetail(
                 10L,
-                CompanionMatchStatus.MATCHED,
-                null,
-                null
+                CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                new CompanionScheduleDetail.Schedule(
+                        new CompanionScheduleDetail.Place(
+                                "google-place-id",
+                                "Siutat condal",
+                                "Rambla de Catalunya, 16",
+                                new BigDecimal("41.390205"),
+                                new BigDecimal("2.163548")
+                        ),
+                        LocalDateTime.of(2026, 6, 18, 13, 0)
+                ),
+                "https://open.kakao.com/o/not-yet",
+                "루피",
+                CompanionPostMeetingTimeType.NOW
         );
 
         mockMvc.perform(get("/api/companion-matches/{matchId}/schedule", 10L)
@@ -232,9 +246,16 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.code").value("READ_COMPANION_SCHEDULE"))
                 .andExpect(jsonPath("$.message").value("동행 일정 정보를 조회했어요."))
                 .andExpect(jsonPath("$.data.matchId").value(10))
-                .andExpect(jsonPath("$.data.matchStatus").value("MATCHED"))
-                .andExpect(jsonPath("$.data.schedule").value(nullValue()))
-                .andExpect(jsonPath("$.data.openChatUrl").value(nullValue()));
+                .andExpect(jsonPath("$.data.matchStatus").value("SCHEDULE_CONFIRMED"))
+                .andExpect(jsonPath("$.data.schedule.place.googlePlaceId").value("google-place-id"))
+                .andExpect(jsonPath("$.data.schedule.place.name").value("Siutat condal"))
+                .andExpect(jsonPath("$.data.schedule.place.address").value("Rambla de Catalunya, 16"))
+                .andExpect(jsonPath("$.data.schedule.place.latitude").value(41.390205))
+                .andExpect(jsonPath("$.data.schedule.place.longitude").value(2.163548))
+                .andExpect(jsonPath("$.data.schedule.scheduledAt").value("2026-06-18T13:00:00"))
+                .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/not-yet"))
+                .andExpect(jsonPath("$.data.userNickname").value("루피"))
+                .andExpect(jsonPath("$.data.meetingTimeType").value("NOW"));
     }
 
     private Principal principal(final String name) {

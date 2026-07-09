@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleDetailJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
@@ -18,25 +19,26 @@ public class CompanionScheduleDetailQueryAdapter implements CompanionScheduleDet
     }
 
     @Override
-    public Optional<CompanionScheduleDetail> findByMatchId(final Long matchId) {
-        return repository.findByMatchId(matchId)
+    public Optional<CompanionScheduleDetail> findByMatchIdAndUserId(final Long matchId, final Long userId) {
+        return repository.findByMatchIdAndUserId(matchId, userId)
                 .map(row -> new CompanionScheduleDetail(
                         row.getMatchId(),
                         CompanionMatchStatus.valueOf(row.getMatchStatus()),
                         toSchedule(row),
-                        row.getOpenChatUrl()
+                        row.getOpenChatUrl(),
+                        row.getUserNickname(),
+                        CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType())
                 ));
     }
 
     private CompanionScheduleDetail.Schedule toSchedule(
             final com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleDetailProjection row
     ) {
-        if (row.getScheduleId() == null) {
+        if (row.getScheduledAt() == null) {
             return null;
         }
 
         return new CompanionScheduleDetail.Schedule(
-                row.getScheduleId(),
                 new CompanionScheduleDetail.Place(
                         row.getGooglePlaceId(),
                         row.getPlaceName(),

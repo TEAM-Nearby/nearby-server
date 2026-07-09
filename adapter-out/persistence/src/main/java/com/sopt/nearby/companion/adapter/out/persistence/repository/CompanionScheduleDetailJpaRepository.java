@@ -13,26 +13,58 @@ public interface CompanionScheduleDetailJpaRepository extends Repository<Compani
             select
                 m.id as matchId,
                 m.status as matchStatus,
-                schedule.id as scheduleId,
-                place.google_place_id as googlePlaceId,
-                place.name as placeName,
-                place.address as placeAddress,
-                place.latitude as latitude,
-                place.longitude as longitude,
-                schedule.scheduled_at as scheduledAt,
                 case
-                    when schedule.id is null then null
-                    else post.open_chat_url
-                end as openChatUrl
+                    when schedule.id is not null then schedule_place.google_place_id
+                    when post.meeting_time_type = 'NOW' then post_place.google_place_id
+                    else null
+                end as googlePlaceId,
+                case
+                    when schedule.id is not null then schedule_place.name
+                    when post.meeting_time_type = 'NOW' then post_place.name
+                    else null
+                end as placeName,
+                case
+                    when schedule.id is not null then schedule_place.address
+                    when post.meeting_time_type = 'NOW' then post_place.address
+                    else null
+                end as placeAddress,
+                case
+                    when schedule.id is not null then schedule_place.latitude
+                    when post.meeting_time_type = 'NOW' then post_place.latitude
+                    else null
+                end as latitude,
+                case
+                    when schedule.id is not null then schedule_place.longitude
+                    when post.meeting_time_type = 'NOW' then post_place.longitude
+                    else null
+                end as longitude,
+                case
+                    when schedule.id is not null then schedule.scheduled_at
+                    when post.meeting_time_type = 'NOW' then post.exposure_expires_at
+                    else null
+                end as scheduledAt,
+                case
+                    when schedule.id is not null or post.meeting_time_type = 'NOW' then post.open_chat_url
+                    else null
+                end as openChatUrl,
+                current_profile.nickname as userNickname,
+                post.meeting_time_type as meetingTimeType
             from companion_match m
             join companion_post post
                 on post.id = m.post_id
+            left join companion_profile current_profile
+                on current_profile.user_id = :userId
             left join companion_schedule schedule
                 on schedule.match_id = m.id
                 and schedule.confirmed = true
-            left join place_cache place
-                on place.id = schedule.place_id
+            left join place_cache schedule_place
+                on schedule_place.id = schedule.place_id
+            left join place_cache post_place
+                on post_place.id = post.place_id
             where m.id = :matchId
             """, nativeQuery = true)
-    Optional<CompanionScheduleDetailProjection> findByMatchId(@Param("matchId") Long matchId);
+    Optional<CompanionScheduleDetailProjection> findByMatchIdAndUserId(
+            @Param("matchId") Long matchId,
+            @Param("userId") Long userId
+    );
 }

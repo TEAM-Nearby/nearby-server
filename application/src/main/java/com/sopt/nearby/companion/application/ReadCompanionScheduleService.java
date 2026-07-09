@@ -27,8 +27,9 @@ public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCas
         if (matchId == null || matchId <= 0) {
             throw new InvalidCompanionMatchIdException();
         }
-        CompanionScheduleDetail scheduleDetail = companionScheduleDetailQueryPort.findByMatchId(matchId).orElseThrow(
-                CompanionMatchNotFoundException::new);
+        CompanionScheduleDetail scheduleDetail = companionScheduleDetailQueryPort
+                .findByMatchIdAndUserId(matchId, userId)
+                .orElseThrow(CompanionMatchNotFoundException::new);
         if (!participantRepository.existsByMatchIdAndUserId(matchId, userId)) {
             throw new ForbiddenReadCompanionScheduleException();
         }
