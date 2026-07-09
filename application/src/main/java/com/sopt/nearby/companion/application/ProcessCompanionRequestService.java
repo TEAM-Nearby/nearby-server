@@ -1,8 +1,12 @@
 // 호스트의 동행 신청 수락과 거절 처리를 담당한다.
 package com.sopt.nearby.companion.application;
 
+import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCompletedException;
+import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
+import com.sopt.nearby.companion.domain.exception.CompanionScheduleAlreadyConfirmedException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
@@ -172,9 +176,18 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
             );
         }
 
-        return matchRepository.findById(match.id())
-                .filter(latestMatch -> latestMatch.status() == CompanionMatchStatus.SCHEDULE_CONFIRMED)
-                .orElse(match);
+        CompanionMatch latestMatch = matchRepository.findById(match.id())
+                .orElseThrow(CompanionMatchNotFoundException::new);
+        return validateLatestMatchAfterFailedConfirm(latestMatch);
+    }
+
+    private CompanionMatch validateLatestMatchAfterFailedConfirm(final CompanionMatch latestMatch) {
+        return switch (latestMatch.status()) {
+            case SCHEDULE_CONFIRMED -> latestMatch;
+            case CANCELED -> throw new CompanionMatchAlreadyCanceledException();
+            case COMPLETED -> throw new CompanionMatchAlreadyCompletedException();
+            case MATCHED -> throw new CompanionScheduleAlreadyConfirmedException();
+        };
     }
 
     private void ensureNowSchedule(final Long matchId, final CompanionPost post) {

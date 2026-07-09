@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
@@ -147,6 +148,28 @@ class ProcessCompanionRequestServiceTest {
         assertEquals(1, matchRepository.matches.size());
         assertEquals(1, scheduleRepository.schedules.size());
         assertTrue(participantRepository.existsByMatchIdAndUserId(50L, 7L));
+    }
+
+    @Test
+    void rejectsNowRequestWhenMatchWasCanceledBeforeAutoConfirm() {
+        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        postRepository.save(nowPost(10L, 100L));
+        matchRepository.save(new CompanionMatch(50L, 10L, CompanionMatchStatus.MATCHED, NOW.minusMinutes(1)));
+        matchRepository.confirmScheduleResult = false;
+        matchRepository.latestAfterFailedConfirm = new CompanionMatch(
+                50L,
+                10L,
+                CompanionMatchStatus.CANCELED,
+                NOW.minusMinutes(1)
+        );
+
+        assertThrows(
+                CompanionMatchAlreadyCanceledException.class,
+                () -> service.accept(new AcceptCompanionRequestCommand(100L, 3L))
+        );
+
+        assertEquals(1, matchRepository.confirmScheduleAttempts);
+        assertTrue(scheduleRepository.schedules.isEmpty());
     }
 
     @Test
@@ -350,6 +373,9 @@ class ProcessCompanionRequestServiceTest {
 
         private final Map<Long, CompanionMatch> matches = new HashMap<>();
         private long nextId = 1L;
+        private boolean confirmScheduleResult = true;
+        private CompanionMatch latestAfterFailedConfirm;
+        private int confirmScheduleAttempts;
 
         @Override
         public CompanionMatch save(final CompanionMatch model) {
@@ -367,8 +393,15 @@ class ProcessCompanionRequestServiceTest {
 
         @Override
         public boolean confirmScheduleIfMatched(final Long matchId) {
+            confirmScheduleAttempts++;
             CompanionMatch match = matches.get(matchId);
             if (match == null || match.status() != CompanionMatchStatus.MATCHED) {
+                return false;
+            }
+            if (!confirmScheduleResult) {
+                if (latestAfterFailedConfirm != null) {
+                    matches.put(matchId, latestAfterFailedConfirm);
+                }
                 return false;
             }
             matches.put(matchId, new CompanionMatch(
