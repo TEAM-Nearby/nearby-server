@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
 import java.time.LocalDateTime;
@@ -34,6 +35,7 @@ class ReadOngoingCompanionMeetingsServiceTest {
                 new OngoingCompanionMeetingHostProfile(7L, "https://image.url/profile.png", "정지영", UserGender.FEMALE),
                 "시우다드 콘달",
                 LocalDateTime.of(2026, 6, 29, 16, 30),
+                CompanionPostMeetingTimeType.SCHEDULED,
                 false,
                 CompanionMeetingStatus.ONGOING
         );

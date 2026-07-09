@@ -22,6 +22,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
@@ -105,12 +106,59 @@ class OngoingCompanionMeetingQueryAdapterTest {
         assertThat(result.get(0).checkedIn()).isFalse();
         assertThat(result.get(0).meetingStatus()).isEqualTo(CompanionMeetingStatus.ONGOING);
         assertThat(result.get(0).meetingAt()).isEqualTo(BASE_TIME.plusHours(1));
+        assertThat(result.get(0).meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
 
         assertThat(result.get(1).meetingId()).isEqualTo(currentUserGuestMeeting.getId());
         assertThat(result.get(1).companion().userId()).isEqualTo(HOST_USER_ID);
         assertThat(result.get(1).companion().nickname()).isEqualTo("김지원");
         assertThat(result.get(1).checkedIn()).isTrue();
         assertThat(result.get(1).placeName()).isEqualTo("시우다드 콘달");
+        assertThat(result.get(1).meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
+    }
+
+    @Test
+    void resolvesNowMeetingAtFromExposureExpiresAtAndReturnsMeetingTimeType() {
+        OngoingCompanionMeetingQueryAdapter adapter = new OngoingCompanionMeetingQueryAdapter(queryJpaRepository);
+        profileJpaRepository.saveAndFlush(profile(CURRENT_USER_ID, "정지영", UserGender.FEMALE));
+        profileJpaRepository.saveAndFlush(profile(HOST_USER_ID, "김지원", UserGender.MALE));
+        LocalDateTime exposureExpiresAt = BASE_TIME.plusMinutes(30);
+        CompanionMeetingEntity nowMeeting = createNowMeeting(
+                HOST_USER_ID,
+                CURRENT_USER_ID,
+                exposureExpiresAt,
+                BASE_TIME.plusHours(3)
+        );
+
+        List<OngoingCompanionMeetingSummary> result = adapter.findAllByParticipantUserId(CURRENT_USER_ID);
+
+        assertThat(result).hasSize(1);
+        OngoingCompanionMeetingSummary summary = result.getFirst();
+        assertThat(summary.meetingId()).isEqualTo(nowMeeting.getId());
+        assertThat(summary.meetingAt()).isEqualTo(exposureExpiresAt);
+        assertThat(summary.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.NOW);
+    }
+
+    @Test
+    void returnsScheduledMeetingTimeTypeForUndecidedPostAfterScheduleIsConfirmed() {
+        OngoingCompanionMeetingQueryAdapter adapter = new OngoingCompanionMeetingQueryAdapter(queryJpaRepository);
+        profileJpaRepository.saveAndFlush(profile(CURRENT_USER_ID, "정지영", UserGender.FEMALE));
+        profileJpaRepository.saveAndFlush(profile(HOST_USER_ID, "김지원", UserGender.MALE));
+        LocalDateTime scheduledAt = BASE_TIME.plusHours(2);
+        CompanionMeetingEntity undecidedMeeting = createMeeting(
+                HOST_USER_ID,
+                CURRENT_USER_ID,
+                CompanionMeetingStatus.ONGOING,
+                CompanionPostMeetingTimeType.UNDECIDED,
+                scheduledAt
+        );
+
+        List<OngoingCompanionMeetingSummary> result = adapter.findAllByParticipantUserId(CURRENT_USER_ID);
+
+        assertThat(result).hasSize(1);
+        OngoingCompanionMeetingSummary summary = result.getFirst();
+        assertThat(summary.meetingId()).isEqualTo(undecidedMeeting.getId());
+        assertThat(summary.meetingAt()).isEqualTo(scheduledAt);
+        assertThat(summary.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
     }
 
     @Test
@@ -130,13 +178,55 @@ class OngoingCompanionMeetingQueryAdapterTest {
     ) {
         PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place("google-place-" + scheduledAt));
         CompanionPostEntity post = postJpaRepository.saveAndFlush(post(hostUserId, place.getId(), scheduledAt));
+        return createMeeting(hostUserId, participantUserId, meetingStatus, post, place.getId(), scheduledAt);
+    }
+
+    private CompanionMeetingEntity createMeeting(
+            final Long hostUserId,
+            final Long participantUserId,
+            final CompanionMeetingStatus meetingStatus,
+            final CompanionPostMeetingTimeType meetingTimeType,
+            final LocalDateTime scheduledAt
+    ) {
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place("google-place-" + scheduledAt));
+        CompanionPostEntity post = postJpaRepository.saveAndFlush(
+                post(hostUserId, place.getId(), meetingTimeType, scheduledAt)
+        );
+        return createMeeting(hostUserId, participantUserId, meetingStatus, post, place.getId(), scheduledAt);
+    }
+
+    private CompanionMeetingEntity createMeeting(
+            final Long hostUserId,
+            final Long participantUserId,
+            final CompanionMeetingStatus meetingStatus,
+            final CompanionPostEntity post,
+            final Long placeId,
+            final LocalDateTime scheduledAt
+    ) {
+        CompanionMatchEntity match = matchJpaRepository.saveAndFlush(match(post.getId()));
+        participantJpaRepository.saveAndFlush(participant(match.getId(), hostUserId, MatchParticipantRole.HOST));
+        if (!hostUserId.equals(participantUserId)) {
+            participantJpaRepository.saveAndFlush(participant(match.getId(), participantUserId, MatchParticipantRole.GUEST));
+        }
+        scheduleJpaRepository.saveAndFlush(schedule(match.getId(), placeId, scheduledAt));
+        return meetingJpaRepository.saveAndFlush(meeting(match.getId(), meetingStatus));
+    }
+
+    private CompanionMeetingEntity createNowMeeting(
+            final Long hostUserId,
+            final Long participantUserId,
+            final LocalDateTime exposureExpiresAt,
+            final LocalDateTime scheduledAt
+    ) {
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place("google-place-now"));
+        CompanionPostEntity post = postJpaRepository.saveAndFlush(nowPost(hostUserId, place.getId(), exposureExpiresAt));
         CompanionMatchEntity match = matchJpaRepository.saveAndFlush(match(post.getId()));
         participantJpaRepository.saveAndFlush(participant(match.getId(), hostUserId, MatchParticipantRole.HOST));
         if (!hostUserId.equals(participantUserId)) {
             participantJpaRepository.saveAndFlush(participant(match.getId(), participantUserId, MatchParticipantRole.GUEST));
         }
         scheduleJpaRepository.saveAndFlush(schedule(match.getId(), place.getId(), scheduledAt));
-        return meetingJpaRepository.saveAndFlush(meeting(match.getId(), meetingStatus));
+        return meetingJpaRepository.saveAndFlush(meeting(match.getId(), CompanionMeetingStatus.ONGOING));
     }
 
     private CompanionProfileEntity profile(final Long userId, final String nickname, final UserGender gender) {
@@ -172,13 +262,46 @@ class OngoingCompanionMeetingQueryAdapterTest {
     }
 
     private CompanionPostEntity post(final Long hostUserId, final Long placeId, final LocalDateTime meetingAt) {
+        return post(hostUserId, placeId, CompanionPostMeetingTimeType.SCHEDULED, meetingAt);
+    }
+
+    private CompanionPostEntity post(
+            final Long hostUserId,
+            final Long placeId,
+            final CompanionPostMeetingTimeType meetingTimeType,
+            final LocalDateTime meetingAt
+    ) {
         return new CompanionPostEntity(
                 null,
                 hostUserId,
                 placeId,
-                meetingAt,
+                meetingTimeType,
+                meetingTimeType == CompanionPostMeetingTimeType.SCHEDULED ? meetingAt : null,
+                null,
                 4,
+                true,
                 "함께 밥 먹을 동행을 구해요.",
+                "https://openchat.example",
+                CompanionPostStatus.CLOSED,
+                BASE_TIME.minusDays(1)
+        );
+    }
+
+    private CompanionPostEntity nowPost(
+            final Long hostUserId,
+            final Long placeId,
+            final LocalDateTime exposureExpiresAt
+    ) {
+        return new CompanionPostEntity(
+                null,
+                hostUserId,
+                placeId,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                exposureExpiresAt,
+                4,
+                true,
+                "지금 바로 함께 밥 먹을 동행을 구해요.",
                 "https://openchat.example",
                 CompanionPostStatus.CLOSED,
                 BASE_TIME.minusDays(1)
