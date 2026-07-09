@@ -71,6 +71,7 @@ class CompanionMatchSummaryQueryAdapterTest {
 
         companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A"));
         companionProfileJpaRepository.saveAndFlush(profile(200L, "호스트B"));
+        companionProfileJpaRepository.saveAndFlush(profile(300L, "호스트C"));
 
         CompanionPostEntity scheduledPost = companionPostJpaRepository.saveAndFlush(post(
                 100L,
@@ -104,6 +105,20 @@ class CompanionMatchSummaryQueryAdapterTest {
         ));
         participantJpaRepository.saveAndFlush(participant(oldMatch.getId(), 7L));
 
+        LocalDateTime nowExposureExpiresAt = NOW.plusHours(1);
+        CompanionPostEntity nowPost = companionPostJpaRepository.saveAndFlush(nowPost(
+                300L,
+                postPlace.getId(),
+                nowExposureExpiresAt,
+                "지금 바로 만나는 모집글"
+        ));
+        CompanionMatchEntity nowMatch = companionMatchJpaRepository.saveAndFlush(match(
+                nowPost.getId(),
+                CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                NOW.plusHours(1)
+        ));
+        participantJpaRepository.saveAndFlush(participant(nowMatch.getId(), 7L));
+
         CompanionPostEntity otherUserPost = companionPostJpaRepository.saveAndFlush(post(
                 100L,
                 postPlace.getId(),
@@ -132,7 +147,7 @@ class CompanionMatchSummaryQueryAdapterTest {
 
         List<CompanionMatchSummary> result = adapter.findAllByParticipantUserId(7L);
 
-        assertThat(result).hasSize(2);
+        assertThat(result).hasSize(3);
 
         CompanionMatchSummary first = result.get(0);
         assertThat(first.matchId()).isEqualTo(recentMatch.getId());
@@ -147,16 +162,50 @@ class CompanionMatchSummaryQueryAdapterTest {
         assertThat(first.matchStatus()).isEqualTo(CompanionMatchStatus.SCHEDULE_CONFIRMED);
 
         CompanionMatchSummary second = result.get(1);
-        assertThat(second.matchId()).isEqualTo(oldMatch.getId());
-        assertThat(second.hostNickname()).isEqualTo("호스트B");
-        assertThat(second.hostProfileImageUrl()).isEqualTo("https://image.example/200.png");
+        assertThat(second.matchId()).isEqualTo(nowMatch.getId());
+        assertThat(second.hostNickname()).isEqualTo("호스트C");
+        assertThat(second.hostProfileImageUrl()).isEqualTo("https://image.example/300.png");
         assertThat(second.hostGender()).isEqualTo(UserGender.FEMALE);
-        assertThat(second.placeName()).isEqualTo("오래된 모집글 장소");
-        assertThat(second.meetingAt()).isEqualTo(NOW.plusDays(5));
-        assertThat(second.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
+        assertThat(second.placeName()).isEqualTo("모집글 장소");
+        assertThat(second.meetingAt()).isEqualTo(nowExposureExpiresAt);
+        assertThat(second.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.NOW);
         assertThat(second.createdAt()).isEqualTo(NOW);
-        assertThat(second.content()).isEqualTo("확정 일정이 없는 모집글");
-        assertThat(second.matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
+        assertThat(second.content()).isEqualTo("지금 바로 만나는 모집글");
+        assertThat(second.matchStatus()).isEqualTo(CompanionMatchStatus.SCHEDULE_CONFIRMED);
+
+        CompanionMatchSummary third = result.get(2);
+        assertThat(third.matchId()).isEqualTo(oldMatch.getId());
+        assertThat(third.hostNickname()).isEqualTo("호스트B");
+        assertThat(third.hostProfileImageUrl()).isEqualTo("https://image.example/200.png");
+        assertThat(third.hostGender()).isEqualTo(UserGender.FEMALE);
+        assertThat(third.placeName()).isEqualTo("오래된 모집글 장소");
+        assertThat(third.meetingAt()).isEqualTo(NOW.plusDays(5));
+        assertThat(third.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
+        assertThat(third.createdAt()).isEqualTo(NOW);
+        assertThat(third.content()).isEqualTo("확정 일정이 없는 모집글");
+        assertThat(third.matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
+    }
+
+    private CompanionPostEntity nowPost(
+            final Long hostUserId,
+            final Long placeId,
+            final LocalDateTime exposureExpiresAt,
+            final String content
+    ) {
+        return new CompanionPostEntity(
+                null,
+                hostUserId,
+                placeId,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                exposureExpiresAt,
+                4,
+                true,
+                content,
+                "https://openchat.example",
+                CompanionPostStatus.CLOSED,
+                NOW
+        );
     }
 
     private PlaceCacheEntity place(final String googlePlaceId, final String name) {
