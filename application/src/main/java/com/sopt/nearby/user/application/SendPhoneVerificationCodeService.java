@@ -6,11 +6,13 @@ import com.sopt.nearby.user.domain.model.PhoneVerificationStatus;
 import com.sopt.nearby.user.domain.model.UserAccount;
 import com.sopt.nearby.user.exception.UserNotFoundException;
 import com.sopt.nearby.user.port.in.SendPhoneVerificationCodeUseCase;
+import com.sopt.nearby.user.port.out.PhoneVerificationCodeStore;
 import com.sopt.nearby.user.port.out.PhoneVerificationRepository;
 import com.sopt.nearby.user.port.out.PhoneVerificationSender;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.security.SecureRandom;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.function.IntSupplier;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +28,7 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 
 	private final UserAccountRepository userAccountRepository;
 	private final PhoneVerificationRepository phoneVerificationRepository;
+	private final PhoneVerificationCodeStore phoneVerificationCodeStore;
 	private final PhoneVerificationSender phoneVerificationSender;
 	private final String hashSecret;
 	private final Clock clock;
@@ -35,12 +38,14 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 	public SendPhoneVerificationCodeService(
 			final UserAccountRepository userAccountRepository,
 			final PhoneVerificationRepository phoneVerificationRepository,
+			final PhoneVerificationCodeStore phoneVerificationCodeStore,
 			final PhoneVerificationSender phoneVerificationSender,
 			@Value("${nearby.phone-verification.hash-secret}") final String hashSecret
 	) {
 		this(
 				userAccountRepository,
 				phoneVerificationRepository,
+				phoneVerificationCodeStore,
 				phoneVerificationSender,
 				hashSecret,
 				Clock.systemUTC(),
@@ -51,6 +56,7 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 	SendPhoneVerificationCodeService(
 			final UserAccountRepository userAccountRepository,
 			final PhoneVerificationRepository phoneVerificationRepository,
+			final PhoneVerificationCodeStore phoneVerificationCodeStore,
 			final PhoneVerificationSender phoneVerificationSender,
 			final String hashSecret,
 			final Clock clock,
@@ -58,6 +64,7 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 	) {
 		this.userAccountRepository = userAccountRepository;
 		this.phoneVerificationRepository = phoneVerificationRepository;
+		this.phoneVerificationCodeStore = phoneVerificationCodeStore;
 		this.phoneVerificationSender = phoneVerificationSender;
 		this.hashSecret = hashSecret;
 		this.clock = clock;
@@ -69,18 +76,29 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 		UserAccount userAccount = userAccountRepository.findById(command.userId())
 				.orElseThrow(UserNotFoundException::new);
 		String verificationCode = verificationCode();
+		String verificationCodeHash = PhoneVerificationCodeHasher.hmacSha256(verificationCode, hashSecret);
 		PhoneVerification phoneVerification = phoneVerificationRepository.save(new PhoneVerification(
 				null,
 				userAccount.id(),
 				command.phoneNumber(),
 				null,
-				PhoneVerificationCodeHasher.hmacSha256(verificationCode, hashSecret),
+				null,
 				PhoneVerificationStatus.PENDING,
 				LocalDateTime.now(clock).plusSeconds(EXPIRES_IN_SECONDS),
 				null
 		));
 
-		phoneVerificationSender.send(command.phoneNumber(), verificationCode);
+		phoneVerificationCodeStore.save(
+				phoneVerification.id(),
+				verificationCodeHash,
+				Duration.ofSeconds(EXPIRES_IN_SECONDS)
+		);
+		try {
+			phoneVerificationSender.send(command.phoneNumber(), verificationCode);
+		} catch (RuntimeException exception) {
+			phoneVerificationCodeStore.delete(phoneVerification.id());
+			throw exception;
+		}
 
 		return new SendPhoneVerificationCodeResult(phoneVerification.id(), EXPIRES_IN_SECONDS);
 	}

@@ -10,6 +10,7 @@ import com.sopt.nearby.user.exception.PhoneVerificationExpiredException;
 import com.sopt.nearby.user.exception.PhoneVerificationNotFoundException;
 import com.sopt.nearby.user.exception.UserNotFoundException;
 import com.sopt.nearby.user.port.in.ConfirmPhoneVerificationCodeUseCase;
+import com.sopt.nearby.user.port.out.PhoneVerificationCodeStore;
 import com.sopt.nearby.user.port.out.PhoneVerificationRepository;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerificationCodeUseCase {
@@ -28,6 +31,7 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 
 	private final UserAccountRepository userAccountRepository;
 	private final PhoneVerificationRepository phoneVerificationRepository;
+	private final PhoneVerificationCodeStore phoneVerificationCodeStore;
 	private final String hashSecret;
 	private final Clock clock;
 
@@ -35,19 +39,22 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 	public ConfirmPhoneVerificationCodeService(
 			final UserAccountRepository userAccountRepository,
 			final PhoneVerificationRepository phoneVerificationRepository,
+			final PhoneVerificationCodeStore phoneVerificationCodeStore,
 			@Value("${nearby.phone-verification.hash-secret}") final String hashSecret
 	) {
-		this(userAccountRepository, phoneVerificationRepository, hashSecret, Clock.systemUTC());
+		this(userAccountRepository, phoneVerificationRepository, phoneVerificationCodeStore, hashSecret, Clock.systemUTC());
 	}
 
 	ConfirmPhoneVerificationCodeService(
 			final UserAccountRepository userAccountRepository,
 			final PhoneVerificationRepository phoneVerificationRepository,
+			final PhoneVerificationCodeStore phoneVerificationCodeStore,
 			final String hashSecret,
 			final Clock clock
 	) {
 		this.userAccountRepository = userAccountRepository;
 		this.phoneVerificationRepository = phoneVerificationRepository;
+		this.phoneVerificationCodeStore = phoneVerificationCodeStore;
 		this.hashSecret = hashSecret;
 		this.clock = clock;
 	}
@@ -68,7 +75,9 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 		if (phoneVerification.expiresAt().isBefore(now)) {
 			throw new PhoneVerificationExpiredException();
 		}
-		if (!matches(phoneVerification.verificationCodeHash(), command.verificationCode())) {
+		String verificationCodeHash = phoneVerificationCodeStore.findHash(phoneVerification.id())
+				.orElseThrow(PhoneVerificationExpiredException::new);
+		if (!matches(verificationCodeHash, command.verificationCode())) {
 			throw new PhoneVerificationCodeMismatchException();
 		}
 
@@ -95,8 +104,22 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 				userAccount.createdAt(),
 				userAccount.deletedAt()
 		));
+		deleteCodeAfterCommit(phoneVerification.id());
 
 		return new ConfirmPhoneVerificationCodeResult(true, UserOnboardingStatus.PHONE_VERIFIED);
+	}
+
+	private void deleteCodeAfterCommit(final Long phoneVerificationId) {
+		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+			phoneVerificationCodeStore.delete(phoneVerificationId);
+			return;
+		}
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				phoneVerificationCodeStore.delete(phoneVerificationId);
+			}
+		});
 	}
 
 	private boolean matches(final String expectedHash, final String verificationCode) {

@@ -13,10 +13,12 @@ import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import com.sopt.nearby.user.exception.PhoneVerificationSendLimitExceededException;
 import com.sopt.nearby.user.exception.UserNotFoundException;
+import com.sopt.nearby.user.port.out.PhoneVerificationCodeStore;
 import com.sopt.nearby.user.port.out.PhoneVerificationRepository;
 import com.sopt.nearby.user.port.out.PhoneVerificationSender;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -35,16 +37,18 @@ class SendPhoneVerificationCodeServiceTest {
 
 	@Test
 	void savesPendingVerificationAndSendsCode() {
-		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
-		userAccounts.save(newUser(1L));
-		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
-		FakePhoneVerificationSender sender = new FakePhoneVerificationSender();
-		SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
-				userAccounts,
-				phoneVerifications,
-				sender,
-				HASH_SECRET,
-				CLOCK,
+			FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
+			userAccounts.save(newUser(1L));
+			FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
+			FakePhoneVerificationCodeStore codeStore = new FakePhoneVerificationCodeStore();
+			FakePhoneVerificationSender sender = new FakePhoneVerificationSender();
+			SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
+					userAccounts,
+					phoneVerifications,
+					codeStore,
+					sender,
+					HASH_SECRET,
+					CLOCK,
 				() -> 123456
 		);
 
@@ -57,23 +61,26 @@ class SendPhoneVerificationCodeServiceTest {
 		PhoneVerification saved = phoneVerifications.saved.get(1L);
 		assertEquals(1L, saved.userId());
 		assertEquals("01012345678", saved.phoneNumber());
-		assertEquals(PhoneVerificationStatus.PENDING, saved.status());
-		assertEquals(LocalDateTime.of(2026, 7, 4, 7, 3), saved.expiresAt());
-		assertEquals(CODE_123456_HASH, saved.verificationCodeHash());
-		assertEquals("01012345678", sender.phoneNumber);
-		assertEquals("123456", sender.verificationCode);
-	}
+			assertEquals(PhoneVerificationStatus.PENDING, saved.status());
+			assertEquals(LocalDateTime.of(2026, 7, 4, 7, 3), saved.expiresAt());
+			assertEquals(null, saved.verificationCodeHash());
+			assertEquals(CODE_123456_HASH, codeStore.codeHashes.get(1L));
+			assertEquals(Duration.ofSeconds(180), codeStore.ttls.get(1L));
+			assertEquals("01012345678", sender.phoneNumber);
+			assertEquals("123456", sender.verificationCode);
+		}
 
 	@Test
 	void propagatesSendLimitExceededWhenSenderRejects() {
 		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
 		userAccounts.save(newUser(1L));
-		SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
-				userAccounts,
-				new FakePhoneVerificationRepository(),
-				(phoneNumber, verificationCode) -> {
-					throw new PhoneVerificationSendLimitExceededException();
-				},
+			SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
+					userAccounts,
+					new FakePhoneVerificationRepository(),
+					new FakePhoneVerificationCodeStore(),
+					(phoneNumber, verificationCode) -> {
+						throw new PhoneVerificationSendLimitExceededException();
+					},
 				HASH_SECRET,
 				CLOCK,
 				() -> 123456
@@ -90,12 +97,13 @@ class SendPhoneVerificationCodeServiceTest {
 	@Test
 	void failsWhenUserDoesNotExist() {
 		FakePhoneVerificationSender sender = new FakePhoneVerificationSender();
-		SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
-				new FakeUserAccountRepository(),
-				new FakePhoneVerificationRepository(),
-				sender,
-				HASH_SECRET,
-				CLOCK,
+			SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
+					new FakeUserAccountRepository(),
+					new FakePhoneVerificationRepository(),
+					new FakePhoneVerificationCodeStore(),
+					sender,
+					HASH_SECRET,
+					CLOCK,
 				() -> 123456
 		);
 
@@ -183,6 +191,29 @@ class SendPhoneVerificationCodeServiceTest {
 		public void send(final String phoneNumber, final String verificationCode) {
 			this.phoneNumber = phoneNumber;
 			this.verificationCode = verificationCode;
+		}
+	}
+
+	private static final class FakePhoneVerificationCodeStore implements PhoneVerificationCodeStore {
+
+		private final Map<Long, String> codeHashes = new HashMap<>();
+		private final Map<Long, Duration> ttls = new HashMap<>();
+
+		@Override
+		public void save(final Long phoneVerificationId, final String verificationCodeHash, final Duration ttl) {
+			codeHashes.put(phoneVerificationId, verificationCodeHash);
+			ttls.put(phoneVerificationId, ttl);
+		}
+
+		@Override
+		public Optional<String> findHash(final Long phoneVerificationId) {
+			return Optional.ofNullable(codeHashes.get(phoneVerificationId));
+		}
+
+		@Override
+		public void delete(final Long phoneVerificationId) {
+			codeHashes.remove(phoneVerificationId);
+			ttls.remove(phoneVerificationId);
 		}
 	}
 }
