@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -130,7 +131,30 @@ public interface CompanionPostApi {
     @Operation(
             summary = "동행 모집글 작성",
             description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글을 작성합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            security = @SecurityRequirement(name = "bearerAuth"),
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = CreateCompanionPostRequest.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "place": {
+                                        "googlePlaceId": "google-place-id",
+                                        "name": "니어바이 스시",
+                                        "address": "서울특별시 중구 세종대로 110",
+                                        "latitude": 37.5671,
+                                        "longitude": 126.9792,
+                                        "category": "RESTAURANT"
+                                      },
+                                      "meetingTimeType": "NOW",
+                                      "maxParticipants": 4,
+                                      "content": "같이 스시 먹으러 갈 사람 구해요.",
+                                      "openChatUrl": "https://open.kakao.com/o/nearby123"
+                                    }
+                                    """)
+                    )
+            )
     )
     CommonResponse<CreatedCompanionPostResponse> createPost(
             CreateCompanionPostRequest request,
