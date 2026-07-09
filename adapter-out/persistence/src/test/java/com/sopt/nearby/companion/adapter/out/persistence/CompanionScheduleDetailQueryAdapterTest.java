@@ -99,7 +99,7 @@ class CompanionScheduleDetailQueryAdapterTest {
     }
 
     @Test
-    void returnsNowScheduleWithPostPlaceAndExposureExpiresAtWhenConfirmedScheduleDoesNotExist() {
+    void returnsNullScheduleForNowMatchWhenConfirmedScheduleDoesNotExist() {
         CompanionScheduleDetailQueryAdapter adapter = new CompanionScheduleDetailQueryAdapter(
                 scheduleDetailJpaRepository
         );
@@ -128,17 +128,12 @@ class CompanionScheduleDetailQueryAdapterTest {
         Optional<CompanionScheduleDetail> result = adapter.findByMatchIdAndUserId(match.getId(), 7L);
 
         assertThat(result).isPresent();
-        assertThat(result.get().matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
-        assertThat(result.get().schedule()).isNotNull();
-        assertThat(result.get().schedule().scheduledAt()).isEqualTo(NOW.plusHours(1));
-        assertThat(result.get().schedule().place().googlePlaceId()).isEqualTo("post-place-id");
-        assertThat(result.get().schedule().place().name()).isEqualTo("모집 장소");
-        assertThat(result.get().schedule().place().address()).isEqualTo("Rambla de Catalunya, 16");
-        assertThat(result.get().schedule().place().latitude()).isEqualByComparingTo("41.39020500");
-        assertThat(result.get().schedule().place().longitude()).isEqualByComparingTo("2.16354800");
-        assertThat(result.get().openChatUrl()).isEqualTo("https://open.kakao.com/o/not-yet");
-        assertThat(result.get().userNickname()).isEqualTo("루피");
-        assertThat(result.get().meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.NOW);
+        CompanionScheduleDetail detail = result.get();
+        assertThat(detail.matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
+        assertThat(detail.schedule()).isNull();
+        assertThat(detail.openChatUrl()).isEqualTo("https://open.kakao.com/o/not-yet");
+        assertThat(detail.userNickname()).isEqualTo("루피");
+        assertThat(detail.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.NOW);
     }
 
     @Test

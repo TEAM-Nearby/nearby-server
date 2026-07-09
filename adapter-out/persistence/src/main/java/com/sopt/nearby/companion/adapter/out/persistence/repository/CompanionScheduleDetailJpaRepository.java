@@ -38,11 +38,7 @@ public interface CompanionScheduleDetailJpaRepository extends Repository<Compani
                     when post.meeting_time_type = 'NOW' then post_place.longitude
                     else null
                 end as longitude,
-                case
-                    when schedule.id is not null then schedule.scheduled_at
-                    when post.meeting_time_type = 'NOW' then post.exposure_expires_at
-                    else null
-                end as scheduledAt,
+                schedule.scheduled_at as scheduledAt,
                 case
                     when schedule.id is not null or post.meeting_time_type = 'NOW' then post.open_chat_url
                     else null
