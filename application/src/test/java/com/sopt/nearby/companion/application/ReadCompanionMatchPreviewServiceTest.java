@@ -14,6 +14,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
@@ -23,6 +24,7 @@ import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
+import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -41,6 +43,7 @@ class ReadCompanionMatchPreviewServiceTest {
     private FakeCompanionPostRepository companionPostRepository;
     private FakeCompanionMatchParticipantRepository companionMatchParticipantRepository;
     private FakeCompanionProfileRepository companionProfileRepository;
+    private FakeCompanionScheduleRepository companionScheduleRepository;
     private ReadCompanionMatchPreviewService service;
 
     @BeforeEach
@@ -49,11 +52,13 @@ class ReadCompanionMatchPreviewServiceTest {
         companionPostRepository = new FakeCompanionPostRepository();
         companionMatchParticipantRepository = new FakeCompanionMatchParticipantRepository();
         companionProfileRepository = new FakeCompanionProfileRepository();
+        companionScheduleRepository = new FakeCompanionScheduleRepository();
         service = new ReadCompanionMatchPreviewService(
                 companionMatchRepository,
                 companionPostRepository,
                 companionMatchParticipantRepository,
-                companionProfileRepository
+                companionProfileRepository,
+                companionScheduleRepository
         );
     }
 
@@ -305,6 +310,31 @@ class ReadCompanionMatchPreviewServiceTest {
             return profiles.values()
                     .stream()
                     .filter(profile -> profile.userId().equals(userId))
+                    .findFirst();
+        }
+    }
+
+    private static final class FakeCompanionScheduleRepository implements CompanionScheduleRepository {
+
+        private final Map<Long, CompanionSchedule> schedules = new HashMap<>();
+
+        @Override
+        public CompanionSchedule save(final CompanionSchedule model) {
+            schedules.put(model.id(), model);
+            return model;
+        }
+
+        @Override
+        public Optional<CompanionSchedule> findById(final Long id) {
+            return Optional.ofNullable(schedules.get(id));
+        }
+
+        @Override
+        public Optional<CompanionSchedule> findConfirmedByMatchId(final Long matchId) {
+            return schedules.values()
+                    .stream()
+                    .filter(schedule -> schedule.matchId().equals(matchId))
+                    .filter(CompanionSchedule::confirmed)
                     .findFirst();
         }
     }
