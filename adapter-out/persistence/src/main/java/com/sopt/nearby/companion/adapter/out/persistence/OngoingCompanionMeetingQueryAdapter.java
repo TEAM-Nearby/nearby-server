@@ -6,6 +6,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.OngoingCompa
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
 import java.util.List;
@@ -40,6 +41,7 @@ public class OngoingCompanionMeetingQueryAdapter implements OngoingCompanionMeet
                 ),
                 row.getPlaceName(),
                 row.getMeetingAt(),
+                CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                 Boolean.TRUE.equals(row.getCheckedIn()),
                 CompanionMeetingStatus.valueOf(row.getMeetingStatus())
         );

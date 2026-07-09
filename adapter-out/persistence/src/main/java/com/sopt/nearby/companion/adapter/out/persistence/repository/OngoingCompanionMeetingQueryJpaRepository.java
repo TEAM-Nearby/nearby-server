@@ -18,7 +18,14 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
                 host_profile.nickname as hostNickname,
                 host_profile.gender as hostGender,
                 place.name as placeName,
-                schedule.scheduled_at as meetingAt,
+                case
+                    when post.meeting_time_type = 'NOW' then post.exposure_expires_at
+                    else schedule.scheduled_at
+                end as meetingAt,
+                case
+                    when post.meeting_time_type = 'NOW' then 'NOW'
+                    else 'SCHEDULED'
+                end as meetingTimeType,
                 case
                     when check_in.id is null then false
                     else true
@@ -28,6 +35,10 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
             join companion_match_participant current_participant
                 on current_participant.match_id = meeting.match_id
                 and current_participant.user_id = :userId
+            join companion_match m
+                on m.id = meeting.match_id
+            join companion_post post
+                on post.id = m.post_id
             join companion_match_participant host_participant
                 on host_participant.match_id = meeting.match_id
                 and host_participant.role = 'HOST'
@@ -42,7 +53,12 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
                 on check_in.meeting_id = meeting.id
                 and check_in.user_id = :userId
             where meeting.status = 'ONGOING'
-            order by schedule.scheduled_at desc, meeting.id desc
+            order by
+                case
+                    when post.meeting_time_type = 'NOW' then post.exposure_expires_at
+                    else schedule.scheduled_at
+                end desc,
+                meeting.id desc
             """, nativeQuery = true)
     List<OngoingCompanionMeetingProjection> findAllByParticipantUserId(@Param("userId") Long userId);
 }
