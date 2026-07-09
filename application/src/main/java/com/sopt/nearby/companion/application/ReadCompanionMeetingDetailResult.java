@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.application;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingDetail;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import java.time.LocalDateTime;
 
@@ -17,6 +18,7 @@ public record ReadCompanionMeetingDetailResult(
         boolean hostCheckedIn,
         String placeName,
         LocalDateTime meetingAt,
+        CompanionPostMeetingTimeType meetingTimeType,
         CompanionMeetingStatus meetingStatus,
         boolean currentUserCheckedIn,
         boolean canCancelMeeting
@@ -33,6 +35,7 @@ public record ReadCompanionMeetingDetailResult(
                 detail.hostCheckedIn(),
                 detail.placeName(),
                 detail.meetingAt(),
+                detail.meetingTimeType(),
                 detail.meetingStatus(),
                 detail.currentUserCheckedIn(),
                 detail.meetingStatus() == CompanionMeetingStatus.ONGOING

@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.domain.model.meeting;
 
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import java.time.LocalDateTime;
 
@@ -15,6 +16,7 @@ public record CompanionMeetingDetail(
         boolean hostCheckedIn,
         String placeName,
         LocalDateTime meetingAt,
+        CompanionPostMeetingTimeType meetingTimeType,
         CompanionMeetingStatus meetingStatus,
         boolean currentUserCheckedIn
 ) {

@@ -6,6 +6,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMee
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingDetail;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
 import java.util.Optional;
@@ -37,6 +38,7 @@ public class CompanionMeetingDetailQueryAdapter implements CompanionMeetingDetai
                 Boolean.TRUE.equals(row.getHostCheckedIn()),
                 row.getPlaceName(),
                 row.getMeetingAt(),
+                CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                 CompanionMeetingStatus.valueOf(row.getMeetingStatus()),
                 Boolean.TRUE.equals(row.getCurrentUserCheckedIn())
         );
