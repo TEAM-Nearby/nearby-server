@@ -13,6 +13,7 @@ import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdExcepti
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 import java.math.BigDecimal;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 class ReadCompanionScheduleServiceTest {
 
     private static final LocalDateTime SCHEDULED_AT = LocalDateTime.of(2026, 7, 5, 18, 30);
+    private static final LocalDateTime EXPOSURE_EXPIRES_AT = LocalDateTime.of(2026, 7, 5, 13, 0);
 
     private FakeCompanionScheduleDetailQueryPort queryPort;
     private FakeCompanionMatchParticipantRepository participantRepository;
@@ -48,7 +50,6 @@ class ReadCompanionScheduleServiceTest {
 
         assertEquals(1L, result.matchId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
-        assertEquals(100L, result.schedule().scheduleId());
         assertEquals("google-place-id", result.schedule().place().googlePlaceId());
         assertEquals("Siutat condal", result.schedule().place().name());
         assertEquals("Rambla de Catalunya, 16", result.schedule().place().address());
@@ -56,23 +57,40 @@ class ReadCompanionScheduleServiceTest {
         assertEquals(new BigDecimal("2.16354800"), result.schedule().place().longitude());
         assertEquals(SCHEDULED_AT, result.schedule().scheduledAt());
         assertEquals("https://open.kakao.com/o/confirmed", result.openChatUrl());
+        assertEquals("루피", result.userNickname());
+        assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.meetingTimeType());
     }
 
     @Test
-    void returnsMatchedDetailWithNullScheduleWhenScheduleIsNotConfirmed() {
+    void returnsNowScheduleConfirmedDetailWithScheduleAndOpenChatUrl() {
         queryPort.save(new CompanionScheduleDetail(
                 1L,
-                CompanionMatchStatus.MATCHED,
-                null,
-                null
+                CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                new CompanionScheduleDetail.Schedule(
+                        new CompanionScheduleDetail.Place(
+                                "google-place-id",
+                                "Siutat condal",
+                                "Rambla de Catalunya, 16",
+                                new BigDecimal("41.39020500"),
+                                new BigDecimal("2.16354800")
+                        ),
+                        EXPOSURE_EXPIRES_AT
+                ),
+                "https://open.kakao.com/o/not-yet",
+                "루피",
+                CompanionPostMeetingTimeType.NOW
         ));
         participantRepository.addParticipant(1L, 7L);
 
         CompanionScheduleDetail result = service.getSchedule(1L, 7L);
 
-        assertEquals(CompanionMatchStatus.MATCHED, result.matchStatus());
-        assertNull(result.schedule());
-        assertNull(result.openChatUrl());
+        assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+        assertEquals("google-place-id", result.schedule().place().googlePlaceId());
+        assertEquals("Siutat condal", result.schedule().place().name());
+        assertEquals(EXPOSURE_EXPIRES_AT, result.schedule().scheduledAt());
+        assertEquals("https://open.kakao.com/o/not-yet", result.openChatUrl());
+        assertEquals("루피", result.userNickname());
+        assertEquals(CompanionPostMeetingTimeType.NOW, result.meetingTimeType());
     }
 
     @Test
@@ -110,7 +128,9 @@ class ReadCompanionScheduleServiceTest {
                 1L,
                 CompanionMatchStatus.CANCELED,
                 null,
-                null
+                null,
+                "루피",
+                CompanionPostMeetingTimeType.SCHEDULED
         ));
         participantRepository.addParticipant(1L, 7L);
 
@@ -126,7 +146,9 @@ class ReadCompanionScheduleServiceTest {
                 1L,
                 CompanionMatchStatus.COMPLETED,
                 null,
-                null
+                null,
+                "루피",
+                CompanionPostMeetingTimeType.SCHEDULED
         ));
         participantRepository.addParticipant(1L, 7L);
 
@@ -141,7 +163,6 @@ class ReadCompanionScheduleServiceTest {
                 1L,
                 CompanionMatchStatus.SCHEDULE_CONFIRMED,
                 new CompanionScheduleDetail.Schedule(
-                        100L,
                         new CompanionScheduleDetail.Place(
                                 "google-place-id",
                                 "Siutat condal",
@@ -151,7 +172,9 @@ class ReadCompanionScheduleServiceTest {
                         ),
                         SCHEDULED_AT
                 ),
-                "https://open.kakao.com/o/confirmed"
+                "https://open.kakao.com/o/confirmed",
+                "루피",
+                CompanionPostMeetingTimeType.SCHEDULED
         );
     }
 
@@ -164,7 +187,7 @@ class ReadCompanionScheduleServiceTest {
         }
 
         @Override
-        public Optional<CompanionScheduleDetail> findByMatchId(final Long matchId) {
+        public Optional<CompanionScheduleDetail> findByMatchIdAndUserId(final Long matchId, final Long userId) {
             return Optional.ofNullable(scheduleDetails.get(matchId));
         }
     }

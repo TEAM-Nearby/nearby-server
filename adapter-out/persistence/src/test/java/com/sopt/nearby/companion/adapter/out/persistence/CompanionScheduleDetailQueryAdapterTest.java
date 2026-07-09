@@ -5,14 +5,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleDetailJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
 import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRepository;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
@@ -45,6 +50,9 @@ class CompanionScheduleDetailQueryAdapterTest {
     private CompanionScheduleDetailJpaRepository scheduleDetailJpaRepository;
 
     @Autowired
+    private CompanionProfileJpaRepository companionProfileJpaRepository;
+
+    @Autowired
     private PlaceCacheJpaRepository placeCacheJpaRepository;
 
     @Test
@@ -61,6 +69,7 @@ class CompanionScheduleDetailQueryAdapterTest {
                 postPlace.getId(),
                 "https://open.kakao.com/o/confirmed"
         ));
+        companionProfileJpaRepository.saveAndFlush(profile(7L, "루피"));
         CompanionMatchEntity match = companionMatchJpaRepository.saveAndFlush(match(
                 post.getId(),
                 CompanionMatchStatus.SCHEDULE_CONFIRMED
@@ -72,24 +81,25 @@ class CompanionScheduleDetailQueryAdapterTest {
                 true
         ));
 
-        Optional<CompanionScheduleDetail> result = adapter.findByMatchId(match.getId());
+        Optional<CompanionScheduleDetail> result = adapter.findByMatchIdAndUserId(match.getId(), 7L);
 
         assertThat(result).isPresent();
         CompanionScheduleDetail detail = result.get();
         assertThat(detail.matchId()).isEqualTo(match.getId());
         assertThat(detail.matchStatus()).isEqualTo(CompanionMatchStatus.SCHEDULE_CONFIRMED);
         assertThat(detail.openChatUrl()).isEqualTo("https://open.kakao.com/o/confirmed");
-        assertThat(detail.schedule().scheduleId()).isEqualTo(schedule.getId());
         assertThat(detail.schedule().scheduledAt()).isEqualTo(NOW.plusDays(2));
         assertThat(detail.schedule().place().googlePlaceId()).isEqualTo("schedule-place-id");
         assertThat(detail.schedule().place().name()).isEqualTo("Siutat condal");
         assertThat(detail.schedule().place().address()).isEqualTo("Rambla de Catalunya, 16");
         assertThat(detail.schedule().place().latitude()).isEqualByComparingTo("41.39020500");
         assertThat(detail.schedule().place().longitude()).isEqualByComparingTo("2.16354800");
+        assertThat(detail.userNickname()).isEqualTo("루피");
+        assertThat(detail.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
     }
 
     @Test
-    void returnsNullScheduleAndOpenChatUrlWhenConfirmedScheduleDoesNotExist() {
+    void returnsNowScheduleWithPostPlaceAndExposureExpiresAtWhenConfirmedScheduleDoesNotExist() {
         CompanionScheduleDetailQueryAdapter adapter = new CompanionScheduleDetailQueryAdapter(
                 scheduleDetailJpaRepository
         );
@@ -100,8 +110,10 @@ class CompanionScheduleDetailQueryAdapterTest {
         ));
         CompanionPostEntity post = companionPostJpaRepository.saveAndFlush(post(
                 postPlace.getId(),
-                "https://open.kakao.com/o/not-yet"
+                "https://open.kakao.com/o/not-yet",
+                CompanionPostMeetingTimeType.NOW
         ));
+        companionProfileJpaRepository.saveAndFlush(profile(7L, "루피"));
         CompanionMatchEntity match = companionMatchJpaRepository.saveAndFlush(match(
                 post.getId(),
                 CompanionMatchStatus.MATCHED
@@ -113,12 +125,47 @@ class CompanionScheduleDetailQueryAdapterTest {
                 false
         ));
 
-        Optional<CompanionScheduleDetail> result = adapter.findByMatchId(match.getId());
+        Optional<CompanionScheduleDetail> result = adapter.findByMatchIdAndUserId(match.getId(), 7L);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
+        assertThat(result.get().schedule()).isNotNull();
+        assertThat(result.get().schedule().scheduledAt()).isEqualTo(NOW.plusHours(1));
+        assertThat(result.get().schedule().place().googlePlaceId()).isEqualTo("post-place-id");
+        assertThat(result.get().schedule().place().name()).isEqualTo("모집 장소");
+        assertThat(result.get().schedule().place().address()).isEqualTo("Rambla de Catalunya, 16");
+        assertThat(result.get().schedule().place().latitude()).isEqualByComparingTo("41.39020500");
+        assertThat(result.get().schedule().place().longitude()).isEqualByComparingTo("2.16354800");
+        assertThat(result.get().openChatUrl()).isEqualTo("https://open.kakao.com/o/not-yet");
+        assertThat(result.get().userNickname()).isEqualTo("루피");
+        assertThat(result.get().meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.NOW);
+    }
+
+    @Test
+    void returnsNullScheduleAndOpenChatUrlWhenScheduledMatchHasNoConfirmedSchedule() {
+        CompanionScheduleDetailQueryAdapter adapter = new CompanionScheduleDetailQueryAdapter(
+                scheduleDetailJpaRepository
+        );
+        PlaceCacheEntity postPlace = placeCacheJpaRepository.saveAndFlush(place("post-place-id", "모집 장소"));
+        CompanionPostEntity post = companionPostJpaRepository.saveAndFlush(post(
+                postPlace.getId(),
+                "https://open.kakao.com/o/not-yet",
+                CompanionPostMeetingTimeType.SCHEDULED
+        ));
+        companionProfileJpaRepository.saveAndFlush(profile(7L, "루피"));
+        CompanionMatchEntity match = companionMatchJpaRepository.saveAndFlush(match(
+                post.getId(),
+                CompanionMatchStatus.MATCHED
+        ));
+
+        Optional<CompanionScheduleDetail> result = adapter.findByMatchIdAndUserId(match.getId(), 7L);
 
         assertThat(result).isPresent();
         assertThat(result.get().matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
         assertThat(result.get().schedule()).isNull();
         assertThat(result.get().openChatUrl()).isNull();
+        assertThat(result.get().userNickname()).isEqualTo("루피");
+        assertThat(result.get().meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
     }
 
     @Test
@@ -131,12 +178,13 @@ class CompanionScheduleDetailQueryAdapterTest {
                 postPlace.getId(),
                 "https://open.kakao.com/o/canceled"
         ));
+        companionProfileJpaRepository.saveAndFlush(profile(7L, "루피"));
         CompanionMatchEntity match = companionMatchJpaRepository.saveAndFlush(match(
                 post.getId(),
                 CompanionMatchStatus.CANCELED
         ));
 
-        Optional<CompanionScheduleDetail> result = adapter.findByMatchId(match.getId());
+        Optional<CompanionScheduleDetail> result = adapter.findByMatchIdAndUserId(match.getId(), 7L);
 
         assertThat(result).isPresent();
         assertThat(result.get().matchStatus()).isEqualTo(CompanionMatchStatus.CANCELED);
@@ -148,7 +196,7 @@ class CompanionScheduleDetailQueryAdapterTest {
                 scheduleDetailJpaRepository
         );
 
-        Optional<CompanionScheduleDetail> result = adapter.findByMatchId(999L);
+        Optional<CompanionScheduleDetail> result = adapter.findByMatchIdAndUserId(999L, 7L);
 
         assertThat(result).isEmpty();
     }
@@ -171,12 +219,23 @@ class CompanionScheduleDetailQueryAdapterTest {
     }
 
     private CompanionPostEntity post(final Long placeId, final String openChatUrl) {
+        return post(placeId, openChatUrl, CompanionPostMeetingTimeType.SCHEDULED);
+    }
+
+    private CompanionPostEntity post(
+            final Long placeId,
+            final String openChatUrl,
+            final CompanionPostMeetingTimeType meetingTimeType
+    ) {
         return new CompanionPostEntity(
                 null,
                 7L,
                 placeId,
-                NOW.plusDays(1),
+                meetingTimeType,
+                meetingTimeType == CompanionPostMeetingTimeType.NOW ? null : NOW.plusDays(1),
+                meetingTimeType == CompanionPostMeetingTimeType.NOW ? NOW.plusHours(1) : null,
                 4,
+                true,
                 "함께 밥 먹을 동행을 구해요.",
                 openChatUrl,
                 CompanionPostStatus.CLOSED,
@@ -209,12 +268,28 @@ class CompanionScheduleDetailQueryAdapterTest {
         );
     }
 
+    private CompanionProfileEntity profile(final Long userId, final String nickname) {
+        return new CompanionProfileEntity(
+                null,
+                userId,
+                nickname,
+                UserGender.FEMALE,
+                1998,
+                null,
+                null,
+                new BigDecimal("4.50"),
+                0,
+                CompanionProfileStatus.ACTIVE
+        );
+    }
+
     @SpringBootConfiguration
     @EnableAutoConfiguration
     @EntityScan(basePackageClasses = {
             CompanionPostEntity.class,
             CompanionMatchEntity.class,
             CompanionScheduleEntity.class,
+            CompanionProfileEntity.class,
             PlaceCacheEntity.class
     })
     @EnableJpaRepositories(basePackageClasses = {
@@ -222,6 +297,7 @@ class CompanionScheduleDetailQueryAdapterTest {
             CompanionMatchJpaRepository.class,
             CompanionScheduleJpaRepository.class,
             CompanionScheduleDetailJpaRepository.class,
+            CompanionProfileJpaRepository.class,
             PlaceCacheJpaRepository.class
     })
     static class TestApplication {
