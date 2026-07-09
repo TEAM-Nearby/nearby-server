@@ -21,7 +21,9 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPro
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReviewJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReviewKeywordJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.MyPageProfileProjection;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.MyPageQueryJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.MyPageVisitedPlaceProjection;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
@@ -41,6 +43,8 @@ import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -169,6 +173,38 @@ class MyPageQueryAdapterTest {
         assertThat(adapter.findByUserId(user.getId())).isEmpty();
     }
 
+    @Test
+    void skipsInvalidReceivedReviewKeywords() {
+        FakeMyPageQueryJpaRepository repository = new FakeMyPageQueryJpaRepository();
+        repository.profile = Optional.of(myPageProjection("FEMALE"));
+        repository.reviewKeywords = List.of("FAST_RESPONSE", "LEGACY_KEYWORD");
+        MyPageQueryAdapter adapter = new MyPageQueryAdapter(repository);
+
+        MyPageProfile result = adapter.findByUserId(7L).orElseThrow();
+
+        assertThat(result.mannerKeywords()).containsExactly(ReviewKeyword.FAST_RESPONSE);
+    }
+
+    @Test
+    void returnsEmptyWhenGenderIsInvalid() {
+        FakeMyPageQueryJpaRepository repository = new FakeMyPageQueryJpaRepository();
+        repository.profile = Optional.of(myPageProjection("UNKNOWN"));
+        MyPageQueryAdapter adapter = new MyPageQueryAdapter(repository);
+
+        assertThat(adapter.findByUserId(7L)).isEmpty();
+    }
+
+    @Test
+    void usesZeroWhenReviewCountIsMissing() {
+        FakeMyPageQueryJpaRepository repository = new FakeMyPageQueryJpaRepository();
+        repository.profile = Optional.of(myPageProjection("FEMALE", null));
+        MyPageQueryAdapter adapter = new MyPageQueryAdapter(repository);
+
+        MyPageProfile result = adapter.findByUserId(7L).orElseThrow();
+
+        assertThat(result.reviewCount()).isZero();
+    }
+
     private CompanionMeetingEntity completedMeeting(
             final Long userId,
             final Long postPlaceId,
@@ -289,6 +325,98 @@ class MyPageQueryAdapterTest {
                 CompanionMatchStatus.COMPLETED,
                 LocalDateTime.of(2026, 6, 30, 13, 0)
         );
+    }
+
+    private MyPageProfileProjection myPageProjection(final String gender) {
+        return myPageProjection(gender, 12);
+    }
+
+    private MyPageProfileProjection myPageProjection(final String gender, final Integer reviewCount) {
+        return new TestMyPageProfileProjection(gender, reviewCount);
+    }
+
+    private static final class FakeMyPageQueryJpaRepository implements MyPageQueryJpaRepository {
+
+        private Optional<MyPageProfileProjection> profile = Optional.empty();
+        private List<TravelStyleKeyword> travelStyleKeywords = List.of();
+        private List<String> reviewKeywords = List.of();
+        private List<MyPageVisitedPlaceProjection> completedMeetingPlaces = List.of();
+
+        @Override
+        public Optional<MyPageProfileProjection> findProfileByUserId(final Long userId) {
+            return profile;
+        }
+
+        @Override
+        public List<TravelStyleKeyword> findTravelStyleKeywordsByProfileId(final Long profileId) {
+            return travelStyleKeywords;
+        }
+
+        @Override
+        public List<String> findReceivedReviewKeywordsByUserId(final Long userId) {
+            return reviewKeywords;
+        }
+
+        @Override
+        public List<MyPageVisitedPlaceProjection> findCompletedMeetingPlacesByUserId(final Long userId) {
+            return completedMeetingPlaces;
+        }
+    }
+
+    private static final class TestMyPageProfileProjection implements MyPageProfileProjection {
+
+        private final String gender;
+        private final Integer reviewCount;
+
+        private TestMyPageProfileProjection(final String gender, final Integer reviewCount) {
+            this.gender = gender;
+            this.reviewCount = reviewCount;
+        }
+
+        @Override
+        public Long getProfileId() {
+            return 5L;
+        }
+
+        @Override
+        public Long getUserId() {
+            return 7L;
+        }
+
+        @Override
+        public String getNickname() {
+            return "니어바이";
+        }
+
+        @Override
+        public String getGender() {
+            return gender;
+        }
+
+        @Override
+        public Integer getBirthYear() {
+            return 2003;
+        }
+
+        @Override
+        public String getProfileImageUrl() {
+            return "https://cdn.nearby.com/profiles/1.jpg";
+        }
+
+        @Override
+        public BigDecimal getMannerScore() {
+            return new BigDecimal("4.00");
+        }
+
+        @Override
+        public Integer getReviewCount() {
+            return reviewCount;
+        }
+
+        @Override
+        public LocalDateTime getPhoneVerifiedAt() {
+            return null;
+        }
     }
 
     @SpringBootConfiguration

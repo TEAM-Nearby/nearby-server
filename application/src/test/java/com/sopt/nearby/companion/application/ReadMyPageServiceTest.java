@@ -49,7 +49,9 @@ class ReadMyPageServiceTest {
                 List.of(
                         new MyPageProfile.CompletedMeetingPlace("강남 맛집", "서울 강남구 테헤란로"),
                         new MyPageProfile.CompletedMeetingPlace("해운대 식당", "부산 해운대구"),
-                        new MyPageProfile.CompletedMeetingPlace("망원 카페", "서울 마포구")
+                        new MyPageProfile.CompletedMeetingPlace("망원 카페", "서울 마포구"),
+                        new MyPageProfile.CompletedMeetingPlace("주소 없는 식당", null),
+                        new MyPageProfile.CompletedMeetingPlace("주소 공백 카페", " ")
                 )
         ));
 
@@ -66,7 +68,7 @@ class ReadMyPageServiceTest {
         assertEquals(List.of(ReviewKeyword.FAST_RESPONSE, ReviewKeyword.PUNCTUAL), result.mannerKeywords());
         assertEquals(List.of(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.FOODIE),
                 result.travelStyleKeywords());
-        assertEquals(3, result.mealTogetherCount());
+        assertEquals(5, result.mealTogetherCount());
         assertEquals(2, result.visitedCityCount());
         assertEquals(12, result.receivedReviewCount());
     }

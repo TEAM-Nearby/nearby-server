@@ -11,10 +11,14 @@ import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.out.MyPageQueryPort;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public class MyPageQueryAdapter implements MyPageQueryPort {
+
+    private static final Logger log = LoggerFactory.getLogger(MyPageQueryAdapter.class);
 
     private final MyPageQueryJpaRepository repository;
 
@@ -25,18 +29,14 @@ public class MyPageQueryAdapter implements MyPageQueryPort {
     @Override
     public Optional<MyPageProfile> findByUserId(final Long userId) {
         return repository.findProfileByUserId(userId)
-                .map(row -> toProfile(
-                        row,
-                        repository.findTravelStyleKeywordsByProfileId(row.getProfileId()),
-                        mannerKeywords(userId),
-                        completedMeetingPlaces(userId)
-                ));
+                .flatMap(row -> toProfile(row, userId));
     }
 
     private List<ReviewKeyword> mannerKeywords(final Long userId) {
         return repository.findReceivedReviewKeywordsByUserId(userId)
                 .stream()
-                .map(ReviewKeyword::valueOf)
+                .map(keyword -> parseReviewKeyword(userId, keyword))
+                .flatMap(Optional::stream)
                 .toList();
     }
 
@@ -47,26 +47,64 @@ public class MyPageQueryAdapter implements MyPageQueryPort {
                 .toList();
     }
 
-    private MyPageProfile toProfile(
+    private Optional<MyPageProfile> toProfile(
             final MyPageProfileProjection row,
-            final List<TravelStyleKeyword> travelStyleKeywords,
-            final List<ReviewKeyword> mannerKeywords,
-            final List<MyPageProfile.CompletedMeetingPlace> completedMeetingPlaces
+            final Long userId
     ) {
-        return new MyPageProfile(
+        Optional<UserGender> gender = parseGender(row);
+        if (gender.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new MyPageProfile(
                 row.getProfileId(),
                 row.getUserId(),
                 row.getNickname(),
-                UserGender.valueOf(row.getGender()),
+                gender.get(),
                 row.getBirthYear(),
                 row.getProfileImageUrl(),
                 row.getMannerScore(),
-                row.getReviewCount().intValue(),
+                reviewCount(row),
                 row.getPhoneVerifiedAt(),
-                travelStyleKeywords,
-                mannerKeywords,
-                completedMeetingPlaces
-        );
+                repository.findTravelStyleKeywordsByProfileId(row.getProfileId()),
+                mannerKeywords(userId),
+                completedMeetingPlaces(userId)
+        ));
+    }
+
+    private int reviewCount(final MyPageProfileProjection row) {
+        if (row.getReviewCount() == null) {
+            log.warn(
+                    "Using default review count for my page profile. profileId={}, userId={}",
+                    row.getProfileId(),
+                    row.getUserId()
+            );
+            return 0;
+        }
+        return row.getReviewCount();
+    }
+
+    private Optional<UserGender> parseGender(final MyPageProfileProjection row) {
+        try {
+            return Optional.of(UserGender.valueOf(row.getGender()));
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            log.warn(
+                    "Skipping my page profile with invalid gender. profileId={}, userId={}, gender={}",
+                    row.getProfileId(),
+                    row.getUserId(),
+                    row.getGender()
+            );
+            return Optional.empty();
+        }
+    }
+
+    private Optional<ReviewKeyword> parseReviewKeyword(final Long userId, final String keyword) {
+        try {
+            return Optional.of(ReviewKeyword.valueOf(keyword));
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            log.warn("Skipping invalid my page review keyword. userId={}, keyword={}", userId, keyword);
+            return Optional.empty();
+        }
     }
 
     private MyPageProfile.CompletedMeetingPlace toCompletedMeetingPlace(final MyPageVisitedPlaceProjection row) {

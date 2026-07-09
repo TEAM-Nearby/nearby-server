@@ -84,7 +84,7 @@ public class ReadMyPageService implements ReadMyPageUseCase {
     private int visitedCityCount(final MyPageProfile profile) {
         return (int) profile.completedMeetingPlaces()
                 .stream()
-                .map(place -> CompanionPlaceCityNameResolver.resolve(place.address(), place.name()))
+                .map(place -> CompanionPlaceCityNameResolver.resolve(place.address()))
                 .filter(cityName -> !cityName.isBlank())
                 .distinct()
                 .count();
