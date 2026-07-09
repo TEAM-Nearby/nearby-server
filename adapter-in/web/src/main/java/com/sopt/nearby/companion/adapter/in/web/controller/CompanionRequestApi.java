@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.adapter.in.web.dto.response.RejectedCompanionRe
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +38,7 @@ public interface CompanionRequestApi {
 
     @ApiExceptions({
             ForbiddenCompanionRequestHostOnlyException.class,
+            ForbiddenCompanionRequestSelfException.class,
             CompanionRequestNotFoundException.class,
             CompanionRequestNotPendingException.class
     })
