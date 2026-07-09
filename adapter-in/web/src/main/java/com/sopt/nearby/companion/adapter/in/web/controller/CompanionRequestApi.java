@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.adapter.in.web.dto.request.RejectCompanionReque
 import com.sopt.nearby.companion.adapter.in.web.dto.response.AcceptedCompanionRequestResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionRequestReviewResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.RejectedCompanionRequestResponse;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
@@ -40,6 +41,7 @@ public interface CompanionRequestApi {
             ForbiddenCompanionRequestHostOnlyException.class,
             ForbiddenCompanionRequestSelfException.class,
             CompanionRequestNotFoundException.class,
+            CompanionPostNotRecruitingException.class,
             CompanionRequestNotPendingException.class
     })
     @Operation(

@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.application;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleAlreadyConfirmedException;
@@ -128,10 +129,24 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
         if (application.status() != CompanionApplicationStatus.PENDING) {
             throw new CompanionRequestNotPendingException();
         }
+        if (status == CompanionApplicationStatus.ACCEPTED) {
+            validateAcceptablePost(post);
+        }
         if (!applicationRepository.updateStatusIfPending(application.id(), status, rejectionReason)) {
             throw new CompanionRequestNotPendingException();
         }
         return new RequestContext(application, post);
+    }
+
+    private void validateAcceptablePost(final CompanionPost post) {
+        if (post.meetingTimeType() == CompanionPostMeetingTimeType.NOW
+                && isExpiredNowPost(post.exposureExpiresAt())) {
+            throw new CompanionPostNotRecruitingException();
+        }
+    }
+
+    private boolean isExpiredNowPost(final LocalDateTime exposureExpiresAt) {
+        return exposureExpiresAt == null || !exposureExpiresAt.isAfter(LocalDateTime.now(clock));
     }
 
     private CompanionPost findPost(final Long postId, final boolean forUpdate) {

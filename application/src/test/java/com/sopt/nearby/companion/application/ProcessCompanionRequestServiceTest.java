@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
@@ -131,6 +132,23 @@ class ProcessCompanionRequestServiceTest {
         assertEquals(20L, schedule.placeId());
         assertEquals(NOW.plusHours(1), schedule.scheduledAt());
         assertTrue(schedule.confirmed());
+    }
+
+    @Test
+    void rejectsExpiredNowRequestBeforeAcceptingApplication() {
+        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        postRepository.save(nowPost(10L, 100L, NOW));
+
+        assertThrows(
+                CompanionPostNotRecruitingException.class,
+                () -> service.accept(new AcceptCompanionRequestCommand(100L, 3L))
+        );
+
+        assertEquals(CompanionApplicationStatus.PENDING, applicationRepository.findById(3L).orElseThrow().status());
+        assertTrue(matchRepository.matches.isEmpty());
+        assertTrue(participantRepository.participants.isEmpty());
+        assertTrue(scheduleRepository.schedules.isEmpty());
+        assertTrue(notificationUseCase.commands.isEmpty());
     }
 
     @Test
@@ -282,13 +300,17 @@ class ProcessCompanionRequestServiceTest {
     }
 
     private CompanionPost nowPost(final Long id, final Long hostUserId) {
+        return nowPost(id, hostUserId, NOW.plusHours(1));
+    }
+
+    private CompanionPost nowPost(final Long id, final Long hostUserId, final LocalDateTime exposureExpiresAt) {
         return new CompanionPost(
                 id,
                 hostUserId,
                 20L,
                 CompanionPostMeetingTimeType.NOW,
                 null,
-                NOW.plusHours(1),
+                exposureExpiresAt,
                 4,
                 true,
                 "지금 바로 같이 밥 먹을 동행을 구해요.",
