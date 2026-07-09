@@ -117,16 +117,17 @@ class OngoingCompanionMeetingQueryAdapterTest {
     }
 
     @Test
-    void resolvesNowMeetingAtFromExposureExpiresAtAndReturnsMeetingTimeType() {
+    void resolvesNowMeetingAtFromConfirmedScheduleAndReturnsMeetingTimeType() {
         OngoingCompanionMeetingQueryAdapter adapter = new OngoingCompanionMeetingQueryAdapter(queryJpaRepository);
         profileJpaRepository.saveAndFlush(profile(CURRENT_USER_ID, "정지영", UserGender.FEMALE));
         profileJpaRepository.saveAndFlush(profile(HOST_USER_ID, "김지원", UserGender.MALE));
         LocalDateTime exposureExpiresAt = BASE_TIME.plusMinutes(30);
+        LocalDateTime scheduledAt = BASE_TIME.plusHours(3);
         CompanionMeetingEntity nowMeeting = createNowMeeting(
                 HOST_USER_ID,
                 CURRENT_USER_ID,
                 exposureExpiresAt,
-                BASE_TIME.plusHours(3)
+                scheduledAt
         );
 
         List<OngoingCompanionMeetingSummary> result = adapter.findAllByParticipantUserId(CURRENT_USER_ID);
@@ -134,7 +135,7 @@ class OngoingCompanionMeetingQueryAdapterTest {
         assertThat(result).hasSize(1);
         OngoingCompanionMeetingSummary summary = result.getFirst();
         assertThat(summary.meetingId()).isEqualTo(nowMeeting.getId());
-        assertThat(summary.meetingAt()).isEqualTo(exposureExpiresAt);
+        assertThat(summary.meetingAt()).isEqualTo(scheduledAt);
         assertThat(summary.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.NOW);
     }
 
