@@ -2,9 +2,9 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
-import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,7 +20,7 @@ public record CreateCompanionPostResult(
         int maxParticipants,
         int participantCount,
         boolean departEvenIfNotFull,
-        List<TravelStyleKeyword> styleKeywords,
+        List<CompanionPostKeyword> styleKeywords,
         String content,
         String openChatUrl,
         LocalDateTime createdAt

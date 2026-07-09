@@ -30,7 +30,7 @@ public record RegisterCompanionProfileRequest(
 		@Size(max = 255, message = "필수값 누락되었거나 형식에 오류가 발생했습니다.")
 		String profileImageUrl,
 
-		@Schema(description = "여행 스타일 키워드 목록", example = "[\"PLANNED\", \"FOODIE\"]")
+		@Schema(description = "여행 스타일 키워드 목록", example = "[\"EXTROVERTED\", \"CAFE_TOUR\"]")
 		@NotEmpty(message = "필수값 누락되었거나 형식에 오류가 발생했습니다.")
 		List<TravelStyleKeyword> travelStyleKeywords
 ) {

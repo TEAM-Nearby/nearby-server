@@ -1,19 +1,19 @@
 // 동행 모집글 성향 엔티티의 복합 키를 표현하는 JPA 식별자 클래스
 package com.sopt.nearby.companion.adapter.out.persistence.entity;
 
-import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
 import java.io.Serializable;
 import java.util.Objects;
 
 public class CompanionPostStyleEntityId implements Serializable {
 
 	private Long postId;
-	private TravelStyleKeyword keyword;
+	private CompanionPostKeyword keyword;
 
 	public CompanionPostStyleEntityId() {
 	}
 
-	public CompanionPostStyleEntityId(final Long postId, final TravelStyleKeyword keyword) {
+	public CompanionPostStyleEntityId(final Long postId, final CompanionPostKeyword keyword) {
 		this.postId = postId;
 		this.keyword = keyword;
 	}
@@ -22,7 +22,7 @@ public class CompanionPostStyleEntityId implements Serializable {
 		return postId;
 	}
 
-	public TravelStyleKeyword getKeyword() {
+	public CompanionPostKeyword getKeyword() {
 		return keyword;
 	}
 

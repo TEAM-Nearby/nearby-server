@@ -51,7 +51,7 @@ class RegisterCompanionProfileServiceTest {
 				UserGender.FEMALE,
 				"혼자 여행도 같이 여행도 좋아해요",
 				"https://cdn.nearby.com/profiles/1/profile.jpg",
-				List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE)
+				List.of(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.CAFE_TOUR)
 		));
 
 		assertEquals(5L, result.profileId());
@@ -60,7 +60,7 @@ class RegisterCompanionProfileServiceTest {
 		assertEquals("혼자 여행도 같이 여행도 좋아해요", result.intro());
 		assertEquals("https://cdn.nearby.com/profiles/1/profile.jpg", result.profileImageUrl());
 		assertIterableEquals(
-				List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE),
+				List.of(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.CAFE_TOUR),
 				result.travelStyleKeywords()
 		);
 		assertEquals("COMPLETED", result.onboardingStatus());
@@ -75,7 +75,7 @@ class RegisterCompanionProfileServiceTest {
 		assertEquals(CompanionProfileStatus.ACTIVE, savedProfile.status());
 		assertEquals(1L, completeOnboardingUseCase.userId);
 		assertIterableEquals(
-				List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE),
+				List.of(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.CAFE_TOUR),
 				styleRepository.savedStyles.stream().map(CompanionProfileStyle::keyword).toList()
 		);
 	}
@@ -90,7 +90,7 @@ class RegisterCompanionProfileServiceTest {
 				UserGender.FEMALE,
 				null,
 				null,
-				List.of(TravelStyleKeyword.FOODIE)
+				List.of(TravelStyleKeyword.DESSERT_LOVER)
 		)));
 
 		assertFalse(completeOnboardingUseCase.called);
@@ -106,7 +106,7 @@ class RegisterCompanionProfileServiceTest {
 				UserGender.FEMALE,
 				null,
 				null,
-				List.of(TravelStyleKeyword.FOODIE)
+				List.of(TravelStyleKeyword.DESSERT_LOVER)
 		)));
 
 		assertFalse(completeOnboardingUseCase.called);
@@ -122,7 +122,7 @@ class RegisterCompanionProfileServiceTest {
 				UserGender.FEMALE,
 				null,
 				null,
-				List.of(TravelStyleKeyword.FOODIE)
+				List.of(TravelStyleKeyword.DESSERT_LOVER)
 		)));
 
 		assertEquals(null, profileRepository.savedProfile);
@@ -211,4 +211,3 @@ class RegisterCompanionProfileServiceTest {
 		}
 	}
 }
-
