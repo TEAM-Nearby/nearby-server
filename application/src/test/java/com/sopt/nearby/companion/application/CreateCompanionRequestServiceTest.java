@@ -240,6 +240,15 @@ class CreateCompanionRequestServiceTest {
             existsApplicantUserId = applicantUserId;
             return exists;
         }
+
+        @Override
+        public boolean updateStatusIfPending(
+                final Long applicationId,
+                final CompanionApplicationStatus status,
+                final String rejectionReason
+        ) {
+            return false;
+        }
     }
 
     private static final class FakeCreateCompanionNotificationUseCase implements CreateCompanionNotificationUseCase {

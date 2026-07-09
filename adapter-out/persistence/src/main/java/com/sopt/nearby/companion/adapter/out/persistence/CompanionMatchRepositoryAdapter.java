@@ -6,7 +6,9 @@ import com.sopt.nearby.companion.adapter.out.persistence.mapper.CompanionPersist
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import java.util.Optional;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;
 
@@ -21,6 +23,15 @@ public class CompanionMatchRepositoryAdapter
 		super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
 				Function.identity());
 		this.jpaRepository = jpaRepository;
+	}
+
+	@Override
+	public Optional<CompanionMatch> findFirstByPostIdAndStatus(
+			final Long postId,
+			final CompanionMatchStatus status
+	) {
+		return jpaRepository.findFirstByPostIdAndStatusOrderByIdAsc(postId, status)
+				.map(CompanionPersistenceMapper::toDomain);
 	}
 
 	@Override

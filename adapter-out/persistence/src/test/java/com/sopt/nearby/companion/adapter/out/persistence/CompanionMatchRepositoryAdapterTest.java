@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEn
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import java.time.LocalDateTime;
@@ -46,6 +47,30 @@ class CompanionMatchRepositoryAdapterTest {
                 .extracting(CompanionMatchEntity::getStatus)
                 .isEqualTo(CompanionMatchStatus.SCHEDULE_CONFIRMED);
         assertThat(adapter.confirmScheduleIfMatched(match.getId())).isFalse();
+    }
+
+    @Test
+    void findsMatchedMatchByPostIdOnlyWhenStatusMatches() {
+        CompanionMatchRepositoryAdapter adapter = new CompanionMatchRepositoryAdapter(companionMatchJpaRepository);
+        CompanionPostEntity post = companionPostJpaRepository.saveAndFlush(post());
+        companionMatchJpaRepository.saveAndFlush(new CompanionMatchEntity(
+                null,
+                post.getId(),
+                CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                NOW.minusMinutes(1)
+        ));
+        CompanionMatchEntity matched = companionMatchJpaRepository.saveAndFlush(new CompanionMatchEntity(
+                null,
+                post.getId(),
+                CompanionMatchStatus.MATCHED,
+                NOW
+        ));
+
+        assertThat(adapter.findFirstByPostIdAndStatus(post.getId(), CompanionMatchStatus.MATCHED))
+                .get()
+                .extracting(CompanionMatch::id)
+                .isEqualTo(matched.getId());
+        assertThat(adapter.findFirstByPostIdAndStatus(post.getId(), CompanionMatchStatus.CANCELED)).isEmpty();
     }
 
     private CompanionPostEntity post() {
