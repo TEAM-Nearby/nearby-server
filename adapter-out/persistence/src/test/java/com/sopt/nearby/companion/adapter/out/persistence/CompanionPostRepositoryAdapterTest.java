@@ -52,6 +52,31 @@ class CompanionPostRepositoryAdapterTest {
         assertThat(found.departEvenIfNotFull()).isFalse();
     }
 
+    @Test
+    void findsPostForUpdate() {
+        CompanionPostRepositoryAdapter adapter = new CompanionPostRepositoryAdapter(companionPostJpaRepository);
+        LocalDateTime createdAt = LocalDateTime.of(2026, 7, 2, 14, 0);
+        CompanionPost saved = adapter.save(new CompanionPost(
+                null,
+                7L,
+                20L,
+                CompanionPostMeetingTimeType.UNDECIDED,
+                null,
+                null,
+                4,
+                true,
+                "같이 스시 먹으러 갈 사람 구해요.",
+                "https://open.kakao.com/o/nearby123",
+                CompanionPostStatus.RECRUITING,
+                createdAt
+        ));
+
+        CompanionPost found = adapter.findByIdForUpdate(saved.id()).orElseThrow();
+
+        assertThat(found.id()).isEqualTo(saved.id());
+        assertThat(found.hostUserId()).isEqualTo(7L);
+    }
+
     @SpringBootConfiguration
     @EnableAutoConfiguration
     @EntityScan(basePackageClasses = CompanionPostEntity.class)
