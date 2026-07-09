@@ -95,7 +95,12 @@ public interface CompanionMatchApi {
     })
     @Operation(
             summary = "내 동행 일정 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 동행 일정 정보를 조회합니다.",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 동행 일정 정보를 조회합니다.
+                    성공 응답은 MATCHED 또는 SCHEDULE_CONFIRMED 상태만 반환하며, 로그인 사용자의 닉네임과 모집글의 만남 시간 유형을 함께 반환합니다.
+                    meetingTimeType이 NOW인 모집글은 신청 수락 시 일정이 자동 확정되어 SCHEDULE_CONFIRMED 상태로 반환됩니다.
+                    NOW 일정의 schedule.place는 모집글 장소, schedule.scheduledAt은 즉시 동행 노출 만료 시간입니다.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionScheduleDetailResponse> getSchedule(
