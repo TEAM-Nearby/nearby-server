@@ -4,25 +4,35 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.sopt.nearby.companion.application.AcceptCompanionRequestCommand;
+import com.sopt.nearby.companion.application.AcceptedCompanionRequestResult;
 import com.sopt.nearby.companion.application.CompanionRequestReviewResult;
 import com.sopt.nearby.companion.application.ReadCompanionRequestReviewCommand;
+import com.sopt.nearby.companion.application.RejectCompanionRequestCommand;
+import com.sopt.nearby.companion.application.RejectedCompanionRequestResult;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.port.in.AcceptCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
+import com.sopt.nearby.companion.port.in.RejectCompanionRequestUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -31,12 +41,16 @@ class CompanionRequestControllerTest {
 
     private MockMvc mockMvc;
     private FakeReadCompanionRequestReviewUseCase useCase;
+    private FakeAcceptCompanionRequestUseCase acceptUseCase;
+    private FakeRejectCompanionRequestUseCase rejectUseCase;
 
     @BeforeEach
     void setUp() {
         useCase = new FakeReadCompanionRequestReviewUseCase();
+        acceptUseCase = new FakeAcceptCompanionRequestUseCase();
+        rejectUseCase = new FakeRejectCompanionRequestUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionRequestController(useCase))
+                .standaloneSetup(new CompanionRequestController(useCase, acceptUseCase, rejectUseCase))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -89,7 +103,7 @@ class CompanionRequestControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.code").value("FORBIDDEN_COMPANION_REQUEST_HOST_ONLY"))
-                .andExpect(jsonPath("$.message").value("해당 동행의 호스트만 조회할 수 있습니다."))
+                .andExpect(jsonPath("$.message").value("해당 동행의 호스트만 처리할 수 있습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
@@ -103,6 +117,92 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.status").value(404))
                 .andExpect(jsonPath("$.code").value("COMPANION_REQUEST_NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("동행 신청을 찾을 수 없습니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void acceptsCompanionRequestAndPassesAuthenticatedHostIdToUseCase() throws Exception {
+        acceptUseCase.result = new AcceptedCompanionRequestResult(
+                3L,
+                10L,
+                CompanionApplicationStatus.ACCEPTED,
+                1L,
+                CompanionMatchStatus.MATCHED
+        );
+
+        mockMvc.perform(patch("/api/companion-requests/{applicationId}/accept", 3L)
+                        .principal(principal("100")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("ACCEPT_COMPANION_REQUEST"))
+                .andExpect(jsonPath("$.message").value("동행 신청을 수락했어요."))
+                .andExpect(jsonPath("$.data.applicationId").value(3))
+                .andExpect(jsonPath("$.data.postId").value(10))
+                .andExpect(jsonPath("$.data.applicationStatus").value("ACCEPTED"))
+                .andExpect(jsonPath("$.data.matchId").value(1))
+                .andExpect(jsonPath("$.data.matchStatus").value("MATCHED"));
+
+        assertEquals(100L, acceptUseCase.command.hostUserId());
+        assertEquals(3L, acceptUseCase.command.applicationId());
+    }
+
+    @Test
+    void rejectsCompanionRequestAndPassesReasonToUseCase() throws Exception {
+        rejectUseCase.result = new RejectedCompanionRequestResult(
+                3L,
+                10L,
+                CompanionApplicationStatus.REJECTED
+        );
+
+        mockMvc.perform(patch("/api/companion-requests/{applicationId}/reject", 3L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "rejectionReason": "일정이 맞지 않아요"
+                                }
+                                """)
+                        .principal(principal("100")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.code").value("REJECT_COMPANION_REQUEST"))
+                .andExpect(jsonPath("$.message").value("동행 신청을 거절했어요."))
+                .andExpect(jsonPath("$.data.applicationId").value(3))
+                .andExpect(jsonPath("$.data.postId").value(10))
+                .andExpect(jsonPath("$.data.applicationStatus").value("REJECTED"));
+
+        assertEquals(100L, rejectUseCase.command.hostUserId());
+        assertEquals(3L, rejectUseCase.command.applicationId());
+        assertEquals("일정이 맞지 않아요", rejectUseCase.command.rejectionReason());
+    }
+
+    @Test
+    void rejectsCompanionRequestWithoutBody() throws Exception {
+        rejectUseCase.result = new RejectedCompanionRequestResult(
+                3L,
+                10L,
+                CompanionApplicationStatus.REJECTED
+        );
+
+        mockMvc.perform(patch("/api/companion-requests/{applicationId}/reject", 3L)
+                        .principal(principal("100")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value("REJECT_COMPANION_REQUEST"));
+
+        assertEquals(100L, rejectUseCase.command.hostUserId());
+        assertEquals(3L, rejectUseCase.command.applicationId());
+        assertEquals(null, rejectUseCase.command.rejectionReason());
+    }
+
+    @Test
+    void returnsConflictWhenCompanionRequestIsNotPending() throws Exception {
+        acceptUseCase.exception = new CompanionRequestNotPendingException();
+
+        mockMvc.perform(patch("/api/companion-requests/{applicationId}/accept", 3L)
+                        .principal(principal("100")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.code").value("COMPANION_REQUEST_NOT_PENDING"))
+                .andExpect(jsonPath("$.message").value("대기 중인 신청만 처리할 수 있습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
@@ -144,6 +244,38 @@ class CompanionRequestControllerTest {
 
         @Override
         public CompanionRequestReviewResult read(final ReadCompanionRequestReviewCommand command) {
+            this.command = command;
+            if (exception != null) {
+                throw exception;
+            }
+            return result;
+        }
+    }
+
+    private static final class FakeAcceptCompanionRequestUseCase implements AcceptCompanionRequestUseCase {
+
+        private AcceptedCompanionRequestResult result;
+        private AcceptCompanionRequestCommand command;
+        private RuntimeException exception;
+
+        @Override
+        public AcceptedCompanionRequestResult accept(final AcceptCompanionRequestCommand command) {
+            this.command = command;
+            if (exception != null) {
+                throw exception;
+            }
+            return result;
+        }
+    }
+
+    private static final class FakeRejectCompanionRequestUseCase implements RejectCompanionRequestUseCase {
+
+        private RejectedCompanionRequestResult result;
+        private RejectCompanionRequestCommand command;
+        private RuntimeException exception;
+
+        @Override
+        public RejectedCompanionRequestResult reject(final RejectCompanionRequestCommand command) {
             this.command = command;
             if (exception != null) {
                 throw exception;
