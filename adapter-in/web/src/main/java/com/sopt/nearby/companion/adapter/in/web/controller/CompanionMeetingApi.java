@@ -54,6 +54,7 @@ public interface CompanionMeetingApi {
             description = """
                     JWT 액세스 토큰으로 인증된 사용자가 참여 중인 ONGOING 만남 목록을 조회합니다.
                     companion은 항상 HOST 프로필이며, 로그인 사용자가 HOST여도 자기 자신의 HOST 프로필을 반환합니다.
+                    meetingTimeType을 함께 반환하며, NOW 타입의 meetingAt은 즉시 만남의 exposureExpiresAt을 사용합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
