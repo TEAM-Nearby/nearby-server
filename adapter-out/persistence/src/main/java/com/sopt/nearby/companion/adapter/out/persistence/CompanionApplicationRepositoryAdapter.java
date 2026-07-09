@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApp
 import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsException;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
+import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import java.sql.SQLException;
 import java.util.Locale;
@@ -44,6 +45,20 @@ public class CompanionApplicationRepositoryAdapter
 	@Override
 	public boolean existsByPostIdAndApplicantUserId(final Long postId, final Long applicantUserId) {
 		return jpaRepository.existsByPostIdAndApplicantUserId(postId, applicantUserId);
+	}
+
+	@Override
+	public boolean updateStatusIfPending(
+			final Long applicationId,
+			final CompanionApplicationStatus status,
+			final String rejectionReason
+	) {
+		return jpaRepository.updateStatusIfCurrentStatus(
+				applicationId,
+				status,
+				rejectionReason,
+				CompanionApplicationStatus.PENDING
+		) == 1;
 	}
 
 	private RuntimeException mapUniqueConstraintViolation(final DataIntegrityViolationException exception) {

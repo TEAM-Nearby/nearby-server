@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
@@ -105,6 +106,23 @@ class CreateCompanionRequestServiceTest {
         assertThrows(
                 CompanionRequestAlreadyExistsException.class,
                 () -> service.create(new CreateCompanionRequestCommand(7L, 10L))
+        );
+        assertNull(applicationRepository.saved);
+        assertNull(notificationUseCase.command);
+    }
+
+    @Test
+    void rejectsHostSelfApplication() {
+        postRepository.post = Optional.of(post(
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.UNDECIDED,
+                null,
+                null
+        ));
+
+        assertThrows(
+                ForbiddenCompanionRequestSelfException.class,
+                () -> service.create(new CreateCompanionRequestCommand(100L, 10L))
         );
         assertNull(applicationRepository.saved);
         assertNull(notificationUseCase.command);
@@ -239,6 +257,15 @@ class CreateCompanionRequestServiceTest {
             existsPostId = postId;
             existsApplicantUserId = applicantUserId;
             return exists;
+        }
+
+        @Override
+        public boolean updateStatusIfPending(
+                final Long applicationId,
+                final CompanionApplicationStatus status,
+                final String rejectionReason
+        ) {
+            return false;
         }
     }
 

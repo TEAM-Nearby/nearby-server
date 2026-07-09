@@ -10,6 +10,7 @@ import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
+import com.sopt.nearby.companion.application.ProcessCompanionRequestService;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
 import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
@@ -234,6 +235,24 @@ public class CompanionUseCaseConfig {
             final CompanionRequestReviewQueryPort queryPort
     ) {
         return new ReadCompanionRequestReviewService(queryPort);
+    }
+
+    @Bean
+    ProcessCompanionRequestService processCompanionRequestService(
+            final CompanionApplicationRepository applicationRepository,
+            final CompanionPostRepository postRepository,
+            final CompanionMatchRepository matchRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase
+    ) {
+        return new ProcessCompanionRequestService(
+                applicationRepository,
+                postRepository,
+                matchRepository,
+                participantRepository,
+                createCompanionNotificationUseCase,
+                Clock.systemDefaultZone()
+        );
     }
 
     @Bean

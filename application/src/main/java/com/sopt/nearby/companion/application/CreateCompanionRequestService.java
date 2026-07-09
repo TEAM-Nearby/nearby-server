@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.application;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
@@ -50,6 +51,9 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
         CompanionPost post = postRepository.findById(command.postId())
                 .orElseThrow(CompanionPostNotFoundException::new);
         validateRecruiting(post);
+        if (post.hostUserId().equals(command.applicantUserId())) {
+            throw new ForbiddenCompanionRequestSelfException();
+        }
         if (applicationRepository.existsByPostIdAndApplicantUserId(post.id(), command.applicantUserId())) {
             throw new CompanionRequestAlreadyExistsException();
         }

@@ -10,6 +10,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
@@ -140,6 +141,7 @@ public interface CompanionPostApi {
     @ApiExceptions({
             CompanionPostNotFoundException.class,
             CompanionRequestAlreadyExistsException.class,
+            ForbiddenCompanionRequestSelfException.class,
             CompanionPostNotRecruitingException.class
     })
     @ApiResponse(

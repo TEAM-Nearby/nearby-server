@@ -47,6 +47,30 @@ class CompanionApplicationRepositoryAdapterTest {
     }
 
     @Test
+    void updatesStatusOnlyWhenApplicationIsPending() {
+        CompanionApplicationRepositoryAdapter adapter = new CompanionApplicationRepositoryAdapter(applicationJpaRepository);
+        CompanionPostEntity post = postJpaRepository.saveAndFlush(post());
+        CompanionApplication saved = adapter.save(application(post.getId(), 7L));
+
+        assertThat(adapter.updateStatusIfPending(
+                saved.id(),
+                CompanionApplicationStatus.REJECTED,
+                "일정이 맞지 않아요"
+        )).isTrue();
+        assertThat(applicationJpaRepository.findById(saved.id()))
+                .get()
+                .satisfies(application -> {
+                    assertThat(application.getStatus()).isEqualTo(CompanionApplicationStatus.REJECTED);
+                    assertThat(application.getRejectionReason()).isEqualTo("일정이 맞지 않아요");
+                });
+        assertThat(adapter.updateStatusIfPending(
+                saved.id(),
+                CompanionApplicationStatus.ACCEPTED,
+                null
+        )).isFalse();
+    }
+
+    @Test
     void throwsAlreadyExistsWhenSamePostApplicantPairIsSavedAgain() {
         CompanionApplicationRepositoryAdapter adapter = new CompanionApplicationRepositoryAdapter(applicationJpaRepository);
         CompanionPostEntity post = postJpaRepository.saveAndFlush(post());

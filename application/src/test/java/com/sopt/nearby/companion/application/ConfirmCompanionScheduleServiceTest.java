@@ -186,6 +186,14 @@ class ConfirmCompanionScheduleServiceTest {
         }
 
         @Override
+        public Optional<CompanionMatch> findFirstByPostIdAndStatus(
+                final Long postId,
+                final CompanionMatchStatus status
+        ) {
+            return Optional.empty();
+        }
+
+        @Override
         public boolean confirmScheduleIfMatched(final Long matchId) {
             confirmScheduleAttempts++;
             if (confirmScheduleResult) {
