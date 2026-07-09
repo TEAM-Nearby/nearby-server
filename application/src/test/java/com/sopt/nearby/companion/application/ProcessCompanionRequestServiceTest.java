@@ -120,17 +120,26 @@ class ProcessCompanionRequestServiceTest {
 
     @Test
     void acceptsNowRequestAndConfirmsMatchScheduleAutomatically() {
-        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        LocalDateTime applicationCreatedAt = NOW.minusMinutes(20);
+        applicationRepository.save(application(
+                3L,
+                10L,
+                7L,
+                CompanionApplicationStatus.PENDING,
+                null,
+                applicationCreatedAt
+        ));
         postRepository.save(nowPost(10L, 100L));
 
         AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
 
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+        assertEquals(applicationCreatedAt, result.meetingAt());
         CompanionMatch match = matchRepository.findById(result.matchId()).orElseThrow();
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, match.status());
         CompanionSchedule schedule = scheduleRepository.findConfirmedByMatchId(result.matchId()).orElseThrow();
         assertEquals(20L, schedule.placeId());
-        assertEquals(NOW.plusHours(1), schedule.scheduledAt());
+        assertEquals(applicationCreatedAt, schedule.scheduledAt());
         assertTrue(schedule.confirmed());
     }
 
@@ -156,15 +165,18 @@ class ProcessCompanionRequestServiceTest {
         applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
         postRepository.save(nowPost(10L, 100L));
         matchRepository.save(new CompanionMatch(50L, 10L, CompanionMatchStatus.SCHEDULE_CONFIRMED, NOW.minusMinutes(1)));
-        scheduleRepository.save(new CompanionSchedule(null, 50L, 20L, NOW.plusHours(1), null, true));
+        LocalDateTime existingScheduleAt = NOW.minusMinutes(30);
+        scheduleRepository.save(new CompanionSchedule(null, 50L, 20L, existingScheduleAt, null, true));
         participantRepository.save(new CompanionMatchParticipant(null, 50L, 100L, null, MatchParticipantRole.HOST));
 
         AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
 
         assertEquals(50L, result.matchId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+        assertEquals(existingScheduleAt, result.meetingAt());
         assertEquals(1, matchRepository.matches.size());
         assertEquals(1, scheduleRepository.schedules.size());
+        assertEquals(existingScheduleAt, scheduleRepository.findConfirmedByMatchId(50L).orElseThrow().scheduledAt());
         assertTrue(participantRepository.existsByMatchIdAndUserId(50L, 7L));
     }
 
@@ -279,7 +291,18 @@ class ProcessCompanionRequestServiceTest {
             final CompanionApplicationStatus status,
             final String rejectionReason
     ) {
-        return new CompanionApplication(id, postId, applicantUserId, status, rejectionReason, NOW.minusHours(1));
+        return application(id, postId, applicantUserId, status, rejectionReason, NOW.minusHours(1));
+    }
+
+    private CompanionApplication application(
+            final Long id,
+            final Long postId,
+            final Long applicantUserId,
+            final CompanionApplicationStatus status,
+            final String rejectionReason,
+            final LocalDateTime createdAt
+    ) {
+        return new CompanionApplication(id, postId, applicantUserId, status, rejectionReason, createdAt);
     }
 
     private CompanionPost post(final Long id, final Long hostUserId) {

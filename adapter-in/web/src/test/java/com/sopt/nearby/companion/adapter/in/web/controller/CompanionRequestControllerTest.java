@@ -127,7 +127,8 @@ class CompanionRequestControllerTest {
                 10L,
                 CompanionApplicationStatus.ACCEPTED,
                 1L,
-                CompanionMatchStatus.MATCHED
+                CompanionMatchStatus.MATCHED,
+                LocalDateTime.of(2026, 7, 15, 12, 10)
         );
 
         mockMvc.perform(patch("/api/companion-requests/{applicationId}/accept", 3L)
@@ -140,7 +141,8 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.data.postId").value(10))
                 .andExpect(jsonPath("$.data.applicationStatus").value("ACCEPTED"))
                 .andExpect(jsonPath("$.data.matchId").value(1))
-                .andExpect(jsonPath("$.data.matchStatus").value("MATCHED"));
+                .andExpect(jsonPath("$.data.matchStatus").value("MATCHED"))
+                .andExpect(jsonPath("$.data.meetingAt").value("2026-07-15T12:10:00"));
 
         assertEquals(100L, acceptUseCase.command.hostUserId());
         assertEquals(3L, acceptUseCase.command.applicationId());

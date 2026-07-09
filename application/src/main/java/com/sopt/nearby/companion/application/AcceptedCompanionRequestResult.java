@@ -3,12 +3,14 @@ package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import java.time.LocalDateTime;
 
 public record AcceptedCompanionRequestResult(
         Long applicationId,
         Long postId,
         CompanionApplicationStatus applicationStatus,
         Long matchId,
-        CompanionMatchStatus matchStatus
+        CompanionMatchStatus matchStatus,
+        LocalDateTime meetingAt
 ) {
 }

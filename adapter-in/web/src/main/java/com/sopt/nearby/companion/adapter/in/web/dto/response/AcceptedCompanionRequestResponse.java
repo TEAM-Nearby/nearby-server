@@ -4,13 +4,15 @@ package com.sopt.nearby.companion.adapter.in.web.dto.response;
 import com.sopt.nearby.companion.application.AcceptedCompanionRequestResult;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import java.time.LocalDateTime;
 
 public record AcceptedCompanionRequestResponse(
         Long applicationId,
         Long postId,
         CompanionApplicationStatus applicationStatus,
         Long matchId,
-        CompanionMatchStatus matchStatus
+        CompanionMatchStatus matchStatus,
+        LocalDateTime meetingAt
 ) {
 
     public static AcceptedCompanionRequestResponse from(final AcceptedCompanionRequestResult result) {
@@ -19,7 +21,8 @@ public record AcceptedCompanionRequestResponse(
                 result.postId(),
                 result.applicationStatus(),
                 result.matchId(),
-                result.matchStatus()
+                result.matchStatus(),
+                result.meetingAt()
         );
     }
 }
