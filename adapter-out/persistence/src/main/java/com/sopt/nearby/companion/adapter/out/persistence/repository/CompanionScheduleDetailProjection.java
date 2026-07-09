@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 public interface CompanionScheduleDetailProjection {
     Long getMatchId();
     String getMatchStatus();
-    Long getScheduleId();
     String getGooglePlaceId();
     String getPlaceName();
     String getPlaceAddress();
@@ -15,4 +14,6 @@ public interface CompanionScheduleDetailProjection {
     BigDecimal getLongitude();
     LocalDateTime getScheduledAt();
     String getOpenChatUrl();
+    String getUserNickname();
+    String getMeetingTimeType();
 }
