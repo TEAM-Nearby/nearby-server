@@ -3,6 +3,9 @@ spring:
     name: nearby
   aop:
     proxy-target-class: false
+  data:
+    redis:
+      url: ${SPRING_DATA_REDIS_URL:redis://localhost:6379}
 
 server:
   forward-headers-strategy: framework

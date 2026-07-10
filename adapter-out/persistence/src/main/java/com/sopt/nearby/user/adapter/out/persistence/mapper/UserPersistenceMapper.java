@@ -3,14 +3,12 @@ package com.sopt.nearby.user.adapter.out.persistence.mapper;
 
 import com.sopt.nearby.user.adapter.out.persistence.entity.EmergencyContactEntity;
 import com.sopt.nearby.user.adapter.out.persistence.entity.PhoneVerificationEntity;
-import com.sopt.nearby.user.adapter.out.persistence.entity.RefreshTokenEntity;
 import com.sopt.nearby.user.adapter.out.persistence.entity.SocialAccountEntity;
 import com.sopt.nearby.user.adapter.out.persistence.entity.TermEntity;
 import com.sopt.nearby.user.adapter.out.persistence.entity.UserAccountEntity;
 import com.sopt.nearby.user.adapter.out.persistence.entity.UserTermAgreementEntity;
 import com.sopt.nearby.user.domain.model.EmergencyContact;
 import com.sopt.nearby.user.domain.model.PhoneVerification;
-import com.sopt.nearby.user.domain.model.RefreshToken;
 import com.sopt.nearby.user.domain.model.SocialAccount;
 import com.sopt.nearby.user.domain.model.Term;
 import com.sopt.nearby.user.domain.model.UserAccount;
@@ -69,26 +67,6 @@ public final class UserPersistenceMapper {
 
 	public static SocialAccount toDomain(final SocialAccountEntity entity) {
 		return new SocialAccount(entity.getId(), entity.getUserId(), entity.getProvider(), entity.getProviderUserId());
-	}
-
-	public static RefreshTokenEntity toEntity(final RefreshToken model) {
-		return new RefreshTokenEntity(
-				model.id(),
-				model.userId(),
-				model.tokenHash(),
-				model.expiresAt(),
-				model.revokedAt()
-		);
-	}
-
-	public static RefreshToken toDomain(final RefreshTokenEntity entity) {
-		return new RefreshToken(
-				entity.getId(),
-				entity.getUserId(),
-				entity.getTokenHash(),
-				entity.getExpiresAt(),
-				entity.getRevokedAt()
-		);
 	}
 
 	public static PhoneVerificationEntity toEntity(final PhoneVerification model) {

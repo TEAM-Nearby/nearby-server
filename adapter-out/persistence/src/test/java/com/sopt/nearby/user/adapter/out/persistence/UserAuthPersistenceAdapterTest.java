@@ -4,13 +4,10 @@ package com.sopt.nearby.user.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.sopt.nearby.user.adapter.out.persistence.entity.RefreshTokenEntity;
 import com.sopt.nearby.user.adapter.out.persistence.entity.SocialAccountEntity;
 import com.sopt.nearby.user.adapter.out.persistence.entity.UserAccountEntity;
-import com.sopt.nearby.user.adapter.out.persistence.repository.RefreshTokenJpaRepository;
 import com.sopt.nearby.user.adapter.out.persistence.repository.SocialAccountJpaRepository;
 import com.sopt.nearby.user.adapter.out.persistence.repository.UserAccountJpaRepository;
-import com.sopt.nearby.user.domain.model.RefreshToken;
 import com.sopt.nearby.user.domain.model.SocialAccount;
 import com.sopt.nearby.user.domain.model.UserAccount;
 import com.sopt.nearby.user.domain.model.UserAccountStatus;
@@ -36,9 +33,6 @@ class UserAuthPersistenceAdapterTest {
 	@Autowired
 	private SocialAccountJpaRepository socialAccountJpaRepository;
 
-	@Autowired
-	private RefreshTokenJpaRepository refreshTokenJpaRepository;
-
 	@Test
 	void findsSocialAccountByProviderAndProviderUserId() {
 		UserAccount user = userAdapter().save(newUser());
@@ -59,75 +53,7 @@ class UserAuthPersistenceAdapterTest {
 
 		assertThatThrownBy(() -> adapter.save(new SocialAccount(null, user.id(), "KAKAO", "kakao-subject")))
 				.isInstanceOf(SocialAccountAlreadyExistsException.class)
-				.hasCauseInstanceOf(DataIntegrityViolationException.class);
-	}
-
-	@Test
-	void findsRefreshTokenByTokenHash() {
-		UserAccount user = userAdapter().save(newUser());
-		RefreshTokenRepositoryAdapter adapter = new RefreshTokenRepositoryAdapter(refreshTokenJpaRepository);
-		RefreshToken refreshToken = adapter.save(new RefreshToken(
-				null,
-				user.id(),
-				"refresh-token-hash",
-				LocalDateTime.of(2026, 7, 17, 12, 0),
-				null
-		));
-
-		assertThat(adapter.findByTokenHash("refresh-token-hash")).contains(refreshToken);
-		assertThat(adapter.findByTokenHash("missing")).isEmpty();
-	}
-
-	@Test
-	void revokesRefreshTokenOnlyWhenItIsActiveAndOwnedByUser() {
-		UserAccount user = userAdapter().save(newUser());
-		RefreshTokenRepositoryAdapter adapter = new RefreshTokenRepositoryAdapter(refreshTokenJpaRepository);
-		RefreshToken refreshToken = adapter.save(new RefreshToken(
-				null,
-				user.id(),
-				"refresh-token-hash",
-				LocalDateTime.of(2026, 7, 17, 12, 0),
-				null
-		));
-		LocalDateTime revokedAt = LocalDateTime.of(2026, 7, 7, 12, 0);
-
-		boolean revoked = adapter.revokeByTokenHashIfActive("refresh-token-hash", user.id(), revokedAt);
-
-		assertThat(revoked).isTrue();
-		assertThat(adapter.findByTokenHash(refreshToken.tokenHash())).get()
-				.extracting(RefreshToken::revokedAt)
-				.isEqualTo(revokedAt);
-	}
-
-	@Test
-	void doesNotRevokeRefreshTokenWhenAlreadyRevokedOrUserDoesNotMatch() {
-		UserAccount user = userAdapter().save(newUser());
-		RefreshTokenRepositoryAdapter adapter = new RefreshTokenRepositoryAdapter(refreshTokenJpaRepository);
-		LocalDateTime firstRevokedAt = LocalDateTime.of(2026, 7, 7, 11, 0);
-		RefreshToken refreshToken = adapter.save(new RefreshToken(
-				null,
-				user.id(),
-				"refresh-token-hash",
-				LocalDateTime.of(2026, 7, 17, 12, 0),
-				firstRevokedAt
-		));
-
-		boolean revokedAgain = adapter.revokeByTokenHashIfActive(
-				"refresh-token-hash",
-				user.id(),
-				LocalDateTime.of(2026, 7, 7, 12, 0)
-		);
-		boolean revokedByAnotherUser = adapter.revokeByTokenHashIfActive(
-				"refresh-token-hash",
-				99L,
-				LocalDateTime.of(2026, 7, 7, 12, 0)
-		);
-
-		assertThat(revokedAgain).isFalse();
-		assertThat(revokedByAnotherUser).isFalse();
-		assertThat(adapter.findByTokenHash(refreshToken.tokenHash())).get()
-				.extracting(RefreshToken::revokedAt)
-				.isEqualTo(firstRevokedAt);
+					.hasCauseInstanceOf(DataIntegrityViolationException.class);
 	}
 
 	private UserAccountRepositoryAdapter userAdapter() {
@@ -151,13 +77,11 @@ class UserAuthPersistenceAdapterTest {
 	@EnableAutoConfiguration
 	@EntityScan(basePackageClasses = {
 			UserAccountEntity.class,
-			SocialAccountEntity.class,
-			RefreshTokenEntity.class
+			SocialAccountEntity.class
 	})
 	@EnableJpaRepositories(basePackageClasses = {
 			UserAccountJpaRepository.class,
-			SocialAccountJpaRepository.class,
-			RefreshTokenJpaRepository.class
+			SocialAccountJpaRepository.class
 	})
 	static class TestApplication {
 	}

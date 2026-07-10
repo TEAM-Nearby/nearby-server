@@ -121,11 +121,6 @@ class LogoutUserServiceTest {
 		}
 
 		@Override
-		public Optional<RefreshToken> findById(final Long id) {
-			return Optional.ofNullable(tokens.get(id));
-		}
-
-		@Override
 		public Optional<RefreshToken> findByTokenHash(final String tokenHash) {
 			return tokens.values()
 					.stream()
