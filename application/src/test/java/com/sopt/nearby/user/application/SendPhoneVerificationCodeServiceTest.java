@@ -3,6 +3,7 @@ package com.sopt.nearby.user.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sopt.nearby.user.domain.model.PhoneVerification;
@@ -37,18 +38,18 @@ class SendPhoneVerificationCodeServiceTest {
 
 	@Test
 	void savesPendingVerificationAndSendsCode() {
-			FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
-			userAccounts.save(newUser(1L));
-			FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
-			FakePhoneVerificationCodeStore codeStore = new FakePhoneVerificationCodeStore();
-			FakePhoneVerificationSender sender = new FakePhoneVerificationSender();
-			SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
-					userAccounts,
-					phoneVerifications,
-					codeStore,
-					sender,
-					HASH_SECRET,
-					CLOCK,
+		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
+		userAccounts.save(newUser(1L));
+		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
+		FakePhoneVerificationCodeStore codeStore = new FakePhoneVerificationCodeStore();
+		FakePhoneVerificationSender sender = new FakePhoneVerificationSender();
+		SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
+				userAccounts,
+				phoneVerifications,
+				codeStore,
+				sender,
+				HASH_SECRET,
+				CLOCK,
 				() -> 123456
 		);
 
@@ -61,26 +62,29 @@ class SendPhoneVerificationCodeServiceTest {
 		PhoneVerification saved = phoneVerifications.saved.get(1L);
 		assertEquals(1L, saved.userId());
 		assertEquals("01012345678", saved.phoneNumber());
-			assertEquals(PhoneVerificationStatus.PENDING, saved.status());
-			assertEquals(LocalDateTime.of(2026, 7, 4, 7, 3), saved.expiresAt());
-			assertEquals(null, saved.verificationCodeHash());
-			assertEquals(CODE_123456_HASH, codeStore.codeHashes.get(1L));
-			assertEquals(Duration.ofSeconds(180), codeStore.ttls.get(1L));
-			assertEquals("01012345678", sender.phoneNumber);
-			assertEquals("123456", sender.verificationCode);
-		}
+		assertEquals(PhoneVerificationStatus.PENDING, saved.status());
+		assertEquals(LocalDateTime.of(2026, 7, 4, 7, 3), saved.expiresAt());
+		assertEquals(null, saved.verificationCodeHash());
+		assertEquals(CODE_123456_HASH, codeStore.codeHashes.get(1L));
+		assertEquals(Duration.ofSeconds(180), codeStore.ttls.get(1L));
+		assertEquals("01012345678", sender.phoneNumber);
+		assertEquals("123456", sender.verificationCode);
+	}
 
 	@Test
-	void propagatesSendLimitExceededWhenSenderRejects() {
+	void marksVerificationFailedAndDeletesCodeWhenSenderRejects() {
 		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
 		userAccounts.save(newUser(1L));
-			SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
-					userAccounts,
-					new FakePhoneVerificationRepository(),
-					new FakePhoneVerificationCodeStore(),
-					(phoneNumber, verificationCode) -> {
-						throw new PhoneVerificationSendLimitExceededException();
-					},
+		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
+		FakePhoneVerificationCodeStore codeStore = new FakePhoneVerificationCodeStore();
+		RuntimeException sendFailure = new PhoneVerificationSendLimitExceededException();
+		SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
+				userAccounts,
+				phoneVerifications,
+				codeStore,
+				(phoneNumber, verificationCode) -> {
+					throw sendFailure;
+				},
 				HASH_SECRET,
 				CLOCK,
 				() -> 123456
@@ -91,19 +95,87 @@ class SendPhoneVerificationCodeServiceTest {
 				() -> service.send(new SendPhoneVerificationCodeCommand(1L, "01012345678"))
 		);
 
+		assertSame(sendFailure, exception);
 		assertInstanceOf(PhoneVerificationSendLimitExceededException.class, exception);
+		assertEquals(PhoneVerificationStatus.FAILED, phoneVerifications.saved.get(1L).status());
+		assertEquals(Optional.empty(), codeStore.findHash(1L));
+		assertEquals(true, codeStore.deleteCalled);
+	}
+
+	@Test
+	void marksVerificationFailedAndDoesNotSendWhenCodeStoreFails() {
+		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
+		userAccounts.save(newUser(1L));
+		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
+		FakePhoneVerificationCodeStore codeStore = new FakePhoneVerificationCodeStore();
+		RuntimeException saveFailure = new IllegalStateException("failed to save code");
+		codeStore.saveFailure = saveFailure;
+		FakePhoneVerificationSender sender = new FakePhoneVerificationSender();
+		SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
+				userAccounts,
+				phoneVerifications,
+				codeStore,
+				sender,
+				HASH_SECRET,
+				CLOCK,
+				() -> 123456
+		);
+
+		RuntimeException exception = assertThrows(
+				RuntimeException.class,
+				() -> service.send(new SendPhoneVerificationCodeCommand(1L, "01012345678"))
+		);
+
+		assertSame(saveFailure, exception);
+		assertEquals(PhoneVerificationStatus.FAILED, phoneVerifications.saved.get(1L).status());
+		assertEquals(null, sender.verificationCode);
+		assertEquals(true, codeStore.deleteCalled);
+	}
+
+	@Test
+	void keepsOriginalFailureWhenFailureCleanupFails() {
+		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
+		userAccounts.save(newUser(1L));
+		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
+		RuntimeException statusFailure = new IllegalStateException("failed to mark verification failed");
+		phoneVerifications.failedSaveFailure = statusFailure;
+		FakePhoneVerificationCodeStore codeStore = new FakePhoneVerificationCodeStore();
+		RuntimeException deleteFailure = new IllegalStateException("failed to delete code");
+		codeStore.deleteFailure = deleteFailure;
+		RuntimeException sendFailure = new PhoneVerificationSendLimitExceededException();
+		SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
+				userAccounts,
+				phoneVerifications,
+				codeStore,
+				(phoneNumber, verificationCode) -> {
+					throw sendFailure;
+				},
+				HASH_SECRET,
+				CLOCK,
+				() -> 123456
+		);
+
+		RuntimeException exception = assertThrows(
+				RuntimeException.class,
+				() -> service.send(new SendPhoneVerificationCodeCommand(1L, "01012345678"))
+		);
+
+		assertSame(sendFailure, exception);
+		assertEquals(2, exception.getSuppressed().length);
+		assertSame(statusFailure, exception.getSuppressed()[0]);
+		assertSame(deleteFailure, exception.getSuppressed()[1]);
 	}
 
 	@Test
 	void failsWhenUserDoesNotExist() {
 		FakePhoneVerificationSender sender = new FakePhoneVerificationSender();
-			SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
-					new FakeUserAccountRepository(),
-					new FakePhoneVerificationRepository(),
-					new FakePhoneVerificationCodeStore(),
-					sender,
-					HASH_SECRET,
-					CLOCK,
+		SendPhoneVerificationCodeService service = new SendPhoneVerificationCodeService(
+				new FakeUserAccountRepository(),
+				new FakePhoneVerificationRepository(),
+				new FakePhoneVerificationCodeStore(),
+				sender,
+				HASH_SECRET,
+				CLOCK,
 				() -> 123456
 		);
 
@@ -159,9 +231,13 @@ class SendPhoneVerificationCodeServiceTest {
 
 		private final Map<Long, PhoneVerification> saved = new HashMap<>();
 		private long nextId = 1L;
+		private RuntimeException failedSaveFailure;
 
 		@Override
 		public PhoneVerification save(final PhoneVerification model) {
+			if (model.status() == PhoneVerificationStatus.FAILED && failedSaveFailure != null) {
+				throw failedSaveFailure;
+			}
 			PhoneVerification savedVerification = new PhoneVerification(
 					model.id() == null ? nextId++ : model.id(),
 					model.userId(),
@@ -198,9 +274,15 @@ class SendPhoneVerificationCodeServiceTest {
 
 		private final Map<Long, String> codeHashes = new HashMap<>();
 		private final Map<Long, Duration> ttls = new HashMap<>();
+		private RuntimeException saveFailure;
+		private RuntimeException deleteFailure;
+		private boolean deleteCalled;
 
 		@Override
 		public void save(final Long phoneVerificationId, final String verificationCodeHash, final Duration ttl) {
+			if (saveFailure != null) {
+				throw saveFailure;
+			}
 			codeHashes.put(phoneVerificationId, verificationCodeHash);
 			ttls.put(phoneVerificationId, ttl);
 		}
@@ -212,6 +294,10 @@ class SendPhoneVerificationCodeServiceTest {
 
 		@Override
 		public void delete(final Long phoneVerificationId) {
+			deleteCalled = true;
+			if (deleteFailure != null) {
+				throw deleteFailure;
+			}
 			codeHashes.remove(phoneVerificationId);
 			ttls.remove(phoneVerificationId);
 		}

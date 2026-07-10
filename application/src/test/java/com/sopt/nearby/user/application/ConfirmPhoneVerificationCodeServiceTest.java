@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 class ConfirmPhoneVerificationCodeServiceTest {
 
@@ -113,6 +114,55 @@ class ConfirmPhoneVerificationCodeServiceTest {
 				() -> service.confirm(new ConfirmPhoneVerificationCodeCommand(1L, 10L, "123456"))
 		);
 		assertEquals(true, codeStore.findHash(10L).isPresent());
+	}
+
+	@Test
+	void failsWhenCodeHashIsMissingFromStoreButVerificationIsNotExpired() {
+		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
+		userAccounts.save(newUser(1L));
+		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
+		phoneVerifications.save(newPendingVerification(10L, 1L, "01012345678"));
+		ConfirmPhoneVerificationCodeService service = new ConfirmPhoneVerificationCodeService(
+				userAccounts,
+				phoneVerifications,
+				new FakePhoneVerificationCodeStore(),
+				HASH_SECRET,
+				CLOCK
+		);
+
+		assertThrows(
+				PhoneVerificationExpiredException.class,
+				() -> service.confirm(new ConfirmPhoneVerificationCodeCommand(1L, 10L, "123456"))
+		);
+	}
+
+	@Test
+	void deletesCodeOnlyAfterCommitWhenSynchronizationIsActive() {
+		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
+		userAccounts.save(newUser(1L));
+		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
+		phoneVerifications.save(newPendingVerification(10L, 1L, "01012345678"));
+		FakePhoneVerificationCodeStore codeStore = new FakePhoneVerificationCodeStore();
+		codeStore.save(10L, CODE_123456_HASH, Duration.ofSeconds(180));
+		ConfirmPhoneVerificationCodeService service = new ConfirmPhoneVerificationCodeService(
+				userAccounts,
+				phoneVerifications,
+				codeStore,
+				HASH_SECRET,
+				CLOCK
+		);
+
+		TransactionSynchronizationManager.initSynchronization();
+		try {
+			service.confirm(new ConfirmPhoneVerificationCodeCommand(1L, 10L, "123456"));
+
+			assertEquals(true, codeStore.findHash(10L).isPresent());
+			assertEquals(1, TransactionSynchronizationManager.getSynchronizations().size());
+			TransactionSynchronizationManager.getSynchronizations().getFirst().afterCommit();
+			assertEquals(false, codeStore.findHash(10L).isPresent());
+		} finally {
+			TransactionSynchronizationManager.clearSynchronization();
+		}
 	}
 
 	@Test

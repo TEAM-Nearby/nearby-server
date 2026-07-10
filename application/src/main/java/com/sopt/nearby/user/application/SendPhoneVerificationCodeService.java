@@ -88,19 +88,41 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 				null
 		));
 
-		phoneVerificationCodeStore.save(
-				phoneVerification.id(),
-				verificationCodeHash,
-				Duration.ofSeconds(EXPIRES_IN_SECONDS)
-		);
 		try {
+			phoneVerificationCodeStore.save(
+					phoneVerification.id(),
+					verificationCodeHash,
+					Duration.ofSeconds(EXPIRES_IN_SECONDS)
+			);
 			phoneVerificationSender.send(command.phoneNumber(), verificationCode);
 		} catch (RuntimeException exception) {
-			phoneVerificationCodeStore.delete(phoneVerification.id());
+			markFailed(phoneVerification, exception);
 			throw exception;
 		}
 
 		return new SendPhoneVerificationCodeResult(phoneVerification.id(), EXPIRES_IN_SECONDS);
+	}
+
+	private void markFailed(final PhoneVerification phoneVerification, final RuntimeException cause) {
+		try {
+			phoneVerificationRepository.save(new PhoneVerification(
+					phoneVerification.id(),
+					phoneVerification.userId(),
+					phoneVerification.phoneNumber(),
+					phoneVerification.carrier(),
+					phoneVerification.verificationCodeHash(),
+					PhoneVerificationStatus.FAILED,
+					phoneVerification.expiresAt(),
+					phoneVerification.verifiedAt()
+			));
+		} catch (RuntimeException cleanupException) {
+			cause.addSuppressed(cleanupException);
+		}
+		try {
+			phoneVerificationCodeStore.delete(phoneVerification.id());
+		} catch (RuntimeException cleanupException) {
+			cause.addSuppressed(cleanupException);
+		}
 	}
 
 	private String verificationCode() {
