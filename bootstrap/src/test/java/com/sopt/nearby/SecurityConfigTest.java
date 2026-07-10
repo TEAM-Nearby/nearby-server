@@ -107,4 +107,14 @@ class SecurityConfigTest {
 				.andExpect(jsonPath("$.message").value("인증이 필요합니다."))
 				.andExpect(jsonPath("$.data").value(nullValue()));
 	}
+
+	@Test
+	void permitsTokenRefreshWithoutBearerToken() throws Exception {
+		mockMvc.perform(post("/api/auth/refresh")
+					.contentType(MediaType.APPLICATION_JSON)
+					.content("{}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.status").value(400))
+				.andExpect(jsonPath("$.code").value("INVALID_TOKEN_REFRESH_REQUEST"));
+	}
 }
