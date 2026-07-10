@@ -18,8 +18,11 @@ import java.time.Duration;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -28,6 +31,7 @@ import org.springframework.stereotype.Repository;
 public class RedisGooglePlacesCacheAdapter
 		implements SoloDiningPlaceSearchPort, SoloDiningPlaceDetailsPort, PlaceImageLookupPort {
 
+	private static final Logger log = LoggerFactory.getLogger(RedisGooglePlacesCacheAdapter.class);
 	private static final String KEY_PREFIX = "nearby:google-places:";
 	private static final Duration SEARCH_TTL = Duration.ofMinutes(5);
 	private static final Duration DETAILS_TTL = Duration.ofHours(24);
@@ -95,25 +99,21 @@ public class RedisGooglePlacesCacheAdapter
 	}
 
 	private <T> Optional<T> read(final String key, final Class<T> type) {
-		String value = redisTemplate.opsForValue().get(key);
-		if (value == null) {
-			return Optional.empty();
-		}
 		try {
-			return Optional.of(objectMapper.readValue(value, type));
-		} catch (JsonProcessingException exception) {
+			String value = redisTemplate.opsForValue().get(key);
+			return value == null ? Optional.empty() : Optional.ofNullable(objectMapper.readValue(value, type));
+		} catch (JsonProcessingException | DataAccessException exception) {
+			log.warn("Google Places cache read failed. key={}", key, exception);
 			return Optional.empty();
 		}
 	}
 
 	private <T> Optional<T> read(final String key, final TypeReference<T> type) {
-		String value = redisTemplate.opsForValue().get(key);
-		if (value == null) {
-			return Optional.empty();
-		}
 		try {
-			return Optional.of(objectMapper.readValue(value, type));
-		} catch (JsonProcessingException exception) {
+			String value = redisTemplate.opsForValue().get(key);
+			return value == null ? Optional.empty() : Optional.ofNullable(objectMapper.readValue(value, type));
+		} catch (JsonProcessingException | DataAccessException exception) {
+			log.warn("Google Places cache read failed. key={}", key, exception);
 			return Optional.empty();
 		}
 	}
@@ -121,8 +121,8 @@ public class RedisGooglePlacesCacheAdapter
 	private void write(final String key, final Object value, final Duration ttl) {
 		try {
 			redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(value), ttl);
-		} catch (JsonProcessingException exception) {
-			throw new IllegalStateException("Google Places cache serialization failed.", exception);
+		} catch (JsonProcessingException | DataAccessException exception) {
+			log.warn("Google Places cache write failed. key={}", key, exception);
 		}
 	}
 

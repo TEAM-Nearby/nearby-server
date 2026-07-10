@@ -2,11 +2,16 @@
 package com.sopt.nearby.place.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
@@ -26,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -83,6 +89,84 @@ class RedisGooglePlacesCacheAdapterTest {
 		assertThat(result).contains(imageResult());
 		assertThat(imagePort.calls).isEqualTo(1);
 		verify(valueOperations).set(anyString(), anyString(), org.mockito.ArgumentMatchers.eq(Duration.ofHours(1)));
+	}
+
+	@Test
+	void fallsBackToDelegateWhenCachedDetailsIsCorrupted() {
+		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+		when(valueOperations.get("nearby:google-places:details:google-place-id")).thenReturn("{");
+		FakeDetailsPort detailsPort = new FakeDetailsPort(detailsResult());
+		RedisGooglePlacesCacheAdapter adapter = newAdapter(
+				new FakeSearchPort(List.of()),
+				detailsPort,
+				new FakeImagePort(Optional.empty())
+		);
+
+		SoloDiningPlaceDetailsResult result = adapter.findByGooglePlaceId("google-place-id");
+
+		assertThat(result).isEqualTo(detailsResult());
+		assertThat(detailsPort.calls).isEqualTo(1);
+	}
+
+	@Test
+	void fallsBackToDelegateWhenRedisReadFails() {
+		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+		when(valueOperations.get("nearby:google-places:details:google-place-id"))
+				.thenThrow(new RedisConnectionFailureException("failed"));
+		FakeDetailsPort detailsPort = new FakeDetailsPort(detailsResult());
+		RedisGooglePlacesCacheAdapter adapter = newAdapter(
+				new FakeSearchPort(List.of()),
+				detailsPort,
+				new FakeImagePort(Optional.empty())
+		);
+
+		SoloDiningPlaceDetailsResult result = adapter.findByGooglePlaceId("google-place-id");
+
+		assertThat(result).isEqualTo(detailsResult());
+		assertThat(detailsPort.calls).isEqualTo(1);
+	}
+
+	@Test
+	void returnsDelegateResultWhenSerializationFails() throws Exception {
+		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+		when(valueOperations.get("nearby:google-places:details:google-place-id")).thenReturn(null);
+		ObjectMapper failingObjectMapper = mock(ObjectMapper.class);
+		when(failingObjectMapper.writeValueAsString(any()))
+				.thenThrow(new JsonProcessingException("failed") {
+				});
+		FakeDetailsPort detailsPort = new FakeDetailsPort(detailsResult());
+		RedisGooglePlacesCacheAdapter adapter = new RedisGooglePlacesCacheAdapter(
+				redisTemplate,
+				failingObjectMapper,
+				new FakeSearchPort(List.of()),
+				detailsPort,
+				new FakeImagePort(Optional.empty())
+		);
+
+		SoloDiningPlaceDetailsResult result = adapter.findByGooglePlaceId("google-place-id");
+
+		assertThat(result).isEqualTo(detailsResult());
+		assertThat(detailsPort.calls).isEqualTo(1);
+	}
+
+	@Test
+	void returnsDelegateResultWhenRedisWriteFails() {
+		when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+		when(valueOperations.get("nearby:google-places:details:google-place-id")).thenReturn(null);
+		doThrow(new RedisConnectionFailureException("failed"))
+				.when(valueOperations)
+				.set(anyString(), anyString(), eq(Duration.ofHours(24)));
+		FakeDetailsPort detailsPort = new FakeDetailsPort(detailsResult());
+		RedisGooglePlacesCacheAdapter adapter = newAdapter(
+				new FakeSearchPort(List.of()),
+				detailsPort,
+				new FakeImagePort(Optional.empty())
+		);
+
+		SoloDiningPlaceDetailsResult result = adapter.findByGooglePlaceId("google-place-id");
+
+		assertThat(result).isEqualTo(detailsResult());
+		assertThat(detailsPort.calls).isEqualTo(1);
 	}
 
 	private RedisGooglePlacesCacheAdapter newAdapter(
