@@ -6,9 +6,11 @@ import com.sopt.nearby.user.port.out.RefreshTokenRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -16,6 +18,13 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
 
 	private static final String KEY_PREFIX = "nearby:refresh-token:";
 	private static final String VALUE_SEPARATOR = "|";
+	private static final DefaultRedisScript<Long> REVOKE_IF_UNCHANGED_SCRIPT = new DefaultRedisScript<>("""
+			if redis.call('GET', KEYS[1]) ~= ARGV[1] then
+				return 0
+			end
+			redis.call('PSETEX', KEYS[1], ARGV[3], ARGV[2])
+			return 1
+			""", Long.class);
 
 	private final StringRedisTemplate redisTemplate;
 	private final Clock clock;
@@ -58,19 +67,31 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
 			final LocalDateTime revokedAt
 	) {
 		LocalDateTime now = LocalDateTime.now(clock);
-		return findByTokenHash(tokenHash)
-				.filter(token -> token.userId().equals(userId))
-				.filter(token -> token.revokedAt() == null)
-				.filter(token -> token.expiresAt().isAfter(now))
-				.map(token -> {
-					redisTemplate.opsForValue().set(
-							key(tokenHash),
-							value(token.userId(), token.expiresAt(), revokedAt),
-							Duration.between(now, token.expiresAt())
-					);
-					return true;
-				})
-				.orElse(false);
+		String redisKey = key(tokenHash);
+		String currentValue = redisTemplate.opsForValue().get(redisKey);
+		if (currentValue == null) {
+			return false;
+		}
+		Optional<RefreshToken> found = toRefreshToken(tokenHash, currentValue);
+		if (found.isEmpty()) {
+			return false;
+		}
+		RefreshToken token = found.get();
+		if (!token.userId().equals(userId) || token.revokedAt() != null || !token.expiresAt().isAfter(now)) {
+			return false;
+		}
+		long ttlMillis = Duration.between(now, token.expiresAt()).toMillis();
+		if (ttlMillis <= 0) {
+			return false;
+		}
+		Long result = redisTemplate.execute(
+				REVOKE_IF_UNCHANGED_SCRIPT,
+				List.of(redisKey),
+				currentValue,
+				value(token.userId(), token.expiresAt(), revokedAt),
+				Long.toString(ttlMillis)
+		);
+		return Long.valueOf(1L).equals(result);
 	}
 
 	private Optional<RefreshToken> toRefreshToken(final String tokenHash, final String value) {
