@@ -17,6 +17,18 @@ springdoc:
   swagger-ui:
     disable-swagger-default-url: true
 
+sentry:
+  environment: ${SENTRY_ENVIRONMENT:production}
+  send-default-pii: false
+  max-request-body-size: none
+  exception-resolver-order: 1
+  logging:
+    enabled: true
+    minimum-event-level: error
+    minimum-breadcrumb-level: info
+    loggers:
+      - com.sopt.nearby
+
 kakao:
   native-app-key: ${KAKAO_NATIVE_APP_KEY:}
   oidc:
