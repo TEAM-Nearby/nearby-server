@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
@@ -53,8 +54,11 @@ class ConfirmCompanionScheduleServiceTest {
                 10L,
                 7L,
                 100L,
-                NOW.plusDays(1),
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                NOW.plusHours(1),
                 4,
+                false,
                 "함께 식사해요.",
                 "https://open.kakao.com/o/original",
                 CompanionPostStatus.CLOSED,
@@ -76,6 +80,10 @@ class ConfirmCompanionScheduleServiceTest {
                 "https://open.kakao.com/o/confirmed",
                 postRepository.posts.get(10L).openChatUrl()
         );
+        assertEquals(CompanionPostMeetingTimeType.NOW, postRepository.posts.get(10L).meetingTimeType());
+        assertEquals(null, postRepository.posts.get(10L).meetingAt());
+        assertEquals(NOW.plusHours(1), postRepository.posts.get(10L).exposureExpiresAt());
+        assertEquals(false, postRepository.posts.get(10L).departEvenIfNotFull());
     }
 
     @Test
