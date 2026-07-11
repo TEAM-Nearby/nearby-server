@@ -3,7 +3,6 @@ package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,9 +18,10 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
-import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
@@ -30,6 +30,7 @@ import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.time.Clock;
@@ -54,6 +55,7 @@ class ProcessCompanionRequestServiceTest {
     private FakeCompanionMatchRepository matchRepository;
     private FakeCompanionMatchParticipantRepository participantRepository;
     private FakeCompanionScheduleRepository scheduleRepository;
+    private FakeCompanionMeetingRepository meetingRepository;
     private FakeCreateCompanionNotificationUseCase notificationUseCase;
     private ProcessCompanionRequestService service;
 
@@ -64,6 +66,7 @@ class ProcessCompanionRequestServiceTest {
         matchRepository = new FakeCompanionMatchRepository();
         participantRepository = new FakeCompanionMatchParticipantRepository();
         scheduleRepository = new FakeCompanionScheduleRepository();
+        meetingRepository = new FakeCompanionMeetingRepository();
         notificationUseCase = new FakeCreateCompanionNotificationUseCase();
         service = new ProcessCompanionRequestService(
                 applicationRepository,
@@ -71,6 +74,7 @@ class ProcessCompanionRequestServiceTest {
                 matchRepository,
                 participantRepository,
                 scheduleRepository,
+                meetingRepository,
                 notificationUseCase,
                 CLOCK
         );
@@ -141,6 +145,10 @@ class ProcessCompanionRequestServiceTest {
         assertEquals(20L, schedule.placeId());
         assertEquals(applicationCreatedAt, schedule.scheduledAt());
         assertTrue(schedule.confirmed());
+        CompanionMeeting meeting = meetingRepository.meetings.values().stream().findFirst().orElseThrow();
+        assertEquals(result.matchId(), meeting.matchId());
+        assertEquals(CompanionMeetingStatus.ONGOING, meeting.status());
+        assertEquals(applicationCreatedAt, meeting.startedAt());
     }
 
     @Test
@@ -157,6 +165,7 @@ class ProcessCompanionRequestServiceTest {
         assertTrue(matchRepository.matches.isEmpty());
         assertTrue(participantRepository.participants.isEmpty());
         assertTrue(scheduleRepository.schedules.isEmpty());
+        assertTrue(meetingRepository.meetings.isEmpty());
         assertTrue(notificationUseCase.commands.isEmpty());
     }
 
@@ -164,9 +173,17 @@ class ProcessCompanionRequestServiceTest {
     void acceptsNowRequestAndReusesExistingScheduleConfirmedMatchGroup() {
         applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
         postRepository.save(nowPost(10L, 100L));
-        matchRepository.save(new CompanionMatch(50L, 10L, CompanionMatchStatus.SCHEDULE_CONFIRMED, NOW.minusMinutes(1)));
+        matchRepository.save(
+                new CompanionMatch(50L, 10L, CompanionMatchStatus.SCHEDULE_CONFIRMED, NOW.minusMinutes(1)));
         LocalDateTime existingScheduleAt = NOW.minusMinutes(30);
         scheduleRepository.save(new CompanionSchedule(null, 50L, 20L, existingScheduleAt, null, true));
+        meetingRepository.save(new CompanionMeeting(
+                null,
+                50L,
+                CompanionMeetingStatus.ONGOING,
+                existingScheduleAt,
+                null
+        ));
         participantRepository.save(new CompanionMatchParticipant(null, 50L, 100L, null, MatchParticipantRole.HOST));
 
         AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
@@ -176,6 +193,7 @@ class ProcessCompanionRequestServiceTest {
         assertEquals(existingScheduleAt, result.meetingAt());
         assertEquals(1, matchRepository.matches.size());
         assertEquals(1, scheduleRepository.schedules.size());
+        assertEquals(1, meetingRepository.meetings.size());
         assertEquals(existingScheduleAt, scheduleRepository.findConfirmedByMatchId(50L).orElseThrow().scheduledAt());
         assertTrue(participantRepository.existsByMatchIdAndUserId(50L, 7L));
     }
@@ -200,6 +218,7 @@ class ProcessCompanionRequestServiceTest {
 
         assertEquals(1, matchRepository.confirmScheduleAttempts);
         assertTrue(scheduleRepository.schedules.isEmpty());
+        assertTrue(meetingRepository.meetings.isEmpty());
     }
 
     @Test
@@ -480,13 +499,13 @@ class ProcessCompanionRequestServiceTest {
         public CompanionSchedule save(final CompanionSchedule model) {
             CompanionSchedule saved = model.id() == null
                     ? new CompanionSchedule(
-                            nextId++,
-                            model.matchId(),
-                            model.placeId(),
-                            model.scheduledAt(),
-                            model.estimatedDurationMinutes(),
-                            model.confirmed()
-                    )
+                    nextId++,
+                    model.matchId(),
+                    model.placeId(),
+                    model.scheduledAt(),
+                    model.estimatedDurationMinutes(),
+                    model.confirmed()
+            )
                     : model;
             schedules.put(saved.id(), saved);
             return saved;
@@ -553,6 +572,37 @@ class ProcessCompanionRequestServiceTest {
                     .filter(participant -> participant.userId().equals(userId))
                     .findFirst()
                     .orElseThrow();
+        }
+    }
+
+    private static final class FakeCompanionMeetingRepository implements CompanionMeetingRepository {
+
+        private final Map<Long, CompanionMeeting> meetings = new HashMap<>();
+        private long nextId = 1L;
+
+        @Override
+        public CompanionMeeting save(final CompanionMeeting model) {
+            CompanionMeeting saved = model.id() == null
+                    ? new CompanionMeeting(
+                    nextId++,
+                    model.matchId(),
+                    model.status(),
+                    model.startedAt(),
+                    model.completedAt()
+            )
+                    : model;
+            meetings.put(saved.id(), saved);
+            return saved;
+        }
+
+        @Override
+        public Optional<CompanionMeeting> findById(final Long id) {
+            return Optional.ofNullable(meetings.get(id));
+        }
+
+        @Override
+        public boolean completeIfOngoing(final Long meetingId, final LocalDateTime completedAt) {
+            return false;
         }
     }
 

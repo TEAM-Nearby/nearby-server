@@ -16,6 +16,8 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
@@ -27,6 +29,7 @@ import com.sopt.nearby.companion.port.in.RejectCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.time.Clock;
@@ -40,6 +43,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
     private final CompanionMatchRepository matchRepository;
     private final CompanionMatchParticipantRepository participantRepository;
     private final CompanionScheduleRepository scheduleRepository;
+    private final CompanionMeetingRepository meetingRepository;
     private final CreateCompanionNotificationUseCase notificationUseCase;
     private final Clock clock;
 
@@ -49,6 +53,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
             final CompanionMatchRepository matchRepository,
             final CompanionMatchParticipantRepository participantRepository,
             final CompanionScheduleRepository scheduleRepository,
+            final CompanionMeetingRepository meetingRepository,
             final CreateCompanionNotificationUseCase notificationUseCase,
             final Clock clock
     ) {
@@ -57,6 +62,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
         this.matchRepository = matchRepository;
         this.participantRepository = participantRepository;
         this.scheduleRepository = scheduleRepository;
+        this.meetingRepository = meetingRepository;
         this.notificationUseCase = notificationUseCase;
         this.clock = clock;
     }
@@ -208,14 +214,24 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
 
     private void ensureNowSchedule(final Long matchId, final RequestContext context) {
         scheduleRepository.findConfirmedByMatchId(matchId)
-                .orElseGet(() -> scheduleRepository.save(new CompanionSchedule(
-                        null,
-                        matchId,
-                        context.post().placeId(),
-                        context.application().createdAt(),
-                        null,
-                        true
-                )));
+                .orElseGet(() -> {
+                    CompanionSchedule schedule = scheduleRepository.save(new CompanionSchedule(
+                            null,
+                            matchId,
+                            context.post().placeId(),
+                            context.application().createdAt(),
+                            null,
+                            true
+                    ));
+                    meetingRepository.save(new CompanionMeeting(
+                            null,
+                            matchId,
+                            CompanionMeetingStatus.ONGOING,
+                            schedule.scheduledAt(),
+                            null
+                    ));
+                    return schedule;
+                });
     }
 
     private LocalDateTime resolveMeetingAt(final Long matchId, final RequestContext context) {

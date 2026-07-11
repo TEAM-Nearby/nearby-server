@@ -9,10 +9,13 @@ import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleExce
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheCommand;
@@ -24,17 +27,20 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
     private final CompanionMatchRepository matchRepository;
     private final CompanionPostRepository postRepository;
     private final CompanionScheduleRepository scheduleRepository;
+    private final CompanionMeetingRepository meetingRepository;
     private final ResolvePlaceCacheUseCase resolvePlaceCacheUseCase;
 
     public ConfirmCompanionScheduleService(
             final CompanionMatchRepository matchRepository,
             final CompanionPostRepository postRepository,
             final CompanionScheduleRepository scheduleRepository,
+            final CompanionMeetingRepository meetingRepository,
             final ResolvePlaceCacheUseCase resolvePlaceCacheUseCase
     ) {
         this.matchRepository = matchRepository;
         this.postRepository = postRepository;
         this.scheduleRepository = scheduleRepository;
+        this.meetingRepository = meetingRepository;
         this.resolvePlaceCacheUseCase = resolvePlaceCacheUseCase;
     }
 
@@ -71,6 +77,14 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
                 command.scheduledAt(),
                 null,
                 true
+        ));
+        meetingRepository.save(new CompanionMeeting(
+                // 신규 데이터이므로 DB가 ID를 생성하라는 뜻이다.
+                null,
+                match.id(),
+                CompanionMeetingStatus.ONGOING,
+                schedule.scheduledAt(),
+                null
         ));
 
         postRepository.save(new CompanionPost(
