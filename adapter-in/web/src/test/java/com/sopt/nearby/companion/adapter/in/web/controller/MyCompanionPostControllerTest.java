@@ -56,7 +56,7 @@ class MyCompanionPostControllerTest {
 				List.of(ReviewKeyword.PUNCTUAL, ReviewKeyword.GOOD_MANNERS)
 		)));
 
-		mockMvc.perform(get("/api/v1/users/me/recruitment-posts")
+		mockMvc.perform(get("/api/users/me/recruitment-posts")
 						.principal(principal("7")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status").value(200))
@@ -82,7 +82,7 @@ class MyCompanionPostControllerTest {
 	void returnsEmptyPosts() throws Exception {
 		readUseCase.result = new ReadMyCompanionPostsResult(List.of());
 
-		mockMvc.perform(get("/api/v1/users/me/recruitment-posts")
+		mockMvc.perform(get("/api/users/me/recruitment-posts")
 						.principal(principal("7")))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.data.posts").isArray())

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/users/me/recruitment-posts")
+@RequestMapping("/api/users/me/recruitment-posts")
 public class MyCompanionPostController implements MyCompanionPostApi {
 
 	private final ReadMyCompanionPostsUseCase readMyCompanionPostsUseCase;
