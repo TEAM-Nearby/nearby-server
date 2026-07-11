@@ -205,12 +205,14 @@ public class CompanionUseCaseConfig {
             final CompanionMatchRepository companionMatchRepository,
             final CompanionPostRepository companionPostRepository,
             final CompanionScheduleRepository companionScheduleRepository,
+            final CompanionMeetingRepository companionMeetingRepository,
             final ResolvePlaceCacheUseCase resolvePlaceCacheUseCase
     ) {
         return new ConfirmCompanionScheduleService(
                 companionMatchRepository,
                 companionPostRepository,
                 companionScheduleRepository,
+                companionMeetingRepository,
                 resolvePlaceCacheUseCase
         );
     }
@@ -257,6 +259,7 @@ public class CompanionUseCaseConfig {
             final CompanionMatchRepository matchRepository,
             final CompanionMatchParticipantRepository participantRepository,
             final CompanionScheduleRepository companionScheduleRepository,
+            final CompanionMeetingRepository companionMeetingRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase
     ) {
         return new ProcessCompanionRequestService(
@@ -265,6 +268,7 @@ public class CompanionUseCaseConfig {
                 matchRepository,
                 participantRepository,
                 companionScheduleRepository,
+                companionMeetingRepository,
                 createCompanionNotificationUseCase,
                 Clock.systemDefaultZone()
         );

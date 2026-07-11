@@ -10,11 +10,14 @@ import com.sopt.nearby.companion.domain.exception.CompanionScheduleAlreadyConfir
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheCommand;
@@ -35,6 +38,7 @@ class ConfirmCompanionScheduleServiceTest {
     private FakeCompanionMatchRepository matchRepository;
     private FakeCompanionPostRepository postRepository;
     private FakeCompanionScheduleRepository scheduleRepository;
+    private FakeCompanionMeetingRepository meetingRepository;
     private ConfirmCompanionScheduleService service;
 
     @BeforeEach
@@ -42,10 +46,12 @@ class ConfirmCompanionScheduleServiceTest {
         matchRepository = new FakeCompanionMatchRepository();
         postRepository = new FakeCompanionPostRepository();
         scheduleRepository = new FakeCompanionScheduleRepository();
+        meetingRepository = new FakeCompanionMeetingRepository();
         service = new ConfirmCompanionScheduleService(
                 matchRepository,
                 postRepository,
                 scheduleRepository,
+                meetingRepository,
                 new FakeResolvePlaceCacheUseCase()
         );
 
@@ -76,6 +82,11 @@ class ConfirmCompanionScheduleServiceTest {
         assertEquals(1, matchRepository.confirmScheduleAttempts);
         assertEquals(1, scheduleRepository.saveCount);
         assertEquals(100L, scheduleRepository.schedules.get(1L).placeId());
+        CompanionMeeting meeting = meetingRepository.meetings.get(1L);
+        assertEquals(1L, meeting.matchId());
+        assertEquals(CompanionMeetingStatus.ONGOING, meeting.status());
+        assertEquals(NOW.plusDays(2), meeting.startedAt());
+        assertEquals(null, meeting.completedAt());
         assertEquals(
                 "https://open.kakao.com/o/confirmed",
                 postRepository.posts.get(10L).openChatUrl()
@@ -152,6 +163,7 @@ class ConfirmCompanionScheduleServiceTest {
         );
 
         assertEquals(0, scheduleRepository.saveCount);
+        assertEquals(0, meetingRepository.meetings.size());
         assertEquals(1, matchRepository.confirmScheduleAttempts);
     }
 
@@ -267,6 +279,34 @@ class ConfirmCompanionScheduleServiceTest {
                     .stream()
                     .filter(schedule -> schedule.matchId().equals(matchId) && schedule.confirmed())
                     .findFirst();
+        }
+    }
+
+    private static final class FakeCompanionMeetingRepository implements CompanionMeetingRepository {
+
+        private final Map<Long, CompanionMeeting> meetings = new HashMap<>();
+
+        @Override
+        public CompanionMeeting save(final CompanionMeeting model) {
+            CompanionMeeting saved = new CompanionMeeting(
+                    1L,
+                    model.matchId(),
+                    model.status(),
+                    model.startedAt(),
+                    model.completedAt()
+            );
+            meetings.put(saved.id(), saved);
+            return saved;
+        }
+
+        @Override
+        public Optional<CompanionMeeting> findById(final Long id) {
+            return Optional.ofNullable(meetings.get(id));
+        }
+
+        @Override
+        public boolean completeIfOngoing(final Long meetingId, final LocalDateTime completedAt) {
+            return false;
         }
     }
 
