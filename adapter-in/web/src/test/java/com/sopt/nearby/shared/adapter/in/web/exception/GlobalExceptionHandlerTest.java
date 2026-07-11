@@ -17,11 +17,8 @@ import com.sopt.nearby.common.exception.BusinessException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -37,7 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @WebMvcTest(GlobalExceptionHandlerTest.TestController.class)
 @Import({GlobalExceptionHandler.class, GlobalExceptionHandlerTest.TestController.class})
-@ExtendWith(OutputCaptureExtension.class)
 class GlobalExceptionHandlerTest {
 
     @Autowired
@@ -144,17 +140,13 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void handlesUnhandledException(final CapturedOutput output) throws Exception {
+    void handlesUnhandledException() throws Exception {
         mockMvc.perform(get("/test/unhandled-error"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.status").value(500))
                 .andExpect(jsonPath("$.code").value("INTERNAL_SERVER_ERROR"))
                 .andExpect(jsonPath("$.message").value("내부 서버 오류가 발생했습니다. 다시 시도해 주세요."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
-
-        assertThat(output)
-                .contains("처리되지 않은 예외가 발생했습니다.")
-                .contains("java.lang.IllegalStateException: unexpected");
     }
 
     @RestController

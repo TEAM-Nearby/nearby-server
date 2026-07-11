@@ -24,6 +24,7 @@ dependencies {
 	runtimeOnly 'io.sentry:sentry-logback:8.48.0'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'jakarta.servlet:jakarta.servlet-api'
 	testImplementation 'org.springframework.modulith:spring-modulith-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'com.h2database:h2'

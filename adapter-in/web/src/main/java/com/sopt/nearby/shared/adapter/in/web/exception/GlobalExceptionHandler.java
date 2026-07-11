@@ -3,12 +3,12 @@ package com.sopt.nearby.shared.adapter.in.web.exception;
 
 import com.sopt.nearby.common.exception.ErrorCode;
 import com.sopt.nearby.common.exception.NotFoundException;
+import com.sopt.nearby.logging.ServerErrorRequestContext;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.common.exception.BusinessException;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,12 +23,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
-
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<CommonResponse<Void>> handleBusinessException(final BusinessException exception) {
+    public ResponseEntity<CommonResponse<Void>> handleBusinessException(
+            final BusinessException exception,
+            final HttpServletRequest request
+    ) {
         ErrorCode errorCode = exception.getErrorCode();
         HttpStatus status = ApiExceptionStatusResolver.resolve(exception);
+        if (status.is5xxServerError()) {
+            ServerErrorRequestContext.record(request, exception);
+        }
 
         return ResponseEntity
                 .status(status)
@@ -36,8 +40,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<CommonResponse<Void>> handleNotFoundException(final NotFoundException exception) {
-        return handleBusinessException(exception);
+    public ResponseEntity<CommonResponse<Void>> handleNotFoundException(
+            final NotFoundException exception,
+            final HttpServletRequest request
+    ) {
+        return handleBusinessException(exception, request);
     }
 
     @ExceptionHandler(BindException.class)
@@ -67,8 +74,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<CommonResponse<Void>> handleException(final Exception exception) {
-        log.error("처리되지 않은 예외가 발생했습니다.", exception);
+    public ResponseEntity<CommonResponse<Void>> handleException(
+            final Exception exception,
+            final HttpServletRequest request
+    ) {
+        ServerErrorRequestContext.record(request, exception);
 
         return handleGlobalError(GlobalErrorCode.INTERNAL_SERVER_ERROR);
     }

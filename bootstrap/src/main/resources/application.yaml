@@ -26,6 +26,8 @@ sentry:
     enabled: true
     minimum-event-level: error
     minimum-breadcrumb-level: info
+    loggers:
+      - com.sopt.nearby
 
 kakao:
   native-app-key: ${KAKAO_NATIVE_APP_KEY:}
