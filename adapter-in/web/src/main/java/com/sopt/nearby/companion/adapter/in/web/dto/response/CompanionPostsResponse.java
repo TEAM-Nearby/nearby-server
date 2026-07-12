@@ -52,6 +52,7 @@ public record CompanionPostsResponse(
             String meetingAtText,
             int participantCount,
             int maxParticipants,
+            List<ParticipantResponse> participants,
             String participantSummaryText,
             LocalDateTime createdAt,
             String createdAgoText,
@@ -69,11 +70,23 @@ public record CompanionPostsResponse(
                     post.meetingAtText(),
                     post.participantCount(),
                     post.maxParticipants(),
+                    post.participants().stream()
+                            .map(ParticipantResponse::from)
+                            .toList(),
                     post.participantSummaryText(),
                     post.createdAt(),
                     post.createdAgoText(),
                     post.mapMarkerText()
             );
+        }
+    }
+
+    public record ParticipantResponse(
+            Long userId,
+            String profileImageUrl
+    ) {
+        static ParticipantResponse from(final CompanionPostsResult.Participant participant) {
+            return new ParticipantResponse(participant.userId(), participant.profileImageUrl());
         }
     }
 
