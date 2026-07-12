@@ -11,6 +11,8 @@ public enum CompanionErrorCode implements ErrorCode {
     COMPANION_REQUEST_ALREADY_EXISTS("이미 신청한 동행입니다."),
     FORBIDDEN_COMPANION_REQUEST_SELF("자신의 동행 모집글에는 신청할 수 없습니다."),
     COMPANION_REQUEST_NOT_PENDING("대기 중인 신청만 처리할 수 있습니다."),
+    COMPANION_REQUEST_RESULT_NOT_READY("아직 동행 신청 결과를 확인할 수 없습니다."),
+    COMPANION_REQUEST_RESULT_NOT_READABLE("종료된 동행 신청 결과는 확인할 수 없습니다."),
     FORBIDDEN_COMPANION_REQUEST_HOST_ONLY("해당 동행의 호스트만 처리할 수 있습니다."),
     COMPANION_POST_NOT_RECRUITING("모집 중인 동행이 아닙니다."),
     COMPANION_MATCH_NOT_FOUND("매칭 정보를 찾을 수 없습니다."),

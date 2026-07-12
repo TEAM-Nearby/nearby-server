@@ -177,7 +177,7 @@ class CompanionNotificationQueryAdapterTest {
         assertThat(first.placeName()).isEqualTo("확정 장소");
         assertThat(first.meetingAt()).isEqualTo(scheduledAt);
         assertThat(first.matchId()).isEqualTo(match.getId());
-        assertThat(first.actionType()).isEqualTo(CompanionNotificationActionType.CONFIRM_SCHEDULE);
+        assertThat(first.actionType()).isEqualTo(CompanionNotificationActionType.VIEW_RESULT);
         assertThat(first.isRead()).isTrue();
 
         CompanionNotificationSummary second = result.get(1);
@@ -189,7 +189,7 @@ class CompanionNotificationQueryAdapterTest {
         assertThat(second.host().nickname()).isEqualTo("호스트B");
         assertThat(second.placeName()).isEqualTo("시우다드 콘달");
         assertThat(second.matchId()).isNull();
-        assertThat(second.actionType()).isEqualTo(CompanionNotificationActionType.VIEW_REJECTION);
+        assertThat(second.actionType()).isEqualTo(CompanionNotificationActionType.VIEW_RESULT);
         assertThat(second.isRead()).isFalse();
     }
 

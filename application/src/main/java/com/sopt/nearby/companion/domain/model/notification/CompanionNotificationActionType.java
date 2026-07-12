@@ -5,7 +5,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 
 public enum CompanionNotificationActionType {
     CONFIRM_SCHEDULE,
-    VIEW_REJECTION,
+    VIEW_RESULT,
     ACCEPT_REQUEST,
     NONE;
 
@@ -19,8 +19,7 @@ public enum CompanionNotificationActionType {
 
         return switch (direction) {
             case SENT -> switch (status) {
-                case ACCEPTED -> CONFIRM_SCHEDULE;
-                case REJECTED -> VIEW_REJECTION;
+                case ACCEPTED, REJECTED -> VIEW_RESULT;
                 default -> NONE;
             };
             case RECEIVED -> switch (status) {
@@ -31,4 +30,3 @@ public enum CompanionNotificationActionType {
         };
     }
 }
-
