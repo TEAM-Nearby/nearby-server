@@ -10,4 +10,6 @@ public interface MeetingCheckInJpaRepository extends JpaRepository<MeetingCheckI
     Optional<MeetingCheckInEntity> findByMeetingIdAndUserId(Long meetingId, Long userId);
 
     long countByMeetingId(Long meetingId);
+
+    long countByMeetingIdAndCompletedAtIsNotNull(Long meetingId);
 }

@@ -43,6 +43,9 @@ public class MeetingCheckInEntity {
 	@Column(name = "checked_in_at", nullable = false)
 	private LocalDateTime checkedInAt;
 
+	@Column(name = "completed_at")
+	private LocalDateTime completedAt;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "meeting_id", insertable = false, updatable = false)
 	private CompanionMeetingEntity meeting;
@@ -56,7 +59,8 @@ public class MeetingCheckInEntity {
 			final Long userId,
 			final BigDecimal latitude,
 			final BigDecimal longitude,
-			final LocalDateTime checkedInAt
+			final LocalDateTime checkedInAt,
+			final LocalDateTime completedAt
 	) {
 		this.id = id;
 		this.meetingId = meetingId;
@@ -64,6 +68,7 @@ public class MeetingCheckInEntity {
 		this.latitude = latitude;
 		this.longitude = longitude;
 		this.checkedInAt = checkedInAt;
+		this.completedAt = completedAt;
 	}
 
 	public Long getId() {
@@ -88,5 +93,9 @@ public class MeetingCheckInEntity {
 
 	public LocalDateTime getCheckedInAt() {
 		return checkedInAt;
+	}
+
+	public LocalDateTime getCompletedAt() {
+		return completedAt;
 	}
 }

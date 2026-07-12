@@ -9,7 +9,9 @@ public interface MeetingCheckInRepository extends DomainRepository<MeetingCheckI
 
     Optional<MeetingCheckIn> findByMeetingIdAndUserId(Long meetingId, Long userId);
 
-    long countByMeetingId(Long meetingId);
+	long countByMeetingId(Long meetingId);
 
-    MeetingCheckIn saveIfAbsent(MeetingCheckIn checkIn);
+	long countCompletedByMeetingId(Long meetingId);
+
+	MeetingCheckIn saveIfAbsent(MeetingCheckIn checkIn);
 }
