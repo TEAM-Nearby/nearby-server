@@ -275,8 +275,10 @@ class CompanionMeetingControllerTest {
         completeUseCase.result = new CompleteCompanionMeetingResult(
                 1L,
                 10L,
-                CompanionMeetingStatus.COMPLETED,
-                LocalDateTime.of(2026, 6, 29, 19, 0)
+                true,
+                LocalDateTime.of(2026, 6, 29, 19, 0),
+                CompanionMeetingStatus.ONGOING,
+                null
         );
 
         mockMvc.perform(patch("/api/companion-meetings/{meetingId}/complete", 1L)
@@ -284,11 +286,13 @@ class CompanionMeetingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.code").value("COMPLETE_COMPANION_MEETING"))
-                .andExpect(jsonPath("$.message").value("동행이 완료되었어요."))
+                .andExpect(jsonPath("$.message").value("동행 마치기가 반영되었어요."))
                 .andExpect(jsonPath("$.data.meetingId").value(1))
                 .andExpect(jsonPath("$.data.matchId").value(10))
-                .andExpect(jsonPath("$.data.meetingStatus").value("COMPLETED"))
-                .andExpect(jsonPath("$.data.completedAt").value("2026-06-29T19:00:00"));
+                .andExpect(jsonPath("$.data.currentUserCompleted").value(true))
+                .andExpect(jsonPath("$.data.currentUserCompletedAt").value("2026-06-29T19:00:00"))
+                .andExpect(jsonPath("$.data.meetingStatus").value("ONGOING"))
+                .andExpect(jsonPath("$.data.meetingCompletedAt").value(nullValue()));
 
         assertEquals(1L, completeUseCase.meetingId);
         assertEquals(7L, completeUseCase.userId);

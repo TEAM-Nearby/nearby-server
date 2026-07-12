@@ -71,6 +71,25 @@ class MeetingCheckInRepositoryAdapterTest {
         assertThat(adapter.countByMeetingId(meeting.getId())).isEqualTo(1L);
     }
 
+    @Test
+    void countsCompletedCheckIns() {
+        MeetingCheckInRepositoryAdapter adapter = new MeetingCheckInRepositoryAdapter(checkInJpaRepository, dataSource);
+        CompanionMeetingEntity meeting = meetingJpaRepository.saveAndFlush(meeting(match().getId()));
+        MeetingCheckIn saved = adapter.saveIfAbsent(checkIn(meeting.getId(), 7L, NOW));
+
+        adapter.save(new MeetingCheckIn(
+                saved.id(),
+                saved.meetingId(),
+                saved.userId(),
+                saved.latitude(),
+                saved.longitude(),
+                saved.checkedInAt(),
+                NOW.plusMinutes(5)
+        ));
+
+        assertThat(adapter.countCompletedByMeetingId(meeting.getId())).isEqualTo(1L);
+    }
+
     private CompanionMatchEntity match() {
         CompanionPostEntity post = postJpaRepository.saveAndFlush(new CompanionPostEntity(
                 null,
@@ -102,7 +121,8 @@ class MeetingCheckInRepositoryAdapterTest {
                 userId,
                 new BigDecimal("41.39020500"),
                 new BigDecimal("2.16354800"),
-                checkedInAt
+                checkedInAt,
+                null
         );
     }
 

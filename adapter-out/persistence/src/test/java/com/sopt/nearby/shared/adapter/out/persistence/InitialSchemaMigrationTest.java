@@ -334,6 +334,27 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void eighteenthMigrationAddsMeetingCheckInCompletedAt() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource completionMigration = new ClassPathResource(
+				"db/migration/V18__add_meeting_check_in_completed_at.sql"
+		);
+
+		assertThat(completionMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_meeting_check_in_completion_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, completionMigration);
+
+			assertThat(columnNames(connection, "meeting_check_in")).contains("completed_at");
+		}
+	}
+
 	private static void insertDuplicateSoloDiningFavorites(final Connection connection) throws SQLException {
 		try (Statement statement = connection.createStatement()) {
 			statement.executeUpdate("""

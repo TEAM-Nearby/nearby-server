@@ -87,7 +87,8 @@ class CheckInCompanionMeetingServiceTest {
                 USER_ID,
                 new BigDecimal("41.39020500"),
                 new BigDecimal("2.16354800"),
-                firstCheckedInAt
+                firstCheckedInAt,
+                null
         ));
         queryPort.put(context(CompanionMeetingStatus.ONGOING, NOW.minusDays(1)));
 
@@ -107,7 +108,8 @@ class CheckInCompanionMeetingServiceTest {
                 8L,
                 new BigDecimal("41.39020500"),
                 new BigDecimal("2.16354800"),
-                NOW.minusMinutes(10)
+                NOW.minusMinutes(10),
+                null
         ));
 
         CheckInCompanionMeetingResult result = service.checkIn(command("41.39020500", "2.16354800"));
@@ -285,6 +287,14 @@ class CheckInCompanionMeetingServiceTest {
         }
 
         @Override
+        public long countCompletedByMeetingId(final Long meetingId) {
+            return checkIns.values().stream()
+                    .filter(checkIn -> checkIn.meetingId().equals(meetingId))
+                    .filter(checkIn -> checkIn.completedAt() != null)
+                    .count();
+        }
+
+        @Override
         public MeetingCheckIn saveIfAbsent(final MeetingCheckIn checkIn) {
             saveIfAbsentCount++;
             return findByMeetingIdAndUserId(checkIn.meetingId(), checkIn.userId())
@@ -305,7 +315,8 @@ class CheckInCompanionMeetingServiceTest {
                     model.userId(),
                     model.latitude(),
                     model.longitude(),
-                    model.checkedInAt()
+                    model.checkedInAt(),
+                    model.completedAt()
             );
         }
 

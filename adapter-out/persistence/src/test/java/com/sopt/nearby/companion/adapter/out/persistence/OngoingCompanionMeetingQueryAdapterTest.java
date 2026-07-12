@@ -336,7 +336,8 @@ class OngoingCompanionMeetingQueryAdapterTest {
                 userId,
                 new BigDecimal("41.39020500"),
                 new BigDecimal("2.16354800"),
-                BASE_TIME.plusMinutes(5)
+                BASE_TIME.plusMinutes(5),
+                null
         );
     }
 

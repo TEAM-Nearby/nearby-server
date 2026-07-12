@@ -212,7 +212,8 @@ class CompanionReviewTargetQueryAdapterTest {
 				userId,
 				new BigDecimal("41.39020500"),
 				new BigDecimal("2.16354800"),
-				MEETING_AT.plusMinutes(5)
+				MEETING_AT.plusMinutes(5),
+				null
 		);
 	}
 
