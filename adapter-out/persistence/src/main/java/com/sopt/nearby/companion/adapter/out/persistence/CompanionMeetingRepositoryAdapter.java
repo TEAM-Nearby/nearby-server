@@ -8,6 +8,7 @@ import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositor
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.function.Function;
 import org.springframework.stereotype.Repository;
 
@@ -22,6 +23,12 @@ public class CompanionMeetingRepositoryAdapter
 		super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
 				Function.identity());
 		this.jpaRepository = jpaRepository;
+	}
+
+	@Override
+	public Optional<CompanionMeeting> findByIdForUpdate(final Long meetingId) {
+		return jpaRepository.findByIdForUpdate(meetingId)
+				.map(CompanionPersistenceMapper::toDomain);
 	}
 
 	@Override

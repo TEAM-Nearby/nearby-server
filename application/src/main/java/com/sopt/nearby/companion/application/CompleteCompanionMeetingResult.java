@@ -7,7 +7,9 @@ import java.time.LocalDateTime;
 public record CompleteCompanionMeetingResult(
 		Long meetingId,
 		Long matchId,
+		boolean currentUserCompleted,
+		LocalDateTime currentUserCompletedAt,
 		CompanionMeetingStatus meetingStatus,
-		LocalDateTime completedAt
+		LocalDateTime meetingCompletedAt
 ) {
 }

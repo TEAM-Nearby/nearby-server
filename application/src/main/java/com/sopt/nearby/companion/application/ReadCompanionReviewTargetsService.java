@@ -10,6 +10,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.domain.model.review.CompanionReviewTarget;
 import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
@@ -50,7 +51,7 @@ public class ReadCompanionReviewTargetsService implements ReadCompanionReviewTar
 				.orElseThrow(ForbiddenCompanionReviewTargetException::new);
 
 		validateMeetingStatus(meeting.status());
-		validateCurrentUserCheckedIn(meeting.id(), userId);
+		MeetingCheckIn currentUserCheckIn = currentUserCheckIn(meeting.id(), userId);
 
 		List<CompanionReviewTarget> targets = queryPort.findAllByMeetingIdAndReviewerUserIdAndTargetRole(
 				meeting.id(),
@@ -61,7 +62,7 @@ public class ReadCompanionReviewTargetsService implements ReadCompanionReviewTar
 		return new ReadCompanionReviewTargetsResult(
 				meeting.status(),
 				currentUser.role(),
-				canCompleteMeeting(meeting.status()),
+				canCompleteMeeting(meeting.status(), currentUserCheckIn),
 				targets
 		);
 	}
@@ -78,14 +79,17 @@ public class ReadCompanionReviewTargetsService implements ReadCompanionReviewTar
 		}
 	}
 
-	private boolean canCompleteMeeting(final CompanionMeetingStatus meetingStatus) {
-		return meetingStatus == CompanionMeetingStatus.ONGOING;
+	private boolean canCompleteMeeting(
+			final CompanionMeetingStatus meetingStatus,
+			final MeetingCheckIn currentUserCheckIn
+	) {
+		return meetingStatus == CompanionMeetingStatus.ONGOING
+				&& currentUserCheckIn.completedAt() == null;
 	}
 
-	private void validateCurrentUserCheckedIn(final Long meetingId, final Long userId) {
-		if (checkInRepository.findByMeetingIdAndUserId(meetingId, userId).isEmpty()) {
-			throw new CurrentUserNotCheckedInException();
-		}
+	private MeetingCheckIn currentUserCheckIn(final Long meetingId, final Long userId) {
+		return checkInRepository.findByMeetingIdAndUserId(meetingId, userId)
+				.orElseThrow(CurrentUserNotCheckedInException::new);
 	}
 
 	private MatchParticipantRole targetRoleOf(final MatchParticipantRole currentUserRole) {

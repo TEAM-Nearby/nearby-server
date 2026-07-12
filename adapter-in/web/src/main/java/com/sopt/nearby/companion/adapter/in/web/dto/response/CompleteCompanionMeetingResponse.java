@@ -7,16 +7,20 @@ import java.time.LocalDateTime;
 public record CompleteCompanionMeetingResponse(
 		Long meetingId,
 		Long matchId,
+		boolean currentUserCompleted,
+		LocalDateTime currentUserCompletedAt,
 		String meetingStatus,
-		LocalDateTime completedAt
+		LocalDateTime meetingCompletedAt
 ) {
 
 	public static CompleteCompanionMeetingResponse from(final CompleteCompanionMeetingResult result) {
 		return new CompleteCompanionMeetingResponse(
 				result.meetingId(),
 				result.matchId(),
+				result.currentUserCompleted(),
+				result.currentUserCompletedAt(),
 				result.meetingStatus().name(),
-				result.completedAt()
+				result.meetingCompletedAt()
 		);
 	}
 }

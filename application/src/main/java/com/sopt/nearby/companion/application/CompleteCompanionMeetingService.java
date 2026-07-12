@@ -9,9 +9,11 @@ import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundExcept
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompleteCompanionMeetingException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMeetingIdException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.port.in.CompleteCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
@@ -19,6 +21,7 @@ import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
 public class CompleteCompanionMeetingService implements CompleteCompanionMeetingUseCase {
@@ -48,23 +51,42 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 	public CompleteCompanionMeetingResult complete(final Long meetingId, final Long userId) {
 		validateMeetingId(meetingId);
 
-		CompanionMeeting meeting = meetingRepository.findById(meetingId)
+		CompanionMeeting meeting = meetingRepository.findByIdForUpdate(meetingId)
 				.orElseThrow(CompanionMeetingNotFoundException::new);
-		validateParticipant(meeting.matchId(), userId);
+		List<CompanionMatchParticipant> participants = participantRepository.findAllByMatchId(meeting.matchId());
+		validateParticipant(participants, userId);
 		validateMeetingStatus(meeting.status());
-		validateCurrentUserCheckedIn(meeting.id(), userId);
+		MeetingCheckIn checkIn = currentUserCheckIn(meeting.id(), userId);
+		CompanionMatch match = matchRepository.findById(meeting.matchId())
+				.orElseThrow(CompanionMatchNotFoundException::new);
+		validateMatchStatus(match.status());
 
-		LocalDateTime completedAt = LocalDateTime.now(clock);
-		if (!meetingRepository.completeIfOngoing(meeting.id(), completedAt)) {
-			handleCompletionConflict(meeting.id());
+		LocalDateTime currentUserCompletedAt = checkIn.completedAt();
+		if (currentUserCompletedAt == null) {
+			currentUserCompletedAt = LocalDateTime.now(clock);
+			checkInRepository.save(completed(checkIn, currentUserCompletedAt));
 		}
-		completeMatch(meeting.matchId());
+
+		boolean allParticipantsCompleted = checkInRepository.countCompletedByMeetingId(meeting.id())
+				== participants.size();
+		CompanionMeetingStatus meetingStatus = CompanionMeetingStatus.ONGOING;
+		LocalDateTime meetingCompletedAt = null;
+		if (allParticipantsCompleted) {
+			meetingCompletedAt = currentUserCompletedAt;
+			if (!meetingRepository.completeIfOngoing(meeting.id(), meetingCompletedAt)) {
+				handleCompletionConflict(meeting.id());
+			}
+			matchRepository.save(completed(match));
+			meetingStatus = CompanionMeetingStatus.COMPLETED;
+		}
 
 		return new CompleteCompanionMeetingResult(
 				meeting.id(),
 				meeting.matchId(),
-				CompanionMeetingStatus.COMPLETED,
-				completedAt
+				true,
+				currentUserCompletedAt,
+				meetingStatus,
+				meetingCompletedAt
 		);
 	}
 
@@ -74,8 +96,11 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 		}
 	}
 
-	private void validateParticipant(final Long matchId, final Long userId) {
-		if (!participantRepository.existsByMatchIdAndUserId(matchId, userId)) {
+	private void validateParticipant(
+			final List<CompanionMatchParticipant> participants,
+			final Long userId
+	) {
+		if (participants.stream().noneMatch(participant -> participant.userId().equals(userId))) {
 			throw new ForbiddenCompleteCompanionMeetingException();
 		}
 	}
@@ -89,10 +114,30 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 		}
 	}
 
-	private void validateCurrentUserCheckedIn(final Long meetingId, final Long userId) {
-		if (checkInRepository.findByMeetingIdAndUserId(meetingId, userId).isEmpty()) {
-			throw new CompleteCompanionMeetingCurrentUserNotCheckedInException();
+	private MeetingCheckIn currentUserCheckIn(final Long meetingId, final Long userId) {
+		return checkInRepository.findByMeetingIdAndUserId(meetingId, userId)
+				.orElseThrow(CompleteCompanionMeetingCurrentUserNotCheckedInException::new);
+	}
+
+	private void validateMatchStatus(final CompanionMatchStatus matchStatus) {
+		if (matchStatus == CompanionMatchStatus.CANCELED) {
+			throw new CompleteCompanionMeetingAlreadyCanceledException();
 		}
+		if (matchStatus == CompanionMatchStatus.COMPLETED) {
+			throw new CompleteCompanionMeetingAlreadyCompletedException();
+		}
+	}
+
+	private MeetingCheckIn completed(final MeetingCheckIn checkIn, final LocalDateTime completedAt) {
+		return new MeetingCheckIn(
+				checkIn.id(),
+				checkIn.meetingId(),
+				checkIn.userId(),
+				checkIn.latitude(),
+				checkIn.longitude(),
+				checkIn.checkedInAt(),
+				completedAt
+		);
 	}
 
 	private void handleCompletionConflict(final Long meetingId) {
@@ -100,18 +145,6 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 				.orElseThrow(CompanionMeetingNotFoundException::new);
 		validateMeetingStatus(currentMeeting.status());
 		throw new CompleteCompanionMeetingAlreadyCompletedException();
-	}
-
-	private void completeMatch(final Long matchId) {
-		CompanionMatch match = matchRepository.findById(matchId)
-				.orElseThrow(CompanionMatchNotFoundException::new);
-		if (match.status() == CompanionMatchStatus.CANCELED) {
-			throw new CompleteCompanionMeetingAlreadyCanceledException();
-		}
-		if (match.status() == CompanionMatchStatus.COMPLETED) {
-			return;
-		}
-		matchRepository.save(completed(match));
 	}
 
 	private CompanionMatch completed(final CompanionMatch match) {
