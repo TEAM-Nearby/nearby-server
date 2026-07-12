@@ -5,6 +5,8 @@ plugins {
 dependencies {
 	implementation project(':application')
 	implementation project(':common')
+	implementation platform('software.amazon.awssdk:bom:2.47.5')
+	implementation 'software.amazon.awssdk:s3'
 
 	compileOnly 'org.springframework:spring-context'
 
