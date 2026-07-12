@@ -149,6 +149,62 @@ class CompanionPostQueryAdapterTest {
     }
 
     @Test
+    void findsHostAndAcceptedParticipantsInJoinOrderIncludingMissingProfileImage() {
+        CompanionPostQueryAdapter adapter = new CompanionPostQueryAdapter(queryJpaRepository);
+
+        companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트", UserGender.FEMALE, "https://image.example/host.png"));
+        companionProfileJpaRepository.saveAndFlush(profile(301L, "늦은 수락자", UserGender.MALE, "https://image.example/late.png"));
+        companionProfileJpaRepository.saveAndFlush(profile(302L, "빠른 수락자1", UserGender.FEMALE, null));
+        companionProfileJpaRepository.saveAndFlush(profile(303L, "빠른 수락자2", UserGender.MALE, "https://image.example/early.png"));
+        companionProfileJpaRepository.saveAndFlush(profile(304L, "대기자", UserGender.FEMALE, "https://image.example/pending.png"));
+        companionProfileJpaRepository.saveAndFlush(profile(305L, "거절자", UserGender.FEMALE, "https://image.example/rejected.png"));
+        companionProfileJpaRepository.saveAndFlush(profile(306L, "취소자", UserGender.FEMALE, "https://image.example/canceled.png"));
+
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place(
+                "participant-place",
+                "참여자 테스트 식당",
+                "restaurant",
+                "37.56660000",
+                "126.97810000",
+                null
+        ));
+        CompanionPostEntity post = companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                place.getId(),
+                CompanionPostStatus.RECRUITING,
+                FUTURE,
+                NOW,
+                "참여자 조회 테스트"
+        ));
+
+        companionApplicationJpaRepository.saveAndFlush(application(post.getId(), 301L, CompanionApplicationStatus.ACCEPTED, NOW.plusMinutes(1)));
+        companionApplicationJpaRepository.saveAndFlush(application(post.getId(), 302L, CompanionApplicationStatus.ACCEPTED, NOW));
+        companionApplicationJpaRepository.saveAndFlush(application(post.getId(), 303L, CompanionApplicationStatus.ACCEPTED, NOW));
+        companionApplicationJpaRepository.saveAndFlush(application(post.getId(), 304L, CompanionApplicationStatus.PENDING, NOW));
+        companionApplicationJpaRepository.saveAndFlush(application(post.getId(), 305L, CompanionApplicationStatus.REJECTED, NOW));
+        companionApplicationJpaRepository.saveAndFlush(application(post.getId(), 306L, CompanionApplicationStatus.CANCELED, NOW));
+
+        List<CompanionPostSummary> result = adapter.find(command(
+                1000,
+                CompanionPostPlaceCategory.ALL,
+                CompanionPostSort.LATEST
+        ));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).participants())
+                .extracting(
+                        CompanionPostSummary.Participant::userId,
+                        CompanionPostSummary.Participant::profileImageUrl
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(100L, "https://image.example/host.png"),
+                        org.assertj.core.groups.Tuple.tuple(302L, null),
+                        org.assertj.core.groups.Tuple.tuple(303L, "https://image.example/early.png"),
+                        org.assertj.core.groups.Tuple.tuple(301L, "https://image.example/late.png")
+                );
+    }
+
+    @Test
     void filtersCategoryAndSortsByDistance() {
         CompanionPostQueryAdapter adapter = new CompanionPostQueryAdapter(queryJpaRepository);
 
@@ -456,13 +512,22 @@ class CompanionPostQueryAdapterTest {
     }
 
     private CompanionProfileEntity profile(final Long userId, final String nickname, final UserGender gender) {
+        return profile(userId, nickname, gender, null);
+    }
+
+    private CompanionProfileEntity profile(
+            final Long userId,
+            final String nickname,
+            final UserGender gender,
+            final String profileImageUrl
+    ) {
         return new CompanionProfileEntity(
                 null,
                 userId,
                 nickname,
                 gender,
                 2000,
-                null,
+                profileImageUrl,
                 "반가워요.",
                 new BigDecimal("4.50"),
                 0,
@@ -522,13 +587,22 @@ class CompanionPostQueryAdapterTest {
             final Long applicantUserId,
             final CompanionApplicationStatus status
     ) {
+        return application(postId, applicantUserId, status, NOW);
+    }
+
+    private CompanionApplicationEntity application(
+            final Long postId,
+            final Long applicantUserId,
+            final CompanionApplicationStatus status,
+            final LocalDateTime createdAt
+    ) {
         return new CompanionApplicationEntity(
                 null,
                 postId,
                 applicantUserId,
                 status,
                 null,
-                NOW
+                createdAt
         );
     }
 

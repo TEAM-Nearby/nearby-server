@@ -91,4 +91,45 @@ public interface CompanionPostQueryJpaRepository extends Repository<CompanionPos
             @Param("placeId") Long placeId,
             @Param("sort") String sort
     );
+
+    @Query(value = """
+            select
+                participant.postId,
+                participant.userId,
+                participant.profileImageUrl
+            from (
+                select
+                    post.id as postId,
+                    post.host_user_id as userId,
+                    profile.profile_image_url as profileImageUrl,
+                    0 as participantOrder,
+                    post.created_at as joinedAt,
+                    post.id as tieBreaker
+                from companion_post post
+                join companion_profile profile
+                    on profile.user_id = post.host_user_id
+                where post.id in (:postIds)
+
+                union all
+
+                select
+                    application.post_id as postId,
+                    application.applicant_user_id as userId,
+                    profile.profile_image_url as profileImageUrl,
+                    1 as participantOrder,
+                    application.created_at as joinedAt,
+                    application.id as tieBreaker
+                from companion_application application
+                join companion_profile profile
+                    on profile.user_id = application.applicant_user_id
+                where application.post_id in (:postIds)
+                    and application.status = 'ACCEPTED'
+            ) participant
+            order by
+                participant.postId,
+                participant.participantOrder,
+                participant.joinedAt,
+                participant.tieBreaker
+            """, nativeQuery = true)
+    List<CompanionPostParticipantProjection> findParticipantsByPostIds(@Param("postIds") List<Long> postIds);
 }

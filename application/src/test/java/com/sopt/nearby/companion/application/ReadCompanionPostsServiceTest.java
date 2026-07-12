@@ -66,7 +66,11 @@ class ReadCompanionPostsServiceTest {
                 LocalDateTime.of(2026, 7, 3, 14, 0),
                 2,
                 4,
-                LocalDateTime.of(2026, 7, 2, 3, 30)
+                LocalDateTime.of(2026, 7, 2, 3, 30),
+                List.of(
+                        new CompanionPostSummary.Participant(7L, "https://image.example/host.png"),
+                        new CompanionPostSummary.Participant(8L, null)
+                )
         ));
 
         CompanionPostsResult result = service.read(new ReadCompanionPostsCommand(
@@ -123,7 +127,8 @@ class ReadCompanionPostsServiceTest {
                 LocalDateTime.of(2026, 7, 3, 14, 30),
                 1,
                 4,
-                LocalDateTime.of(2026, 7, 1, 3, 30)
+                LocalDateTime.of(2026, 7, 1, 3, 30),
+                List.of()
         ));
         resolvePlaceImageUseCase.result = new ResolvedPlaceImage(
                 "https://cdn.nearby.test/default-place.png",
@@ -158,7 +163,8 @@ class ReadCompanionPostsServiceTest {
                 null,
                 1,
                 4,
-                LocalDateTime.of(2026, 7, 2, 3, 30)
+                LocalDateTime.of(2026, 7, 2, 3, 30),
+                List.of()
         ));
 
         CompanionPostsResult result = service.read(validCommand());
