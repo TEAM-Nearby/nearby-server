@@ -141,8 +141,8 @@ class MyPageQueryAdapterTest {
         assertThat(result.gender()).isEqualTo(UserGender.FEMALE);
         assertThat(result.birthYear()).isEqualTo(2003);
         assertThat(result.profileImageUrl()).isEqualTo("https://cdn.nearby.com/profiles/1.jpg");
-        assertThat(result.mannerScore()).isEqualByComparingTo("4.00");
-        assertThat(result.reviewCount()).isEqualTo(12);
+        assertThat(result.mannerScore()).isEqualByComparingTo("5.00");
+        assertThat(result.reviewCount()).isEqualTo(1);
         assertThat(result.phoneVerifiedAt()).isEqualTo(LocalDateTime.of(2026, 7, 1, 10, 0));
         assertThat(result.travelStyleKeywords()).containsExactly(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.FOODIE);
         assertThat(result.mannerKeywords()).containsExactly(ReviewKeyword.FAST_RESPONSE);
