@@ -107,6 +107,12 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
                 meetingAtText(summary.meetingAt()),
                 summary.participantCount(),
                 summary.maxParticipants(),
+                summary.participants().stream()
+                        .map(participant -> new CompanionPostsResult.Participant(
+                                participant.userId(),
+                                participant.profileImageUrl()
+                        ))
+                        .toList(),
                 summary.participantCount() + "/" + summary.maxParticipants() + " 모집 중",
                 summary.createdAt(),
                 createdAgoText(summary.createdAt()),

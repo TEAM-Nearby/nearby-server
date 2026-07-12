@@ -549,6 +549,10 @@ class CompanionPostControllerTest {
                         "7월 3일 14:00",
                         2,
                         4,
+                        List.of(
+                                new CompanionPostsResult.Participant(7L, "https://image.example/host.png"),
+                                new CompanionPostsResult.Participant(8L, null)
+                        ),
                         "2/4 모집 중",
                         LocalDateTime.of(2026, 7, 2, 13, 30),
                         "30분 전",

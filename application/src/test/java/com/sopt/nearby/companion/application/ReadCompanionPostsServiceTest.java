@@ -106,6 +106,10 @@ class ReadCompanionPostsServiceTest {
         assertEquals("https://lh3.googleusercontent.com/resolved-place.jpg", post.place().imageUrl());
         assertEquals("GOOGLE_MAPS", post.place().imageSource());
         assertEquals("Google User", post.place().imageAttributions().get(0).displayName());
+        assertEquals(7L, post.participants().get(0).userId());
+        assertEquals("https://image.example/host.png", post.participants().get(0).profileImageUrl());
+        assertEquals(8L, post.participants().get(1).userId());
+        assertEquals(null, post.participants().get(1).profileImageUrl());
     }
 
     @Test
