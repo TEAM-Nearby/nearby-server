@@ -44,7 +44,7 @@ public class PlaceCacheEntity {
 	@Column(name = "review_count")
 	private Integer reviewCount;
 
-	@Column(name = "photo_reference")
+	@Column(name = "photo_reference", columnDefinition = "text")
 	private String photoReference;
 
 	@Enumerated(EnumType.STRING)
