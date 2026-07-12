@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledE
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleAlreadyConfirmedException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
+import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
@@ -98,6 +99,22 @@ class ConfirmCompanionScheduleServiceTest {
     }
 
     @Test
+    void throwsInvalidOpenChatUrlWhenUrlIsNotKakaoOpenChat() {
+        assertThrows(
+                InvalidOpenChatUrlException.class,
+                () -> service.confirm(command("https://example.com/o/confirmed"))
+        );
+    }
+
+    @Test
+    void throwsInvalidOpenChatUrlWhenUrlIsEmpty() {
+        assertThrows(
+                InvalidOpenChatUrlException.class,
+                () -> service.confirm(command(""))
+        );
+    }
+
+    @Test
     void throwsForbiddenWhenRequesterIsNotPostHost() {
         assertThrows(
                 ForbiddenCompanionScheduleException.class,
@@ -172,6 +189,17 @@ class ConfirmCompanionScheduleServiceTest {
     }
 
     private ConfirmCompanionScheduleCommand command(final Long requesterUserId) {
+        return command(requesterUserId, "https://open.kakao.com/o/confirmed");
+    }
+
+    private ConfirmCompanionScheduleCommand command(final String openChatUrl) {
+        return command(7L, openChatUrl);
+    }
+
+    private ConfirmCompanionScheduleCommand command(
+            final Long requesterUserId,
+            final String openChatUrl
+    ) {
         return new ConfirmCompanionScheduleCommand(
                 1L,
                 requesterUserId,
@@ -183,7 +211,7 @@ class ConfirmCompanionScheduleServiceTest {
                         new BigDecimal("41.39020500"),
                         new BigDecimal("2.16354800")
                 ),
-                "https://open.kakao.com/o/confirmed"
+                openChatUrl
         );
     }
 

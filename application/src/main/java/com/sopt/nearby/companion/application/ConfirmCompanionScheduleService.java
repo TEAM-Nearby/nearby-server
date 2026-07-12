@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundExceptio
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleAlreadyConfirmedException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
+import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
@@ -143,10 +144,14 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
     private void validate(final ConfirmCompanionScheduleCommand command) {
         if (command == null || command.matchId() == null || command.matchId() <= 0
                 || command.requesterUserId() == null || command.scheduledAt() == null
-                || command.place() == null || isBlank(command.openChatUrl())
+                || command.place() == null
                 || isBlank(command.place().googlePlaceId()) || isBlank(command.place().name())
                 || command.place().latitude() == null || command.place().longitude() == null) {
             throw new InvalidCompanionScheduleRequestException();
+        }
+        if (isBlank(command.openChatUrl())
+                || !command.openChatUrl().startsWith("https://open.kakao.com/")) {
+            throw new InvalidOpenChatUrlException();
         }
     }
 
