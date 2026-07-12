@@ -19,12 +19,21 @@ public interface MyPageQueryJpaRepository extends Repository<CompanionProfileEnt
                 profile.gender as gender,
                 profile.birth_year as birthYear,
                 profile.profile_image_url as profileImageUrl,
-                profile.manner_score as mannerScore,
-                profile.review_count as reviewCount,
+                coalesce(review_stats.manner_score, 0.00) as mannerScore,
+                coalesce(review_stats.review_count, 0) as reviewCount,
                 account.phone_verified_at as phoneVerifiedAt
             from companion_profile profile
             join user_account account
                 on account.id = profile.user_id
+            left join (
+                select
+                    reviewee_user_id,
+                    round(avg(rating), 2) as manner_score,
+                    cast(count(*) as integer) as review_count
+                from companion_review
+                group by reviewee_user_id
+            ) review_stats
+                on review_stats.reviewee_user_id = profile.user_id
             where profile.user_id = :userId
                 and profile.status = 'ACTIVE'
             """, nativeQuery = true)
