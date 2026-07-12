@@ -77,7 +77,7 @@ class CompanionNotificationControllerTest {
                 .andExpect(jsonPath("$.data.requests[0].placeName").value("오노테라"))
                 .andExpect(jsonPath("$.data.requests[0].meetingAt").value("2026-06-18T18:30:00"))
                 .andExpect(jsonPath("$.data.requests[0].matchId").value(10))
-                .andExpect(jsonPath("$.data.requests[0].actionType").value("CONFIRM_SCHEDULE"))
+                .andExpect(jsonPath("$.data.requests[0].actionType").value("VIEW_RESULT"))
                 .andExpect(jsonPath("$.data.requests[0].isRead").value(false));
 
         assertEquals(7L, useCase.userId);
