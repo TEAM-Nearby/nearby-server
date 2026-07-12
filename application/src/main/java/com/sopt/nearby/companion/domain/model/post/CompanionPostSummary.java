@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.domain.model.post;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record CompanionPostSummary(
         Long postId,
@@ -22,6 +23,17 @@ public record CompanionPostSummary(
         LocalDateTime meetingAt,
         int participantCount,
         int maxParticipants,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        List<Participant> participants
 ) {
+
+    public CompanionPostSummary {
+        participants = participants == null ? List.of() : List.copyOf(participants);
+    }
+
+    public record Participant(
+            Long userId,
+            String profileImageUrl
+    ) {
+    }
 }

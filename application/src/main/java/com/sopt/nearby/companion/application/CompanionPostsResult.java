@@ -37,10 +37,20 @@ public record CompanionPostsResult(
             String meetingAtText,
             int participantCount,
             int maxParticipants,
+            List<Participant> participants,
             String participantSummaryText,
             LocalDateTime createdAt,
             String createdAgoText,
             String mapMarkerText
+    ) {
+        public Post {
+            participants = participants == null ? List.of() : List.copyOf(participants);
+        }
+    }
+
+    public record Participant(
+            Long userId,
+            String profileImageUrl
     ) {
     }
 

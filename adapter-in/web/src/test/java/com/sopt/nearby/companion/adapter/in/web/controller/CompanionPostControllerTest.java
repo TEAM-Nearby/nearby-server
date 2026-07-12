@@ -113,6 +113,10 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.posts[0].meetingAtText").value("7월 3일 14:00"))
                 .andExpect(jsonPath("$.data.posts[0].participantCount").value(2))
                 .andExpect(jsonPath("$.data.posts[0].maxParticipants").value(4))
+                .andExpect(jsonPath("$.data.posts[0].participants[0].userId").value(7))
+                .andExpect(jsonPath("$.data.posts[0].participants[0].profileImageUrl").value("https://image.example/host.png"))
+                .andExpect(jsonPath("$.data.posts[0].participants[1].userId").value(8))
+                .andExpect(jsonPath("$.data.posts[0].participants[1].profileImageUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data.posts[0].participantSummaryText").value("2/4 모집 중"))
                 .andExpect(jsonPath("$.data.posts[0].createdAt").value("2026-07-02T13:30:00"))
                 .andExpect(jsonPath("$.data.posts[0].createdAgoText").value("30분 전"))
@@ -549,6 +553,10 @@ class CompanionPostControllerTest {
                         "7월 3일 14:00",
                         2,
                         4,
+                        List.of(
+                                new CompanionPostsResult.Participant(7L, "https://image.example/host.png"),
+                                new CompanionPostsResult.Participant(8L, null)
+                        ),
                         "2/4 모집 중",
                         LocalDateTime.of(2026, 7, 2, 13, 30),
                         "30분 전",
