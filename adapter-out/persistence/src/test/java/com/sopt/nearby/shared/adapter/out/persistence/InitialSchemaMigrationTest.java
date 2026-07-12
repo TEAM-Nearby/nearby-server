@@ -3,8 +3,10 @@ package com.sopt.nearby.shared.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -280,6 +282,55 @@ class InitialSchemaMigrationTest {
 					.containsExactly(2L, 2L);
 			assertThat(companionNotificationTargetIds(connection))
 					.containsExactly(2L, 2L);
+		}
+	}
+
+	@Test
+	void seventeenthMigrationExpandsPlaceCachePhotoReference() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource photoReferenceMigration = new ClassPathResource(
+				"db/migration/V17__expand_place_cache_photo_reference.sql"
+		);
+
+		assertThat(photoReferenceMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_place_cache_photo_reference_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, photoReferenceMigration);
+
+			String longPhotoReference = "places/google-place-id/photos/" + "p".repeat(300);
+			try (PreparedStatement statement = connection.prepareStatement("""
+					insert into place_cache (
+					    google_place_id,
+					    name,
+					    latitude,
+					    longitude,
+					    photo_reference,
+					    business_status
+					) values (?, ?, ?, ?, ?, ?)
+					""")) {
+				statement.setString(1, "long-photo-reference-place-id");
+				statement.setString(2, "긴 사진 식별자 테스트 장소");
+				statement.setBigDecimal(3, new BigDecimal("37.55473930"));
+				statement.setBigDecimal(4, new BigDecimal("126.92943910"));
+				statement.setString(5, longPhotoReference);
+				statement.setString(6, "OPERATIONAL");
+				statement.executeUpdate();
+			}
+
+			try (Statement statement = connection.createStatement();
+					ResultSet resultSet = statement.executeQuery("""
+							select photo_reference
+							from place_cache
+							where google_place_id = 'long-photo-reference-place-id'
+							""")) {
+				assertThat(resultSet.next()).isTrue();
+				assertThat(resultSet.getString("photo_reference")).isEqualTo(longPhotoReference);
+			}
 		}
 	}
 
