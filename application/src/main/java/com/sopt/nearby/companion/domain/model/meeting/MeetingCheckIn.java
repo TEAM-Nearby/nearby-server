@@ -10,6 +10,7 @@ public record MeetingCheckIn(
 		Long userId,
 		BigDecimal latitude,
 		BigDecimal longitude,
-		LocalDateTime checkedInAt
+		LocalDateTime checkedInAt,
+		LocalDateTime completedAt
 ) {
 }

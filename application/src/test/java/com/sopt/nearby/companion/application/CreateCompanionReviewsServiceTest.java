@@ -123,6 +123,16 @@ class CreateCompanionReviewsServiceTest {
 	}
 
 	@Test
+	void allowsReviewAfterCurrentUserCompletes() {
+		checkInRepository.put(checkIn(HOST_ID, NOW));
+
+		CreateCompanionReviewsResult result = service.create(command(HOST_ID, FIRST_GUEST_ID, keywords()));
+
+		assertEquals(CompanionMeetingStatus.ONGOING, result.meetingStatus());
+		assertEquals(1, reviewRepository.savedReviews.size());
+	}
+
+	@Test
 	void rejectsGuestReviewingAnotherGuest() {
 		assertThrows(
 				InvalidReviewTargetException.class,
@@ -178,13 +188,18 @@ class CreateCompanionReviewsServiceTest {
 	}
 
 	private MeetingCheckIn checkIn(final Long userId) {
+		return checkIn(userId, null);
+	}
+
+	private MeetingCheckIn checkIn(final Long userId, final LocalDateTime completedAt) {
 		return new MeetingCheckIn(
 				null,
 				MEETING_ID,
 				userId,
 				BigDecimal.ZERO,
 				BigDecimal.ZERO,
-				NOW.minusMinutes(1)
+				NOW.minusMinutes(1),
+				completedAt
 		);
 	}
 
@@ -281,6 +296,14 @@ class CreateCompanionReviewsServiceTest {
 		public long countByMeetingId(final Long meetingId) {
 			return checkIns.values().stream()
 					.filter(checkIn -> checkIn.meetingId().equals(meetingId))
+					.count();
+		}
+
+		@Override
+		public long countCompletedByMeetingId(final Long meetingId) {
+			return checkIns.values().stream()
+					.filter(checkIn -> checkIn.meetingId().equals(meetingId))
+					.filter(checkIn -> checkIn.completedAt() != null)
 					.count();
 		}
 

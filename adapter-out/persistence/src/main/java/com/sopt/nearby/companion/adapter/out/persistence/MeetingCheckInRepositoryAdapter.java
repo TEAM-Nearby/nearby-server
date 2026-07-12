@@ -66,6 +66,11 @@ public class MeetingCheckInRepositoryAdapter
 	}
 
 	@Override
+	public long countCompletedByMeetingId(final Long meetingId) {
+		return jpaRepository.countByMeetingIdAndCompletedAtIsNotNull(meetingId);
+	}
+
+	@Override
 	@Transactional
 	public MeetingCheckIn saveIfAbsent(final MeetingCheckIn checkIn) {
 		insertIgnore(checkIn);

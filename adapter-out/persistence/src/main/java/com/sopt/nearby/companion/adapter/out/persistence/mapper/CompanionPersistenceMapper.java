@@ -254,7 +254,8 @@ public final class CompanionPersistenceMapper {
 				model.userId(),
 				model.latitude(),
 				model.longitude(),
-				model.checkedInAt()
+				model.checkedInAt(),
+				model.completedAt()
 		);
 	}
 
@@ -265,7 +266,8 @@ public final class CompanionPersistenceMapper {
 				entity.getUserId(),
 				entity.getLatitude(),
 				entity.getLongitude(),
-				entity.getCheckedInAt()
+				entity.getCheckedInAt(),
+				entity.getCompletedAt()
 		);
 	}
 

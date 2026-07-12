@@ -143,9 +143,9 @@ public interface CompanionMeetingApi {
     @Operation(
             summary = "동행 마치기",
             description = """
-                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 동행을 완료 처리합니다.
+                    JWT 액세스 토큰으로 인증된 사용자의 개인 동행 완료를 기록합니다.
                     현재 사용자가 해당 동행 참여자이고 만남 인증을 완료했다면 HOST/GUEST 역할과 리뷰 작성 여부에 관계없이 동행을 마칠 수 있습니다.
-                    성공 시 동행 만남과 매칭 상태를 COMPLETED로 변경합니다.
+                    모든 매칭 참여자가 개인 완료하면 동행 만남과 매칭 상태를 COMPLETED로 변경하며, 개인 또는 전체 완료 후에도 후기를 작성할 수 있습니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )

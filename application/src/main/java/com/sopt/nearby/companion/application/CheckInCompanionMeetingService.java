@@ -108,7 +108,8 @@ public class CheckInCompanionMeetingService implements CheckInCompanionMeetingUs
                 command.userId(),
                 command.latitude(),
                 command.longitude(),
-                now
+                now,
+                null
         ));
         boolean alreadyCompleted = !savedCheckIn.checkedInAt().equals(now);
 

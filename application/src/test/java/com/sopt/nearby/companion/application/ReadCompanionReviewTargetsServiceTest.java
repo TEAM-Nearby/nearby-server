@@ -95,6 +95,15 @@ class ReadCompanionReviewTargetsServiceTest {
 	}
 
 	@Test
+	void completedCurrentUserCannotCompleteAgainWhileMeetingIsOngoing() {
+		checkInRepository.put(checkIn(HOST_ID, NOW));
+
+		ReadCompanionReviewTargetsResult result = service.getTargets(MEETING_ID, HOST_ID);
+
+		assertFalse(result.canCompleteMeeting());
+	}
+
+	@Test
 	void rejectsInvalidMeetingId() {
 		assertThrows(InvalidCompanionMeetingIdException.class, () -> service.getTargets(null, HOST_ID));
 		assertThrows(InvalidCompanionMeetingIdException.class, () -> service.getTargets(0L, HOST_ID));
@@ -164,13 +173,18 @@ class ReadCompanionReviewTargetsServiceTest {
 	}
 
 	private MeetingCheckIn checkIn(final Long userId) {
+		return checkIn(userId, null);
+	}
+
+	private MeetingCheckIn checkIn(final Long userId, final LocalDateTime completedAt) {
 		return new MeetingCheckIn(
 				null,
 				MEETING_ID,
 				userId,
 				BigDecimal.ZERO,
 				BigDecimal.ZERO,
-				NOW.minusMinutes(1)
+				NOW.minusMinutes(1),
+				completedAt
 		);
 	}
 
@@ -279,6 +293,14 @@ class ReadCompanionReviewTargetsServiceTest {
 		public long countByMeetingId(final Long meetingId) {
 			return checkIns.values().stream()
 					.filter(checkIn -> checkIn.meetingId().equals(meetingId))
+					.count();
+		}
+
+		@Override
+		public long countCompletedByMeetingId(final Long meetingId) {
+			return checkIns.values().stream()
+					.filter(checkIn -> checkIn.meetingId().equals(meetingId))
+					.filter(checkIn -> checkIn.completedAt() != null)
 					.count();
 		}
 
