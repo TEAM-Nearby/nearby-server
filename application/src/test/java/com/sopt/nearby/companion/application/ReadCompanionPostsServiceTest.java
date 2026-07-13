@@ -97,6 +97,7 @@ class ReadCompanionPostsServiceTest {
 
         CompanionPostsResult.Post post = result.posts().get(0);
         assertEquals(101L, post.postId());
+        assertEquals(CompanionPostMeetingTimeType.SCHEDULED, post.meetingTimeType());
         assertEquals("1234567890123456789012345678901234567890123456789", post.contentPreview());
         assertEquals(true, post.contentPreviewTruncated());
         assertEquals("7월 3일 14:00", post.meetingAtText());

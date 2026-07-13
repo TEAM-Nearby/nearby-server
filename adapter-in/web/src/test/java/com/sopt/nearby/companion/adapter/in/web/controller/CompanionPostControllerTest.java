@@ -549,6 +549,7 @@ class CompanionPostControllerTest {
                         ),
                         "같이 스시 먹어요",
                         false,
+                        CompanionPostMeetingTimeType.SCHEDULED,
                         LocalDateTime.of(2026, 7, 3, 14, 0),
                         "7월 3일 14:00",
                         2,

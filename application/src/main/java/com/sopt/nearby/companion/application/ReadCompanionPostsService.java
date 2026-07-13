@@ -103,6 +103,7 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
                 place,
                 contentPreview,
                 summary.content() != null && summary.content().length() > CONTENT_PREVIEW_LENGTH,
+                summary.meetingTimeType(),
                 summary.meetingAt(),
                 meetingAtText(summary.meetingAt()),
                 summary.participantCount(),
