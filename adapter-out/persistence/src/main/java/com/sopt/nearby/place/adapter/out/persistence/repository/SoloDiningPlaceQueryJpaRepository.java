@@ -52,6 +52,7 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
                 place.id as placeId,
                 place.google_place_id as googlePlaceId,
                 place.name as name,
+                place.address as address,
                 place.photo_reference as photoReference,
                 upper(place.category) as category,
                 cast(round(6371000 * acos(least(1.0, greatest(-1.0,

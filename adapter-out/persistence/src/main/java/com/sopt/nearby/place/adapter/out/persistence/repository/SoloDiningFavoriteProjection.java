@@ -16,6 +16,8 @@ public interface SoloDiningFavoriteProjection {
 
     String getName();
 
+    String getAddress();
+
     String getPhotoReference();
 
     String getCategory();

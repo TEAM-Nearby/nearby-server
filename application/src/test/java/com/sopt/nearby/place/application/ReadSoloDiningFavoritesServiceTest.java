@@ -110,6 +110,7 @@ class ReadSoloDiningFavoritesServiceTest {
                 12L,
                 "google-place-id",
                 "니어바이 카페",
+                "서울특별시 중구 세종대로 110",
                 "places/google-place-id/photos/photo-resource",
                 category,
                 80,
