@@ -52,7 +52,7 @@ class SoloDiningPlaceControllerTest {
 
     @Test
     void returnsSoloDiningPlaces() throws Exception {
-        readUseCase.result = result();
+        readUseCase.result = result("서울특별시 중구 세종대로 110");
 
         mockMvc.perform(get("/api/solo-dining/places")
                         .queryParam("latitude", "37.56650000")
@@ -66,6 +66,7 @@ class SoloDiningPlaceControllerTest {
                 .andExpect(jsonPath("$.data.places[0].placeId").value(12))
                 .andExpect(jsonPath("$.data.places[0].googlePlaceId").value("google-place-id"))
                 .andExpect(jsonPath("$.data.places[0].name").value("니어바이 카페"))
+                .andExpect(jsonPath("$.data.places[0].address").value("서울특별시 중구 세종대로 110"))
                 .andExpect(jsonPath("$.data.places[0].photoReference").value("places/google-place-id/photos/photo-resource"))
                 .andExpect(jsonPath("$.data.places[0].category").value("CAFE"))
                 .andExpect(jsonPath("$.data.places[0].distanceMeters").value(80))
@@ -80,6 +81,19 @@ class SoloDiningPlaceControllerTest {
         assertEquals(new BigDecimal("37.56650000"), readUseCase.command.latitude());
         assertEquals(new BigDecimal("126.97800000"), readUseCase.command.longitude());
         assertEquals(SoloDiningPlaceCategory.CAFE, readUseCase.command.category());
+    }
+
+    @Test
+    void returnsNullAddressWithoutRemovingPlace() throws Exception {
+        readUseCase.result = result(null);
+
+        mockMvc.perform(get("/api/solo-dining/places")
+                        .queryParam("latitude", "37.56650000")
+                        .queryParam("longitude", "126.97800000")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.places[0].placeId").value(12))
+                .andExpect(jsonPath("$.data.places[0].address").value(nullValue()));
     }
 
     @Test
@@ -287,11 +301,12 @@ class SoloDiningPlaceControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
-    private SoloDiningPlacesResult result() {
+    private SoloDiningPlacesResult result(final String address) {
         return new SoloDiningPlacesResult(List.of(new SoloDiningPlaceSummary(
                 12L,
                 "google-place-id",
                 "니어바이 카페",
+                address,
                 "places/google-place-id/photos/photo-resource",
                 SoloDiningPlaceCategory.CAFE,
                 80,

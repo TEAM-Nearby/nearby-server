@@ -63,6 +63,7 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
                 row.getPlaceId(),
                 row.getGooglePlaceId(),
                 row.getName(),
+                row.getAddress(),
                 row.getPhotoReference(),
                 category(row.getCategory()),
                 row.getDistanceMeters().intValue(),

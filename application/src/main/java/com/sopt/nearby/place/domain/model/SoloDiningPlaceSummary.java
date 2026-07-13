@@ -7,6 +7,7 @@ public record SoloDiningPlaceSummary(
         Long placeId,
         String googlePlaceId,
         String name,
+        String address,
         String photoReference,
         SoloDiningPlaceCategory category,
         int distanceMeters,

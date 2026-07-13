@@ -11,6 +11,8 @@ public interface SoloDiningPlaceProjection {
 
     String getName();
 
+    String getAddress();
+
     String getPhotoReference();
 
     String getCategory();
