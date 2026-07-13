@@ -142,6 +142,7 @@ class ReadSoloDiningPlaceServiceTest {
                 12L,
                 "google-place-id",
                 "캐시 이름",
+                "캐시 주소",
                 "places/google-place-id/photos/cached-photo",
                 SoloDiningPlaceCategory.RESTAURANT,
                 80,

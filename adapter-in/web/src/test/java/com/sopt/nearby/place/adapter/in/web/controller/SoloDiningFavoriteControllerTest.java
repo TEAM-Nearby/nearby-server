@@ -45,7 +45,7 @@ class SoloDiningFavoriteControllerTest {
 
     @Test
     void returnsSoloDiningFavorites() throws Exception {
-        readUseCase.result = result();
+        readUseCase.result = result("서울특별시 중구 세종대로 110");
 
         mockMvc.perform(get("/api/solo-dining/favorites")
                         .queryParam("latitude", "37.56650000")
@@ -63,6 +63,7 @@ class SoloDiningFavoriteControllerTest {
                 .andExpect(jsonPath("$.data.favorites[0].placeId").value(12))
                 .andExpect(jsonPath("$.data.favorites[0].googlePlaceId").value("google-place-id"))
                 .andExpect(jsonPath("$.data.favorites[0].name").value("니어바이 카페"))
+                .andExpect(jsonPath("$.data.favorites[0].address").value("서울특별시 중구 세종대로 110"))
                 .andExpect(jsonPath("$.data.favorites[0].photoReference")
                         .value("places/google-place-id/photos/photo-resource"))
                 .andExpect(jsonPath("$.data.favorites[0].category").value("CAFE"))
@@ -77,6 +78,19 @@ class SoloDiningFavoriteControllerTest {
         assertEquals(new BigDecimal("126.97800000"), readUseCase.command.longitude());
         assertEquals(SoloDiningPlaceCategory.CAFE, readUseCase.command.category());
         assertEquals(SoloDiningFavoriteSort.LATEST, readUseCase.command.sort());
+    }
+
+    @Test
+    void returnsNullAddressWithoutRemovingFavorite() throws Exception {
+        readUseCase.result = result(null);
+
+        mockMvc.perform(get("/api/solo-dining/favorites")
+                        .queryParam("latitude", "37.56650000")
+                        .queryParam("longitude", "126.97800000")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.favorites[0].favoriteId").value(5))
+                .andExpect(jsonPath("$.data.favorites[0].address").value(nullValue()));
     }
 
     @Test
@@ -122,13 +136,14 @@ class SoloDiningFavoriteControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
-    private SoloDiningFavoritesResult result() {
+    private SoloDiningFavoritesResult result(final String address) {
         return new SoloDiningFavoritesResult(List.of(new SoloDiningFavoriteSummary(
                 5L,
                 LocalDateTime.of(2026, 7, 2, 13, 20),
                 12L,
                 "google-place-id",
                 "니어바이 카페",
+                address,
                 "places/google-place-id/photos/photo-resource",
                 SoloDiningPlaceCategory.CAFE,
                 80,

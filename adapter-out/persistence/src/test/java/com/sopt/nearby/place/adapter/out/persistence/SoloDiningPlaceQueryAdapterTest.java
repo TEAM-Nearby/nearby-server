@@ -80,6 +80,7 @@ class SoloDiningPlaceQueryAdapterTest {
         assertThat(result).hasSize(2);
         assertThat(result).extracting(SoloDiningPlaceSummary::placeId)
                 .containsExactly(nearCafe.getId(), farRestaurant.getId());
+        assertThat(result.get(0).address()).isEqualTo("서울특별시 중구 세종대로 110");
         assertThat(result.get(0).category()).isEqualTo(SoloDiningPlaceCategory.CAFE);
         assertThat(result.get(0).isFavorite()).isFalse();
         assertThat(result.get(1).category()).isEqualTo(SoloDiningPlaceCategory.RESTAURANT);
@@ -173,6 +174,7 @@ class SoloDiningPlaceQueryAdapterTest {
                 .containsExactly(recentFavorite.getId(), oldFavorite.getId());
         assertThat(result).extracting(SoloDiningFavoriteSummary::placeId)
                 .containsExactly(recentCafe.getId(), oldCafe.getId());
+        assertThat(result.get(0).address()).isEqualTo("서울특별시 중구 세종대로 110");
         assertThat(result).allMatch(SoloDiningFavoriteSummary::isFavorite);
         assertThat(result).extracting(SoloDiningFavoriteSummary::category)
                 .containsExactly(SoloDiningPlaceCategory.CAFE, SoloDiningPlaceCategory.CAFE);

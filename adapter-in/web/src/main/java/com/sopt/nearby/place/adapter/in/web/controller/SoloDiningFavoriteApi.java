@@ -42,6 +42,7 @@ public interface SoloDiningFavoriteApi {
                                     "placeId": 12,
                                     "googlePlaceId": "ChIJxxxxxxxx",
                                     "name": "르상크 바르셀로나점",
+                                    "address": "서울특별시 중구 세종대로 110",
                                     "photoReference": "places/ChIJxxxxxxxx/photos/ATKogp...",
                                     "category": "CAFE",
                                     "distanceMeters": 800,
