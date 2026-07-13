@@ -32,6 +32,8 @@ public interface CompanionPostProjection {
 
     String getContent();
 
+    String getMeetingTimeType();
+
     LocalDateTime getMeetingAt();
 
     Number getParticipantCount();

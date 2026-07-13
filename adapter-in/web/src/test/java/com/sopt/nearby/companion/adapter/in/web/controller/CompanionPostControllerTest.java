@@ -98,6 +98,7 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.summaryText").value("내 주변 1개의 동행이 있어요"))
                 .andExpect(jsonPath("$.data.posts[0].postId").value(101))
                 .andExpect(jsonPath("$.data.posts[0].status").value("RECRUITING"))
+                .andExpect(jsonPath("$.data.posts[0].meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.posts[0].host.nickname").value("니어바이"))
                 .andExpect(jsonPath("$.data.posts[0].host.gender").value("FEMALE"))
                 .andExpect(jsonPath("$.data.posts[0].place.placeId").value(20))
@@ -549,6 +550,7 @@ class CompanionPostControllerTest {
                         ),
                         "같이 스시 먹어요",
                         false,
+                        CompanionPostMeetingTimeType.SCHEDULED,
                         LocalDateTime.of(2026, 7, 3, 14, 0),
                         "7월 3일 14:00",
                         2,

@@ -1,6 +1,7 @@
 // 동행 모집글 목록 조회 결과를 표현한다.
 package com.sopt.nearby.companion.application;
 
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
@@ -33,6 +34,7 @@ public record CompanionPostsResult(
             Place place,
             String contentPreview,
             boolean contentPreviewTruncated,
+            CompanionPostMeetingTimeType meetingTimeType,
             LocalDateTime meetingAt,
             String meetingAtText,
             int participantCount,

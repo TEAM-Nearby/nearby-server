@@ -138,6 +138,7 @@ class CompanionPostQueryAdapterTest {
         assertThat(result.get(0).hostGender()).isEqualTo(UserGender.MALE);
         assertThat(result.get(0).placeName()).isEqualTo("니어바이카페");
         assertThat(result.get(0).placeCategory()).isEqualTo(CompanionPostPlaceCategory.CAFE);
+        assertThat(result.get(0).meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
         assertThat(result.get(0).participantCount()).isEqualTo(3);
         assertThat(result.get(0).maxParticipants()).isEqualTo(4);
         assertThat(result.get(0).photoReference()).isNull();
@@ -369,6 +370,7 @@ class CompanionPostQueryAdapterTest {
 
         assertThat(result).extracting(CompanionPostSummary::postId)
                 .containsExactly(nowPost.getId(), soonPost.getId(), latePost.getId());
+        assertThat(result.get(0).meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.NOW);
     }
 
     @Test
