@@ -176,6 +176,14 @@ class CheckInCompanionMeetingServiceTest {
         assertThrows(OutOfCheckInRadiusException.class, () -> service.checkIn(command("40.00000000", "2.00000000")));
     }
 
+    @Test
+    void rejectsAntipodalCoordinatesWhenHaversineRoundingExceedsOne() {
+        assertThrows(
+                OutOfCheckInRadiusException.class,
+                () -> service.checkIn(command("-41.39020546", "-177.83645300"))
+        );
+    }
+
     private CheckInCompanionMeetingCommand command(final String latitude, final String longitude) {
         return new CheckInCompanionMeetingCommand(
                 USER_ID,

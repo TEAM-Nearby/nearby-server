@@ -201,6 +201,8 @@ public class CheckInCompanionMeetingService implements CheckInCompanionMeetingUs
         double haversine = Math.sin(deltaLatitude / 2) * Math.sin(deltaLatitude / 2)
                 + Math.cos(placeLatitude) * Math.cos(userLatitude)
                 * Math.sin(deltaLongitude / 2) * Math.sin(deltaLongitude / 2);
+        // haversine 값을 무조건 0에서 1 사이로 제한한다는 뜻입니다.
+        haversine = Math.clamp(haversine, 0.0, 1.0);
         double centralAngle = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
         return EARTH_RADIUS_METERS * centralAngle;
     }
