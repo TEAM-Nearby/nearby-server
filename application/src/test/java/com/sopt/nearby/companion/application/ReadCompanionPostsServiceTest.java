@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequestException;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
@@ -63,6 +64,7 @@ class ReadCompanionPostsServiceTest {
                 320,
                 "https://lh3.googleusercontent.com/place.jpg",
                 "12345678901234567890123456789012345678901234567890끝",
+                CompanionPostMeetingTimeType.SCHEDULED,
                 LocalDateTime.of(2026, 7, 3, 14, 0),
                 2,
                 4,
@@ -128,6 +130,7 @@ class ReadCompanionPostsServiceTest {
                 320,
                 null,
                 "같이 스시 먹어요",
+                CompanionPostMeetingTimeType.SCHEDULED,
                 LocalDateTime.of(2026, 7, 3, 14, 30),
                 1,
                 4,
@@ -164,6 +167,7 @@ class ReadCompanionPostsServiceTest {
                 320,
                 null,
                 "지금 같이 스시 먹어요",
+                CompanionPostMeetingTimeType.NOW,
                 null,
                 1,
                 4,

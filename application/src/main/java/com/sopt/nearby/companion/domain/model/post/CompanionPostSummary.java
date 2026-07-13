@@ -20,6 +20,7 @@ public record CompanionPostSummary(
         int distanceMeters,
         String photoReference,
         String content,
+        CompanionPostMeetingTimeType meetingTimeType,
         LocalDateTime meetingAt,
         int participantCount,
         int maxParticipants,

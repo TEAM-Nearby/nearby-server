@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPos
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostProjection;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostQueryJpaRepository;
 import com.sopt.nearby.companion.application.ReadCompanionPostsCommand;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSummary;
@@ -77,6 +78,7 @@ public class CompanionPostQueryAdapter implements CompanionPostQueryPort {
                 row.getDistanceMeters().intValue(),
                 row.getPhotoReference(),
                 row.getContent(),
+                CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                 row.getMeetingAt(),
                 row.getParticipantCount().intValue(),
                 row.getMaxParticipants().intValue(),
