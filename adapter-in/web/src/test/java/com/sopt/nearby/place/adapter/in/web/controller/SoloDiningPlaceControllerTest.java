@@ -19,7 +19,6 @@ import com.sopt.nearby.place.domain.exception.GooglePlaceApiException;
 import com.sopt.nearby.place.domain.exception.PlaceNotFoundException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
-import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.in.ManageSoloDiningFavoriteUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlacesUseCase;
@@ -68,6 +67,7 @@ class SoloDiningPlaceControllerTest {
                 .andExpect(jsonPath("$.data.places[0].name").value("니어바이 카페"))
                 .andExpect(jsonPath("$.data.places[0].address").value("서울특별시 중구 세종대로 110"))
                 .andExpect(jsonPath("$.data.places[0].photoReference").value("places/google-place-id/photos/photo-resource"))
+                .andExpect(jsonPath("$.data.places[0].imageUrl").value("https://lh3.googleusercontent.com/place.jpg"))
                 .andExpect(jsonPath("$.data.places[0].category").value("CAFE"))
                 .andExpect(jsonPath("$.data.places[0].distanceMeters").value(80))
                 .andExpect(jsonPath("$.data.places[0].rating").value(4.3))
@@ -303,12 +303,13 @@ class SoloDiningPlaceControllerTest {
     }
 
     private SoloDiningPlacesResult result(final String address) {
-        return new SoloDiningPlacesResult(List.of(new SoloDiningPlaceSummary(
+        return new SoloDiningPlacesResult(List.of(new SoloDiningPlacesResult.Place(
                 12L,
                 "google-place-id",
                 "니어바이 카페",
                 address,
                 "places/google-place-id/photos/photo-resource",
+                "https://lh3.googleusercontent.com/place.jpg",
                 SoloDiningPlaceCategory.CAFE,
                 80,
                 new BigDecimal("4.30"),

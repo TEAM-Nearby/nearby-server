@@ -6,7 +6,11 @@ import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestExce
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.PlaceCache;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlacesUseCase;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
+import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
 import com.sopt.nearby.place.port.out.PlaceCacheRepository;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchPort;
@@ -14,6 +18,8 @@ import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchRequest;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchResult;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 
 public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase {
 
@@ -28,15 +34,18 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
     private final SoloDiningPlaceSearchPort searchPort;
     private final PlaceCacheRepository placeCacheRepository;
     private final SoloDiningPlaceQueryPort queryPort;
+    private final ResolvePlaceImageUseCase resolvePlaceImageUseCase;
 
     public ReadSoloDiningPlacesService(
             final SoloDiningPlaceSearchPort searchPort,
             final PlaceCacheRepository placeCacheRepository,
-            final SoloDiningPlaceQueryPort queryPort
+            final SoloDiningPlaceQueryPort queryPort,
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
         this.searchPort = searchPort;
         this.placeCacheRepository = placeCacheRepository;
         this.queryPort = queryPort;
+        this.resolvePlaceImageUseCase = resolvePlaceImageUseCase;
     }
 
     @Override
@@ -60,12 +69,31 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
             return new SoloDiningPlacesResult(List.of());
         }
 
-        return new SoloDiningPlacesResult(queryPort.findAllByPlaceIds(
+        return new SoloDiningPlacesResult(resolveImages(queryPort.findAllByPlaceIds(
                 command.userId(),
                 command.latitude(),
                 command.longitude(),
                 placeIds
+        )));
+    }
+
+    private List<SoloDiningPlacesResult.Place> resolveImages(final List<SoloDiningPlaceSummary> places) {
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<CompletableFuture<SoloDiningPlacesResult.Place>> futures = places.stream()
+                    .map(place -> CompletableFuture.supplyAsync(() -> resolveImage(place), executor))
+                    .toList();
+            return futures.stream()
+                    .map(CompletableFuture::join)
+                    .toList();
+        }
+    }
+
+    private SoloDiningPlacesResult.Place resolveImage(final SoloDiningPlaceSummary place) {
+        ResolvedPlaceImage image = resolvePlaceImageUseCase.resolve(new ResolvePlaceImageCommand(
+                place.googlePlaceId(),
+                place.photoReference()
         ));
+        return SoloDiningPlacesResult.Place.from(place, image.imageUrl());
     }
 
     private PlaceCache saveOrReload(final SoloDiningPlaceSearchResult result) {
