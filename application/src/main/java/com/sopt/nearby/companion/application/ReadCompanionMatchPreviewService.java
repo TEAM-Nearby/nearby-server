@@ -67,7 +67,7 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
                 CompanionMatchParticipant::userId
         ).toList());
 
-        List<CompanionMatchPreview.Member> members = participants.stream().map(
+        List<CompanionMatchPreview.Member> participantsWithProfiles = participants.stream().map(
                 participant -> {
                     CompanionProfile profile = profiles.stream()
                             .filter(p -> p.userId().equals(participant.userId()))
@@ -80,6 +80,13 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
                     );
                 }
         ).toList();
+        Member host = participantsWithProfiles.stream()
+                .filter(member -> member.userId().equals(post.hostUserId()))
+                .findFirst()
+                .orElseThrow(CompanionProfileNotFoundException::new);
+        List<Member> members = participantsWithProfiles.stream()
+                .filter(member -> !member.userId().equals(post.hostUserId()))
+                .toList();
 
         LocalDateTime meetingAt = companionScheduleRepository.findConfirmedByMatchId(match.id())
                 .map(CompanionSchedule::scheduledAt)
@@ -92,7 +99,7 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
                 meetingAt
         );
 
-        return new CompanionMatchPreview(match.id(), members, previewPost);
+        return new CompanionMatchPreview(match.id(), host, members, previewPost);
     }
 
     private LocalDateTime resolveMeetingAt(final CompanionPost post) {

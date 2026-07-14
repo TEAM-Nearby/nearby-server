@@ -8,6 +8,7 @@ import java.util.List;
 
 public record CompanionMatchPreview(
         Long matchId,
+        Member host,
         List<Member> members,
         Post companionPost
 ) {

@@ -66,8 +66,8 @@ class CompanionMatchControllerTest {
     void passesAuthenticatedUserIdFromPrincipalToUseCase() throws Exception {
         useCase.result = new CompanionMatchPreview(
                 10L,
+                new CompanionMatchPreview.Member(7L, "https://image.example/a.png", "여행자A"),
                 List.of(
-                        new CompanionMatchPreview.Member(7L, "https://image.example/a.png", "여행자A"),
                         new CompanionMatchPreview.Member(8L, null, "여행자B")
                 ),
                 new CompanionMatchPreview.Post(
@@ -85,12 +85,12 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.code").value("READ_COMPANION_MATCH_PREVIEW"))
                 .andExpect(jsonPath("$.message").value("매칭된 동행 미리보기 정보를 조회했어요."))
                 .andExpect(jsonPath("$.data.matchId").value(10))
-                .andExpect(jsonPath("$.data.members[0].memberId").value(7))
-                .andExpect(jsonPath("$.data.members[0].profileImageUrl").value("https://image.example/a.png"))
-                .andExpect(jsonPath("$.data.members[0].nickname").value("여행자A"))
-                .andExpect(jsonPath("$.data.members[1].memberId").value(8))
-                .andExpect(jsonPath("$.data.members[1].profileImageUrl").value(nullValue()))
-                .andExpect(jsonPath("$.data.members[1].nickname").value("여행자B"))
+                .andExpect(jsonPath("$.data.host.hostName").value("여행자A"))
+                .andExpect(jsonPath("$.data.host.hostProfileImageUrl").value("https://image.example/a.png"))
+                .andExpect(jsonPath("$.data.members.length()").value(1))
+                .andExpect(jsonPath("$.data.members[0].memberId").value(8))
+                .andExpect(jsonPath("$.data.members[0].profileImageUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.members[0].nickname").value("여행자B"))
                 .andExpect(jsonPath("$.data.companionPost.postId").value(20))
                 .andExpect(jsonPath("$.data.companionPost.content").value("함께 밥 먹을 동행을 구해요."))
                 .andExpect(jsonPath("$.data.companionPost.meetingTimeType").value("SCHEDULED"))

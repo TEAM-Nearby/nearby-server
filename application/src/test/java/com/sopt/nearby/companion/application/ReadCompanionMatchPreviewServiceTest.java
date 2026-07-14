@@ -64,20 +64,20 @@ class ReadCompanionMatchPreviewServiceTest {
     }
 
     @Test
-    void returnsPreviewWhenRequesterIsMatchParticipant() {
+    void returnsHostSeparatelyWhenGuestRequestsPreview() {
         saveDefaultMatch();
         saveDefaultParticipantsAndProfiles();
 
-        CompanionMatchPreview preview = service.getPreview(10L, 7L);
+        CompanionMatchPreview preview = service.getPreview(10L, 8L);
 
         assertEquals(10L, preview.matchId());
-        assertEquals(2, preview.members().size());
-        assertEquals(7L, preview.members().get(0).userId());
-        assertEquals("https://image.example/a.png", preview.members().get(0).profileImageUrl());
-        assertEquals("여행자A", preview.members().get(0).nickname());
-        assertEquals(8L, preview.members().get(1).userId());
-        assertNull(preview.members().get(1).profileImageUrl());
-        assertEquals("여행자B", preview.members().get(1).nickname());
+        assertEquals(7L, preview.host().userId());
+        assertEquals("https://image.example/a.png", preview.host().profileImageUrl());
+        assertEquals("여행자A", preview.host().nickname());
+        assertEquals(1, preview.members().size());
+        assertEquals(8L, preview.members().get(0).userId());
+        assertNull(preview.members().get(0).profileImageUrl());
+        assertEquals("여행자B", preview.members().get(0).nickname());
         assertEquals(20L, preview.companionPost().postId());
         assertEquals("함께 밥 먹을 동행을 구해요.", preview.companionPost().content());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
@@ -234,18 +234,18 @@ class ReadCompanionMatchPreviewServiceTest {
 
     private void saveDefaultParticipantsAndProfiles() {
         companionMatchParticipantRepository.save(new CompanionMatchParticipant(
-                1L,
-                10L,
-                7L,
-                null,
-                MatchParticipantRole.HOST
-        ));
-        companionMatchParticipantRepository.save(new CompanionMatchParticipant(
                 2L,
                 10L,
                 8L,
                 null,
                 MatchParticipantRole.GUEST
+        ));
+        companionMatchParticipantRepository.save(new CompanionMatchParticipant(
+                1L,
+                10L,
+                7L,
+                null,
+                MatchParticipantRole.HOST
         ));
         companionProfileRepository.save(profile(1L, 7L, "여행자A", "https://image.example/a.png"));
         companionProfileRepository.save(profile(2L, 8L, "여행자B", null));
