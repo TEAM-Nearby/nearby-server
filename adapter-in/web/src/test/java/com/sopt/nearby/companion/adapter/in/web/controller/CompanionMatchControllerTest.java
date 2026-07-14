@@ -73,6 +73,7 @@ class CompanionMatchControllerTest {
                 new CompanionMatchPreview.Post(
                         20L,
                         "함께 밥 먹을 동행을 구해요.",
+                        "바르셀로나 고딕 지구",
                         CompanionPostMeetingTimeType.SCHEDULED,
                         LocalDateTime.of(2026, 6, 29, 18, 30)
                 )
@@ -93,6 +94,7 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.data.members[0].nickname").value("여행자B"))
                 .andExpect(jsonPath("$.data.companionPost.postId").value(20))
                 .andExpect(jsonPath("$.data.companionPost.content").value("함께 밥 먹을 동행을 구해요."))
+                .andExpect(jsonPath("$.data.companionPost.placeName").value("바르셀로나 고딕 지구"))
                 .andExpect(jsonPath("$.data.companionPost.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.companionPost.meetingAt").value("2026-06-29T18:30:00"));
 

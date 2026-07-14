@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.out.persistence.repository;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -44,4 +45,18 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
             order by m.created_at desc
             """, nativeQuery = true)
     List<CompanionMatchSummaryProjection> findAllByParticipantUserId(@Param("userId") Long userId);
+
+    @Query(value = """
+            select place.name
+            from companion_match m
+            join companion_post post
+                on post.id = m.post_id
+            left join companion_schedule schedule
+                on schedule.match_id = m.id
+                and schedule.confirmed = true
+            join place_cache place
+                on place.id = coalesce(schedule.place_id, post.place_id)
+            where m.id = :matchId
+            """, nativeQuery = true)
+    Optional<String> findPlaceNameByMatchId(@Param("matchId") Long matchId);
 }

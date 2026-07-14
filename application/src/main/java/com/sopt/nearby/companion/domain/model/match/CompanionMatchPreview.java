@@ -23,6 +23,7 @@ public record CompanionMatchPreview(
     public record Post(
             Long postId,
             String content,
+            String placeName,
             CompanionPostMeetingTimeType meetingTimeType,
             LocalDateTime meetingAt
     ) {

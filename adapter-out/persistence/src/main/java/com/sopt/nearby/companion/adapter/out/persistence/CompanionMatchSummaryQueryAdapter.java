@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -36,5 +37,10 @@ public class CompanionMatchSummaryQueryAdapter implements CompanionMatchSummaryQ
                         CompanionMatchStatus.valueOf(row.getMatchStatus())
                 ))
                 .toList();
+    }
+
+    @Override
+    public Optional<String> findPlaceNameByMatchId(final Long matchId) {
+        return repository.findPlaceNameByMatchId(matchId);
     }
 }
