@@ -71,6 +71,7 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.data.postId").value(10))
                 .andExpect(jsonPath("$.data.applicationStatus").value("PENDING"))
                 .andExpect(jsonPath("$.data.placeName").value("오노테라"))
+                .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.meetingAt").value("2026-06-18T16:30:00"))
                 .andExpect(jsonPath("$.data.applicantProfile.profileImageUrl")
                         .value("https://cdn.nearby/profile/2.png"))
@@ -143,6 +144,7 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.data.applicationStatus").value("ACCEPTED"))
                 .andExpect(jsonPath("$.data.matchId").value(1))
                 .andExpect(jsonPath("$.data.matchStatus").value("MATCHED"))
+                .andExpect(jsonPath("$.data.meetingTimeType").doesNotExist())
                 .andExpect(jsonPath("$.data.meetingAt").value("2026-07-15T12:10:00"));
 
         assertEquals(100L, acceptUseCase.command.hostUserId());
