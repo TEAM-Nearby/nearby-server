@@ -16,6 +16,7 @@ public interface CompanionRequestReviewQueryJpaRepository extends Repository<Com
                 app.status as applicationStatus,
                 post.host_user_id as hostUserId,
                 place.name as placeName,
+                post.meeting_time_type as meetingTimeType,
                 post.meeting_at as meetingAt,
                 post.exposure_expires_at as exposureExpiresAt,
                 applicant_profile.profile_image_url as applicantProfileImageUrl,

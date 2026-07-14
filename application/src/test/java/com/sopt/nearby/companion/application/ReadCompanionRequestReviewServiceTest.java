@@ -9,6 +9,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundExcept
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionRequestReview;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionRequestReviewQueryPort;
 import java.math.BigDecimal;
@@ -30,7 +31,12 @@ class ReadCompanionRequestReviewServiceTest {
 
     @Test
     void returnsReviewForHost() {
-        queryPort.result = Optional.of(review(100L, LocalDateTime.of(2026, 6, 18, 16, 30), null));
+        queryPort.result = Optional.of(review(
+                100L,
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 6, 18, 16, 30),
+                null
+        ));
 
         CompanionRequestReviewResult result = service.read(new ReadCompanionRequestReviewCommand(100L, 3L));
 
@@ -47,7 +53,12 @@ class ReadCompanionRequestReviewServiceTest {
 
     @Test
     void fallsBackToExposureExpiresAtWhenMeetingAtIsNull() {
-        queryPort.result = Optional.of(review(100L, null, LocalDateTime.of(2026, 6, 18, 17, 30)));
+        queryPort.result = Optional.of(review(
+                100L,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                LocalDateTime.of(2026, 6, 18, 17, 30)
+        ));
 
         CompanionRequestReviewResult result = service.read(new ReadCompanionRequestReviewCommand(100L, 3L));
 
@@ -56,7 +67,7 @@ class ReadCompanionRequestReviewServiceTest {
 
     @Test
     void allowsNullMeetingAtWhenNoFallbackExists() {
-        queryPort.result = Optional.of(review(100L, null, null));
+        queryPort.result = Optional.of(review(100L, CompanionPostMeetingTimeType.UNDECIDED, null, null));
 
         CompanionRequestReviewResult result = service.read(new ReadCompanionRequestReviewCommand(100L, 3L));
 
@@ -84,7 +95,12 @@ class ReadCompanionRequestReviewServiceTest {
 
     @Test
     void rejectsNonHostUser() {
-        queryPort.result = Optional.of(review(100L, LocalDateTime.of(2026, 6, 18, 16, 30), null));
+        queryPort.result = Optional.of(review(
+                100L,
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 6, 18, 16, 30),
+                null
+        ));
 
         assertThrows(
                 ForbiddenCompanionRequestHostOnlyException.class,
@@ -94,6 +110,7 @@ class ReadCompanionRequestReviewServiceTest {
 
     private CompanionRequestReview review(
             final Long hostUserId,
+            final CompanionPostMeetingTimeType meetingTimeType,
             final LocalDateTime meetingAt,
             final LocalDateTime exposureExpiresAt
     ) {
@@ -103,6 +120,7 @@ class ReadCompanionRequestReviewServiceTest {
                 CompanionApplicationStatus.PENDING,
                 hostUserId,
                 "오노테라",
+                meetingTimeType,
                 meetingAt,
                 exposureExpiresAt,
                 new CompanionRequestReview.ApplicantProfile(
