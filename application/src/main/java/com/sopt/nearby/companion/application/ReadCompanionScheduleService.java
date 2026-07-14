@@ -9,17 +9,13 @@ import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdExcepti
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
 import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
-import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 
 public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCase {
     private final CompanionScheduleDetailQueryPort companionScheduleDetailQueryPort;
-    private final CompanionMatchParticipantRepository participantRepository;
 
-    public ReadCompanionScheduleService(CompanionScheduleDetailQueryPort companionScheduleDetailQueryPort,
-                                        CompanionMatchParticipantRepository participantRepository) {
+    public ReadCompanionScheduleService(CompanionScheduleDetailQueryPort companionScheduleDetailQueryPort) {
         this.companionScheduleDetailQueryPort = companionScheduleDetailQueryPort;
-        this.participantRepository = participantRepository;
     }
 
     @Override
@@ -30,7 +26,7 @@ public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCas
         CompanionScheduleDetail scheduleDetail = companionScheduleDetailQueryPort
                 .findByMatchIdAndUserId(matchId, userId)
                 .orElseThrow(CompanionMatchNotFoundException::new);
-        if (!participantRepository.existsByMatchIdAndUserId(matchId, userId)) {
+        if (scheduleDetail.currentUserRole() == null) {
             throw new ForbiddenReadCompanionScheduleException();
         }
 
