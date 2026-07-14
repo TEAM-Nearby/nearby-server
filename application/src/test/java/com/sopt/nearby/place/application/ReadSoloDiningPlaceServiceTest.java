@@ -11,6 +11,9 @@ import com.sopt.nearby.place.domain.exception.PlaceNotFoundException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
+import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsResult;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
@@ -23,19 +26,26 @@ class ReadSoloDiningPlaceServiceTest {
 
     private FakeSoloDiningPlaceQueryPort queryPort;
     private FakeSoloDiningPlaceDetailsPort detailsPort;
+    private FakeResolvePlaceImageUseCase resolvePlaceImageUseCase;
     private ReadSoloDiningPlaceService service;
 
     @BeforeEach
     void setUp() {
         queryPort = new FakeSoloDiningPlaceQueryPort();
         detailsPort = new FakeSoloDiningPlaceDetailsPort();
-        service = new ReadSoloDiningPlaceService(queryPort, detailsPort);
+        resolvePlaceImageUseCase = new FakeResolvePlaceImageUseCase();
+        service = new ReadSoloDiningPlaceService(queryPort, detailsPort, resolvePlaceImageUseCase);
     }
 
     @Test
     void readsCachedPlaceThenGoogleDetails() {
         queryPort.result = List.of(summary());
         detailsPort.result = details();
+        resolvePlaceImageUseCase.result = new ResolvedPlaceImage(
+                "https://lh3.googleusercontent.com/place.jpg",
+                ResolvedPlaceImage.GOOGLE_MAPS,
+                List.of()
+        );
 
         SoloDiningPlaceResult result = service.read(validCommand());
 
@@ -60,12 +70,42 @@ class ReadSoloDiningPlaceServiceTest {
                 "places/google-place-id/photos/photo-1",
                 "places/google-place-id/photos/photo-2"
         ), result.photoReferences());
+        assertEquals("google-place-id", resolvePlaceImageUseCase.command.googlePlaceId());
+        assertEquals("places/google-place-id/photos/photo-1", resolvePlaceImageUseCase.command.photoReference());
+        assertEquals("https://lh3.googleusercontent.com/place.jpg", result.imageUrl());
         assertEquals(PlaceBusinessStatus.OPERATIONAL, result.businessStatus());
         assertEquals("PRICE_LEVEL_MODERATE", result.priceLevel());
         assertEquals("₩10,000~₩20,000", result.priceRange());
         assertEquals(List.of("월요일: 오전 11:00~오후 9:00"), result.regularOpeningHours());
         assertEquals("혼밥하기 좋은 조용한 식당입니다.", result.editorialSummary());
         assertEquals(true, result.isFavorite());
+    }
+
+    @Test
+    void resolvesCachedPhotoWhenGoogleDetailsPhotoIsMissing() {
+        queryPort.result = List.of(summary());
+        detailsPort.result = detailsWithoutPhoto();
+        resolvePlaceImageUseCase.result = new ResolvedPlaceImage(
+                "https://lh3.googleusercontent.com/cached-place.jpg",
+                ResolvedPlaceImage.GOOGLE_MAPS,
+                List.of()
+        );
+
+        SoloDiningPlaceResult result = service.read(validCommand());
+
+        assertEquals("places/google-place-id/photos/cached-photo", result.photoReference());
+        assertEquals("places/google-place-id/photos/cached-photo", resolvePlaceImageUseCase.command.photoReference());
+        assertEquals("https://lh3.googleusercontent.com/cached-place.jpg", result.imageUrl());
+    }
+
+    @Test
+    void returnsDefaultImageWhenImageResolutionFallsBack() {
+        queryPort.result = List.of(summary());
+        detailsPort.result = details();
+
+        SoloDiningPlaceResult result = service.read(validCommand());
+
+        assertEquals("https://nearby.sopt.org/images/default-place.png", result.imageUrl());
     }
 
     @Test
@@ -179,6 +219,28 @@ class ReadSoloDiningPlaceServiceTest {
         );
     }
 
+    private SoloDiningPlaceDetailsResult detailsWithoutPhoto() {
+        SoloDiningPlaceDetailsResult details = details();
+        return new SoloDiningPlaceDetailsResult(
+                details.googlePlaceId(),
+                details.name(),
+                details.address(),
+                details.latitude(),
+                details.longitude(),
+                details.category(),
+                details.rating(),
+                details.reviewCount(),
+                details.phoneNumber(),
+                null,
+                List.of(),
+                details.businessStatus(),
+                details.priceLevel(),
+                details.priceRange(),
+                details.regularOpeningHours(),
+                details.editorialSummary()
+        );
+    }
+
     private static final class FakeSoloDiningPlaceQueryPort implements SoloDiningPlaceQueryPort {
 
         private Long userId;
@@ -210,6 +272,22 @@ class ReadSoloDiningPlaceServiceTest {
         @Override
         public SoloDiningPlaceDetailsResult findByGooglePlaceId(final String googlePlaceId) {
             this.googlePlaceId = googlePlaceId;
+            return result;
+        }
+    }
+
+    private static final class FakeResolvePlaceImageUseCase implements ResolvePlaceImageUseCase {
+
+        private ResolvePlaceImageCommand command;
+        private ResolvedPlaceImage result = new ResolvedPlaceImage(
+                "https://nearby.sopt.org/images/default-place.png",
+                ResolvedPlaceImage.DEFAULT,
+                List.of()
+        );
+
+        @Override
+        public ResolvedPlaceImage resolve(final ResolvePlaceImageCommand command) {
+            this.command = command;
             return result;
         }
     }

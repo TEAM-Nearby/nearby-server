@@ -2,7 +2,6 @@
 package com.sopt.nearby.place.adapter.in.web.dto.response;
 
 import com.sopt.nearby.place.application.SoloDiningPlacesResult;
-import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -22,6 +21,7 @@ public record SoloDiningPlacesResponse(
             String name,
             String address,
             String photoReference,
+            String imageUrl,
             String category,
             int distanceMeters,
             BigDecimal rating,
@@ -32,13 +32,14 @@ public record SoloDiningPlacesResponse(
             String businessStatus
     ) {
 
-        static PlaceResponse from(final SoloDiningPlaceSummary place) {
+        static PlaceResponse from(final SoloDiningPlacesResult.Place place) {
             return new PlaceResponse(
                     place.placeId(),
                     place.googlePlaceId(),
                     place.name(),
                     place.address(),
                     place.photoReference(),
+                    place.imageUrl(),
                     place.category().name(),
                     place.distanceMeters(),
                     place.rating(),

@@ -5,11 +5,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sopt.nearby.place.domain.exception.DuplicatePlaceCacheException;
+import com.sopt.nearby.place.domain.exception.GooglePlaceApiException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.PlaceCache;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
+import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
 import com.sopt.nearby.place.port.out.PlaceCacheRepository;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchPort;
@@ -20,6 +24,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +35,7 @@ class ReadSoloDiningPlacesServiceTest {
     private FakeSoloDiningPlaceSearchPort searchPort;
     private FakePlaceCacheRepository placeCacheRepository;
     private FakeSoloDiningPlaceQueryPort queryPort;
+    private FakeResolvePlaceImageUseCase resolvePlaceImageUseCase;
     private ReadSoloDiningPlacesService service;
 
     @BeforeEach
@@ -35,7 +43,13 @@ class ReadSoloDiningPlacesServiceTest {
         searchPort = new FakeSoloDiningPlaceSearchPort();
         placeCacheRepository = new FakePlaceCacheRepository();
         queryPort = new FakeSoloDiningPlaceQueryPort();
-        service = new ReadSoloDiningPlacesService(searchPort, placeCacheRepository, queryPort);
+        resolvePlaceImageUseCase = new FakeResolvePlaceImageUseCase();
+        service = new ReadSoloDiningPlacesService(
+                searchPort,
+                placeCacheRepository,
+                queryPort,
+                resolvePlaceImageUseCase
+        );
     }
 
     @Test
@@ -63,6 +77,42 @@ class ReadSoloDiningPlacesServiceTest {
         assertEquals(1, result.places().size());
         assertEquals("니어바이 카페", result.places().get(0).name());
         assertEquals(true, result.places().get(0).isFavorite());
+        assertEquals("https://lh3.googleusercontent.com/google-place-id.jpg", result.places().get(0).imageUrl());
+        assertEquals("places/google-place-id/photos/photo-resource",
+                resolvePlaceImageUseCase.commands.getFirst().photoReference());
+    }
+
+    @Test
+    void resolvesImagesConcurrentlyWhileKeepingPlaceOrder() {
+        searchPort.result = List.of(
+                searchResult("google-place-1", "첫 번째 식당", SoloDiningPlaceCategory.RESTAURANT),
+                searchResult("google-place-2", "두 번째 식당", SoloDiningPlaceCategory.RESTAURANT)
+        );
+        queryPort.result = List.of(
+                summary(1L, "google-place-1", "첫 번째 식당", false),
+                summary(2L, "google-place-2", "두 번째 식당", true)
+        );
+        resolvePlaceImageUseCase.expectConcurrentCalls(2);
+
+        SoloDiningPlacesResult result = service.read(validCommand());
+
+        assertEquals("첫 번째 식당", result.places().get(0).name());
+        assertEquals("https://lh3.googleusercontent.com/google-place-1.jpg", result.places().get(0).imageUrl());
+        assertEquals("두 번째 식당", result.places().get(1).name());
+        assertEquals("https://lh3.googleusercontent.com/google-place-2.jpg", result.places().get(1).imageUrl());
+    }
+
+    @Test
+    void propagatesBusinessExceptionFromParallelImageResolution() {
+        searchPort.result = List.of(searchResult(
+                "google-place-id",
+                "니어바이 카페",
+                SoloDiningPlaceCategory.CAFE
+        ));
+        queryPort.result = List.of(summary(1L, false));
+        resolvePlaceImageUseCase.exception = new GooglePlaceApiException();
+
+        assertThrows(GooglePlaceApiException.class, () -> service.read(validCommand()));
     }
 
     @Test
@@ -225,12 +275,21 @@ class ReadSoloDiningPlacesServiceTest {
     }
 
     private SoloDiningPlaceSummary summary(final Long placeId, final boolean favorite) {
+        return summary(placeId, "google-place-id", "니어바이 카페", favorite);
+    }
+
+    private SoloDiningPlaceSummary summary(
+            final Long placeId,
+            final String googlePlaceId,
+            final String name,
+            final boolean favorite
+    ) {
         return new SoloDiningPlaceSummary(
                 placeId,
-                "google-place-id",
-                "니어바이 카페",
+                googlePlaceId,
+                name,
                 "서울특별시 중구 세종대로 110",
-                "places/google-place-id/photos/photo-resource",
+                "places/" + googlePlaceId + "/photos/photo-resource",
                 SoloDiningPlaceCategory.CAFE,
                 80,
                 new BigDecimal("4.30"),
@@ -323,6 +382,46 @@ class ReadSoloDiningPlacesServiceTest {
             this.userId = userId;
             this.placeIds = placeIds;
             return result;
+        }
+    }
+
+    private static final class FakeResolvePlaceImageUseCase implements ResolvePlaceImageUseCase {
+
+        private final List<ResolvePlaceImageCommand> commands = new CopyOnWriteArrayList<>();
+        private CountDownLatch concurrentCalls;
+        private RuntimeException exception;
+
+        private void expectConcurrentCalls(final int count) {
+            concurrentCalls = new CountDownLatch(count);
+        }
+
+        @Override
+        public ResolvedPlaceImage resolve(final ResolvePlaceImageCommand command) {
+            commands.add(command);
+            awaitConcurrentCalls();
+            if (exception != null) {
+                throw exception;
+            }
+            return new ResolvedPlaceImage(
+                    "https://lh3.googleusercontent.com/" + command.googlePlaceId() + ".jpg",
+                    ResolvedPlaceImage.GOOGLE_MAPS,
+                    List.of()
+            );
+        }
+
+        private void awaitConcurrentCalls() {
+            if (concurrentCalls == null) {
+                return;
+            }
+            concurrentCalls.countDown();
+            try {
+                if (!concurrentCalls.await(1, TimeUnit.SECONDS)) {
+                    throw new AssertionError("이미지 조회가 병렬로 실행되지 않았습니다.");
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("병렬 이미지 조회 대기가 중단되었습니다.", exception);
+            }
         }
     }
 }

@@ -20,6 +20,7 @@ public record SoloDiningPlaceResult(
         String phoneNumber,
         String photoReference,
         List<String> photoReferences,
+        String imageUrl,
         PlaceBusinessStatus businessStatus,
         String priceLevel,
         String priceRange,

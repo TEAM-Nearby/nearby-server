@@ -9,6 +9,7 @@ import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
 import com.sopt.nearby.place.port.in.ReadSoloDiningFavoritesUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
+import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
 import com.sopt.nearby.place.port.out.SoloDiningFavoriteQueryPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsResult;
@@ -22,7 +23,15 @@ class PlaceUseCaseConfigTest {
     @Test
     void createsReadSoloDiningPlaceUseCase() {
         ReadSoloDiningPlaceUseCase useCase = new PlaceUseCaseConfig()
-                .readSoloDiningPlaceUseCase(new FakeSoloDiningPlaceQueryPort(), new FakeSoloDiningPlaceDetailsPort());
+                .readSoloDiningPlaceUseCase(
+                        new FakeSoloDiningPlaceQueryPort(),
+                        new FakeSoloDiningPlaceDetailsPort(),
+                        command -> new ResolvedPlaceImage(
+                                "https://nearby.sopt.org/images/default-place.png",
+                                ResolvedPlaceImage.DEFAULT,
+                                List.of()
+                        )
+                );
 
         assertNotNull(useCase);
     }

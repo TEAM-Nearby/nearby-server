@@ -7,6 +7,9 @@ import com.sopt.nearby.place.domain.exception.PlaceNotFoundException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
+import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsResult;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
@@ -22,13 +25,16 @@ public class ReadSoloDiningPlaceService implements ReadSoloDiningPlaceUseCase {
 
     private final SoloDiningPlaceQueryPort queryPort;
     private final SoloDiningPlaceDetailsPort detailsPort;
+    private final ResolvePlaceImageUseCase resolvePlaceImageUseCase;
 
     public ReadSoloDiningPlaceService(
             final SoloDiningPlaceQueryPort queryPort,
-            final SoloDiningPlaceDetailsPort detailsPort
+            final SoloDiningPlaceDetailsPort detailsPort,
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
         this.queryPort = queryPort;
         this.detailsPort = detailsPort;
+        this.resolvePlaceImageUseCase = resolvePlaceImageUseCase;
     }
 
     @Override
@@ -48,10 +54,16 @@ public class ReadSoloDiningPlaceService implements ReadSoloDiningPlaceUseCase {
         if (details == null) {
             throw new GooglePlaceApiException();
         }
+        String googlePlaceId = value(details.googlePlaceId(), summary.googlePlaceId());
+        String photoReference = value(details.photoReference(), summary.photoReference());
+        ResolvedPlaceImage image = resolvePlaceImageUseCase.resolve(new ResolvePlaceImageCommand(
+                googlePlaceId,
+                photoReference
+        ));
 
         return new SoloDiningPlaceResult(
                 summary.placeId(),
-                value(details.googlePlaceId(), summary.googlePlaceId()),
+                googlePlaceId,
                 value(details.name(), summary.name()),
                 details.address(),
                 value(details.latitude(), summary.latitude()),
@@ -61,8 +73,9 @@ public class ReadSoloDiningPlaceService implements ReadSoloDiningPlaceUseCase {
                 value(details.rating(), summary.rating()),
                 value(details.reviewCount(), summary.reviewCount()),
                 details.phoneNumber(),
-                value(details.photoReference(), summary.photoReference()),
+                photoReference,
                 list(details.photoReferences()),
+                image.imageUrl(),
                 businessStatus(details.businessStatus(), summary.businessStatus()),
                 unspecifiedToNull(details.priceLevel()),
                 details.priceRange(),

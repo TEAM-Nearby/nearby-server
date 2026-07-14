@@ -46,21 +46,28 @@ public class PlaceUseCaseConfig {
     ReadSoloDiningPlacesUseCase readSoloDiningPlacesUseCase(
             final SoloDiningPlaceSearchPort soloDiningPlaceSearchPort,
             final PlaceCacheRepository placeCacheRepository,
-            final SoloDiningPlaceQueryPort soloDiningPlaceQueryPort
+            final SoloDiningPlaceQueryPort soloDiningPlaceQueryPort,
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
         return new ReadSoloDiningPlacesService(
                 soloDiningPlaceSearchPort,
                 placeCacheRepository,
-                soloDiningPlaceQueryPort
+                soloDiningPlaceQueryPort,
+                resolvePlaceImageUseCase
         );
     }
 
     @Bean
     ReadSoloDiningPlaceUseCase readSoloDiningPlaceUseCase(
             final SoloDiningPlaceQueryPort soloDiningPlaceQueryPort,
-            final SoloDiningPlaceDetailsPort soloDiningPlaceDetailsPort
+            final SoloDiningPlaceDetailsPort soloDiningPlaceDetailsPort,
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
-        return new ReadSoloDiningPlaceService(soloDiningPlaceQueryPort, soloDiningPlaceDetailsPort);
+        return new ReadSoloDiningPlaceService(
+                soloDiningPlaceQueryPort,
+                soloDiningPlaceDetailsPort,
+                resolvePlaceImageUseCase
+        );
     }
 
     @Bean
