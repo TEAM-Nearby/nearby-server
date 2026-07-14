@@ -141,11 +141,46 @@ public interface CompanionMatchApi {
             CompanionMatchScheduleNotReadableException.class,
             CompletedCompanionScheduleNotReadableException.class
     })
+    @ApiResponse(
+            responseCode = "200",
+            description = "내 동행 일정 조회 성공",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "READ_COMPANION_SCHEDULE",
+                            value = """
+                                    {
+                                      "status": 200,
+                                      "code": "READ_COMPANION_SCHEDULE",
+                                      "message": "동행 일정 정보를 조회했어요.",
+                                      "data": {
+                                        "matchId": 1,
+                                        "matchStatus": "SCHEDULE_CONFIRMED",
+                                        "schedule": {
+                                          "place": {
+                                            "googlePlaceId": "ChIJxxxxxxxxxxxx",
+                                            "name": "Siutat condal",
+                                            "address": "Rambla de Catalunya, 16",
+                                            "latitude": 41.390205,
+                                            "longitude": 2.163548
+                                          },
+                                          "scheduledAt": "2026-06-18T16:30:00"
+                                        },
+                                        "openChatUrl": "https://open.kakao.com/o/xxxxxxx",
+                                        "userNickname": "루피",
+                                        "meetingTimeType": "SCHEDULED",
+                                        "currentUserRole": "HOST"
+                                      }
+                                    }
+                                    """
+                    )
+            )
+    )
     @Operation(
             summary = "내 동행 일정 조회",
             description = """
                     JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 동행 일정 정보를 조회합니다.
-                    성공 응답은 MATCHED 또는 SCHEDULE_CONFIRMED 상태만 반환하며, 로그인 사용자의 닉네임과 모집글의 만남 시간 유형을 함께 반환합니다.
+                    성공 응답은 MATCHED 또는 SCHEDULE_CONFIRMED 상태만 반환하며, 로그인 사용자의 닉네임, 매칭 내 역할과 모집글의 만남 시간 유형을 함께 반환합니다.
                     meetingTimeType이 NOW인 신규 수락 흐름은 일정이 자동 확정되어 SCHEDULE_CONFIRMED 상태로 반환됩니다.
                     기존 DB에 NOW + MATCHED 상태로 남아 있는 데이터는 조회 fallback으로 schedule을 구성하며, matchStatus는 저장된 DB 상태 그대로 반환될 수 있습니다.
                     NOW 일정의 schedule.place는 모집글 장소, schedule.scheduledAt은 즉시 동행 노출 만료 시간입니다.

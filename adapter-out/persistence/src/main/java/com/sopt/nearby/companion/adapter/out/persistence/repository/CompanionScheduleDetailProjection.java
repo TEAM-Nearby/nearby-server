@@ -16,4 +16,5 @@ public interface CompanionScheduleDetailProjection {
     String getOpenChatUrl();
     String getUserNickname();
     String getMeetingTimeType();
+    String getCurrentUserRole();
 }

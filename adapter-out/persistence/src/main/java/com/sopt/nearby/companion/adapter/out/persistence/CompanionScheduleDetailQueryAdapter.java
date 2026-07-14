@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleDetailJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 import java.util.Optional;
@@ -27,7 +28,10 @@ public class CompanionScheduleDetailQueryAdapter implements CompanionScheduleDet
                         toSchedule(row),
                         row.getOpenChatUrl(),
                         row.getUserNickname(),
-                        CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType())
+                        CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
+                        row.getCurrentUserRole() == null
+                                ? null
+                                : MatchParticipantRole.valueOf(row.getCurrentUserRole())
                 ));
     }
 
