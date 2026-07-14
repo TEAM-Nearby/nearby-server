@@ -110,6 +110,7 @@ public interface SoloDiningPlaceApi {
                                 "phoneNumber": "02-1234-5678",
                                 "photoReference": "places/ChIJxxxxxxxx/photos/ATKogp...",
                                 "photoReferences": ["places/ChIJxxxxxxxx/photos/ATKogp..."],
+                                "imageUrl": "https://lh3.googleusercontent.com/place.jpg",
                                 "businessStatus": "OPERATIONAL",
                                 "priceLevel": "PRICE_LEVEL_MODERATE",
                                 "priceRange": "₩10,000~₩20,000",

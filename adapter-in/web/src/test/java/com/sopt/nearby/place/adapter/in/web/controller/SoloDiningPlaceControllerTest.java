@@ -165,6 +165,7 @@ class SoloDiningPlaceControllerTest {
                 .andExpect(jsonPath("$.data.phoneNumber").value("02-1234-5678"))
                 .andExpect(jsonPath("$.data.photoReference").value("places/google-place-id/photos/photo-1"))
                 .andExpect(jsonPath("$.data.photoReferences[0]").value("places/google-place-id/photos/photo-1"))
+                .andExpect(jsonPath("$.data.imageUrl").value("https://lh3.googleusercontent.com/place.jpg"))
                 .andExpect(jsonPath("$.data.businessStatus").value("OPERATIONAL"))
                 .andExpect(jsonPath("$.data.priceLevel").value("PRICE_LEVEL_MODERATE"))
                 .andExpect(jsonPath("$.data.priceRange").value("₩10,000~₩20,000"))
@@ -334,6 +335,7 @@ class SoloDiningPlaceControllerTest {
                 "02-1234-5678",
                 "places/google-place-id/photos/photo-1",
                 List.of("places/google-place-id/photos/photo-1"),
+                "https://lh3.googleusercontent.com/place.jpg",
                 PlaceBusinessStatus.OPERATIONAL,
                 "PRICE_LEVEL_MODERATE",
                 "₩10,000~₩20,000",
