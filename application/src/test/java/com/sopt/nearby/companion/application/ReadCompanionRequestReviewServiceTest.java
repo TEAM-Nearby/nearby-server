@@ -45,6 +45,7 @@ class ReadCompanionRequestReviewServiceTest {
         assertEquals(10L, result.postId());
         assertEquals(CompanionApplicationStatus.PENDING, result.applicationStatus());
         assertEquals("오노테라", result.placeName());
+        assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.meetingTimeType());
         assertEquals(LocalDateTime.of(2026, 6, 18, 16, 30), result.meetingAt());
         assertEquals("지민", result.applicantProfile().nickname());
         assertEquals(UserGender.FEMALE, result.applicantProfile().gender());

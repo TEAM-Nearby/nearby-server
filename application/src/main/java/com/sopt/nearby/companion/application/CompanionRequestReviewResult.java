@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionRequestReview;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ public record CompanionRequestReviewResult(
         Long postId,
         CompanionApplicationStatus applicationStatus,
         String placeName,
+        CompanionPostMeetingTimeType meetingTimeType,
         LocalDateTime meetingAt,
         ApplicantProfile applicantProfile,
         ApplicantAccount applicantAccount
@@ -26,6 +28,7 @@ public record CompanionRequestReviewResult(
                 review.postId(),
                 review.applicationStatus(),
                 review.placeName(),
+                review.meetingTimeType(),
                 meetingAt,
                 new ApplicantProfile(
                         review.applicantProfile().profileImageUrl(),
