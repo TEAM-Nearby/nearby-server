@@ -185,8 +185,8 @@ class CompanionMatchSummaryQueryAdapterTest {
         assertThat(third.content()).isEqualTo("확정 일정이 없는 모집글");
         assertThat(third.matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
 
-        assertThat(adapter.findPlaceNameByMatchId(recentMatch.getId())).contains("확정 장소");
-        assertThat(adapter.findPlaceNameByMatchId(oldMatch.getId())).contains("오래된 모집글 장소");
+        assertThat(adapter.findPlaceNameByPlaceId(schedulePlace.getId())).contains("확정 장소");
+        assertThat(adapter.findPlaceNameByPlaceId(oldPostPlace.getId())).contains("오래된 모집글 장소");
     }
 
     private CompanionPostEntity nowPost(

@@ -8,5 +8,5 @@ import java.util.Optional;
 public interface CompanionMatchSummaryQueryPort {
     List<CompanionMatchSummary> findAllByParticipantUserId(Long userId);
 
-    Optional<String> findPlaceNameByMatchId(Long matchId);
+    Optional<String> findPlaceNameByPlaceId(Long placeId);
 }

@@ -40,7 +40,7 @@ public class CompanionMatchSummaryQueryAdapter implements CompanionMatchSummaryQ
     }
 
     @Override
-    public Optional<String> findPlaceNameByMatchId(final Long matchId) {
-        return repository.findPlaceNameByMatchId(matchId);
+    public Optional<String> findPlaceNameByPlaceId(final Long placeId) {
+        return repository.findPlaceNameByPlaceId(placeId);
     }
 }

@@ -25,6 +25,7 @@ import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 
 public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPreviewUseCase {
@@ -92,14 +93,18 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
                 .filter(member -> !member.userId().equals(post.hostUserId()))
                 .toList();
 
-        LocalDateTime meetingAt = companionScheduleRepository.findConfirmedByMatchId(match.id())
+        Optional<CompanionSchedule> confirmedSchedule = companionScheduleRepository.findConfirmedByMatchId(match.id());
+        LocalDateTime meetingAt = confirmedSchedule
                 .map(CompanionSchedule::scheduledAt)
                 .orElseGet(() -> resolveMeetingAt(post));
+        Long placeId = confirmedSchedule
+                .map(CompanionSchedule::placeId)
+                .orElse(post.placeId());
 
         Post previewPost = new Post(
                 post.id(),
                 post.content(),
-                companionMatchSummaryQueryPort.findPlaceNameByMatchId(match.id())
+                companionMatchSummaryQueryPort.findPlaceNameByPlaceId(placeId)
                         .orElseThrow(CompanionPostNotFoundException::matchPostNotFound),
                 post.meetingTimeType(),
                 meetingAt

@@ -48,15 +48,8 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
 
     @Query(value = """
             select place.name
-            from companion_match m
-            join companion_post post
-                on post.id = m.post_id
-            left join companion_schedule schedule
-                on schedule.match_id = m.id
-                and schedule.confirmed = true
-            join place_cache place
-                on place.id = coalesce(schedule.place_id, post.place_id)
-            where m.id = :matchId
+            from place_cache place
+            where place.id = :placeId
             """, nativeQuery = true)
-    Optional<String> findPlaceNameByMatchId(@Param("matchId") Long matchId);
+    Optional<String> findPlaceNameByPlaceId(@Param("placeId") Long placeId);
 }

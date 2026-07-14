@@ -98,18 +98,19 @@ class ReadCompanionMatchPreviewServiceTest {
         companionScheduleRepository.save(new CompanionSchedule(
                 1L,
                 10L,
-                30L,
+                31L,
                 confirmedScheduleAt,
                 90,
                 true
         ));
-        companionMatchSummaryQueryPort.placeNames.put(10L, "확정 장소");
+        companionMatchSummaryQueryPort.placeNames.put(31L, "확정 장소");
 
         CompanionMatchPreview preview = service.getPreview(10L, 7L);
 
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
         assertEquals("확정 장소", preview.companionPost().placeName());
         assertEquals(confirmedScheduleAt, preview.companionPost().meetingAt());
+        assertEquals(1, companionScheduleRepository.findConfirmedCallCount);
     }
 
     @Test
@@ -238,7 +239,7 @@ class ReadCompanionMatchPreviewServiceTest {
                 NOW
         ));
         companionPostRepository.save(post);
-        companionMatchSummaryQueryPort.placeNames.put(10L, "모집글 장소");
+        companionMatchSummaryQueryPort.placeNames.put(post.placeId(), "모집글 장소");
     }
 
     private static final class FakeCompanionMatchSummaryQueryPort implements CompanionMatchSummaryQueryPort {
@@ -251,8 +252,8 @@ class ReadCompanionMatchPreviewServiceTest {
         }
 
         @Override
-        public Optional<String> findPlaceNameByMatchId(final Long matchId) {
-            return Optional.ofNullable(placeNames.get(matchId));
+        public Optional<String> findPlaceNameByPlaceId(final Long placeId) {
+            return Optional.ofNullable(placeNames.get(placeId));
         }
     }
 
@@ -421,6 +422,7 @@ class ReadCompanionMatchPreviewServiceTest {
     private static final class FakeCompanionScheduleRepository implements CompanionScheduleRepository {
 
         private final Map<Long, CompanionSchedule> schedules = new HashMap<>();
+        private int findConfirmedCallCount;
 
         @Override
         public CompanionSchedule save(final CompanionSchedule model) {
@@ -435,6 +437,7 @@ class ReadCompanionMatchPreviewServiceTest {
 
         @Override
         public Optional<CompanionSchedule> findConfirmedByMatchId(final Long matchId) {
+            findConfirmedCallCount++;
             return schedules.values()
                     .stream()
                     .filter(schedule -> schedule.matchId().equals(matchId))
