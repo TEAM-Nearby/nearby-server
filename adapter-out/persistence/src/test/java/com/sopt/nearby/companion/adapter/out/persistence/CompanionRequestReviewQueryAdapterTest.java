@@ -94,6 +94,7 @@ class CompanionRequestReviewQueryAdapterTest {
         assertThat(result.applicationStatus()).isEqualTo(CompanionApplicationStatus.PENDING);
         assertThat(result.hostUserId()).isEqualTo(hostUser.getId());
         assertThat(result.placeName()).isEqualTo("오노테라");
+        assertThat(result.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
         assertThat(result.meetingAt()).isEqualTo(LocalDateTime.of(2026, 6, 18, 16, 30));
         assertThat(result.exposureExpiresAt()).isNull();
         assertThat(result.applicantProfile().profileImageUrl())

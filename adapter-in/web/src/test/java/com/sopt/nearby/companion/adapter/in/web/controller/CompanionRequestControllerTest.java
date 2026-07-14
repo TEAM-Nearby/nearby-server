@@ -22,6 +22,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingExce
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.in.AcceptCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
@@ -70,6 +71,7 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.data.postId").value(10))
                 .andExpect(jsonPath("$.data.applicationStatus").value("PENDING"))
                 .andExpect(jsonPath("$.data.placeName").value("오노테라"))
+                .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.meetingAt").value("2026-06-18T16:30:00"))
                 .andExpect(jsonPath("$.data.applicantProfile.profileImageUrl")
                         .value("https://cdn.nearby/profile/2.png"))
@@ -142,6 +144,7 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.data.applicationStatus").value("ACCEPTED"))
                 .andExpect(jsonPath("$.data.matchId").value(1))
                 .andExpect(jsonPath("$.data.matchStatus").value("MATCHED"))
+                .andExpect(jsonPath("$.data.meetingTimeType").doesNotExist())
                 .andExpect(jsonPath("$.data.meetingAt").value("2026-07-15T12:10:00"));
 
         assertEquals(100L, acceptUseCase.command.hostUserId());
@@ -214,6 +217,7 @@ class CompanionRequestControllerTest {
                 10L,
                 CompanionApplicationStatus.PENDING,
                 "오노테라",
+                CompanionPostMeetingTimeType.SCHEDULED,
                 LocalDateTime.of(2026, 6, 18, 16, 30),
                 new CompanionRequestReviewResult.ApplicantProfile(
                         "https://cdn.nearby/profile/2.png",

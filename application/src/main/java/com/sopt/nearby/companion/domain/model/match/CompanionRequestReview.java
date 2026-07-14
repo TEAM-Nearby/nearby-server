@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.domain.model.match;
 
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -11,6 +12,7 @@ public record CompanionRequestReview(
         CompanionApplicationStatus applicationStatus,
         Long hostUserId,
         String placeName,
+        CompanionPostMeetingTimeType meetingTimeType,
         LocalDateTime meetingAt,
         LocalDateTime exposureExpiresAt,
         ApplicantProfile applicantProfile,

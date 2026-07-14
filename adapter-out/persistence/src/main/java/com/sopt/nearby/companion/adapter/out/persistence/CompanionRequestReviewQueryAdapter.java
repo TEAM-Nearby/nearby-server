@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReq
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionRequestReviewQueryJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionRequestReview;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionRequestReviewQueryPort;
 import java.util.Optional;
@@ -32,6 +33,7 @@ public class CompanionRequestReviewQueryAdapter implements CompanionRequestRevie
                 CompanionApplicationStatus.valueOf(row.getApplicationStatus()),
                 row.getHostUserId(),
                 row.getPlaceName(),
+                CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                 row.getMeetingAt(),
                 row.getExposureExpiresAt(),
                 new CompanionRequestReview.ApplicantProfile(

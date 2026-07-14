@@ -10,6 +10,7 @@ public record CompanionRequestReviewResponse(
         Long postId,
         String applicationStatus,
         String placeName,
+        String meetingTimeType,
         LocalDateTime meetingAt,
         ApplicantProfileResponse applicantProfile,
         ApplicantAccountResponse applicantAccount
@@ -21,6 +22,7 @@ public record CompanionRequestReviewResponse(
                 result.postId(),
                 result.applicationStatus().name(),
                 result.placeName(),
+                result.meetingTimeType().name(),
                 result.meetingAt(),
                 ApplicantProfileResponse.from(result.applicantProfile()),
                 ApplicantAccountResponse.from(result.applicantAccount())
