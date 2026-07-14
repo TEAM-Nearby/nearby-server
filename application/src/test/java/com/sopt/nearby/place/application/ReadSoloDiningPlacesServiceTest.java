@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sopt.nearby.place.domain.exception.DuplicatePlaceCacheException;
+import com.sopt.nearby.place.domain.exception.GooglePlaceApiException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.PlaceCache;
@@ -99,6 +100,19 @@ class ReadSoloDiningPlacesServiceTest {
         assertEquals("https://lh3.googleusercontent.com/google-place-1.jpg", result.places().get(0).imageUrl());
         assertEquals("두 번째 식당", result.places().get(1).name());
         assertEquals("https://lh3.googleusercontent.com/google-place-2.jpg", result.places().get(1).imageUrl());
+    }
+
+    @Test
+    void propagatesBusinessExceptionFromParallelImageResolution() {
+        searchPort.result = List.of(searchResult(
+                "google-place-id",
+                "니어바이 카페",
+                SoloDiningPlaceCategory.CAFE
+        ));
+        queryPort.result = List.of(summary(1L, false));
+        resolvePlaceImageUseCase.exception = new GooglePlaceApiException();
+
+        assertThrows(GooglePlaceApiException.class, () -> service.read(validCommand()));
     }
 
     @Test
@@ -375,6 +389,7 @@ class ReadSoloDiningPlacesServiceTest {
 
         private final List<ResolvePlaceImageCommand> commands = new CopyOnWriteArrayList<>();
         private CountDownLatch concurrentCalls;
+        private RuntimeException exception;
 
         private void expectConcurrentCalls(final int count) {
             concurrentCalls = new CountDownLatch(count);
@@ -384,6 +399,9 @@ class ReadSoloDiningPlacesServiceTest {
         public ResolvedPlaceImage resolve(final ResolvePlaceImageCommand command) {
             commands.add(command);
             awaitConcurrentCalls();
+            if (exception != null) {
+                throw exception;
+            }
             return new ResolvedPlaceImage(
                     "https://lh3.googleusercontent.com/" + command.googlePlaceId() + ".jpg",
                     ResolvedPlaceImage.GOOGLE_MAPS,

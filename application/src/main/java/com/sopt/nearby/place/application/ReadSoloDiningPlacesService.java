@@ -1,6 +1,7 @@
 // 혼밥 맛집 목록 조회 유스케이스를 구현한다.
 package com.sopt.nearby.place.application;
 
+import com.sopt.nearby.common.exception.BusinessException;
 import com.sopt.nearby.place.domain.exception.DuplicatePlaceCacheException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
@@ -19,6 +20,7 @@ import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchResult;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 
 public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase {
@@ -85,6 +87,11 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
             return futures.stream()
                     .map(CompletableFuture::join)
                     .toList();
+        } catch (CompletionException exception) {
+            if (exception.getCause() instanceof BusinessException businessException) {
+                throw businessException;
+            }
+            throw exception;
         }
     }
 
