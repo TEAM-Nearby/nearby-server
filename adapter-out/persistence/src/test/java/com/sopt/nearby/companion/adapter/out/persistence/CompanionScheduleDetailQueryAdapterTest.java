@@ -4,16 +4,19 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchParticipantEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchParticipantJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleDetailJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
@@ -42,6 +45,9 @@ class CompanionScheduleDetailQueryAdapterTest {
 
     @Autowired
     private CompanionMatchJpaRepository companionMatchJpaRepository;
+
+    @Autowired
+    private CompanionMatchParticipantJpaRepository companionMatchParticipantJpaRepository;
 
     @Autowired
     private CompanionScheduleJpaRepository companionScheduleJpaRepository;
@@ -74,6 +80,13 @@ class CompanionScheduleDetailQueryAdapterTest {
                 post.getId(),
                 CompanionMatchStatus.SCHEDULE_CONFIRMED
         ));
+        companionMatchParticipantJpaRepository.saveAndFlush(new CompanionMatchParticipantEntity(
+                null,
+                match.getId(),
+                7L,
+                null,
+                MatchParticipantRole.HOST
+        ));
         CompanionScheduleEntity schedule = companionScheduleJpaRepository.saveAndFlush(schedule(
                 match.getId(),
                 schedulePlace.getId(),
@@ -96,6 +109,7 @@ class CompanionScheduleDetailQueryAdapterTest {
         assertThat(detail.schedule().place().longitude()).isEqualByComparingTo("2.16354800");
         assertThat(detail.userNickname()).isEqualTo("루피");
         assertThat(detail.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
+        assertThat(detail.currentUserRole()).isEqualTo(MatchParticipantRole.HOST);
     }
 
     @Test
@@ -283,6 +297,7 @@ class CompanionScheduleDetailQueryAdapterTest {
     @EntityScan(basePackageClasses = {
             CompanionPostEntity.class,
             CompanionMatchEntity.class,
+            CompanionMatchParticipantEntity.class,
             CompanionScheduleEntity.class,
             CompanionProfileEntity.class,
             PlaceCacheEntity.class
@@ -290,6 +305,7 @@ class CompanionScheduleDetailQueryAdapterTest {
     @EnableJpaRepositories(basePackageClasses = {
             CompanionPostJpaRepository.class,
             CompanionMatchJpaRepository.class,
+            CompanionMatchParticipantJpaRepository.class,
             CompanionScheduleJpaRepository.class,
             CompanionScheduleDetailJpaRepository.class,
             CompanionProfileJpaRepository.class,

@@ -18,6 +18,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
@@ -213,7 +214,8 @@ class CompanionMatchControllerTest {
                 ),
                 "https://open.kakao.com/o/confirmed",
                 "루피",
-                CompanionPostMeetingTimeType.SCHEDULED
+                CompanionPostMeetingTimeType.SCHEDULED,
+                MatchParticipantRole.HOST
         );
 
         mockMvc.perform(get("/api/companion-matches/{matchId}/schedule", 10L)
@@ -232,7 +234,8 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.data.schedule.scheduledAt").value("2026-06-18T16:30:00"))
                 .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/confirmed"))
                 .andExpect(jsonPath("$.data.userNickname").value("루피"))
-                .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"));
+                .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
+                .andExpect(jsonPath("$.data.currentUserRole").value("HOST"));
 
         assertEquals(10L, readCompanionScheduleUseCase.matchId);
         assertEquals(7L, readCompanionScheduleUseCase.userId);
@@ -255,7 +258,8 @@ class CompanionMatchControllerTest {
                 ),
                 "https://open.kakao.com/o/not-yet",
                 "루피",
-                CompanionPostMeetingTimeType.NOW
+                CompanionPostMeetingTimeType.NOW,
+                MatchParticipantRole.GUEST
         );
 
         mockMvc.perform(get("/api/companion-matches/{matchId}/schedule", 10L)
@@ -274,7 +278,8 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.data.schedule.scheduledAt").value("2026-06-18T13:00:00"))
                 .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/not-yet"))
                 .andExpect(jsonPath("$.data.userNickname").value("루피"))
-                .andExpect(jsonPath("$.data.meetingTimeType").value("NOW"));
+                .andExpect(jsonPath("$.data.meetingTimeType").value("NOW"))
+                .andExpect(jsonPath("$.data.currentUserRole").value("GUEST"));
     }
 
     private Principal principal(final String name) {
