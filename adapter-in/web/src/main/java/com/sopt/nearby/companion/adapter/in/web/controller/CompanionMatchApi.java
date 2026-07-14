@@ -24,12 +24,12 @@ import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.security.Principal;
-import org.springframework.web.bind.annotation.PathVariable;
-
 
 @Tag(name = "CompanionMatch", description = "매칭된 동행 API")
 public interface CompanionMatchApi {
@@ -56,10 +56,48 @@ public interface CompanionMatchApi {
             CompanionPostNotFoundException.class,
             CompanionProfileNotFoundException.class
     })
+    @ApiResponse(
+            responseCode = "200",
+            description = "매칭된 동행 미리보기 조회 성공",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "READ_COMPANION_MATCH_PREVIEW",
+                            value = """
+                            {
+                              "status": 200,
+                              "code": "READ_COMPANION_MATCH_PREVIEW",
+                              "message": "매칭된 동행 미리보기 정보를 조회했어요.",
+                              "data": {
+                                "matchId": 1,
+                                "host": {
+                                  "hostName": "조로",
+                                  "hostProfileImageUrl": "https://image.url/hostProfile.png"
+                                },
+                                "members": [
+                                  {
+                                    "memberId": 2,
+                                    "profileImageUrl": "https://image.url/profile.png",
+                                    "nickname": "김루피"
+                                  }
+                                ],
+                                "companionPost": {
+                                  "postId": 1,
+                                  "content": "오늘 저녁 바르셀로나에서 같이 타파스 드실 분 구해요",
+                                  "meetingTimeType": "NOW",
+                                  "meetingAt": "2026-07-05T13:00:00"
+                                }
+                              }
+                            }
+                            """
+                    )
+            )
+    )
     @Operation(
             summary = "매칭된 동행 미리보기",
             description = """
                     JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 미리보기를 조회합니다.
+                    host에는 모집글 작성자의 닉네임과 프로필 이미지 URL을 반환하고, members에는 호스트를 제외한 참여자를 반환합니다.
                     companionPost.meetingTimeType과 companionPost.meetingAt을 함께 반환합니다.
                     일정 확정 후에는 companion_schedule.scheduledAt을 우선 반환하고, 미확정 NOW 모집글은 exposureExpiresAt을 meetingAt으로 반환합니다.
                     """,
