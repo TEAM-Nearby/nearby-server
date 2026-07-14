@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdExcepti
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
@@ -23,6 +24,7 @@ import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
@@ -45,6 +47,7 @@ class ReadCompanionMatchPreviewServiceTest {
     private FakeCompanionMatchParticipantRepository companionMatchParticipantRepository;
     private FakeCompanionProfileRepository companionProfileRepository;
     private FakeCompanionScheduleRepository companionScheduleRepository;
+    private FakeCompanionMatchSummaryQueryPort companionMatchSummaryQueryPort;
     private ReadCompanionMatchPreviewService service;
 
     @BeforeEach
@@ -54,12 +57,14 @@ class ReadCompanionMatchPreviewServiceTest {
         companionMatchParticipantRepository = new FakeCompanionMatchParticipantRepository();
         companionProfileRepository = new FakeCompanionProfileRepository();
         companionScheduleRepository = new FakeCompanionScheduleRepository();
+        companionMatchSummaryQueryPort = new FakeCompanionMatchSummaryQueryPort();
         service = new ReadCompanionMatchPreviewService(
                 companionMatchRepository,
                 companionPostRepository,
                 companionMatchParticipantRepository,
                 companionProfileRepository,
-                companionScheduleRepository
+                companionScheduleRepository,
+                companionMatchSummaryQueryPort
         );
     }
 
@@ -80,6 +85,7 @@ class ReadCompanionMatchPreviewServiceTest {
         assertEquals("여행자B", preview.members().get(0).nickname());
         assertEquals(20L, preview.companionPost().postId());
         assertEquals("함께 밥 먹을 동행을 구해요.", preview.companionPost().content());
+        assertEquals("모집글 장소", preview.companionPost().placeName());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
         assertEquals(NOW.plusDays(1), preview.companionPost().meetingAt());
     }
@@ -92,16 +98,19 @@ class ReadCompanionMatchPreviewServiceTest {
         companionScheduleRepository.save(new CompanionSchedule(
                 1L,
                 10L,
-                30L,
+                31L,
                 confirmedScheduleAt,
                 90,
                 true
         ));
+        companionMatchSummaryQueryPort.placeNames.put(31L, "확정 장소");
 
         CompanionMatchPreview preview = service.getPreview(10L, 7L);
 
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
+        assertEquals("확정 장소", preview.companionPost().placeName());
         assertEquals(confirmedScheduleAt, preview.companionPost().meetingAt());
+        assertEquals(1, companionScheduleRepository.findConfirmedCallCount);
     }
 
     @Test
@@ -230,6 +239,22 @@ class ReadCompanionMatchPreviewServiceTest {
                 NOW
         ));
         companionPostRepository.save(post);
+        companionMatchSummaryQueryPort.placeNames.put(post.placeId(), "모집글 장소");
+    }
+
+    private static final class FakeCompanionMatchSummaryQueryPort implements CompanionMatchSummaryQueryPort {
+
+        private final Map<Long, String> placeNames = new HashMap<>();
+
+        @Override
+        public List<CompanionMatchSummary> findAllByParticipantUserId(final Long userId) {
+            return List.of();
+        }
+
+        @Override
+        public Optional<String> findPlaceNameByPlaceId(final Long placeId) {
+            return Optional.ofNullable(placeNames.get(placeId));
+        }
     }
 
     private void saveDefaultParticipantsAndProfiles() {
@@ -397,6 +422,7 @@ class ReadCompanionMatchPreviewServiceTest {
     private static final class FakeCompanionScheduleRepository implements CompanionScheduleRepository {
 
         private final Map<Long, CompanionSchedule> schedules = new HashMap<>();
+        private int findConfirmedCallCount;
 
         @Override
         public CompanionSchedule save(final CompanionSchedule model) {
@@ -411,6 +437,7 @@ class ReadCompanionMatchPreviewServiceTest {
 
         @Override
         public Optional<CompanionSchedule> findConfirmedByMatchId(final Long matchId) {
+            findConfirmedCallCount++;
             return schedules.values()
                     .stream()
                     .filter(schedule -> schedule.matchId().equals(matchId))
