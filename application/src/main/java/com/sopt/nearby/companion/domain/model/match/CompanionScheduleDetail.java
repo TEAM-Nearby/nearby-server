@@ -13,7 +13,8 @@ public record CompanionScheduleDetail(
         Schedule schedule,
         String openChatUrl,
         String userNickname,
-        CompanionPostMeetingTimeType meetingTimeType
+        CompanionPostMeetingTimeType meetingTimeType,
+        MatchParticipantRole currentUserRole
 
 ) {
     public record Schedule(

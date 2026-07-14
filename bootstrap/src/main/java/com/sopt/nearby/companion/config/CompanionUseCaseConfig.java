@@ -150,10 +150,9 @@ public class CompanionUseCaseConfig {
 
     @Bean
     ReadCompanionScheduleUseCase readCompanionScheduleUseCase(
-            final CompanionScheduleDetailQueryPort queryPort,
-            final CompanionMatchParticipantRepository companionMatchParticipantRepository
+            final CompanionScheduleDetailQueryPort queryPort
     ) {
-        return new ReadCompanionScheduleService(queryPort, companionMatchParticipantRepository);
+        return new ReadCompanionScheduleService(queryPort);
     }
 
     @Bean

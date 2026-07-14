@@ -44,10 +44,14 @@ public interface CompanionScheduleDetailJpaRepository extends Repository<Compani
                     else null
                 end as openChatUrl,
                 current_profile.nickname as userNickname,
-                post.meeting_time_type as meetingTimeType
+                post.meeting_time_type as meetingTimeType,
+                current_participant.role as currentUserRole
             from companion_match m
             join companion_post post
                 on post.id = m.post_id
+            left join companion_match_participant current_participant
+                on current_participant.match_id = m.id
+                and current_participant.user_id = :userId
             left join companion_profile current_profile
                 on current_profile.user_id = :userId
             left join companion_schedule schedule
