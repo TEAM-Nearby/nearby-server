@@ -36,6 +36,7 @@ public class CompanionRequestReviewQueryAdapter implements CompanionRequestRevie
                 CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                 row.getMeetingAt(),
                 row.getExposureExpiresAt(),
+                row.getOpenChatUrl(),
                 new CompanionRequestReview.ApplicantProfile(
                         row.getApplicantProfileId(),
                         row.getApplicantProfileImageUrl(),

@@ -12,6 +12,7 @@ public record CompanionRequestReviewResponse(
         String placeName,
         String meetingTimeType,
         LocalDateTime meetingAt,
+        String openChatUrl,
         ApplicantProfileResponse applicantProfile,
         ApplicantAccountResponse applicantAccount
 ) {
@@ -24,6 +25,7 @@ public record CompanionRequestReviewResponse(
                 result.placeName(),
                 result.meetingTimeType().name(),
                 result.meetingAt(),
+                result.openChatUrl(),
                 ApplicantProfileResponse.from(result.applicantProfile()),
                 ApplicantAccountResponse.from(result.applicantAccount())
         );

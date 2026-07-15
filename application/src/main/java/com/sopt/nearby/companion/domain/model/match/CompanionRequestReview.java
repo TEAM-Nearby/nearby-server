@@ -15,6 +15,7 @@ public record CompanionRequestReview(
         CompanionPostMeetingTimeType meetingTimeType,
         LocalDateTime meetingAt,
         LocalDateTime exposureExpiresAt,
+        String openChatUrl,
         ApplicantProfile applicantProfile,
         ApplicantAccount applicantAccount
 ) {

@@ -97,6 +97,7 @@ class CompanionRequestReviewQueryAdapterTest {
         assertThat(result.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
         assertThat(result.meetingAt()).isEqualTo(LocalDateTime.of(2026, 6, 18, 16, 30));
         assertThat(result.exposureExpiresAt()).isNull();
+        assertThat(result.openChatUrl()).isEqualTo("https://open.kakao.com/o/nearby123");
         assertThat(result.applicantProfile().profileId()).isEqualTo(applicantProfile.getId());
         assertThat(result.applicantProfile().profileImageUrl())
                 .isEqualTo("https://cdn.nearby/profile/2.png");
