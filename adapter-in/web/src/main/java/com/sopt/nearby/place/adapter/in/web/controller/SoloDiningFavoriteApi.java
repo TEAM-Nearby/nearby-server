@@ -44,6 +44,7 @@ public interface SoloDiningFavoriteApi {
                                     "name": "르상크 바르셀로나점",
                                     "address": "서울특별시 중구 세종대로 110",
                                     "photoReference": "places/ChIJxxxxxxxx/photos/ATKogp...",
+                                    "imageUrl": "https://lh3.googleusercontent.com/place.jpg",
                                     "category": "CAFE",
                                     "distanceMeters": 800,
                                     "rating": 4.3,
