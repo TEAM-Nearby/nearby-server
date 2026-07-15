@@ -20,10 +20,21 @@ public record CompanionPostDetail(
         CompanionPostMeetingTimeType meetingTimeType,
         LocalDateTime expiresAt,
         int participantCount,
+        List<Participant> participants,
         CompanionApplicationStatus applicationStatus,
         Place place,
         HostProfileSummary hostProfileSummary
 ) {
+
+    public CompanionPostDetail {
+        participants = participants == null ? List.of() : List.copyOf(participants);
+    }
+
+    public record Participant(
+            Long userId,
+            String profileImageUrl
+    ) {
+    }
 
     public record Place(
             String googlePlaceId,

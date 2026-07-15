@@ -3,6 +3,8 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostDetailProjection;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostDetailQueryJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostParticipantProjection;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostQueryJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostDetail;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
@@ -20,20 +22,30 @@ import org.springframework.stereotype.Repository;
 public class CompanionPostDetailQueryAdapter implements CompanionPostDetailQueryPort {
 
     private final CompanionPostDetailQueryJpaRepository repository;
+    private final CompanionPostQueryJpaRepository postQueryRepository;
 
-    public CompanionPostDetailQueryAdapter(final CompanionPostDetailQueryJpaRepository repository) {
+    public CompanionPostDetailQueryAdapter(
+            final CompanionPostDetailQueryJpaRepository repository,
+            final CompanionPostQueryJpaRepository postQueryRepository
+    ) {
         this.repository = repository;
+        this.postQueryRepository = postQueryRepository;
     }
 
     @Override
     public Optional<CompanionPostDetail> findByPostId(final Long postId, final Long userId) {
         return repository.findDetailByPostId(postId, userId)
-                .map(row -> toDetail(row, repository.findKeywordsByProfileId(row.getHostProfileId())));
+                .map(row -> toDetail(
+                        row,
+                        repository.findKeywordsByProfileId(row.getHostProfileId()),
+                        postQueryRepository.findParticipantsByPostIds(List.of(postId))
+                ));
     }
 
     private CompanionPostDetail toDetail(
             final CompanionPostDetailProjection row,
-            final List<TravelStyleKeyword> keywords
+            final List<TravelStyleKeyword> keywords,
+            final List<CompanionPostParticipantProjection> participants
     ) {
         return new CompanionPostDetail(
                 row.getPostId(),
@@ -47,6 +59,12 @@ public class CompanionPostDetailQueryAdapter implements CompanionPostDetailQuery
                 CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                 row.getExpiresAt(),
                 row.getParticipantCount().intValue(),
+                participants.stream()
+                        .map(participant -> new CompanionPostDetail.Participant(
+                                participant.getUserId(),
+                                participant.getProfileImageUrl()
+                        ))
+                        .toList(),
                 toApplicationStatus(row.getApplicationStatus()),
                 new CompanionPostDetail.Place(
                         row.getGooglePlaceId(),

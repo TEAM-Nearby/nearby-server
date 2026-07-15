@@ -203,6 +203,10 @@ class ReadCompanionPostDetailServiceTest {
                 meetingTimeType,
                 expiresAt,
                 2,
+                List.of(
+                        new CompanionPostDetail.Participant(1L, "https://image.example/host.png"),
+                        new CompanionPostDetail.Participant(7L, null)
+                ),
                 applicationStatus,
                 new CompanionPostDetail.Place(
                         "google-place-id",
