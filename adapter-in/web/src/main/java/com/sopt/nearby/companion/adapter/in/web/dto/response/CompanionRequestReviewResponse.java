@@ -12,6 +12,7 @@ public record CompanionRequestReviewResponse(
         String placeName,
         String meetingTimeType,
         LocalDateTime meetingAt,
+        String openChatUrl,
         ApplicantProfileResponse applicantProfile,
         ApplicantAccountResponse applicantAccount
 ) {
@@ -24,12 +25,14 @@ public record CompanionRequestReviewResponse(
                 result.placeName(),
                 result.meetingTimeType().name(),
                 result.meetingAt(),
+                result.openChatUrl(),
                 ApplicantProfileResponse.from(result.applicantProfile()),
                 ApplicantAccountResponse.from(result.applicantAccount())
         );
     }
 
     public record ApplicantProfileResponse(
+            Long profileId,
             String profileImageUrl,
             String nickname,
             String gender,
@@ -38,6 +41,7 @@ public record CompanionRequestReviewResponse(
     ) {
         static ApplicantProfileResponse from(final CompanionRequestReviewResult.ApplicantProfile profile) {
             return new ApplicantProfileResponse(
+                    profile.profileId(),
                     profile.profileImageUrl(),
                     profile.nickname(),
                     profile.gender().name(),

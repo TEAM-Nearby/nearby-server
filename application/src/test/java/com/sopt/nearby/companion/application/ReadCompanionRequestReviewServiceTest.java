@@ -47,6 +47,8 @@ class ReadCompanionRequestReviewServiceTest {
         assertEquals("오노테라", result.placeName());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.meetingTimeType());
         assertEquals(LocalDateTime.of(2026, 6, 18, 16, 30), result.meetingAt());
+        assertEquals("https://open.kakao.com/o/nearby123", result.openChatUrl());
+        assertEquals(20L, result.applicantProfile().profileId());
         assertEquals("지민", result.applicantProfile().nickname());
         assertEquals(UserGender.FEMALE, result.applicantProfile().gender());
         assertEquals(LocalDateTime.of(2026, 7, 1, 9, 0), result.applicantAccount().phoneVerifiedAt());
@@ -124,7 +126,9 @@ class ReadCompanionRequestReviewServiceTest {
                 meetingTimeType,
                 meetingAt,
                 exposureExpiresAt,
+                "https://open.kakao.com/o/nearby123",
                 new CompanionRequestReview.ApplicantProfile(
+                        20L,
                         "https://cdn.nearby/profile/2.png",
                         "지민",
                         UserGender.FEMALE,

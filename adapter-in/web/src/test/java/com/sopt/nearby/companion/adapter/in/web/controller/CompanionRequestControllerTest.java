@@ -73,6 +73,8 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.data.placeName").value("오노테라"))
                 .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.meetingAt").value("2026-06-18T16:30:00"))
+                .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/nearby123"))
+                .andExpect(jsonPath("$.data.applicantProfile.profileId").value(20))
                 .andExpect(jsonPath("$.data.applicantProfile.profileImageUrl")
                         .value("https://cdn.nearby/profile/2.png"))
                 .andExpect(jsonPath("$.data.applicantProfile.nickname").value("지민"))
@@ -219,7 +221,9 @@ class CompanionRequestControllerTest {
                 "오노테라",
                 CompanionPostMeetingTimeType.SCHEDULED,
                 LocalDateTime.of(2026, 6, 18, 16, 30),
+                "https://open.kakao.com/o/nearby123",
                 new CompanionRequestReviewResult.ApplicantProfile(
+                        20L,
                         "https://cdn.nearby/profile/2.png",
                         "지민",
                         UserGender.FEMALE,

@@ -22,6 +22,10 @@ public interface CompanionRequestReviewProjection {
 
     LocalDateTime getExposureExpiresAt();
 
+    String getOpenChatUrl();
+
+    Long getApplicantProfileId();
+
     String getApplicantProfileImageUrl();
 
     String getApplicantNickname();

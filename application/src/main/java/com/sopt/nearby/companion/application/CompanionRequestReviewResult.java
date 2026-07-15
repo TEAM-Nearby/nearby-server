@@ -15,6 +15,7 @@ public record CompanionRequestReviewResult(
         String placeName,
         CompanionPostMeetingTimeType meetingTimeType,
         LocalDateTime meetingAt,
+        String openChatUrl,
         ApplicantProfile applicantProfile,
         ApplicantAccount applicantAccount
 ) {
@@ -30,7 +31,9 @@ public record CompanionRequestReviewResult(
                 review.placeName(),
                 review.meetingTimeType(),
                 meetingAt,
+                review.openChatUrl(),
                 new ApplicantProfile(
+                        review.applicantProfile().profileId(),
                         review.applicantProfile().profileImageUrl(),
                         review.applicantProfile().nickname(),
                         review.applicantProfile().gender(),
@@ -42,6 +45,7 @@ public record CompanionRequestReviewResult(
     }
 
     public record ApplicantProfile(
+            Long profileId,
             String profileImageUrl,
             String nickname,
             UserGender gender,

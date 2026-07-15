@@ -15,11 +15,13 @@ public record CompanionRequestReview(
         CompanionPostMeetingTimeType meetingTimeType,
         LocalDateTime meetingAt,
         LocalDateTime exposureExpiresAt,
+        String openChatUrl,
         ApplicantProfile applicantProfile,
         ApplicantAccount applicantAccount
 ) {
 
     public record ApplicantProfile(
+            Long profileId,
             String profileImageUrl,
             String nickname,
             UserGender gender,
