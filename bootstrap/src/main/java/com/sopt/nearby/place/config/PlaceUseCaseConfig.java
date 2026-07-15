@@ -72,9 +72,10 @@ public class PlaceUseCaseConfig {
 
     @Bean
     ReadSoloDiningFavoritesUseCase readSoloDiningFavoritesUseCase(
-            final SoloDiningFavoriteQueryPort soloDiningFavoriteQueryPort
+            final SoloDiningFavoriteQueryPort soloDiningFavoriteQueryPort,
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
-        return new ReadSoloDiningFavoritesService(soloDiningFavoriteQueryPort);
+        return new ReadSoloDiningFavoritesService(soloDiningFavoriteQueryPort, resolvePlaceImageUseCase);
     }
 
     @Bean

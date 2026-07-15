@@ -66,6 +66,8 @@ class SoloDiningFavoriteControllerTest {
                 .andExpect(jsonPath("$.data.favorites[0].address").value("서울특별시 중구 세종대로 110"))
                 .andExpect(jsonPath("$.data.favorites[0].photoReference")
                         .value("places/google-place-id/photos/photo-resource"))
+                .andExpect(jsonPath("$.data.favorites[0].imageUrl")
+                        .value("https://lh3.googleusercontent.com/place.jpg"))
                 .andExpect(jsonPath("$.data.favorites[0].category").value("CAFE"))
                 .andExpect(jsonPath("$.data.favorites[0].distanceMeters").value(80))
                 .andExpect(jsonPath("$.data.favorites[0].rating").value(4.3))
@@ -137,7 +139,7 @@ class SoloDiningFavoriteControllerTest {
     }
 
     private SoloDiningFavoritesResult result(final String address) {
-        return new SoloDiningFavoritesResult(List.of(new SoloDiningFavoriteSummary(
+        SoloDiningFavoriteSummary summary = new SoloDiningFavoriteSummary(
                 5L,
                 LocalDateTime.of(2026, 7, 2, 13, 20),
                 12L,
@@ -151,6 +153,10 @@ class SoloDiningFavoriteControllerTest {
                 22870,
                 true,
                 PlaceBusinessStatus.OPERATIONAL
+        );
+        return new SoloDiningFavoritesResult(List.of(SoloDiningFavoritesResult.Favorite.from(
+                summary,
+                "https://lh3.googleusercontent.com/place.jpg"
         )));
     }
 

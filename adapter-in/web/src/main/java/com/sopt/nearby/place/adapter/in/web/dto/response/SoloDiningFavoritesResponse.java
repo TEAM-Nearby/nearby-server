@@ -2,7 +2,6 @@
 package com.sopt.nearby.place.adapter.in.web.dto.response;
 
 import com.sopt.nearby.place.application.SoloDiningFavoritesResult;
-import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSummary;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +26,7 @@ public record SoloDiningFavoritesResponse(
             String name,
             String address,
             String photoReference,
+            String imageUrl,
             String category,
             int distanceMeters,
             BigDecimal rating,
@@ -35,7 +35,7 @@ public record SoloDiningFavoritesResponse(
             String businessStatus
     ) {
 
-        static FavoriteResponse from(final SoloDiningFavoriteSummary favorite) {
+        static FavoriteResponse from(final SoloDiningFavoritesResult.Favorite favorite) {
             return new FavoriteResponse(
                     favorite.favoriteId(),
                     favorite.createdAt(),
@@ -44,6 +44,7 @@ public record SoloDiningFavoritesResponse(
                     favorite.name(),
                     favorite.address(),
                     favorite.photoReference(),
+                    favorite.imageUrl(),
                     favorite.category() == null ? null : favorite.category().name(),
                     favorite.distanceMeters(),
                     favorite.rating(),

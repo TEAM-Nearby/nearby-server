@@ -9,6 +9,8 @@ import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
 import com.sopt.nearby.place.port.in.ReadSoloDiningFavoritesUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
 import com.sopt.nearby.place.port.out.SoloDiningFavoriteQueryPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsPort;
@@ -39,7 +41,10 @@ class PlaceUseCaseConfigTest {
     @Test
     void createsReadSoloDiningFavoritesUseCase() {
         ReadSoloDiningFavoritesUseCase useCase = new PlaceUseCaseConfig()
-                .readSoloDiningFavoritesUseCase(new FakeSoloDiningFavoriteQueryPort());
+                .readSoloDiningFavoritesUseCase(
+                        new FakeSoloDiningFavoriteQueryPort(),
+                        new FakeResolvePlaceImageUseCase()
+                );
 
         assertNotNull(useCase);
     }
@@ -76,6 +81,18 @@ class PlaceUseCaseConfigTest {
                 final SoloDiningFavoriteSort sort
         ) {
             return List.of();
+        }
+    }
+
+    private static final class FakeResolvePlaceImageUseCase implements ResolvePlaceImageUseCase {
+
+        @Override
+        public ResolvedPlaceImage resolve(final ResolvePlaceImageCommand command) {
+            return new ResolvedPlaceImage(
+                    "https://nearby.sopt.org/images/default-place.png",
+                    ResolvedPlaceImage.DEFAULT,
+                    List.of()
+            );
         }
     }
 }
