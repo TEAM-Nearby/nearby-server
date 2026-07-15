@@ -82,7 +82,7 @@ public class CompanionMatchController implements CompanionMatchApi {
     ) {
         Long userId = Long.valueOf(principal.getName());
 
-        ConfirmCompanionScheduleResult result = confirmCompanionScheduleUseCase.confirm(
+        ConfirmCompanionScheduleResult result = confirmCompanionScheduleUseCase.update(
                 request.toCommand(matchId, userId)
         );
         return CommonResponse.success(
