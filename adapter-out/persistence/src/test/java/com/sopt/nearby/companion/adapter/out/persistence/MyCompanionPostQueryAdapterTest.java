@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplica
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMeetingEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewKeywordEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
@@ -14,6 +15,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApp
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMeetingJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReviewJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReviewKeywordJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
@@ -23,6 +25,8 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.post.MyCompanionPostSummary;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
 import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRepository;
@@ -52,6 +56,9 @@ class MyCompanionPostQueryAdapterTest {
 	private CompanionApplicationJpaRepository applicationJpaRepository;
 
 	@Autowired
+	private CompanionProfileJpaRepository profileJpaRepository;
+
+	@Autowired
 	private CompanionMatchJpaRepository matchJpaRepository;
 
 	@Autowired
@@ -75,6 +82,17 @@ class MyCompanionPostQueryAdapterTest {
 	@Test
 	void findsOnlyMyPostsWithScheduleParticipantsAndReviewKeywords() {
 		MyCompanionPostQueryAdapter adapter = new MyCompanionPostQueryAdapter(queryJpaRepository);
+		profileJpaRepository.saveAndFlush(profile(
+				HOST_USER_ID,
+				"호스트",
+				"https://cdn.nearby.com/profiles/1.jpg"
+		));
+		profileJpaRepository.saveAndFlush(profile(
+				2L,
+				"참여자",
+				"https://cdn.nearby.com/profiles/2.jpg"
+		));
+		profileJpaRepository.saveAndFlush(profile(4L, "이미지없는참여자", null));
 
 		PlaceCacheEntity firstPlace = placeCacheJpaRepository.saveAndFlush(place(
 				"first-place",
@@ -120,6 +138,7 @@ class MyCompanionPostQueryAdapterTest {
 
 		applicationJpaRepository.saveAndFlush(application(olderPost.getId(), 2L, CompanionApplicationStatus.ACCEPTED, NOW));
 		applicationJpaRepository.saveAndFlush(application(olderPost.getId(), 3L, CompanionApplicationStatus.CANCELED, NOW.plusMinutes(1)));
+		applicationJpaRepository.saveAndFlush(application(olderPost.getId(), 4L, CompanionApplicationStatus.ACCEPTED, NOW.plusMinutes(2)));
 
 		CompanionMatchEntity match = matchJpaRepository.saveAndFlush(new CompanionMatchEntity(
 				null,
@@ -159,6 +178,7 @@ class MyCompanionPostQueryAdapterTest {
 		assertThat(result.get(0).postId()).isEqualTo(newerPost.getId());
 		assertThat(result.get(0).scheduledAt()).isNull();
 		assertThat(result.get(0).currentParticipants()).isEqualTo(1);
+		assertThat(result.get(0).members()).isEmpty();
 		assertThat(result.get(0).reviewKeywords()).isEmpty();
 
 		assertThat(result.get(1).postId()).isEqualTo(olderPost.getId());
@@ -168,7 +188,12 @@ class MyCompanionPostQueryAdapterTest {
 		assertThat(result.get(1).place().address()).isEqualTo("바르셀로나 Rambla de Catalunya, 16");
 		assertThat(result.get(1).place().latitude()).isEqualByComparingTo(new BigDecimal("41.39020500"));
 		assertThat(result.get(1).place().longitude()).isEqualByComparingTo(new BigDecimal("2.16354800"));
-		assertThat(result.get(1).currentParticipants()).isEqualTo(2);
+		assertThat(result.get(1).hostProfileImageUrl()).isEqualTo("https://cdn.nearby.com/profiles/1.jpg");
+		assertThat(result.get(1).members()).containsExactly(
+				new MyCompanionPostSummary.Member(2L, "https://cdn.nearby.com/profiles/2.jpg"),
+				new MyCompanionPostSummary.Member(4L, null)
+		);
+		assertThat(result.get(1).currentParticipants()).isEqualTo(3);
 		assertThat(result.get(1).maxParticipants()).isEqualTo(4);
 		assertThat(result.get(1).content()).isEqualTo("확정된 동행 모집글");
 		assertThat(result.get(1).reviewKeywords()).containsExactly(ReviewKeyword.GOOD_MANNERS, ReviewKeyword.PUNCTUAL);
@@ -307,11 +332,31 @@ class MyCompanionPostQueryAdapterTest {
 		);
 	}
 
+	private CompanionProfileEntity profile(
+			final Long userId,
+			final String nickname,
+			final String profileImageUrl
+	) {
+		return new CompanionProfileEntity(
+				null,
+				userId,
+				nickname,
+				UserGender.MALE,
+				1995,
+				profileImageUrl,
+				null,
+				new BigDecimal("0.00"),
+				0,
+				CompanionProfileStatus.ACTIVE
+		);
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration
 	@EntityScan(basePackageClasses = {
 			CompanionApplicationEntity.class,
 			CompanionPostEntity.class,
+			CompanionProfileEntity.class,
 			CompanionMatchEntity.class,
 			CompanionMeetingEntity.class,
 			CompanionScheduleEntity.class,
@@ -322,6 +367,7 @@ class MyCompanionPostQueryAdapterTest {
 	@EnableJpaRepositories(basePackageClasses = {
 			CompanionApplicationJpaRepository.class,
 			CompanionPostJpaRepository.class,
+			CompanionProfileJpaRepository.class,
 			CompanionMatchJpaRepository.class,
 			CompanionMeetingJpaRepository.class,
 			CompanionScheduleJpaRepository.class,

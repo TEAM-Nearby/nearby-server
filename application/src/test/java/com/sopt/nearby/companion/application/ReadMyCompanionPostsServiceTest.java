@@ -42,6 +42,11 @@ class ReadMyCompanionPostsServiceTest {
 		assertEquals("시우다드 콘달", post.place().name());
 		assertEquals(new BigDecimal("41.39020500"), post.place().latitude());
 		assertEquals(new BigDecimal("2.16354800"), post.place().longitude());
+		assertEquals("https://cdn.nearby.com/profiles/1.jpg", post.hostProfileImageUrl());
+		assertEquals(List.of(
+				new ReadMyCompanionPostsResult.Member(2L, "https://cdn.nearby.com/profiles/2.jpg"),
+				new ReadMyCompanionPostsResult.Member(3L, null)
+		), post.members());
 		assertEquals(3, post.currentParticipants());
 		assertEquals(4, post.maxParticipants());
 		assertEquals("같이 밥 먹어요.", post.content());
@@ -79,6 +84,11 @@ class ReadMyCompanionPostsServiceTest {
 						address,
 						new BigDecimal("41.39020500"),
 						new BigDecimal("2.16354800")
+				),
+				"https://cdn.nearby.com/profiles/1.jpg",
+				List.of(
+						new MyCompanionPostSummary.Member(2L, "https://cdn.nearby.com/profiles/2.jpg"),
+						new MyCompanionPostSummary.Member(3L, null)
 				),
 				3,
 				4,
