@@ -125,7 +125,7 @@ public interface CompanionMatchApi {
             description = "JWT 액세스 토큰으로 인증된 사용자면서 글 작성자일 때 동행 일정 확정합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    CommonResponse<CompanionMatchScheduleResponse> postSchedule(
+    CommonResponse<CompanionMatchScheduleResponse> patchSchedule(
             @Parameter(description = "확정할 매칭 ID", required = true, example = "1")
             Long matchId,
             CompanionMatchScheduleRequest request,
