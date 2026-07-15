@@ -18,12 +18,15 @@ public interface MyCompanionPostQueryJpaRepository extends Repository<CompanionP
 				place.address as placeAddress,
 				place.latitude as latitude,
 				place.longitude as longitude,
+				host_profile.profile_image_url as hostProfileImageUrl,
 				cast(1 + coalesce(accepted.accepted_count, 0) as integer) as currentParticipants,
 				post.max_participants as maxParticipants,
 				post.content as content
 			from companion_post post
 			join place_cache place
 				on place.id = post.place_id
+			left join companion_profile host_profile
+				on host_profile.user_id = post.host_user_id
 			left join (
 				select latest.post_id, count(*) as accepted_count
 				from (
@@ -71,6 +74,7 @@ public interface MyCompanionPostQueryJpaRepository extends Repository<CompanionP
 				place.address,
 				place.latitude,
 				place.longitude,
+				host_profile.profile_image_url,
 				schedule.scheduled_at,
 				accepted.accepted_count,
 				post.max_participants,
@@ -79,6 +83,20 @@ public interface MyCompanionPostQueryJpaRepository extends Repository<CompanionP
 			order by post.created_at desc, post.id desc
 			""", nativeQuery = true)
 	List<MyCompanionPostProjection> findAllByHostUserId(@Param("hostUserId") Long hostUserId);
+
+	@Query(value = """
+			select
+				application.post_id as postId,
+				application.applicant_user_id as userId,
+				profile.profile_image_url as profileImageUrl
+			from companion_application application
+			left join companion_profile profile
+				on profile.user_id = application.applicant_user_id
+			where application.post_id in (:postIds)
+				and application.status = 'ACCEPTED'
+			order by application.post_id, application.created_at, application.id
+			""", nativeQuery = true)
+	List<CompanionPostParticipantProjection> findMembersByPostIds(@Param("postIds") List<Long> postIds);
 
 	@Query(value = """
 			select distinct
