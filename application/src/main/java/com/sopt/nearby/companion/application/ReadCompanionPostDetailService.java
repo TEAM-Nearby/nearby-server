@@ -67,6 +67,12 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
                 detail.meetingTimeType(),
                 detail.expiresAt(),
                 detail.participantCount(),
+                detail.participants().stream()
+                        .map(participant -> new CompanionPostDetailResult.Participant(
+                                participant.userId(),
+                                participant.profileImageUrl()
+                        ))
+                        .toList(),
                 applyStatus,
                 new CompanionPostDetailResult.Place(
                         detail.place().googlePlaceId(),

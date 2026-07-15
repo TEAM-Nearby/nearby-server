@@ -66,6 +66,10 @@ class ReadCompanionPostDetailServiceTest {
         assertEquals(CompanionPostApplyStatus.NOT_APPLIED, result.applyStatus());
         assertEquals("니어바이 스시", result.place().name());
         assertEquals(List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE), result.hostProfileSummary().keywords());
+        assertEquals(1L, result.participants().get(0).userId());
+        assertEquals("https://image.example/host.png", result.participants().get(0).profileImageUrl());
+        assertEquals(7L, result.participants().get(1).userId());
+        assertNull(result.participants().get(1).profileImageUrl());
     }
 
     @Test

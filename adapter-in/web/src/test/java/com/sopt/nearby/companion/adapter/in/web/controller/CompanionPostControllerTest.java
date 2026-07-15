@@ -619,6 +619,10 @@ class CompanionPostControllerTest {
                 CompanionPostMeetingTimeType.SCHEDULED,
                 null,
                 2,
+                List.of(
+                        new CompanionPostDetailResult.Participant(1L, "https://image.example/host.png"),
+                        new CompanionPostDetailResult.Participant(7L, null)
+                ),
                 applyStatus,
                 new CompanionPostDetailResult.Place(
                         "google-place-id",
