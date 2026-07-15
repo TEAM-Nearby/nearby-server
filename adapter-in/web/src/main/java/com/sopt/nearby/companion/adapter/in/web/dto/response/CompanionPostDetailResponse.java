@@ -21,6 +21,7 @@ public record CompanionPostDetailResponse(
         String meetingTimeType,
         LocalDateTime expiresAt,
         int participantCount,
+        List<ParticipantResponse> participants,
         String applyStatus,
         PlaceResponse place,
         HostProfileSummaryResponse hostProfileSummary
@@ -41,10 +42,22 @@ public record CompanionPostDetailResponse(
                 result.meetingTimeType().name(),
                 result.expiresAt(),
                 result.participantCount(),
+                result.participants().stream()
+                        .map(ParticipantResponse::from)
+                        .toList(),
                 result.applyStatus().name(),
                 PlaceResponse.from(result.place()),
                 HostProfileSummaryResponse.from(result.hostProfileSummary())
         );
+    }
+
+    public record ParticipantResponse(
+            Long userId,
+            String profileImageUrl
+    ) {
+        static ParticipantResponse from(final CompanionPostDetailResult.Participant participant) {
+            return new ParticipantResponse(participant.userId(), participant.profileImageUrl());
+        }
     }
 
     public record PlaceResponse(
