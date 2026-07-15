@@ -37,6 +37,13 @@ public class ReadMyCompanionPostsService implements ReadMyCompanionPostsUseCase 
 						summary.place().latitude(),
 						summary.place().longitude()
 				),
+				summary.hostProfileImageUrl(),
+				summary.members().stream()
+						.map(member -> new ReadMyCompanionPostsResult.Member(
+								member.userId(),
+								member.profileImageUrl()
+						))
+						.toList(),
 				summary.currentParticipants(),
 				summary.maxParticipants(),
 				summary.content(),
