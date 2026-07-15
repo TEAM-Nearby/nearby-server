@@ -1,4 +1,4 @@
-// 동행 일정 확정 성공 응답을 표현하는 DTO
+// 동행 일정 수정 성공 응답을 표현하는 DTO
 package com.sopt.nearby.companion.adapter.in.web.dto.response;
 
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleResult;

@@ -8,10 +8,8 @@ import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMatchSched
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionMatchesResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionScheduleDetailResponse;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
-import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchScheduleNotReadableException;
 import com.sopt.nearby.companion.domain.exception.CompanionProfileNotFoundException;
-import com.sopt.nearby.companion.domain.exception.CompanionScheduleAlreadyConfirmedException;
 import com.sopt.nearby.companion.domain.exception.CompletedCompanionScheduleNotReadableException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionScheduleException;
@@ -116,17 +114,37 @@ public interface CompanionMatchApi {
             InvalidCompanionScheduleRequestException.class,
             ForbiddenCompanionScheduleException.class,
             CompanionMatchNotFoundException.class,
-            CompanionScheduleAlreadyConfirmedException.class,
-            CompanionMatchAlreadyCanceledException.class,
-            CompanionMatchAlreadyCompletedException.class
+            CompanionMatchAlreadyCanceledException.class
     })
+    @ApiResponse(
+            responseCode = "200",
+            description = "동행 일정 수정 성공",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "CONFIRM_COMPANION_SCHEDULE",
+                            value = """
+                                    {
+                                      "status": 200,
+                                      "code": "CONFIRM_COMPANION_SCHEDULE",
+                                      "message": "동행 일정이 수정되었어요.",
+                                      "data": {
+                                        "matchId": 1,
+                                        "scheduleId": 1,
+                                        "matchStatus": "SCHEDULE_CONFIRMED"
+                                      }
+                                    }
+                                    """
+                    )
+            )
+    )
     @Operation(
-            summary = "글 작성자의 동행 일정 확정",
-            description = "JWT 액세스 토큰으로 인증된 사용자면서 글 작성자일 때 동행 일정 확정합니다.",
+            summary = "글 작성자의 동행 일정 수정",
+            description = "JWT 액세스 토큰으로 인증된 글 작성자가 SCHEDULE_CONFIRMED 상태의 동행 일정을 수정합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionMatchScheduleResponse> patchSchedule(
-            @Parameter(description = "확정할 매칭 ID", required = true, example = "1")
+            @Parameter(description = "일정을 수정할 매칭 ID", required = true, example = "1")
             Long matchId,
             CompanionMatchScheduleRequest request,
 

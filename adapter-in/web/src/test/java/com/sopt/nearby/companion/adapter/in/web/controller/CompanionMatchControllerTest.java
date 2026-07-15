@@ -154,7 +154,7 @@ class CompanionMatchControllerTest {
     }
 
     @Test
-    void passesScheduleRequestAndAuthenticatedUserIdToConfirmScheduleUseCase() throws Exception {
+    void passesScheduledAtAndAuthenticatedUserIdToScheduleUseCase() throws Exception {
         confirmCompanionScheduleUseCase.result = new ConfirmCompanionScheduleResult(
                 10L,
                 99L,
@@ -166,21 +166,13 @@ class CompanionMatchControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "scheduledAt": "2026-07-04T16:22:29",
-                                  "place": {
-                                    "googlePlaceId": "google-place-id",
-                                    "name": "Siutat condal",
-                                    "address": "Rambla de Catalunya, 16",
-                                    "latitude": 41.390205,
-                                    "longitude": 2.163548
-                                  },
-                                  "openChatUrl": "https://open.kakao.com/o/confirmed"
+                                  "scheduledAt": "2026-07-04T16:22:29"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.code").value("CONFIRM_COMPANION_SCHEDULE"))
-                .andExpect(jsonPath("$.message").value("동행 일정이 확정되었어요."))
+                .andExpect(jsonPath("$.message").value("동행 일정이 수정되었어요."))
                 .andExpect(jsonPath("$.data.matchId").value(10))
                 .andExpect(jsonPath("$.data.scheduleId").value(99))
                 .andExpect(jsonPath("$.data.matchStatus").value("SCHEDULE_CONFIRMED"));
@@ -189,12 +181,6 @@ class CompanionMatchControllerTest {
         assertEquals(10L, command.matchId());
         assertEquals(7L, command.requesterUserId());
         assertEquals(LocalDateTime.of(2026, 7, 4, 16, 22, 29), command.scheduledAt());
-        assertEquals("google-place-id", command.place().googlePlaceId());
-        assertEquals("Siutat condal", command.place().name());
-        assertEquals("Rambla de Catalunya, 16", command.place().address());
-        assertEquals(new BigDecimal("41.390205"), command.place().latitude());
-        assertEquals(new BigDecimal("2.163548"), command.place().longitude());
-        assertEquals("https://open.kakao.com/o/confirmed", command.openChatUrl());
     }
 
     @Test
@@ -329,7 +315,7 @@ class CompanionMatchControllerTest {
         private ConfirmCompanionScheduleCommand command;
 
         @Override
-        public ConfirmCompanionScheduleResult confirm(final ConfirmCompanionScheduleCommand command) {
+        public ConfirmCompanionScheduleResult update(final ConfirmCompanionScheduleCommand command) {
             this.command = command;
             return result;
         }
