@@ -20,6 +20,8 @@ public interface MyCompanionPostProjection {
 
 	BigDecimal getLongitude();
 
+	String getHostProfileImageUrl();
+
 	Number getCurrentParticipants();
 
 	Number getMaxParticipants();

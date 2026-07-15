@@ -19,6 +19,8 @@ public record ReadMyCompanionPostsResult(
 			String cityName,
 			LocalDateTime scheduledAt,
 			Place place,
+			String hostProfileImageUrl,
+			List<Member> members,
 			int currentParticipants,
 			int maxParticipants,
 			String content,
@@ -26,8 +28,15 @@ public record ReadMyCompanionPostsResult(
 	) {
 
 		public Post {
+			members = members == null ? List.of() : List.copyOf(members);
 			reviewKeywords = reviewKeywords == null ? List.of() : List.copyOf(reviewKeywords);
 		}
+	}
+
+	public record Member(
+			Long userId,
+			String profileImageUrl
+	) {
 	}
 
 	public record Place(

@@ -50,6 +50,14 @@ class MyCompanionPostControllerTest {
 						new BigDecimal("41.39020500"),
 						new BigDecimal("2.16354800")
 				),
+				"https://cdn.nearby.com/profiles/1.jpg",
+				List.of(
+						new ReadMyCompanionPostsResult.Member(
+								2L,
+								"https://cdn.nearby.com/profiles/2.jpg"
+						),
+						new ReadMyCompanionPostsResult.Member(3L, null)
+				),
 				3,
 				4,
 				"같이 밥 먹어요.",
@@ -69,6 +77,13 @@ class MyCompanionPostControllerTest {
 				.andExpect(jsonPath("$.data.posts[0].place.name").value("시우다드 콘달"))
 				.andExpect(jsonPath("$.data.posts[0].place.latitude").value(41.39020500))
 				.andExpect(jsonPath("$.data.posts[0].place.longitude").value(2.16354800))
+				.andExpect(jsonPath("$.data.posts[0].hostProfileImageUrl")
+						.value("https://cdn.nearby.com/profiles/1.jpg"))
+				.andExpect(jsonPath("$.data.posts[0].members[0].userId").value(2))
+				.andExpect(jsonPath("$.data.posts[0].members[0].profileImageUrl")
+						.value("https://cdn.nearby.com/profiles/2.jpg"))
+				.andExpect(jsonPath("$.data.posts[0].members[1].userId").value(3))
+				.andExpect(jsonPath("$.data.posts[0].members[1].profileImageUrl").isEmpty())
 				.andExpect(jsonPath("$.data.posts[0].currentParticipants").value(3))
 				.andExpect(jsonPath("$.data.posts[0].maxParticipants").value(4))
 				.andExpect(jsonPath("$.data.posts[0].content").value("같이 밥 먹어요."))
