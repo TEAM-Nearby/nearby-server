@@ -4,7 +4,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -161,7 +161,7 @@ class CompanionMatchControllerTest {
                 CompanionMatchStatus.SCHEDULE_CONFIRMED
         );
 
-        mockMvc.perform(post("/api/companion-matches/{matchId}/schedule", 10L)
+        mockMvc.perform(patch("/api/companion-matches/{matchId}/schedule", 10L)
                         .principal(principal("7"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

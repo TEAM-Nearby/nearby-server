@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import java.security.Principal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -74,8 +74,8 @@ public class CompanionMatchController implements CompanionMatchApi {
     }
 
     @Override
-    @PostMapping("/{matchId}/schedule")
-    public CommonResponse<CompanionMatchScheduleResponse> postSchedule(
+    @PatchMapping("/{matchId}/schedule")
+    public CommonResponse<CompanionMatchScheduleResponse> patchSchedule(
             @PathVariable final Long matchId,
             @RequestBody final CompanionMatchScheduleRequest request,
             final Principal principal
