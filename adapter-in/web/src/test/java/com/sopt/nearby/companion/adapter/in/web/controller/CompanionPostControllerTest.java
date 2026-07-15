@@ -456,6 +456,11 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.expiresAt").value(nullValue()))
                 .andExpect(jsonPath("$.data.participantCount").value(2))
+                .andExpect(jsonPath("$.data.participants[0].userId").value(1))
+                .andExpect(jsonPath("$.data.participants[0].profileImageUrl")
+                        .value("https://image.example/host.png"))
+                .andExpect(jsonPath("$.data.participants[1].userId").value(7))
+                .andExpect(jsonPath("$.data.participants[1].profileImageUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data.applyStatus").value("NOT_APPLIED"))
                 .andExpect(jsonPath("$.data.place.name").value("니어바이 스시"))
                 .andExpect(jsonPath("$.data.place.address").value("서울시 어딘가"))
@@ -619,6 +624,10 @@ class CompanionPostControllerTest {
                 CompanionPostMeetingTimeType.SCHEDULED,
                 null,
                 2,
+                List.of(
+                        new CompanionPostDetailResult.Participant(1L, "https://image.example/host.png"),
+                        new CompanionPostDetailResult.Participant(7L, null)
+                ),
                 applyStatus,
                 new CompanionPostDetailResult.Place(
                         "google-place-id",

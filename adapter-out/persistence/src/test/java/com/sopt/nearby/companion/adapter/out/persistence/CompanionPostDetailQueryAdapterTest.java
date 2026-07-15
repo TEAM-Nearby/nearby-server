@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplicationEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
@@ -9,6 +10,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfile
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileStyleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApplicationJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostDetailQueryJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostQueryJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
@@ -53,6 +55,9 @@ class CompanionPostDetailQueryAdapterTest {
     private CompanionPostDetailQueryJpaRepository queryJpaRepository;
 
     @Autowired
+    private CompanionPostQueryJpaRepository postQueryJpaRepository;
+
+    @Autowired
     private CompanionProfileJpaRepository profileJpaRepository;
 
     @Autowired
@@ -66,7 +71,10 @@ class CompanionPostDetailQueryAdapterTest {
 
     @Test
     void findsPostDetailWithHostPlaceParticipantCountLatestApplyStatusAndKeywords() {
-        CompanionPostDetailQueryAdapter adapter = new CompanionPostDetailQueryAdapter(queryJpaRepository);
+        CompanionPostDetailQueryAdapter adapter = new CompanionPostDetailQueryAdapter(
+                queryJpaRepository,
+                postQueryJpaRepository
+        );
 
         UserAccountEntity hostUser = userAccountJpaRepository.saveAndFlush(user(
                 LocalDateTime.of(2026, 7, 1, 10, 0)
@@ -80,6 +88,21 @@ class CompanionPostDetailQueryAdapterTest {
         entityManager.persistAndFlush(new CompanionProfileStyleEntity(hostProfile.getId(), TravelStyleKeyword.PLANNED));
         entityManager.persistAndFlush(new CompanionProfileStyleEntity(hostProfile.getId(), TravelStyleKeyword.FOODIE));
 
+        UserAccountEntity acceptedUser = userAccountJpaRepository.saveAndFlush(user(null));
+        profileJpaRepository.saveAndFlush(profile(
+                acceptedUser.getId(),
+                "확정참여자",
+                UserGender.MALE,
+                "https://cdn.nearby.com/profiles/2.jpg"
+        ));
+        UserAccountEntity acceptedWithoutImageUser = userAccountJpaRepository.saveAndFlush(user(null));
+        profileJpaRepository.saveAndFlush(profile(
+                acceptedWithoutImageUser.getId(),
+                "이미지없는참여자",
+                UserGender.FEMALE,
+                null
+        ));
+
         PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place());
         CompanionPostEntity post = postJpaRepository.saveAndFlush(post(
                 hostUser.getId(),
@@ -91,13 +114,13 @@ class CompanionPostDetailQueryAdapterTest {
 
         applicationJpaRepository.saveAndFlush(application(
                 post.getId(),
-                7L,
+                acceptedUser.getId(),
                 CompanionApplicationStatus.ACCEPTED,
                 NOW.minusHours(1)
         ));
         applicationJpaRepository.saveAndFlush(application(
                 post.getId(),
-                8L,
+                acceptedWithoutImageUser.getId(),
                 CompanionApplicationStatus.ACCEPTED,
                 NOW.minusMinutes(30)
         ));
@@ -113,8 +136,14 @@ class CompanionPostDetailQueryAdapterTest {
                 CompanionApplicationStatus.CANCELED,
                 NOW.minusMinutes(10)
         ));
+        applicationJpaRepository.saveAndFlush(application(
+                post.getId(),
+                11L,
+                CompanionApplicationStatus.PENDING,
+                NOW.minusMinutes(5)
+        ));
 
-        CompanionPostDetail result = adapter.findByPostId(post.getId(), 7L).orElseThrow();
+        CompanionPostDetail result = adapter.findByPostId(post.getId(), acceptedUser.getId()).orElseThrow();
 
         assertThat(result.postId()).isEqualTo(post.getId());
         assertThat(result.hostUserId()).isEqualTo(hostUser.getId());
@@ -131,11 +160,24 @@ class CompanionPostDetailQueryAdapterTest {
         assertThat(result.hostProfileSummary().phoneVerifiedAt()).isEqualTo(LocalDateTime.of(2026, 7, 1, 10, 0));
         assertThat(result.hostProfileSummary().keywords())
                 .containsExactlyInAnyOrder(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE);
+        assertThat(result.participants())
+                .extracting(
+                        CompanionPostDetail.Participant::userId,
+                        CompanionPostDetail.Participant::profileImageUrl
+                )
+                .containsExactly(
+                        tuple(hostUser.getId(), "https://cdn.nearby.com/profiles/1.jpg"),
+                        tuple(acceptedUser.getId(), "https://cdn.nearby.com/profiles/2.jpg"),
+                        tuple(acceptedWithoutImageUser.getId(), null)
+                );
     }
 
     @Test
     void returnsNullApplyStatusAndEmptyKeywordsWhenUserHasNotApplied() {
-        CompanionPostDetailQueryAdapter adapter = new CompanionPostDetailQueryAdapter(queryJpaRepository);
+        CompanionPostDetailQueryAdapter adapter = new CompanionPostDetailQueryAdapter(
+                queryJpaRepository,
+                postQueryJpaRepository
+        );
 
         UserAccountEntity hostUser = userAccountJpaRepository.saveAndFlush(user(null));
         CompanionProfileEntity hostProfile = profileJpaRepository.saveAndFlush(profile(
@@ -166,7 +208,10 @@ class CompanionPostDetailQueryAdapterTest {
 
     @Test
     void returnsEmptyWhenPostDoesNotExist() {
-        CompanionPostDetailQueryAdapter adapter = new CompanionPostDetailQueryAdapter(queryJpaRepository);
+        CompanionPostDetailQueryAdapter adapter = new CompanionPostDetailQueryAdapter(
+                queryJpaRepository,
+                postQueryJpaRepository
+        );
 
         assertThat(adapter.findByPostId(999L, 7L)).isEmpty();
     }
