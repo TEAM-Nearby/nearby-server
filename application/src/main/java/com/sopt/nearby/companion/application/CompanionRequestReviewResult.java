@@ -31,6 +31,7 @@ public record CompanionRequestReviewResult(
                 review.meetingTimeType(),
                 meetingAt,
                 new ApplicantProfile(
+                        review.applicantProfile().profileId(),
                         review.applicantProfile().profileImageUrl(),
                         review.applicantProfile().nickname(),
                         review.applicantProfile().gender(),
@@ -42,6 +43,7 @@ public record CompanionRequestReviewResult(
     }
 
     public record ApplicantProfile(
+            Long profileId,
             String profileImageUrl,
             String nickname,
             UserGender gender,

@@ -20,6 +20,7 @@ public record CompanionRequestReview(
 ) {
 
     public record ApplicantProfile(
+            Long profileId,
             String profileImageUrl,
             String nickname,
             UserGender gender,

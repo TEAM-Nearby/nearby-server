@@ -37,6 +37,7 @@ public class CompanionRequestReviewQueryAdapter implements CompanionRequestRevie
                 row.getMeetingAt(),
                 row.getExposureExpiresAt(),
                 new CompanionRequestReview.ApplicantProfile(
+                        row.getApplicantProfileId(),
                         row.getApplicantProfileImageUrl(),
                         row.getApplicantNickname(),
                         UserGender.valueOf(row.getApplicantGender()),

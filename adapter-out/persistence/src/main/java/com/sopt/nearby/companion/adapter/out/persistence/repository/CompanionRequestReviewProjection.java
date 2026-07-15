@@ -22,6 +22,8 @@ public interface CompanionRequestReviewProjection {
 
     LocalDateTime getExposureExpiresAt();
 
+    Long getApplicantProfileId();
+
     String getApplicantProfileImageUrl();
 
     String getApplicantNickname();

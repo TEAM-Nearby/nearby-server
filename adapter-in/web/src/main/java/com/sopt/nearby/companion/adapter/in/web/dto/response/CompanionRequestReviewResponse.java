@@ -30,6 +30,7 @@ public record CompanionRequestReviewResponse(
     }
 
     public record ApplicantProfileResponse(
+            Long profileId,
             String profileImageUrl,
             String nickname,
             String gender,
@@ -38,6 +39,7 @@ public record CompanionRequestReviewResponse(
     ) {
         static ApplicantProfileResponse from(final CompanionRequestReviewResult.ApplicantProfile profile) {
             return new ApplicantProfileResponse(
+                    profile.profileId(),
                     profile.profileImageUrl(),
                     profile.nickname(),
                     profile.gender().name(),

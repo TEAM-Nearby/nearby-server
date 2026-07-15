@@ -66,7 +66,7 @@ class CompanionRequestReviewQueryAdapterTest {
                 LocalDateTime.of(2026, 7, 1, 9, 0)
         ));
         profileJpaRepository.saveAndFlush(profile(hostUser.getId(), "호스트", UserGender.MALE, null));
-        profileJpaRepository.saveAndFlush(profile(
+        CompanionProfileEntity applicantProfile = profileJpaRepository.saveAndFlush(profile(
                 applicantUser.getId(),
                 "지민",
                 UserGender.FEMALE,
@@ -97,6 +97,7 @@ class CompanionRequestReviewQueryAdapterTest {
         assertThat(result.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
         assertThat(result.meetingAt()).isEqualTo(LocalDateTime.of(2026, 6, 18, 16, 30));
         assertThat(result.exposureExpiresAt()).isNull();
+        assertThat(result.applicantProfile().profileId()).isEqualTo(applicantProfile.getId());
         assertThat(result.applicantProfile().profileImageUrl())
                 .isEqualTo("https://cdn.nearby/profile/2.png");
         assertThat(result.applicantProfile().nickname()).isEqualTo("지민");
