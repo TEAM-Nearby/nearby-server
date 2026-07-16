@@ -173,7 +173,7 @@ public interface CompanionMatchApi {
                                       "message": "동행 일정 정보를 조회했어요.",
                                       "data": {
                                         "matchId": 1,
-                                        "matchStatus": "SCHEDULE_CONFIRMED",
+                                        "matchStatus": "MATCHED",
                                         "schedule": {
                                           "place": {
                                             "googlePlaceId": "ChIJxxxxxxxxxxxx",
@@ -199,9 +199,11 @@ public interface CompanionMatchApi {
             description = """
                     JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 동행 일정 정보를 조회합니다.
                     성공 응답은 MATCHED 또는 SCHEDULE_CONFIRMED 상태만 반환하며, 로그인 사용자의 닉네임, 매칭 내 역할과 모집글의 만남 시간 유형을 함께 반환합니다.
+                    MATCHED 상태에서는 모집글의 장소, 시간, 오픈채팅 URL을 기본 일정으로 반환하고, SCHEDULE_CONFIRMED 상태에서는 확정된 일정을 반환합니다.
+                    일정 확정 여부는 schedule 존재 여부가 아닌 matchStatus로 판단합니다.
+                    meetingTimeType이 UNDECIDED이면 schedule의 장소는 반환되지만 scheduledAt은 null입니다.
                     meetingTimeType이 NOW인 신규 수락 흐름은 일정이 자동 확정되어 SCHEDULE_CONFIRMED 상태로 반환됩니다.
-                    기존 DB에 NOW + MATCHED 상태로 남아 있는 데이터는 조회 fallback으로 schedule을 구성하며, matchStatus는 저장된 DB 상태 그대로 반환될 수 있습니다.
-                    NOW 일정의 schedule.place는 모집글 장소, schedule.scheduledAt은 즉시 동행 노출 만료 시간입니다.
+                    기존 DB에 NOW + MATCHED 상태로 남아 있는 데이터는 모집글 장소와 즉시 동행 노출 만료 시간으로 기본 일정을 구성합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
