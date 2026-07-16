@@ -12,6 +12,30 @@ public record OngoingCompanionMeetingSummary(
         LocalDateTime meetingAt,
         CompanionPostMeetingTimeType meetingTimeType,
         boolean checkedIn,
-        CompanionMeetingStatus meetingStatus
+        CompanionMeetingStatus meetingStatus,
+        CompanionMeetingProgressStatus progressStatus
 ) {
+
+    public OngoingCompanionMeetingSummary(
+            final Long meetingId,
+            final Long matchId,
+            final OngoingCompanionMeetingHostProfile companion,
+            final String placeName,
+            final LocalDateTime meetingAt,
+            final CompanionPostMeetingTimeType meetingTimeType,
+            final boolean checkedIn,
+            final CompanionMeetingStatus meetingStatus
+    ) {
+        this(
+                meetingId,
+                matchId,
+                companion,
+                placeName,
+                meetingAt,
+                meetingTimeType,
+                checkedIn,
+                meetingStatus,
+                CompanionMeetingProgressStatus.ONGOING
+        );
+    }
 }
