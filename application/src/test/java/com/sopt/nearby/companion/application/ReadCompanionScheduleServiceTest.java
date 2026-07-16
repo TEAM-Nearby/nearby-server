@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchScheduleNotReadableException;
-import com.sopt.nearby.companion.domain.exception.CompletedCompanionScheduleNotReadableException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionScheduleException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
@@ -138,21 +137,13 @@ class ReadCompanionScheduleServiceTest {
     }
 
     @Test
-    void throwsCompletedScheduleNotReadableWhenMatchIsCompleted() {
-        queryPort.save(new CompanionScheduleDetail(
-                1L,
-                CompanionMatchStatus.COMPLETED,
-                null,
-                null,
-                "루피",
-                CompanionPostMeetingTimeType.SCHEDULED,
-                MatchParticipantRole.HOST
-        ));
+    void returnsScheduleDetailWhenMatchIsCompleted() {
+        queryPort.save(completedScheduleDetail());
 
-        assertThrows(
-                CompletedCompanionScheduleNotReadableException.class,
-                () -> service.getSchedule(1L, 7L)
-        );
+        CompanionScheduleDetail result = service.getSchedule(1L, 7L);
+
+        assertEquals(CompanionMatchStatus.COMPLETED, result.matchStatus());
+        assertEquals(SCHEDULED_AT, result.schedule().scheduledAt());
     }
 
     private CompanionScheduleDetail confirmedScheduleDetail() {
@@ -177,6 +168,27 @@ class ReadCompanionScheduleServiceTest {
                 "루피",
                 CompanionPostMeetingTimeType.SCHEDULED,
                 currentUserRole
+        );
+    }
+
+    private CompanionScheduleDetail completedScheduleDetail() {
+        return new CompanionScheduleDetail(
+                1L,
+                CompanionMatchStatus.COMPLETED,
+                new CompanionScheduleDetail.Schedule(
+                        new CompanionScheduleDetail.Place(
+                                "google-place-id",
+                                "Siutat condal",
+                                "Rambla de Catalunya, 16",
+                                new BigDecimal("41.39020500"),
+                                new BigDecimal("2.16354800")
+                        ),
+                        SCHEDULED_AT
+                ),
+                "https://open.kakao.com/o/completed",
+                "루피",
+                CompanionPostMeetingTimeType.SCHEDULED,
+                MatchParticipantRole.HOST
         );
     }
 

@@ -1,7 +1,6 @@
 // 내 동행 일정 조회 유스케이스를 구현하는 서비스
 package com.sopt.nearby.companion.application;
 
-import com.sopt.nearby.companion.domain.exception.CompletedCompanionScheduleNotReadableException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchScheduleNotReadableException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionScheduleException;
@@ -33,10 +32,6 @@ public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCas
         if (scheduleDetail.matchStatus() == CompanionMatchStatus.CANCELED) {
             throw new CompanionMatchScheduleNotReadableException();
         }
-        if (scheduleDetail.matchStatus() == CompanionMatchStatus.COMPLETED) {
-            throw new CompletedCompanionScheduleNotReadableException();
-        }
-
         return scheduleDetail;
     }
 }

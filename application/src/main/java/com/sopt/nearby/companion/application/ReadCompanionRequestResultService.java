@@ -64,7 +64,7 @@ public class ReadCompanionRequestResultService implements ReadCompanionRequestRe
     }
 
     private void validateMatchStatus(final CompanionMatchStatus status) {
-        if (status == CompanionMatchStatus.CANCELED || status == CompanionMatchStatus.COMPLETED) {
+        if (status == CompanionMatchStatus.CANCELED) {
             throw new CompanionRequestResultNotReadableException();
         }
     }

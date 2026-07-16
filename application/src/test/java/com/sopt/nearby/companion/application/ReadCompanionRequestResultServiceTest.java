@@ -167,14 +167,15 @@ class ReadCompanionRequestResultServiceTest {
     }
 
     @Test
-    void rejectsCompletedAcceptedMatchAsNotReadable() {
+    void returnsAcceptedDetailForCompletedApplication() {
         applicationRepository.save(application(CompanionApplicationStatus.ACCEPTED, null));
         detailQueryPort.result = Optional.of(detail(CompanionMatchStatus.COMPLETED));
 
-        assertThrows(
-                CompanionRequestResultNotReadableException.class,
-                () -> service.read(new ReadCompanionRequestResultCommand(REQUESTER_USER_ID, APPLICATION_ID))
+        CompanionRequestResult result = service.read(
+                new ReadCompanionRequestResultCommand(REQUESTER_USER_ID, APPLICATION_ID)
         );
+
+        assertEquals(CompanionMatchStatus.COMPLETED, result.acceptedDetail().matchStatus());
     }
 
     @Test
