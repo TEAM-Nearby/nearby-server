@@ -156,11 +156,15 @@ class CompanionScheduleDetailQueryAdapterTest {
     }
 
     @Test
-    void returnsPostScheduleAndOpenChatUrlWhenScheduledMatchHasNoConfirmedSchedule() {
+    void returnsPostScheduleWhenMatchedMatchHasConfirmedScheduleRecord() {
         CompanionScheduleDetailQueryAdapter adapter = new CompanionScheduleDetailQueryAdapter(
                 scheduleDetailJpaRepository
         );
         PlaceCacheEntity postPlace = placeCacheJpaRepository.saveAndFlush(place("post-place-id", "모집 장소"));
+        PlaceCacheEntity schedulePlace = placeCacheJpaRepository.saveAndFlush(place(
+                "schedule-place-id",
+                "확정 일정 장소"
+        ));
         CompanionPostEntity post = companionPostJpaRepository.saveAndFlush(post(
                 postPlace.getId(),
                 "https://open.kakao.com/o/not-yet",
@@ -170,6 +174,12 @@ class CompanionScheduleDetailQueryAdapterTest {
         CompanionMatchEntity match = companionMatchJpaRepository.saveAndFlush(match(
                 post.getId(),
                 CompanionMatchStatus.MATCHED
+        ));
+        companionScheduleJpaRepository.saveAndFlush(schedule(
+                match.getId(),
+                schedulePlace.getId(),
+                NOW.plusDays(2),
+                true
         ));
 
         Optional<CompanionScheduleDetail> result = adapter.findByMatchIdAndUserId(match.getId(), 7L);

@@ -54,6 +54,7 @@ public interface CompanionScheduleDetailJpaRepository extends Repository<Compani
             left join companion_schedule schedule
                 on schedule.match_id = m.id
                 and schedule.confirmed = true
+                and m.status = 'SCHEDULE_CONFIRMED'
             left join place_cache schedule_place
                 on schedule_place.id = schedule.place_id
             left join place_cache post_place
