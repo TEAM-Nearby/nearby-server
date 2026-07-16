@@ -52,6 +52,17 @@ class PlaceUseCaseConfigTest {
     private static final class FakeSoloDiningPlaceQueryPort implements SoloDiningPlaceQueryPort {
 
         @Override
+        public List<SoloDiningPlaceSummary> findAllNearby(
+                final Long userId,
+                final BigDecimal latitude,
+                final BigDecimal longitude,
+                final SoloDiningPlaceCategory category,
+                final int radiusMeters
+        ) {
+            return List.of();
+        }
+
+        @Override
         public List<SoloDiningPlaceSummary> findAllByPlaceIds(
                 final Long userId,
                 final BigDecimal latitude,
