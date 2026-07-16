@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 
 import com.sopt.nearby.companion.adapter.out.persistence.repository.OngoingCompanionMeetingProjection;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.OngoingCompanionMeetingQueryJpaRepository;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingProgressStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
@@ -43,7 +44,8 @@ public class OngoingCompanionMeetingQueryAdapter implements OngoingCompanionMeet
                 row.getMeetingAt(),
                 CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                 Boolean.TRUE.equals(row.getCheckedIn()),
-                CompanionMeetingStatus.valueOf(row.getMeetingStatus())
+                row.getMeetingStatus() == null ? null : CompanionMeetingStatus.valueOf(row.getMeetingStatus()),
+                CompanionMeetingProgressStatus.valueOf(row.getProgressStatus())
         );
     }
 }

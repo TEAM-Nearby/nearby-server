@@ -26,4 +26,6 @@ public interface OngoingCompanionMeetingProjection {
     Boolean getCheckedIn();
 
     String getMeetingStatus();
+
+    String getProgressStatus();
 }
