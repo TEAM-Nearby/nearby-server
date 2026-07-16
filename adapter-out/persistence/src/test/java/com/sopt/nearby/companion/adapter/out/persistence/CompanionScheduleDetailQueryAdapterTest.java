@@ -113,7 +113,7 @@ class CompanionScheduleDetailQueryAdapterTest {
     }
 
     @Test
-    void returnsNullScheduleForNowMatchWhenConfirmedScheduleDoesNotExist() {
+    void returnsPostScheduleForNowMatchWhenConfirmedScheduleDoesNotExist() {
         CompanionScheduleDetailQueryAdapter adapter = new CompanionScheduleDetailQueryAdapter(
                 scheduleDetailJpaRepository
         );
@@ -144,18 +144,27 @@ class CompanionScheduleDetailQueryAdapterTest {
         assertThat(result).isPresent();
         CompanionScheduleDetail detail = result.get();
         assertThat(detail.matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
-        assertThat(detail.schedule()).isNull();
+        assertThat(detail.schedule().scheduledAt()).isEqualTo(NOW.plusHours(1));
+        assertThat(detail.schedule().place().googlePlaceId()).isEqualTo("post-place-id");
+        assertThat(detail.schedule().place().name()).isEqualTo("모집 장소");
+        assertThat(detail.schedule().place().address()).isEqualTo("Rambla de Catalunya, 16");
+        assertThat(detail.schedule().place().latitude()).isEqualByComparingTo("41.39020500");
+        assertThat(detail.schedule().place().longitude()).isEqualByComparingTo("2.16354800");
         assertThat(detail.openChatUrl()).isEqualTo("https://open.kakao.com/o/not-yet");
         assertThat(detail.userNickname()).isEqualTo("루피");
         assertThat(detail.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.NOW);
     }
 
     @Test
-    void returnsNullScheduleAndOpenChatUrlWhenScheduledMatchHasNoConfirmedSchedule() {
+    void returnsPostScheduleWhenMatchedMatchHasConfirmedScheduleRecord() {
         CompanionScheduleDetailQueryAdapter adapter = new CompanionScheduleDetailQueryAdapter(
                 scheduleDetailJpaRepository
         );
         PlaceCacheEntity postPlace = placeCacheJpaRepository.saveAndFlush(place("post-place-id", "모집 장소"));
+        PlaceCacheEntity schedulePlace = placeCacheJpaRepository.saveAndFlush(place(
+                "schedule-place-id",
+                "확정 일정 장소"
+        ));
         CompanionPostEntity post = companionPostJpaRepository.saveAndFlush(post(
                 postPlace.getId(),
                 "https://open.kakao.com/o/not-yet",
@@ -166,15 +175,49 @@ class CompanionScheduleDetailQueryAdapterTest {
                 post.getId(),
                 CompanionMatchStatus.MATCHED
         ));
+        companionScheduleJpaRepository.saveAndFlush(schedule(
+                match.getId(),
+                schedulePlace.getId(),
+                NOW.plusDays(2),
+                true
+        ));
 
         Optional<CompanionScheduleDetail> result = adapter.findByMatchIdAndUserId(match.getId(), 7L);
 
         assertThat(result).isPresent();
         assertThat(result.get().matchStatus()).isEqualTo(CompanionMatchStatus.MATCHED);
-        assertThat(result.get().schedule()).isNull();
-        assertThat(result.get().openChatUrl()).isNull();
+        assertThat(result.get().schedule().scheduledAt()).isEqualTo(NOW.plusDays(1));
+        assertThat(result.get().schedule().place().googlePlaceId()).isEqualTo("post-place-id");
+        assertThat(result.get().schedule().place().name()).isEqualTo("모집 장소");
+        assertThat(result.get().openChatUrl()).isEqualTo("https://open.kakao.com/o/not-yet");
         assertThat(result.get().userNickname()).isEqualTo("루피");
         assertThat(result.get().meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.SCHEDULED);
+    }
+
+    @Test
+    void returnsPostPlaceAndOpenChatUrlWhenUndecidedMatchHasNoSchedule() {
+        CompanionScheduleDetailQueryAdapter adapter = new CompanionScheduleDetailQueryAdapter(
+                scheduleDetailJpaRepository
+        );
+        PlaceCacheEntity postPlace = placeCacheJpaRepository.saveAndFlush(place("post-place-id", "모집 장소"));
+        CompanionPostEntity post = companionPostJpaRepository.saveAndFlush(post(
+                postPlace.getId(),
+                "https://open.kakao.com/o/not-yet",
+                CompanionPostMeetingTimeType.UNDECIDED
+        ));
+        companionProfileJpaRepository.saveAndFlush(profile(7L, "루피"));
+        CompanionMatchEntity match = companionMatchJpaRepository.saveAndFlush(match(
+                post.getId(),
+                CompanionMatchStatus.MATCHED
+        ));
+
+        CompanionScheduleDetail detail = adapter.findByMatchIdAndUserId(match.getId(), 7L).orElseThrow();
+
+        assertThat(detail.schedule()).isNotNull();
+        assertThat(detail.schedule().scheduledAt()).isNull();
+        assertThat(detail.schedule().place().googlePlaceId()).isEqualTo("post-place-id");
+        assertThat(detail.openChatUrl()).isEqualTo("https://open.kakao.com/o/not-yet");
+        assertThat(detail.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.UNDECIDED);
     }
 
     @Test
@@ -241,7 +284,7 @@ class CompanionScheduleDetailQueryAdapterTest {
                 7L,
                 placeId,
                 meetingTimeType,
-                meetingTimeType == CompanionPostMeetingTimeType.NOW ? null : NOW.plusDays(1),
+                meetingTimeType == CompanionPostMeetingTimeType.SCHEDULED ? NOW.plusDays(1) : null,
                 meetingTimeType == CompanionPostMeetingTimeType.NOW ? NOW.plusHours(1) : null,
                 4,
                 true,

@@ -15,34 +15,31 @@ public interface CompanionScheduleDetailJpaRepository extends Repository<Compani
                 m.status as matchStatus,
                 case
                     when schedule.id is not null then schedule_place.google_place_id
-                    when post.meeting_time_type = 'NOW' then post_place.google_place_id
-                    else null
+                    else post_place.google_place_id
                 end as googlePlaceId,
                 case
                     when schedule.id is not null then schedule_place.name
-                    when post.meeting_time_type = 'NOW' then post_place.name
-                    else null
+                    else post_place.name
                 end as placeName,
                 case
                     when schedule.id is not null then schedule_place.address
-                    when post.meeting_time_type = 'NOW' then post_place.address
-                    else null
+                    else post_place.address
                 end as placeAddress,
                 case
                     when schedule.id is not null then schedule_place.latitude
-                    when post.meeting_time_type = 'NOW' then post_place.latitude
-                    else null
+                    else post_place.latitude
                 end as latitude,
                 case
                     when schedule.id is not null then schedule_place.longitude
-                    when post.meeting_time_type = 'NOW' then post_place.longitude
-                    else null
+                    else post_place.longitude
                 end as longitude,
-                schedule.scheduled_at as scheduledAt,
                 case
-                    when schedule.id is not null or post.meeting_time_type = 'NOW' then post.open_chat_url
+                    when schedule.id is not null then schedule.scheduled_at
+                    when post.meeting_time_type = 'SCHEDULED' then post.meeting_at
+                    when post.meeting_time_type = 'NOW' then post.exposure_expires_at
                     else null
-                end as openChatUrl,
+                end as scheduledAt,
+                post.open_chat_url as openChatUrl,
                 current_profile.nickname as userNickname,
                 post.meeting_time_type as meetingTimeType,
                 current_participant.role as currentUserRole
@@ -57,6 +54,7 @@ public interface CompanionScheduleDetailJpaRepository extends Repository<Compani
             left join companion_schedule schedule
                 on schedule.match_id = m.id
                 and schedule.confirmed = true
+                and m.status = 'SCHEDULE_CONFIRMED'
             left join place_cache schedule_place
                 on schedule_place.id = schedule.place_id
             left join place_cache post_place
