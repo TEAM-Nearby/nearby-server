@@ -38,10 +38,6 @@ public class CompanionScheduleDetailQueryAdapter implements CompanionScheduleDet
     private CompanionScheduleDetail.Schedule toSchedule(
             final com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleDetailProjection row
     ) {
-        if (row.getScheduledAt() == null) {
-            return null;
-        }
-
         return new CompanionScheduleDetail.Schedule(
                 new CompanionScheduleDetail.Place(
                         row.getGooglePlaceId(),
