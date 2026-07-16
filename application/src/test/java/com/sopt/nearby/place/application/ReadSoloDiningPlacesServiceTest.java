@@ -2,7 +2,9 @@
 package com.sopt.nearby.place.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sopt.nearby.place.domain.exception.GooglePlaceApiException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
@@ -15,9 +17,11 @@ import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,6 +76,24 @@ class ReadSoloDiningPlacesServiceTest {
         assertEquals("https://lh3.googleusercontent.com/google-place-1.jpg", result.places().get(0).imageUrl());
         assertEquals("두 번째 식당", result.places().get(1).name());
         assertEquals("https://lh3.googleusercontent.com/google-place-2.jpg", result.places().get(1).imageUrl());
+    }
+
+    @Test
+    void limitsConcurrentImageResolutionsWithoutTruncatingPlaces() {
+        queryPort.result = IntStream.rangeClosed(1, 11)
+                .mapToObj(index -> summary((long) index, "google-place-" + index, "장소 " + index, false))
+                .toList();
+        resolvePlaceImageUseCase.blockFirstCalls(10);
+
+        CompletableFuture<SoloDiningPlacesResult> future = CompletableFuture.supplyAsync(
+                () -> service.read(validCommand())
+        );
+
+        assertTrue(resolvePlaceImageUseCase.awaitBlockedCalls());
+        assertFalse(resolvePlaceImageUseCase.awaitOverflowCall());
+        assertEquals(10, resolvePlaceImageUseCase.maxConcurrentCalls());
+        resolvePlaceImageUseCase.releaseBlockedCalls();
+        assertEquals(11, future.join().places().size());
     }
 
     @Test
@@ -170,25 +192,63 @@ class ReadSoloDiningPlacesServiceTest {
     private static final class FakeResolvePlaceImageUseCase implements ResolvePlaceImageUseCase {
 
         private final List<ResolvePlaceImageCommand> commands = new CopyOnWriteArrayList<>();
+        private final AtomicInteger resolutionCalls = new AtomicInteger();
+        private final AtomicInteger activeCalls = new AtomicInteger();
+        private final AtomicInteger maxConcurrentCalls = new AtomicInteger();
         private CountDownLatch concurrentCalls;
+        private CountDownLatch blockedCalls;
+        private CountDownLatch releaseBlockedCalls;
+        private CountDownLatch overflowCall;
+        private int blockedCallCount;
         private RuntimeException exception;
 
         private void expectConcurrentCalls(final int count) {
             concurrentCalls = new CountDownLatch(count);
         }
 
+        private void blockFirstCalls(final int count) {
+            blockedCallCount = count;
+            blockedCalls = new CountDownLatch(count);
+            releaseBlockedCalls = new CountDownLatch(1);
+            overflowCall = new CountDownLatch(1);
+        }
+
+        private boolean awaitBlockedCalls() {
+            return await(blockedCalls, 1, TimeUnit.SECONDS);
+        }
+
+        private boolean awaitOverflowCall() {
+            return await(overflowCall, 100, TimeUnit.MILLISECONDS);
+        }
+
+        private int maxConcurrentCalls() {
+            return maxConcurrentCalls.get();
+        }
+
+        private void releaseBlockedCalls() {
+            releaseBlockedCalls.countDown();
+        }
+
         @Override
         public ResolvedPlaceImage resolve(final ResolvePlaceImageCommand command) {
-            commands.add(command);
-            awaitConcurrentCalls();
-            if (exception != null) {
-                throw exception;
+            int callNumber = resolutionCalls.incrementAndGet();
+            int activeCallCount = activeCalls.incrementAndGet();
+            maxConcurrentCalls.accumulateAndGet(activeCallCount, Math::max);
+            try {
+                commands.add(command);
+                awaitConcurrentCalls();
+                awaitBlockedCalls(callNumber);
+                if (exception != null) {
+                    throw exception;
+                }
+                return new ResolvedPlaceImage(
+                        "https://lh3.googleusercontent.com/" + command.googlePlaceId() + ".jpg",
+                        ResolvedPlaceImage.GOOGLE_MAPS,
+                        List.of()
+                );
+            } finally {
+                activeCalls.decrementAndGet();
             }
-            return new ResolvedPlaceImage(
-                    "https://lh3.googleusercontent.com/" + command.googlePlaceId() + ".jpg",
-                    ResolvedPlaceImage.GOOGLE_MAPS,
-                    List.of()
-            );
         }
 
         private void awaitConcurrentCalls() {
@@ -203,6 +263,29 @@ class ReadSoloDiningPlacesServiceTest {
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
                 throw new AssertionError("병렬 이미지 조회 대기가 중단되었습니다.", exception);
+            }
+        }
+
+        private void awaitBlockedCalls(final int callNumber) {
+            if (blockedCalls == null) {
+                return;
+            }
+            if (callNumber > blockedCallCount) {
+                overflowCall.countDown();
+                return;
+            }
+            blockedCalls.countDown();
+            if (!await(releaseBlockedCalls, 1, TimeUnit.SECONDS)) {
+                throw new AssertionError("이미지 조회 제한 대기가 해제되지 않았습니다.");
+            }
+        }
+
+        private boolean await(final CountDownLatch latch, final long timeout, final TimeUnit unit) {
+            try {
+                return latch.await(timeout, unit);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("이미지 조회 대기가 중단되었습니다.", exception);
             }
         }
     }

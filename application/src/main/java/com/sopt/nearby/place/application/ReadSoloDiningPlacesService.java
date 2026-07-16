@@ -15,10 +15,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
 public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase {
 
     private static final int SEARCH_RADIUS_METERS = 1000;
+    private static final int MAX_IMAGE_RESOLUTION_CONCURRENCY = 10;
     private static final BigDecimal MIN_LATITUDE = new BigDecimal("-90");
     private static final BigDecimal MAX_LATITUDE = new BigDecimal("90");
     private static final BigDecimal MIN_LONGITUDE = new BigDecimal("-180");
@@ -49,9 +51,10 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
     }
 
     private List<SoloDiningPlacesResult.Place> resolveImages(final List<SoloDiningPlaceSummary> places) {
+        Semaphore permits = new Semaphore(MAX_IMAGE_RESOLUTION_CONCURRENCY);
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             List<CompletableFuture<SoloDiningPlacesResult.Place>> futures = places.stream()
-                    .map(place -> CompletableFuture.supplyAsync(() -> resolveImage(place), executor))
+                    .map(place -> CompletableFuture.supplyAsync(() -> resolveImage(place, permits), executor))
                     .toList();
             return futures.stream()
                     .map(CompletableFuture::join)
@@ -70,6 +73,23 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
                 place.photoReference()
         ));
         return SoloDiningPlacesResult.Place.from(place, image.imageUrl());
+    }
+
+    private SoloDiningPlacesResult.Place resolveImage(
+            final SoloDiningPlaceSummary place,
+            final Semaphore permits
+    ) {
+        try {
+            permits.acquire();
+            try {
+                return resolveImage(place);
+            } finally {
+                permits.release();
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new CompletionException(exception);
+        }
     }
 
     private void validate(final ReadSoloDiningPlacesCommand command) {
