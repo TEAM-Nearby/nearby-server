@@ -207,7 +207,7 @@ class CompanionPostControllerTest {
                                   },
                                   "meetingTimeType": "SCHEDULED",
                                   "meetingAt": "2026-07-03T14:00:00",
-                                  "maxParticipants": 4,
+                                  "recruitmentCapacity": 3,
                                   "departEvenIfNotFull": true,
                                   "styleKeywords": ["NEW_FOOD_CHALLENGE", "PHOTO_LOVER"],
                                   "content": "같이 스시 먹으러 갈 사람 구해요.",
@@ -246,12 +246,45 @@ class CompanionPostControllerTest {
         assertEquals(CompanionPostPlaceCategory.RESTAURANT, createUseCase.command.place().category());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, createUseCase.command.meetingTimeType());
         assertEquals(LocalDateTime.of(2026, 7, 3, 14, 0), createUseCase.command.meetingAt());
-        assertEquals(4, createUseCase.command.maxParticipants());
+        assertEquals(3, createUseCase.command.recruitmentCapacity());
         assertEquals(true, createUseCase.command.departEvenIfNotFull());
         assertEquals(
                 List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
                 createUseCase.command.styleKeywords()
         );
+    }
+
+    @Test
+    void acceptsLegacyMaxParticipantsAsRecruitmentCapacity() throws Exception {
+        createUseCase.result = createResult(
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                LocalDateTime.of(2026, 7, 2, 15, 0),
+                true,
+                List.of(),
+                CompanionPostPlaceCategory.OTHER
+        );
+
+        mockMvc.perform(post("/api/companion-posts")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "place": {
+                                    "googlePlaceId": "google-place-id",
+                                    "name": "니어바이 스시",
+                                    "latitude": 37.5671,
+                                    "longitude": 126.9792
+                                  },
+                                  "meetingTimeType": "NOW",
+                                  "maxParticipants": 1,
+                                  "content": "같이 스시 먹으러 갈 사람 구해요.",
+                                  "openChatUrl": "https://open.kakao.com/o/nearby123"
+                                }
+                                """)
+                        .principal(principal("7")))
+                .andExpect(status().isOk());
+
+        assertEquals(1, createUseCase.command.recruitmentCapacity());
     }
 
     @Test
@@ -276,7 +309,7 @@ class CompanionPostControllerTest {
                                     "longitude": 126.9792
                                   },
                                   "meetingTimeType": "NOW",
-                                  "maxParticipants": 4,
+                                  "recruitmentCapacity": 3,
                                   "content": "같이 스시 먹으러 갈 사람 구해요.",
                                   "openChatUrl": "https://open.kakao.com/o/nearby123"
                                 }
@@ -308,7 +341,7 @@ class CompanionPostControllerTest {
                                     "longitude": 126.9792
                                   },
                                   "meetingTimeType": "INVALID",
-                                  "maxParticipants": 4,
+                                  "recruitmentCapacity": 3,
                                   "content": "같이 스시 먹으러 갈 사람 구해요.",
                                   "openChatUrl": "https://open.kakao.com/o/nearby123"
                                 }
@@ -359,7 +392,7 @@ class CompanionPostControllerTest {
                                     "longitude": 126.9792
                                   },
                                   "meetingTimeType": "NOW",
-                                  "maxParticipants": 4,
+                                  "recruitmentCapacity": 3,
                                   "content": "같이 스시 먹으러 갈 사람 구해요.",
                                   "openChatUrl": "https://example.com/o/nearby123"
                                 }

@@ -13,7 +13,7 @@ public record CreateCompanionPostCommand(
         Place place,
         CompanionPostMeetingTimeType meetingTimeType,
         LocalDateTime meetingAt,
-        int maxParticipants,
+        int recruitmentCapacity,
         Boolean departEvenIfNotFull,
         List<CompanionPostKeyword> styleKeywords,
         String content,

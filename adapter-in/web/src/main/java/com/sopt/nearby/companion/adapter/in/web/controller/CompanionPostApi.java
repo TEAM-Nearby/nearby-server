@@ -130,7 +130,8 @@ public interface CompanionPostApi {
     )
     @Operation(
             summary = "동행 모집글 작성",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글을 작성합니다.",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글을 작성합니다. "
+                    + "recruitmentCapacity는 작성자를 제외한 모집 인원이며, 응답의 maxParticipants는 작성자를 포함한 전체 정원입니다.",
             security = @SecurityRequirement(name = "bearerAuth"),
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
@@ -148,7 +149,7 @@ public interface CompanionPostApi {
                                         "category": "RESTAURANT"
                                       },
                                       "meetingTimeType": "NOW",
-                                      "maxParticipants": 4,
+                                      "recruitmentCapacity": 3,
                                       "content": "같이 스시 먹으러 갈 사람 구해요.",
                                       "openChatUrl": "https://open.kakao.com/o/nearby123"
                                     }

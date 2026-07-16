@@ -1,6 +1,7 @@
 // 동행 모집 글 작성 요청 본문을 유스케이스 명령으로 변환한다.
 package com.sopt.nearby.companion.adapter.in.web.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.sopt.nearby.companion.application.CreateCompanionPostCommand;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
@@ -10,12 +11,15 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record CreateCompanionPostRequest(
         PlaceRequest place,
         String meetingTimeType,
         LocalDateTime meetingAt,
-        int maxParticipants,
+        @JsonAlias("maxParticipants")
+        @Schema(description = "작성자를 제외하고 모집할 인원", example = "1", minimum = "1", maximum = "6")
+        int recruitmentCapacity,
         Boolean departEvenIfNotFull,
         List<String> styleKeywords,
         String content,
@@ -29,7 +33,7 @@ public record CreateCompanionPostRequest(
                     place == null ? null : place.toCommandPlace(),
                     parseMeetingTimeType(meetingTimeType),
                     meetingAt,
-                    maxParticipants,
+                    recruitmentCapacity,
                     departEvenIfNotFull,
                     parseStyleKeywords(styleKeywords),
                     content,

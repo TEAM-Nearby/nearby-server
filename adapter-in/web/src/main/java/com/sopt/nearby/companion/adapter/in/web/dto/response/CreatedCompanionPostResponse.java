@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.application.CreateCompanionPostResult;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record CreatedCompanionPostResponse(
         Long postId,
@@ -14,6 +15,7 @@ public record CreatedCompanionPostResponse(
         String meetingTimeType,
         LocalDateTime meetingAt,
         LocalDateTime exposureExpiresAt,
+        @Schema(description = "작성자를 포함한 전체 정원", example = "2")
         int maxParticipants,
         int participantCount,
         boolean departEvenIfNotFull,
