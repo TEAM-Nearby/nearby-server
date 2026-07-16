@@ -26,6 +26,26 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
     }
 
     @Override
+    public List<SoloDiningPlaceSummary> findAllNearby(
+            final Long userId,
+            final BigDecimal latitude,
+            final BigDecimal longitude,
+            final SoloDiningPlaceCategory category,
+            final int radiusMeters
+    ) {
+        return repository.findAllNearby(
+                        userId,
+                        latitude,
+                        longitude,
+                        category == null ? null : category.name(),
+                        radiusMeters
+                )
+                .stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    @Override
     public List<SoloDiningPlaceSummary> findAllByPlaceIds(
             final Long userId,
             final BigDecimal latitude,

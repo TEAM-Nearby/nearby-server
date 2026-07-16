@@ -40,7 +40,7 @@ class SoloDiningPlaceQueryAdapterTest {
     private SoloDiningPlaceQueryJpaRepository queryJpaRepository;
 
     @Test
-    void findsCandidatePlacesSortedByDistanceWithFavoriteFlag() {
+    void findsAllNearbyPlacesSortedByDistanceWithFavoriteFlag() {
         SoloDiningPlaceQueryAdapter adapter = new SoloDiningPlaceQueryAdapter(queryJpaRepository);
         PlaceCacheEntity nearCafe = placeCacheJpaRepository.saveAndFlush(place(
                 "near-cafe",
@@ -57,10 +57,10 @@ class SoloDiningPlaceQueryAdapterTest {
                 "126.98200000"
         ));
         placeCacheJpaRepository.saveAndFlush(place(
-                "not-candidate",
-                "후보가 아닌 장소",
+                "outside-radius",
+                "반경 밖 장소",
                 "pub",
-                "37.56651000",
+                "37.57650000",
                 "126.97801000"
         ));
         favoriteJpaRepository.saveAndFlush(new SoloDiningFavoriteEntity(
@@ -70,11 +70,12 @@ class SoloDiningPlaceQueryAdapterTest {
                 LocalDateTime.of(2026, 7, 7, 12, 0)
         ));
 
-        List<SoloDiningPlaceSummary> result = adapter.findAllByPlaceIds(
+        List<SoloDiningPlaceSummary> result = adapter.findAllNearby(
                 7L,
                 CURRENT_LATITUDE,
                 CURRENT_LONGITUDE,
-                List.of(farRestaurant.getId(), nearCafe.getId())
+                null,
+                1000
         );
 
         assertThat(result).hasSize(2);
@@ -86,6 +87,35 @@ class SoloDiningPlaceQueryAdapterTest {
         assertThat(result.get(1).category()).isEqualTo(SoloDiningPlaceCategory.RESTAURANT);
         assertThat(result.get(1).isFavorite()).isTrue();
         assertThat(result.get(0).distanceMeters()).isLessThan(result.get(1).distanceMeters());
+    }
+
+    @Test
+    void filtersNearbyPlacesByCategory() {
+        SoloDiningPlaceQueryAdapter adapter = new SoloDiningPlaceQueryAdapter(queryJpaRepository);
+        PlaceCacheEntity cafe = placeCacheJpaRepository.saveAndFlush(place(
+                "cafe",
+                "카페",
+                "cafe",
+                "37.56652000",
+                "126.97802000"
+        ));
+        placeCacheJpaRepository.saveAndFlush(place(
+                "restaurant",
+                "식당",
+                "restaurant",
+                "37.56653000",
+                "126.97803000"
+        ));
+
+        List<SoloDiningPlaceSummary> result = adapter.findAllNearby(
+                7L,
+                CURRENT_LATITUDE,
+                CURRENT_LONGITUDE,
+                SoloDiningPlaceCategory.CAFE,
+                1000
+        );
+
+        assertThat(result).extracting(SoloDiningPlaceSummary::placeId).containsExactly(cafe.getId());
     }
 
     @Test
