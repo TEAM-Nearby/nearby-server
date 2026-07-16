@@ -1,4 +1,4 @@
-// 확정된 동행 일정의 시간만 수정하는 서비스를 검증한다.
+// 동행 일정의 확정 및 시간 수정을 검증한다.
 package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,11 +9,14 @@ import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleExce
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.time.LocalDateTime;
@@ -30,6 +33,7 @@ class ConfirmCompanionScheduleServiceTest {
 
     private FakeCompanionMatchRepository matchRepository;
     private FakeCompanionScheduleRepository scheduleRepository;
+    private FakeCompanionMeetingRepository meetingRepository;
     private ConfirmCompanionScheduleService service;
 
     @BeforeEach
@@ -37,7 +41,13 @@ class ConfirmCompanionScheduleServiceTest {
         matchRepository = new FakeCompanionMatchRepository();
         FakeCompanionPostRepository postRepository = new FakeCompanionPostRepository();
         scheduleRepository = new FakeCompanionScheduleRepository();
-        service = new ConfirmCompanionScheduleService(matchRepository, postRepository, scheduleRepository);
+        meetingRepository = new FakeCompanionMeetingRepository();
+        service = new ConfirmCompanionScheduleService(
+                matchRepository,
+                postRepository,
+                scheduleRepository,
+                meetingRepository
+        );
 
         matchRepository.save(match(CompanionMatchStatus.SCHEDULE_CONFIRMED));
         postRepository.save(new CompanionPost(
@@ -74,6 +84,24 @@ class ConfirmCompanionScheduleServiceTest {
     }
 
     @Test
+    void confirmsMatchedScheduleUsingPostPlace() {
+        matchRepository.save(match(CompanionMatchStatus.MATCHED));
+        scheduleRepository.schedules.clear();
+
+        ConfirmCompanionScheduleResult result = service.update(command(7L, UPDATED_TIME));
+
+        CompanionSchedule schedule = scheduleRepository.findConfirmedByMatchId(1L).orElseThrow();
+        CompanionMeeting meeting = meetingRepository.meetings.get(1L);
+        assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, matchRepository.findById(1L).orElseThrow().status());
+        assertEquals(100L, schedule.placeId());
+        assertEquals(UPDATED_TIME, schedule.scheduledAt());
+        assertEquals(CompanionMeetingStatus.ONGOING, meeting.status());
+        assertEquals(UPDATED_TIME, meeting.startedAt());
+        assertEquals(schedule.id(), result.scheduleId());
+        assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+    }
+
+    @Test
     void rejectsRequesterWhoIsNotHost() {
         assertThrows(
                 ForbiddenCompanionScheduleException.class,
@@ -83,17 +111,12 @@ class ConfirmCompanionScheduleServiceTest {
     }
 
     @Test
-    void rejectsMatchThatIsNotScheduleConfirmedWithoutCompletedMatchException() {
-        for (CompanionMatchStatus status : new CompanionMatchStatus[]{
-                CompanionMatchStatus.MATCHED,
-                CompanionMatchStatus.COMPLETED
-        }) {
-            matchRepository.save(match(status));
-            assertThrows(
-                    InvalidCompanionScheduleRequestException.class,
-                    () -> service.update(command(7L, UPDATED_TIME))
-            );
-        }
+    void rejectsCompletedMatch() {
+        matchRepository.save(match(CompanionMatchStatus.COMPLETED));
+        assertThrows(
+                InvalidCompanionScheduleRequestException.class,
+                () -> service.update(command(7L, UPDATED_TIME))
+        );
         assertEquals(0, scheduleRepository.saveCount);
     }
 
@@ -150,7 +173,17 @@ class ConfirmCompanionScheduleServiceTest {
 
         @Override
         public boolean confirmScheduleIfMatched(final Long matchId) {
-            return false;
+            CompanionMatch match = matches.get(matchId);
+            if (match == null || match.status() != CompanionMatchStatus.MATCHED) {
+                return false;
+            }
+            matches.put(matchId, new CompanionMatch(
+                    match.id(),
+                    match.postId(),
+                    CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                    match.createdAt()
+            ));
+            return true;
         }
     }
 
@@ -173,13 +206,24 @@ class ConfirmCompanionScheduleServiceTest {
     private static final class FakeCompanionScheduleRepository implements CompanionScheduleRepository {
 
         private final Map<Long, CompanionSchedule> schedules = new HashMap<>();
+        private long nextId = 2L;
         private int saveCount;
 
         @Override
         public CompanionSchedule save(final CompanionSchedule model) {
             saveCount++;
-            schedules.put(model.id(), model);
-            return model;
+            CompanionSchedule saved = model.id() == null
+                    ? new CompanionSchedule(
+                            nextId++,
+                            model.matchId(),
+                            model.placeId(),
+                            model.scheduledAt(),
+                            model.estimatedDurationMinutes(),
+                            model.confirmed()
+                    )
+                    : model;
+            schedules.put(saved.id(), saved);
+            return saved;
         }
 
         @Override
@@ -192,6 +236,37 @@ class ConfirmCompanionScheduleServiceTest {
             return schedules.values().stream()
                     .filter(schedule -> schedule.matchId().equals(matchId) && schedule.confirmed())
                     .findFirst();
+        }
+    }
+
+    private static final class FakeCompanionMeetingRepository implements CompanionMeetingRepository {
+
+        private final Map<Long, CompanionMeeting> meetings = new HashMap<>();
+        private long nextId = 1L;
+
+        @Override
+        public CompanionMeeting save(final CompanionMeeting model) {
+            CompanionMeeting saved = model.id() == null
+                    ? new CompanionMeeting(
+                            nextId++,
+                            model.matchId(),
+                            model.status(),
+                            model.startedAt(),
+                            model.completedAt()
+                    )
+                    : model;
+            meetings.put(saved.id(), saved);
+            return saved;
+        }
+
+        @Override
+        public Optional<CompanionMeeting> findById(final Long id) {
+            return Optional.ofNullable(meetings.get(id));
+        }
+
+        @Override
+        public boolean completeIfOngoing(final Long meetingId, final LocalDateTime completedAt) {
+            return false;
         }
     }
 }
