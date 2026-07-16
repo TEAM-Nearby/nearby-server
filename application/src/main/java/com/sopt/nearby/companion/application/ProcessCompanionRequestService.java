@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledE
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostCapacityReachedException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.CompanionScheduleAlreadyConfirmedException;
@@ -138,6 +139,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
         }
         if (status == CompanionApplicationStatus.ACCEPTED) {
             validateAcceptablePost(post);
+            validateCapacity(post);
         }
         if (!applicationRepository.updateStatusIfPending(application.id(), status, rejectionReason)) {
             throw new CompanionRequestNotPendingException();
@@ -149,6 +151,13 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
         if (post.meetingTimeType() == CompanionPostMeetingTimeType.NOW
                 && isExpiredNowPost(post.exposureExpiresAt())) {
             throw new CompanionPostNotRecruitingException();
+        }
+    }
+
+    private void validateCapacity(final CompanionPost post) {
+        long participantCount = 1 + applicationRepository.countAcceptedByPostId(post.id());
+        if (participantCount >= post.maxParticipants()) {
+            throw new CompanionPostCapacityReachedException();
         }
     }
 
