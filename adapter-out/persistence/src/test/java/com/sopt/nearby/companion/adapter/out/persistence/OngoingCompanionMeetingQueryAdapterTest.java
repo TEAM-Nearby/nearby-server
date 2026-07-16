@@ -198,6 +198,64 @@ class OngoingCompanionMeetingQueryAdapterTest {
         assertThat(summary.progressStatus()).isEqualTo(CompanionMeetingProgressStatus.SCHEDULING);
     }
 
+    @Test
+    void returnsScheduledPostMeetingAtAndSortsByMeetingAtThenMeetingId() {
+        OngoingCompanionMeetingQueryAdapter adapter = new OngoingCompanionMeetingQueryAdapter(queryJpaRepository);
+        profileJpaRepository.saveAndFlush(profile(CURRENT_USER_ID, "정지영", UserGender.FEMALE));
+        profileJpaRepository.saveAndFlush(profile(HOST_USER_ID, "김지원", UserGender.MALE));
+
+        LocalDateTime confirmedAt = BASE_TIME.plusHours(1);
+        LocalDateTime originalPostMeetingAt = BASE_TIME.plusHours(4);
+        PlaceCacheEntity firstPlace = placeCacheJpaRepository.saveAndFlush(place("google-place-first"));
+        CompanionPostEntity firstPost = postJpaRepository.saveAndFlush(
+                post(CURRENT_USER_ID, firstPlace.getId(), originalPostMeetingAt)
+        );
+        CompanionMeetingEntity firstMeeting = createMeeting(
+                CURRENT_USER_ID,
+                CURRENT_USER_ID,
+                CompanionMeetingStatus.ONGOING,
+                firstPost,
+                firstPlace.getId(),
+                confirmedAt
+        );
+        PlaceCacheEntity secondPlace = placeCacheJpaRepository.saveAndFlush(place("google-place-second"));
+        CompanionPostEntity secondPost = postJpaRepository.saveAndFlush(
+                post(CURRENT_USER_ID, secondPlace.getId(), originalPostMeetingAt)
+        );
+        CompanionMeetingEntity secondMeeting = createMeeting(
+                CURRENT_USER_ID,
+                CURRENT_USER_ID,
+                CompanionMeetingStatus.ONGOING,
+                secondPost,
+                secondPlace.getId(),
+                confirmedAt
+        );
+
+        LocalDateTime postMeetingAt = BASE_TIME.plusHours(2);
+        PlaceCacheEntity schedulingPlace = placeCacheJpaRepository.saveAndFlush(place("google-place-scheduling"));
+        CompanionPostEntity schedulingPost = postJpaRepository.saveAndFlush(
+                post(HOST_USER_ID, schedulingPlace.getId(), postMeetingAt)
+        );
+        CompanionMatchEntity schedulingMatch = matchJpaRepository.saveAndFlush(
+                match(schedulingPost.getId(), CompanionMatchStatus.MATCHED)
+        );
+        participantJpaRepository.saveAndFlush(
+                participant(schedulingMatch.getId(), HOST_USER_ID, MatchParticipantRole.HOST)
+        );
+        participantJpaRepository.saveAndFlush(
+                participant(schedulingMatch.getId(), CURRENT_USER_ID, MatchParticipantRole.GUEST)
+        );
+
+        List<OngoingCompanionMeetingSummary> result = adapter.findAllByParticipantUserId(CURRENT_USER_ID);
+
+        assertThat(result).extracting(OngoingCompanionMeetingSummary::meetingAt)
+                .containsExactly(postMeetingAt, confirmedAt, confirmedAt);
+        assertThat(result.get(0).matchId()).isEqualTo(schedulingMatch.getId());
+        assertThat(result.get(0).progressStatus()).isEqualTo(CompanionMeetingProgressStatus.SCHEDULING);
+        assertThat(result.get(1).meetingId()).isEqualTo(secondMeeting.getId());
+        assertThat(result.get(2).meetingId()).isEqualTo(firstMeeting.getId());
+    }
+
     private CompanionMeetingEntity createMeeting(
             final Long hostUserId,
             final Long participantUserId,
