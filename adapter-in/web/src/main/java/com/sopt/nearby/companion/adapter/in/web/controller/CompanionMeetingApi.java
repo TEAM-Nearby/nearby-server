@@ -52,10 +52,12 @@ public interface CompanionMeetingApi {
     @Operation(
             summary = "현재 진행 중인 동행 목록 조회",
             description = """
-                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 ONGOING 만남 목록을 조회합니다.
+                    JWT 액세스 토큰으로 인증된 사용자가 참여 중인 일정 조율 중 매칭과 ONGOING 만남 목록을 조회합니다.
                     companion은 항상 HOST 프로필이며, 로그인 사용자가 HOST여도 자기 자신의 HOST 프로필을 반환합니다.
-                    meetingTimeType은 원본 모집글의 만남 시간 유형(SCHEDULED, NOW)을 반환합니다.
-                    NOW 타입도 meetingAt에는 게시글 노출 만료 시각이 아닌, 매칭 후 확정된 실제 만남 일시를 반환합니다.
+                    progressStatus는 일정 확정 전에는 SCHEDULING, 확정 후 진행 중인 만남은 ONGOING을 반환합니다.
+                    SCHEDULING 상태의 SCHEDULED 글은 meetingAt에 글 작성 시 등록한 예정 시간을 반환하고, UNDECIDED 글은 null을 반환합니다.
+                    일정 확정 후 meetingAt에는 확정된 실제 만남 일시를 반환합니다.
+                    목록은 meetingAt 내림차순, 동일한 경우 meetingId 내림차순으로 정렬하며 null 값은 마지막에 배치합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )

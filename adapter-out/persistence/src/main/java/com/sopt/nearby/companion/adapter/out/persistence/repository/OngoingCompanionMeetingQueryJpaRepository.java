@@ -18,7 +18,7 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
                 host_profile.nickname as hostNickname,
                 host_profile.gender as hostGender,
                 place.name as placeName,
-                schedule.scheduled_at as meetingAt,
+                coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 case
                     when m.status = 'MATCHED' then post.meeting_time_type
                     when post.meeting_time_type = 'NOW' then 'NOW'
@@ -58,8 +58,8 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
             where m.status = 'MATCHED'
                 or meeting.id is not null
             order by
-                case when m.status = 'MATCHED' then 1 else 0 end,
-                schedule.scheduled_at desc,
+                coalesce(schedule.scheduled_at, post.meeting_at) desc nulls last,
+                meeting.id desc nulls last,
                 m.id desc
             """, nativeQuery = true)
     List<OngoingCompanionMeetingProjection> findAllByParticipantUserId(@Param("userId") Long userId);
