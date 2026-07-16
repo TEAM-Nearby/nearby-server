@@ -205,9 +205,10 @@ class OngoingCompanionMeetingQueryAdapterTest {
         profileJpaRepository.saveAndFlush(profile(HOST_USER_ID, "김지원", UserGender.MALE));
 
         LocalDateTime confirmedAt = BASE_TIME.plusHours(1);
+        LocalDateTime originalPostMeetingAt = BASE_TIME.plusHours(4);
         PlaceCacheEntity firstPlace = placeCacheJpaRepository.saveAndFlush(place("google-place-first"));
         CompanionPostEntity firstPost = postJpaRepository.saveAndFlush(
-                post(CURRENT_USER_ID, firstPlace.getId(), confirmedAt)
+                post(CURRENT_USER_ID, firstPlace.getId(), originalPostMeetingAt)
         );
         CompanionMeetingEntity firstMeeting = createMeeting(
                 CURRENT_USER_ID,
@@ -219,7 +220,7 @@ class OngoingCompanionMeetingQueryAdapterTest {
         );
         PlaceCacheEntity secondPlace = placeCacheJpaRepository.saveAndFlush(place("google-place-second"));
         CompanionPostEntity secondPost = postJpaRepository.saveAndFlush(
-                post(CURRENT_USER_ID, secondPlace.getId(), confirmedAt)
+                post(CURRENT_USER_ID, secondPlace.getId(), originalPostMeetingAt)
         );
         CompanionMeetingEntity secondMeeting = createMeeting(
                 CURRENT_USER_ID,
