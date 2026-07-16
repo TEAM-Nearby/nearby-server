@@ -208,12 +208,14 @@ public class CompanionUseCaseConfig {
     ConfirmCompanionScheduleUseCase confirmCompanionScheduleUseCase(
             final CompanionMatchRepository companionMatchRepository,
             final CompanionPostRepository companionPostRepository,
-            final CompanionScheduleRepository companionScheduleRepository
+            final CompanionScheduleRepository companionScheduleRepository,
+            final CompanionMeetingRepository companionMeetingRepository
     ) {
         return new ConfirmCompanionScheduleService(
                 companionMatchRepository,
                 companionPostRepository,
-                companionScheduleRepository
+                companionScheduleRepository,
+                companionMeetingRepository
         );
     }
 

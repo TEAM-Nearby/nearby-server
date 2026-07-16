@@ -118,7 +118,7 @@ public interface CompanionMatchApi {
     })
     @ApiResponse(
             responseCode = "200",
-            description = "동행 일정 수정 성공",
+            description = "동행 일정 확정 또는 수정 성공",
             content = @Content(
                     mediaType = "application/json",
                     examples = @ExampleObject(
@@ -139,12 +139,12 @@ public interface CompanionMatchApi {
             )
     )
     @Operation(
-            summary = "글 작성자의 동행 일정 수정",
-            description = "JWT 액세스 토큰으로 인증된 글 작성자가 SCHEDULE_CONFIRMED 상태의 동행 일정을 수정합니다.",
+            summary = "글 작성자의 동행 일정 확정 및 수정",
+            description = "JWT 액세스 토큰으로 인증된 글 작성자가 MATCHED 상태의 일정을 확정하거나 SCHEDULE_CONFIRMED 상태의 일정을 수정합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionMatchScheduleResponse> patchSchedule(
-            @Parameter(description = "일정을 수정할 매칭 ID", required = true, example = "1")
+            @Parameter(description = "일정을 확정하거나 수정할 매칭 ID", required = true, example = "1")
             Long matchId,
             CompanionMatchScheduleRequest request,
 
