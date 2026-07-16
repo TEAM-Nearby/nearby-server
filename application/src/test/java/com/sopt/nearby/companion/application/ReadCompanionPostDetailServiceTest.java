@@ -65,6 +65,7 @@ class ReadCompanionPostDetailServiceTest {
         assertNull(result.openChatUrl());
         assertEquals(CompanionPostApplyStatus.NOT_APPLIED, result.applyStatus());
         assertEquals("니어바이 스시", result.place().name());
+        assertEquals("반가워요.", result.hostProfileSummary().intro());
         assertEquals(List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE), result.hostProfileSummary().keywords());
         assertEquals(1L, result.participants().get(0).userId());
         assertEquals("https://image.example/host.png", result.participants().get(0).profileImageUrl());
@@ -223,6 +224,7 @@ class ReadCompanionPostDetailServiceTest {
                 new CompanionPostDetail.HostProfileSummary(
                         5L,
                         "니어바이",
+                        "반가워요.",
                         UserGender.FEMALE,
                         2001,
                         null,

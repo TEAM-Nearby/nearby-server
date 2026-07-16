@@ -83,6 +83,7 @@ public record CompanionPostDetailResponse(
     public record HostProfileSummaryResponse(
             Long profileId,
             String nickname,
+            String intro,
             String gender,
             Integer birthYear,
             String profileImageUrl,
@@ -94,6 +95,7 @@ public record CompanionPostDetailResponse(
             return new HostProfileSummaryResponse(
                     summary.profileId(),
                     summary.nickname(),
+                    summary.intro(),
                     summary.gender().name(),
                     summary.birthYear(),
                     summary.profileImageUrl(),

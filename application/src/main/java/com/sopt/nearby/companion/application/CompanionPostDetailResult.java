@@ -54,6 +54,7 @@ public record CompanionPostDetailResult(
     public record HostProfileSummary(
             Long profileId,
             String nickname,
+            String intro,
             UserGender gender,
             Integer birthYear,
             String profileImageUrl,

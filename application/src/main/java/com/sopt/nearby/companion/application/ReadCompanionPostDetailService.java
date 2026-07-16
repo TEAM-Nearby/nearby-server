@@ -85,6 +85,7 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
                 new CompanionPostDetailResult.HostProfileSummary(
                         detail.hostProfileSummary().profileId(),
                         detail.hostProfileSummary().nickname(),
+                        detail.hostProfileSummary().intro(),
                         detail.hostProfileSummary().gender(),
                         detail.hostProfileSummary().birthYear(),
                         detail.hostProfileSummary().profileImageUrl(),

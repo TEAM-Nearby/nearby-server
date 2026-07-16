@@ -17,6 +17,7 @@ public interface CompanionPostDetailQueryJpaRepository extends Repository<Compan
                 post.host_user_id as hostUserId,
                 host_profile.id as hostProfileId,
                 host_profile.nickname as hostNickname,
+                host_profile.intro as hostIntro,
                 host_profile.gender as hostGender,
                 host_profile.birth_year as hostBirthYear,
                 host_profile.profile_image_url as hostProfileImageUrl,

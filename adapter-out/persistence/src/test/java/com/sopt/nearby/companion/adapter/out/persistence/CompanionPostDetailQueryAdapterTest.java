@@ -157,6 +157,7 @@ class CompanionPostDetailQueryAdapterTest {
         assertThat(result.place().category()).isEqualTo(CompanionPostPlaceCategory.RESTAURANT);
         assertThat(result.hostProfileSummary().profileId()).isEqualTo(hostProfile.getId());
         assertThat(result.hostProfileSummary().nickname()).isEqualTo("니어바이");
+        assertThat(result.hostProfileSummary().intro()).isEqualTo("반가워요.");
         assertThat(result.hostProfileSummary().phoneVerifiedAt()).isEqualTo(LocalDateTime.of(2026, 7, 1, 10, 0));
         assertThat(result.hostProfileSummary().keywords())
                 .containsExactlyInAnyOrder(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE);
