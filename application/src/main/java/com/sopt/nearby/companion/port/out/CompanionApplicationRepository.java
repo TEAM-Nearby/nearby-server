@@ -9,5 +9,7 @@ public interface CompanionApplicationRepository extends DomainRepository<Compani
 
     boolean existsByPostIdAndApplicantUserId(Long postId, Long applicantUserId);
 
+    long countAcceptedByPostId(Long postId);
+
     boolean updateStatusIfPending(Long applicationId, CompanionApplicationStatus status, String rejectionReason);
 }

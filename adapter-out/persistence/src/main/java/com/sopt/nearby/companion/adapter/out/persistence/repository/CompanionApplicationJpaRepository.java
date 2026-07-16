@@ -12,6 +12,8 @@ public interface CompanionApplicationJpaRepository extends JpaRepository<Compani
 
 	boolean existsByPostIdAndApplicantUserId(Long postId, Long applicantUserId);
 
+	long countByPostIdAndStatus(Long postId, CompanionApplicationStatus status);
+
 	@Modifying(clearAutomatically = true, flushAutomatically = true)
 	@Query("""
 			update CompanionApplicationEntity application

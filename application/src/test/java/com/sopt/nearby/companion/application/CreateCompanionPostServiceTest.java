@@ -59,6 +59,22 @@ class CreateCompanionPostServiceTest {
     }
 
     @Test
+    void storesTotalCapacityIncludingHostFromRecruitmentCapacity() {
+        CreateCompanionPostResult result = service.create(commandWithRecruitmentCapacity(1));
+
+        assertEquals(2, result.maxParticipants());
+        assertEquals(2, postRepository.savedPost.maxParticipants());
+        assertEquals(1, result.participantCount());
+    }
+
+    @Test
+    void allowsRecruitmentCapacityUpToSix() {
+        CreateCompanionPostResult result = service.create(commandWithRecruitmentCapacity(6));
+
+        assertEquals(7, result.maxParticipants());
+    }
+
+    @Test
     void createsScheduledPostWithPlaceAndStyles() {
         CreateCompanionPostResult result = service.create(command(
                 CompanionPostMeetingTimeType.SCHEDULED,
@@ -201,7 +217,7 @@ class CreateCompanionPostServiceTest {
                 List.of()
         )));
 
-        CreateCompanionPostCommand tooFewParticipants = withMaxParticipants(command(
+        CreateCompanionPostCommand tooFewParticipants = withRecruitmentCapacity(command(
                 CompanionPostMeetingTimeType.NOW,
                 null,
                 true,
@@ -209,12 +225,12 @@ class CreateCompanionPostServiceTest {
         ), 0);
         assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(tooFewParticipants));
 
-        CreateCompanionPostCommand tooManyParticipants = withMaxParticipants(command(
+        CreateCompanionPostCommand tooManyParticipants = withRecruitmentCapacity(command(
                 CompanionPostMeetingTimeType.NOW,
                 null,
                 true,
                 List.of()
-        ), 8);
+        ), 7);
         assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(tooManyParticipants));
 
         CreateCompanionPostCommand allCategory = withPlaceCategory(command(
@@ -256,6 +272,26 @@ class CreateCompanionPostServiceTest {
             final Boolean departEvenIfNotFull,
             final List<CompanionPostKeyword> styleKeywords
     ) {
+        return commandWithRecruitmentCapacity(3, meetingTimeType, meetingAt, departEvenIfNotFull, styleKeywords);
+    }
+
+    private CreateCompanionPostCommand commandWithRecruitmentCapacity(final int recruitmentCapacity) {
+        return commandWithRecruitmentCapacity(
+                recruitmentCapacity,
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 3, 14, 0),
+                true,
+                List.of()
+        );
+    }
+
+    private CreateCompanionPostCommand commandWithRecruitmentCapacity(
+            final int recruitmentCapacity,
+            final CompanionPostMeetingTimeType meetingTimeType,
+            final LocalDateTime meetingAt,
+            final Boolean departEvenIfNotFull,
+            final List<CompanionPostKeyword> styleKeywords
+    ) {
         return new CreateCompanionPostCommand(
                 7L,
                 new CreateCompanionPostCommand.Place(
@@ -268,7 +304,7 @@ class CreateCompanionPostServiceTest {
                 ),
                 meetingTimeType,
                 meetingAt,
-                4,
+                recruitmentCapacity,
                 departEvenIfNotFull,
                 styleKeywords,
                 "같이 스시 먹으러 갈 사람 구해요.",
@@ -292,7 +328,7 @@ class CreateCompanionPostServiceTest {
                 ),
                 command.meetingTimeType(),
                 command.meetingAt(),
-                command.maxParticipants(),
+                command.recruitmentCapacity(),
                 command.departEvenIfNotFull(),
                 command.styleKeywords(),
                 command.content(),
@@ -309,7 +345,7 @@ class CreateCompanionPostServiceTest {
                 command.place(),
                 command.meetingTimeType(),
                 command.meetingAt(),
-                command.maxParticipants(),
+                command.recruitmentCapacity(),
                 command.departEvenIfNotFull(),
                 command.styleKeywords(),
                 content,
@@ -326,7 +362,7 @@ class CreateCompanionPostServiceTest {
                 command.place(),
                 command.meetingTimeType(),
                 command.meetingAt(),
-                command.maxParticipants(),
+                command.recruitmentCapacity(),
                 command.departEvenIfNotFull(),
                 command.styleKeywords(),
                 command.content(),
@@ -334,16 +370,16 @@ class CreateCompanionPostServiceTest {
         );
     }
 
-    private CreateCompanionPostCommand withMaxParticipants(
+    private CreateCompanionPostCommand withRecruitmentCapacity(
             final CreateCompanionPostCommand command,
-            final int maxParticipants
+            final int recruitmentCapacity
     ) {
         return new CreateCompanionPostCommand(
                 command.hostUserId(),
                 command.place(),
                 command.meetingTimeType(),
                 command.meetingAt(),
-                maxParticipants,
+                recruitmentCapacity,
                 command.departEvenIfNotFull(),
                 command.styleKeywords(),
                 command.content(),
@@ -367,7 +403,7 @@ class CreateCompanionPostServiceTest {
                 ),
                 command.meetingTimeType(),
                 command.meetingAt(),
-                command.maxParticipants(),
+                command.recruitmentCapacity(),
                 command.departEvenIfNotFull(),
                 command.styleKeywords(),
                 command.content(),

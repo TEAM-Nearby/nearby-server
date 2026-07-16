@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionPostCapacityReachedException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
@@ -170,6 +171,22 @@ class ProcessCompanionRequestServiceTest {
     }
 
     @Test
+    void rejectsAcceptanceWhenPostCapacityIsReached() {
+        applicationRepository.save(application(1L, 10L, 7L, CompanionApplicationStatus.ACCEPTED, null));
+        applicationRepository.save(application(2L, 10L, 8L, CompanionApplicationStatus.PENDING, null));
+        postRepository.save(post(10L, 100L, 2));
+
+        assertThrows(
+                CompanionPostCapacityReachedException.class,
+                () -> service.accept(new AcceptCompanionRequestCommand(100L, 2L))
+        );
+
+        assertEquals(CompanionApplicationStatus.PENDING, applicationRepository.findById(2L).orElseThrow().status());
+        assertTrue(matchRepository.matches.isEmpty());
+        assertTrue(notificationUseCase.commands.isEmpty());
+    }
+
+    @Test
     void acceptsNowRequestAndReusesExistingScheduleConfirmedMatchGroup() {
         applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
         postRepository.save(nowPost(10L, 100L));
@@ -325,6 +342,10 @@ class ProcessCompanionRequestServiceTest {
     }
 
     private CompanionPost post(final Long id, final Long hostUserId) {
+        return post(id, hostUserId, 4);
+    }
+
+    private CompanionPost post(final Long id, final Long hostUserId, final int maxParticipants) {
         return new CompanionPost(
                 id,
                 hostUserId,
@@ -332,7 +353,7 @@ class ProcessCompanionRequestServiceTest {
                 CompanionPostMeetingTimeType.SCHEDULED,
                 NOW.plusHours(2),
                 null,
-                4,
+                maxParticipants,
                 true,
                 "같이 밥 먹을 동행을 구해요.",
                 "https://open.kakao.com/o/nearby123",
@@ -384,6 +405,15 @@ class ProcessCompanionRequestServiceTest {
                     .stream()
                     .anyMatch(application -> application.postId().equals(postId)
                             && application.applicantUserId().equals(applicantUserId));
+        }
+
+        @Override
+        public long countAcceptedByPostId(final Long postId) {
+            return applications.values()
+                    .stream()
+                    .filter(application -> application.postId().equals(postId))
+                    .filter(application -> application.status() == CompanionApplicationStatus.ACCEPTED)
+                    .count();
         }
 
         @Override

@@ -27,8 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateCompanionPostService implements CreateCompanionPostUseCase {
 
     private static final String OPEN_CHAT_URL_PREFIX = "https://open.kakao.com/";
-    private static final int MIN_PARTICIPANTS = 1;
-    private static final int MAX_PARTICIPANTS = 7;
+    private static final int MIN_RECRUITMENT_CAPACITY = 1;
+    private static final int MAX_RECRUITMENT_CAPACITY = 6;
     private static final int MAX_CONTENT_LENGTH_EXCLUDING_WHITESPACE = 100;
     private static final BigDecimal MIN_LATITUDE = new BigDecimal("-90");
     private static final BigDecimal MAX_LATITUDE = new BigDecimal("90");
@@ -70,6 +70,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
         LocalDateTime exposureExpiresAt = command.meetingTimeType() == CompanionPostMeetingTimeType.NOW
                 ? createdAt.plusHours(1)
                 : null;
+        int maxParticipants = command.recruitmentCapacity() + 1;
 
         ResolvedPlaceCache place = resolvePlaceCacheUseCase.resolve(new ResolvePlaceCacheCommand(
                 command.place().googlePlaceId(),
@@ -87,7 +88,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 command.meetingTimeType(),
                 meetingAt,
                 exposureExpiresAt,
-                command.maxParticipants(),
+                maxParticipants,
                 command.departEvenIfNotFull() == null || command.departEvenIfNotFull(),
                 command.content(),
                 command.openChatUrl(),
@@ -132,8 +133,8 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 || command.place().latitude() == null
                 || command.place().longitude() == null
                 || command.meetingTimeType() == null
-                || command.maxParticipants() < MIN_PARTICIPANTS
-                || command.maxParticipants() > MAX_PARTICIPANTS
+                || command.recruitmentCapacity() < MIN_RECRUITMENT_CAPACITY
+                || command.recruitmentCapacity() > MAX_RECRUITMENT_CAPACITY
                 || isBlank(command.content())
                 || isBlank(command.openChatUrl())
                 || command.place().category() == CompanionPostPlaceCategory.ALL

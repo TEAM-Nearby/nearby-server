@@ -249,6 +249,11 @@ class ReadCompanionRequestResultServiceTest {
         }
 
         @Override
+        public long countAcceptedByPostId(final Long postId) {
+            return 0;
+        }
+
+        @Override
         public boolean updateStatusIfPending(
                 final Long applicationId,
                 final CompanionApplicationStatus status,

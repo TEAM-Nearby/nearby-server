@@ -48,6 +48,11 @@ public class CompanionApplicationRepositoryAdapter
 	}
 
 	@Override
+	public long countAcceptedByPostId(final Long postId) {
+		return jpaRepository.countByPostIdAndStatus(postId, CompanionApplicationStatus.ACCEPTED);
+	}
+
+	@Override
 	public boolean updateStatusIfPending(
 			final Long applicationId,
 			final CompanionApplicationStatus status,
