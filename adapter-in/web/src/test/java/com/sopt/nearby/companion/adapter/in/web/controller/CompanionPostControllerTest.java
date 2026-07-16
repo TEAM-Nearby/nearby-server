@@ -502,6 +502,7 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.place.category").value("RESTAURANT"))
                 .andExpect(jsonPath("$.data.hostProfileSummary.profileId").value(5))
                 .andExpect(jsonPath("$.data.hostProfileSummary.nickname").value("니어바이"))
+                .andExpect(jsonPath("$.data.hostProfileSummary.intro").value("혼자 여행도 같이 여행도 좋아해요"))
                 .andExpect(jsonPath("$.data.hostProfileSummary.gender").value("FEMALE"))
                 .andExpect(jsonPath("$.data.hostProfileSummary.birthYear").value(2001))
                 .andExpect(jsonPath("$.data.hostProfileSummary.profileImageUrl").value(nullValue()))
