@@ -20,6 +20,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.MeetingCheck
 import com.sopt.nearby.companion.adapter.out.persistence.repository.OngoingCompanionMeetingQueryJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingProgressStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
@@ -171,6 +172,32 @@ class OngoingCompanionMeetingQueryAdapterTest {
         assertThat(result).isEmpty();
     }
 
+    @Test
+    void findsMatchedSchedulePendingMatchAsSchedulingMeeting() {
+        OngoingCompanionMeetingQueryAdapter adapter = new OngoingCompanionMeetingQueryAdapter(queryJpaRepository);
+        profileJpaRepository.saveAndFlush(profile(CURRENT_USER_ID, "정지영", UserGender.FEMALE));
+        profileJpaRepository.saveAndFlush(profile(HOST_USER_ID, "김지원", UserGender.MALE));
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place("google-place-pending"));
+        CompanionPostEntity post = postJpaRepository.saveAndFlush(
+                post(HOST_USER_ID, place.getId(), CompanionPostMeetingTimeType.UNDECIDED, null));
+        CompanionMatchEntity match = matchJpaRepository.saveAndFlush(match(post.getId(), CompanionMatchStatus.MATCHED));
+        participantJpaRepository.saveAndFlush(participant(match.getId(), HOST_USER_ID, MatchParticipantRole.HOST));
+        participantJpaRepository.saveAndFlush(participant(match.getId(), CURRENT_USER_ID, MatchParticipantRole.GUEST));
+
+        List<OngoingCompanionMeetingSummary> result = adapter.findAllByParticipantUserId(CURRENT_USER_ID);
+
+        assertThat(result).hasSize(1);
+        OngoingCompanionMeetingSummary summary = result.getFirst();
+        assertThat(summary.matchId()).isEqualTo(match.getId());
+        assertThat(summary.meetingId()).isNull();
+        assertThat(summary.placeName()).isEqualTo("시우다드 콘달");
+        assertThat(summary.meetingAt()).isNull();
+        assertThat(summary.meetingTimeType()).isEqualTo(CompanionPostMeetingTimeType.UNDECIDED);
+        assertThat(summary.meetingStatus()).isNull();
+        assertThat(summary.checkedIn()).isFalse();
+        assertThat(summary.progressStatus()).isEqualTo(CompanionMeetingProgressStatus.SCHEDULING);
+    }
+
     private CompanionMeetingEntity createMeeting(
             final Long hostUserId,
             final Long participantUserId,
@@ -310,7 +337,11 @@ class OngoingCompanionMeetingQueryAdapterTest {
     }
 
     private CompanionMatchEntity match(final Long postId) {
-        return new CompanionMatchEntity(null, postId, CompanionMatchStatus.SCHEDULE_CONFIRMED, BASE_TIME.minusDays(1));
+        return match(postId, CompanionMatchStatus.SCHEDULE_CONFIRMED);
+    }
+
+    private CompanionMatchEntity match(final Long postId, final CompanionMatchStatus status) {
+        return new CompanionMatchEntity(null, postId, status, BASE_TIME.minusDays(1));
     }
 
     private CompanionMatchParticipantEntity participant(

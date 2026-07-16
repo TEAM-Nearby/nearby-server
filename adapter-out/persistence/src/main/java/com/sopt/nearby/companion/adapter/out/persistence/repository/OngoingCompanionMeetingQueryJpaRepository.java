@@ -12,7 +12,7 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
     @Query(value = """
             select
                 meeting.id as meetingId,
-                meeting.match_id as matchId,
+                m.id as matchId,
                 host_profile.user_id as hostUserId,
                 host_profile.profile_image_url as hostProfileImageUrl,
                 host_profile.nickname as hostNickname,
@@ -20,6 +20,7 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
                 place.name as placeName,
                 schedule.scheduled_at as meetingAt,
                 case
+                    when m.status = 'MATCHED' then post.meeting_time_type
                     when post.meeting_time_type = 'NOW' then 'NOW'
                     else 'SCHEDULED'
                 end as meetingTimeType,
@@ -27,32 +28,39 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
                     when check_in.id is null then false
                     else true
                 end as checkedIn,
-                meeting.status as meetingStatus
-            from companion_meeting meeting
+                meeting.status as meetingStatus,
+                case
+                    when m.status = 'MATCHED' then 'SCHEDULING'
+                    else 'ONGOING'
+                end as progressStatus
+            from companion_match m
             join companion_match_participant current_participant
-                on current_participant.match_id = meeting.match_id
+                on current_participant.match_id = m.id
                 and current_participant.user_id = :userId
-            join companion_match m
-                on m.id = meeting.match_id
             join companion_post post
                 on post.id = m.post_id
             join companion_match_participant host_participant
-                on host_participant.match_id = meeting.match_id
+                on host_participant.match_id = m.id
                 and host_participant.role = 'HOST'
             join companion_profile host_profile
                 on host_profile.user_id = host_participant.user_id
-            join companion_schedule schedule
-                on schedule.match_id = meeting.match_id
+            left join companion_schedule schedule
+                on schedule.match_id = m.id
                 and schedule.confirmed = true
+            left join companion_meeting meeting
+                on meeting.match_id = m.id
+                and meeting.status = 'ONGOING'
             left join place_cache place
-                on place.id = schedule.place_id
+                on place.id = coalesce(schedule.place_id, post.place_id)
             left join meeting_check_in check_in
                 on check_in.meeting_id = meeting.id
                 and check_in.user_id = :userId
-            where meeting.status = 'ONGOING'
+            where m.status = 'MATCHED'
+                or meeting.id is not null
             order by
+                case when m.status = 'MATCHED' then 1 else 0 end,
                 schedule.scheduled_at desc,
-                meeting.id desc
+                m.id desc
             """, nativeQuery = true)
     List<OngoingCompanionMeetingProjection> findAllByParticipantUserId(@Param("userId") Long userId);
 }

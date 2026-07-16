@@ -28,6 +28,7 @@ import com.sopt.nearby.companion.domain.exception.ForbiddenCompleteCompanionMeet
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingProgressStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
@@ -123,6 +124,19 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.code").value("READ_ONGOING_COMPANION_MEETINGS"))
                 .andExpect(jsonPath("$.data.meetings").isArray())
                 .andExpect(jsonPath("$.data.meetings").isEmpty());
+    }
+
+    @Test
+    void returnsSchedulingMeetingWithoutMeetingDetails() throws Exception {
+        ongoingReadUseCase.result = List.of(schedulingMeeting());
+
+        mockMvc.perform(get("/api/companion-meetings")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.meetings[0].meetingId").value(nullValue()))
+                .andExpect(jsonPath("$.data.meetings[0].meetingAt").value(nullValue()))
+                .andExpect(jsonPath("$.data.meetings[0].meetingStatus").value(nullValue()))
+                .andExpect(jsonPath("$.data.meetings[0].progressStatus").value("SCHEDULING"));
     }
 
     @Test
@@ -482,7 +496,27 @@ class CompanionMeetingControllerTest {
                 LocalDateTime.of(2026, 6, 29, 16, 30),
                 CompanionPostMeetingTimeType.SCHEDULED,
                 checkedIn,
-                CompanionMeetingStatus.ONGOING
+                CompanionMeetingStatus.ONGOING,
+                CompanionMeetingProgressStatus.ONGOING
+        );
+    }
+
+    private OngoingCompanionMeetingSummary schedulingMeeting() {
+        return new OngoingCompanionMeetingSummary(
+                null,
+                10L,
+                new OngoingCompanionMeetingHostProfile(
+                        7L,
+                        "https://image.url/profile.png",
+                        "정지영",
+                        UserGender.FEMALE
+                ),
+                "시우다드 콘달",
+                null,
+                CompanionPostMeetingTimeType.UNDECIDED,
+                false,
+                null,
+                CompanionMeetingProgressStatus.SCHEDULING
         );
     }
 
