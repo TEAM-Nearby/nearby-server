@@ -19,7 +19,6 @@ import com.sopt.nearby.place.port.out.SoloDiningFavoriteQueryPort;
 import com.sopt.nearby.place.port.out.SoloDiningFavoriteRepository;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
-import com.sopt.nearby.place.port.out.SoloDiningPlaceSearchPort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,17 +43,10 @@ public class PlaceUseCaseConfig {
 
     @Bean
     ReadSoloDiningPlacesUseCase readSoloDiningPlacesUseCase(
-            final SoloDiningPlaceSearchPort soloDiningPlaceSearchPort,
-            final PlaceCacheRepository placeCacheRepository,
             final SoloDiningPlaceQueryPort soloDiningPlaceQueryPort,
             final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
-        return new ReadSoloDiningPlacesService(
-                soloDiningPlaceSearchPort,
-                placeCacheRepository,
-                soloDiningPlaceQueryPort,
-                resolvePlaceImageUseCase
-        );
+        return new ReadSoloDiningPlacesService(soloDiningPlaceQueryPort, resolvePlaceImageUseCase);
     }
 
     @Bean
