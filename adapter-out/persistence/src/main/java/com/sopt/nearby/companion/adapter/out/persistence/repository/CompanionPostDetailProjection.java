@@ -14,6 +14,8 @@ public interface CompanionPostDetailProjection {
 
     String getHostNickname();
 
+    String getHostIntro();
+
     String getHostGender();
 
     Integer getHostBirthYear();

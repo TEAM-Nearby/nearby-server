@@ -77,6 +77,7 @@ public class CompanionPostDetailQueryAdapter implements CompanionPostDetailQuery
                 new CompanionPostDetail.HostProfileSummary(
                         row.getHostProfileId(),
                         row.getHostNickname(),
+                        row.getHostIntro(),
                         UserGender.valueOf(row.getHostGender()),
                         row.getHostBirthYear(),
                         row.getHostProfileImageUrl(),

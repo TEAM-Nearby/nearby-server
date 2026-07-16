@@ -223,6 +223,7 @@ class ReadCompanionPostDetailServiceTest {
                 new CompanionPostDetail.HostProfileSummary(
                         5L,
                         "니어바이",
+                        "반가워요.",
                         UserGender.FEMALE,
                         2001,
                         null,

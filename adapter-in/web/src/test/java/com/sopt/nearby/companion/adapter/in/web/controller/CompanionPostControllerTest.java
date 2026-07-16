@@ -673,6 +673,7 @@ class CompanionPostControllerTest {
                 new CompanionPostDetailResult.HostProfileSummary(
                         5L,
                         "니어바이",
+                        "혼자 여행도 같이 여행도 좋아해요",
                         UserGender.FEMALE,
                         2001,
                         null,
