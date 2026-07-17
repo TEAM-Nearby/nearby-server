@@ -21,7 +21,7 @@ public interface CompanionProfileDetailQueryJpaRepository extends Repository<Com
                 profile.profile_image_url as profileImageUrl,
                 profile.intro as intro,
                 coalesce(review_stats.manner_score, 0.00) as mannerScore,
-                profile.review_count as reviewCount,
+                coalesce(review_stats.review_count, 0) as reviewCount,
                 profile.status as status,
                 account.phone_verified_at as phoneVerifiedAt
             from companion_profile profile
@@ -30,7 +30,8 @@ public interface CompanionProfileDetailQueryJpaRepository extends Repository<Com
             left join (
                 select
                     reviewee_user_id,
-                    round(avg(rating), 2) as manner_score
+                    round(avg(rating), 2) as manner_score,
+                    cast(count(*) as integer) as review_count
                 from companion_review
                 group by reviewee_user_id
             ) review_stats
