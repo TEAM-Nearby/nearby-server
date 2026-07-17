@@ -40,16 +40,7 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 			final UserAccountRepository userAccountRepository,
 			final PhoneVerificationRepository phoneVerificationRepository,
 			final PhoneVerificationCodeStore phoneVerificationCodeStore,
-			@Value("${nearby.phone-verification.hash-secret}") final String hashSecret
-	) {
-		this(userAccountRepository, phoneVerificationRepository, phoneVerificationCodeStore, hashSecret, Clock.systemUTC());
-	}
-
-	ConfirmPhoneVerificationCodeService(
-			final UserAccountRepository userAccountRepository,
-			final PhoneVerificationRepository phoneVerificationRepository,
-			final PhoneVerificationCodeStore phoneVerificationCodeStore,
-			final String hashSecret,
+			@Value("${nearby.phone-verification.hash-secret}") final String hashSecret,
 			final Clock clock
 	) {
 		this.userAccountRepository = userAccountRepository;

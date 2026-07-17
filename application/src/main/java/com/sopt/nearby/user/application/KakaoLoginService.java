@@ -48,7 +48,8 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 			final UserAccountRepository userAccountRepository,
 			final SocialAccountRepository socialAccountRepository,
 			final RefreshTokenRepository refreshTokenRepository,
-			final PlatformTransactionManager transactionManager
+			final PlatformTransactionManager transactionManager,
+			final Clock clock
 	) {
 		this(
 				kakaoIdTokenVerifier,
@@ -56,7 +57,7 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 				userAccountRepository,
 				socialAccountRepository,
 				refreshTokenRepository,
-				Clock.systemUTC(),
+				clock,
 				requiresNewTransaction(transactionManager)
 		);
 	}

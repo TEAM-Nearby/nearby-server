@@ -33,15 +33,6 @@ public class RefreshTokenService implements RefreshTokenUseCase {
 			final RefreshTokenHasher refreshTokenHasher,
 			final RefreshTokenRepository refreshTokenRepository,
 			final UserAccountRepository userAccountRepository,
-			final TokenIssuer tokenIssuer
-	) {
-		this(refreshTokenHasher, refreshTokenRepository, userAccountRepository, tokenIssuer, Clock.systemUTC());
-	}
-
-	RefreshTokenService(
-			final RefreshTokenHasher refreshTokenHasher,
-			final RefreshTokenRepository refreshTokenRepository,
-			final UserAccountRepository userAccountRepository,
 			final TokenIssuer tokenIssuer,
 			final Clock clock
 	) {

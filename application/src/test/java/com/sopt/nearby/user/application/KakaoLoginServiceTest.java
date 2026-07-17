@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 class KakaoLoginServiceTest {
 
-	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-03T12:00:00Z"), ZoneId.of("UTC"));
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-03T03:00:00Z"), ZoneId.of("Asia/Seoul"));
 
 	@Test
 	void createsUserAndSocialAccountWhenKakaoAccountIsNew() {
