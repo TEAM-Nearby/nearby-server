@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.domain.model.profile;
 
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,10 +19,12 @@ public record CompanionProfileDetail(
         int reviewCount,
         CompanionProfileStatus status,
         LocalDateTime phoneVerifiedAt,
-        List<TravelStyleKeyword> keywords
+        List<TravelStyleKeyword> keywords,
+        List<ReviewKeyword> mannerKeywords
 ) {
 
     public CompanionProfileDetail {
         keywords = keywords == null ? List.of() : List.copyOf(keywords);
+        mannerKeywords = mannerKeywords == null ? List.of() : List.copyOf(mannerKeywords);
     }
 }

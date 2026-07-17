@@ -90,6 +90,7 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
                         detail.hostProfileSummary().birthYear(),
                         detail.hostProfileSummary().profileImageUrl(),
                         detail.hostProfileSummary().mannerScore(),
+                        detail.hostProfileSummary().mannerKeywords(),
                         detail.hostProfileSummary().phoneVerifiedAt(),
                         detail.hostProfileSummary().keywords()
                 )

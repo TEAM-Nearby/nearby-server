@@ -6,6 +6,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPro
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileDetail;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.out.CompanionProfileDetailQueryPort;
 import java.util.List;
@@ -24,12 +25,17 @@ public class CompanionProfileDetailQueryAdapter implements CompanionProfileDetai
     @Override
     public Optional<CompanionProfileDetail> findByProfileId(final Long profileId) {
         return repository.findDetailByProfileId(profileId)
-                .map(row -> toDetail(row, repository.findKeywordsByProfileId(row.getProfileId())));
+                .map(row -> toDetail(
+                        row,
+                        repository.findKeywordsByProfileId(row.getProfileId()),
+                        mannerKeywords(row.getUserId())
+                ));
     }
 
     private CompanionProfileDetail toDetail(
             final CompanionProfileDetailProjection row,
-            final List<TravelStyleKeyword> keywords
+            final List<TravelStyleKeyword> keywords,
+            final List<ReviewKeyword> mannerKeywords
     ) {
         return new CompanionProfileDetail(
                 row.getProfileId(),
@@ -43,7 +49,24 @@ public class CompanionProfileDetailQueryAdapter implements CompanionProfileDetai
                 row.getReviewCount(),
                 CompanionProfileStatus.valueOf(row.getStatus()),
                 row.getPhoneVerifiedAt(),
-                keywords
+                keywords,
+                mannerKeywords
         );
+    }
+
+    private List<ReviewKeyword> mannerKeywords(final Long userId) {
+        return repository.findMannerKeywordsByUserId(userId)
+                .stream()
+                .map(this::toReviewKeyword)
+                .flatMap(Optional::stream)
+                .toList();
+    }
+
+    private Optional<ReviewKeyword> toReviewKeyword(final String value) {
+        try {
+            return Optional.of(ReviewKeyword.valueOf(value));
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            return Optional.empty();
+        }
     }
 }

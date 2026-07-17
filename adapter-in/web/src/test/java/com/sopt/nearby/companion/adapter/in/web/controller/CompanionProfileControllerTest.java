@@ -15,6 +15,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionProfileNotFoundExcept
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileDetail;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.in.ReadCompanionProfileUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
@@ -61,6 +62,8 @@ class CompanionProfileControllerTest {
                 .andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.nearby.com/profiles/1.jpg"))
                 .andExpect(jsonPath("$.data.intro").value("혼자 여행도 같이 여행도 좋아해요"))
                 .andExpect(jsonPath("$.data.mannerScore").value(4.0))
+                .andExpect(jsonPath("$.data.mannerKeywords[0]").value("FAST_RESPONSE"))
+                .andExpect(jsonPath("$.data.mannerKeywords[1]").value("PUNCTUAL"))
                 .andExpect(jsonPath("$.data.reviewCount").value(12))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.phoneVerifiedAt").value("2026-07-01T10:00:00"))
@@ -108,7 +111,8 @@ class CompanionProfileControllerTest {
                 12,
                 CompanionProfileStatus.ACTIVE,
                 LocalDateTime.of(2026, 7, 1, 10, 0),
-                keywords
+                keywords,
+                List.of(ReviewKeyword.FAST_RESPONSE, ReviewKeyword.PUNCTUAL)
         );
     }
 

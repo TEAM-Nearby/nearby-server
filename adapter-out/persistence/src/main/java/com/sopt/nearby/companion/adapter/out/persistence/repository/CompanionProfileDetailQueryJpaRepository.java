@@ -20,13 +20,21 @@ public interface CompanionProfileDetailQueryJpaRepository extends Repository<Com
                 profile.birth_year as birthYear,
                 profile.profile_image_url as profileImageUrl,
                 profile.intro as intro,
-                profile.manner_score as mannerScore,
+                coalesce(review_stats.manner_score, 0.00) as mannerScore,
                 profile.review_count as reviewCount,
                 profile.status as status,
                 account.phone_verified_at as phoneVerifiedAt
             from companion_profile profile
             join user_account account
                 on account.id = profile.user_id
+            left join (
+                select
+                    reviewee_user_id,
+                    round(avg(rating), 2) as manner_score
+                from companion_review
+                group by reviewee_user_id
+            ) review_stats
+                on review_stats.reviewee_user_id = profile.user_id
             where profile.id = :profileId
                 and profile.status = 'ACTIVE'
             """, nativeQuery = true)
@@ -39,4 +47,14 @@ public interface CompanionProfileDetailQueryJpaRepository extends Repository<Com
             order by style.keyword
             """)
     List<TravelStyleKeyword> findKeywordsByProfileId(@Param("profileId") Long profileId);
+
+    @Query(value = """
+            select distinct keyword.keyword
+            from companion_review review
+            join companion_review_keyword keyword
+                on keyword.review_id = review.id
+            where review.reviewee_user_id = :userId
+            order by keyword.keyword
+            """, nativeQuery = true)
+    List<String> findMannerKeywordsByUserId(@Param("userId") Long userId);
 }

@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.domain.model.post;
 
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -54,11 +55,13 @@ public record CompanionPostDetail(
             Integer birthYear,
             String profileImageUrl,
             BigDecimal mannerScore,
+            List<ReviewKeyword> mannerKeywords,
             LocalDateTime phoneVerifiedAt,
             List<TravelStyleKeyword> keywords
     ) {
 
         public HostProfileSummary {
+            mannerKeywords = mannerKeywords == null ? List.of() : List.copyOf(mannerKeywords);
             keywords = keywords == null ? List.of() : List.copyOf(keywords);
         }
     }

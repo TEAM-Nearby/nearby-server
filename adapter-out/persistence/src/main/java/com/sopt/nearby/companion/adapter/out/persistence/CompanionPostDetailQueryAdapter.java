@@ -11,6 +11,7 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.out.CompanionPostDetailQueryPort;
 import java.util.List;
@@ -38,6 +39,7 @@ public class CompanionPostDetailQueryAdapter implements CompanionPostDetailQuery
                 .map(row -> toDetail(
                         row,
                         repository.findKeywordsByProfileId(row.getHostProfileId()),
+                        mannerKeywords(row.getHostUserId()),
                         postQueryRepository.findParticipantsByPostIds(List.of(postId))
                 ));
     }
@@ -45,6 +47,7 @@ public class CompanionPostDetailQueryAdapter implements CompanionPostDetailQuery
     private CompanionPostDetail toDetail(
             final CompanionPostDetailProjection row,
             final List<TravelStyleKeyword> keywords,
+            final List<ReviewKeyword> mannerKeywords,
             final List<CompanionPostParticipantProjection> participants
     ) {
         return new CompanionPostDetail(
@@ -82,6 +85,7 @@ public class CompanionPostDetailQueryAdapter implements CompanionPostDetailQuery
                         row.getHostBirthYear(),
                         row.getHostProfileImageUrl(),
                         row.getHostMannerScore(),
+                        mannerKeywords,
                         row.getHostPhoneVerifiedAt(),
                         keywords
                 )
@@ -97,6 +101,22 @@ public class CompanionPostDetailQueryAdapter implements CompanionPostDetailQuery
             return CompanionPostPlaceCategory.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException exception) {
             return CompanionPostPlaceCategory.OTHER;
+        }
+    }
+
+    private List<ReviewKeyword> mannerKeywords(final Long userId) {
+        return repository.findMannerKeywordsByUserId(userId)
+                .stream()
+                .map(this::toReviewKeyword)
+                .flatMap(Optional::stream)
+                .toList();
+    }
+
+    private Optional<ReviewKeyword> toReviewKeyword(final String value) {
+        try {
+            return Optional.of(ReviewKeyword.valueOf(value));
+        } catch (IllegalArgumentException | NullPointerException exception) {
+            return Optional.empty();
         }
     }
 }
