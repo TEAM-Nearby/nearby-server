@@ -14,12 +14,20 @@ import com.sopt.nearby.place.domain.model.SoloDiningFavorite;
 import com.sopt.nearby.place.port.out.PlaceCacheRepository;
 import com.sopt.nearby.place.port.out.SoloDiningFavoriteRepository;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ManageSoloDiningFavoriteServiceTest {
+
+    private static final Clock CLOCK = Clock.fixed(
+            Instant.parse("2026-07-17T00:00:00Z"),
+            ZoneId.of("Asia/Seoul")
+    );
 
     private FakePlaceCacheRepository placeCacheRepository;
     private FakeSoloDiningFavoriteRepository favoriteRepository;
@@ -29,7 +37,7 @@ class ManageSoloDiningFavoriteServiceTest {
     void setUp() {
         placeCacheRepository = new FakePlaceCacheRepository();
         favoriteRepository = new FakeSoloDiningFavoriteRepository();
-        service = new ManageSoloDiningFavoriteService(placeCacheRepository, favoriteRepository);
+        service = new ManageSoloDiningFavoriteService(placeCacheRepository, favoriteRepository, CLOCK);
     }
 
     @Test
@@ -41,7 +49,7 @@ class ManageSoloDiningFavoriteServiceTest {
         assertEquals(true, result.isFavorite());
         assertEquals(7L, favoriteRepository.saved.userId());
         assertEquals(12L, favoriteRepository.saved.placeId());
-        assertNotNull(favoriteRepository.saved.createdAt());
+        assertEquals(LocalDateTime.of(2026, 7, 17, 9, 0), favoriteRepository.saved.createdAt());
     }
 
     @Test

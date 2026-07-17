@@ -28,7 +28,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 
 class CompleteCompanionMeetingServiceTest {
 
-	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-06-29T19:00:00Z"), ZoneOffset.UTC);
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-06-29T10:00:00Z"), ZoneId.of("Asia/Seoul"));
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 6, 29, 19, 0);
 	private static final Long MEETING_ID = 1L;
 	private static final Long MATCH_ID = 10L;
