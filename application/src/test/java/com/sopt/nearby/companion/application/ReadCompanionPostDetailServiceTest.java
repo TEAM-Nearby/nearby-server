@@ -229,6 +229,7 @@ class ReadCompanionPostDetailServiceTest {
                         2001,
                         null,
                         new BigDecimal("4.00"),
+                        List.of(),
                         LocalDateTime.of(2026, 7, 1, 10, 0),
                         List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE)
                 )

@@ -5,21 +5,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplicationEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMeetingEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileStyleEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewKeywordEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApplicationJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostDetailQueryJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostQueryJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostDetail;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
 import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRepository;
@@ -111,6 +118,31 @@ class CompanionPostDetailQueryAdapterTest {
                 NOW.plusHours(2),
                 null
         ));
+        CompanionMatchEntity match = entityManager.persistAndFlush(new CompanionMatchEntity(
+                null,
+                post.getId(),
+                CompanionMatchStatus.MATCHED,
+                NOW
+        ));
+        CompanionMeetingEntity meeting = entityManager.persistAndFlush(new CompanionMeetingEntity(
+                null,
+                match.getId(),
+                CompanionMeetingStatus.COMPLETED,
+                NOW,
+                NOW.plusHours(1)
+        ));
+        CompanionReviewEntity review = entityManager.persistAndFlush(new CompanionReviewEntity(
+                null,
+                meeting.getId(),
+                acceptedUser.getId(),
+                hostUser.getId(),
+                5,
+                NOW
+        ));
+        entityManager.persistAndFlush(new CompanionReviewKeywordEntity(
+                review.getId(),
+                ReviewKeyword.FAST_RESPONSE
+        ));
 
         applicationJpaRepository.saveAndFlush(application(
                 post.getId(),
@@ -158,6 +190,8 @@ class CompanionPostDetailQueryAdapterTest {
         assertThat(result.hostProfileSummary().profileId()).isEqualTo(hostProfile.getId());
         assertThat(result.hostProfileSummary().nickname()).isEqualTo("니어바이");
         assertThat(result.hostProfileSummary().intro()).isEqualTo("반가워요.");
+        assertThat(result.hostProfileSummary().mannerScore()).isEqualByComparingTo("5.00");
+        assertThat(result.hostProfileSummary().mannerKeywords()).containsExactly(ReviewKeyword.FAST_RESPONSE);
         assertThat(result.hostProfileSummary().phoneVerifiedAt()).isEqualTo(LocalDateTime.of(2026, 7, 1, 10, 0));
         assertThat(result.hostProfileSummary().keywords())
                 .containsExactlyInAnyOrder(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE);
@@ -310,9 +344,13 @@ class CompanionPostDetailQueryAdapterTest {
     @EnableAutoConfiguration
     @EntityScan(basePackageClasses = {
             CompanionApplicationEntity.class,
+            CompanionMatchEntity.class,
+            CompanionMeetingEntity.class,
             CompanionPostEntity.class,
             CompanionProfileEntity.class,
             CompanionProfileStyleEntity.class,
+            CompanionReviewEntity.class,
+            CompanionReviewKeywordEntity.class,
             PlaceCacheEntity.class,
             UserAccountEntity.class
     })

@@ -33,6 +33,7 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
@@ -508,6 +509,8 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.hostProfileSummary.birthYear").value(2001))
                 .andExpect(jsonPath("$.data.hostProfileSummary.profileImageUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data.hostProfileSummary.mannerScore").value(4.0))
+                .andExpect(jsonPath("$.data.hostProfileSummary.mannerKeywords[0]").value("FAST_RESPONSE"))
+                .andExpect(jsonPath("$.data.hostProfileSummary.mannerKeywords[1]").value("PUNCTUAL"))
                 .andExpect(jsonPath("$.data.hostProfileSummary.phoneVerifiedAt").value("2026-07-01T10:00:00+09:00"))
                 .andExpect(jsonPath("$.data.hostProfileSummary.keywords[0]").value("PLANNED"))
                 .andExpect(jsonPath("$.data.hostProfileSummary.keywords[1]").value("FOODIE"));
@@ -680,6 +683,7 @@ class CompanionPostControllerTest {
                         2001,
                         null,
                         new BigDecimal("4.00"),
+                        List.of(ReviewKeyword.FAST_RESPONSE, ReviewKeyword.PUNCTUAL),
                         LocalDateTime.of(2026, 7, 1, 10, 0),
                         List.of(TravelStyleKeyword.PLANNED, TravelStyleKeyword.FOODIE)
                 )

@@ -21,7 +21,7 @@ public interface CompanionPostDetailQueryJpaRepository extends Repository<Compan
                 host_profile.gender as hostGender,
                 host_profile.birth_year as hostBirthYear,
                 host_profile.profile_image_url as hostProfileImageUrl,
-                host_profile.manner_score as hostMannerScore,
+                coalesce(host_review_stats.manner_score, 0.00) as hostMannerScore,
                 host_user.phone_verified_at as hostPhoneVerifiedAt,
                 place.google_place_id as googlePlaceId,
                 place.name as placeName,
@@ -44,6 +44,14 @@ public interface CompanionPostDetailQueryJpaRepository extends Repository<Compan
                 on host_profile.user_id = post.host_user_id
             join user_account host_user
                 on host_user.id = post.host_user_id
+            left join (
+                select
+                    reviewee_user_id,
+                    round(avg(rating), 2) as manner_score
+                from companion_review
+                group by reviewee_user_id
+            ) host_review_stats
+                on host_review_stats.reviewee_user_id = host_profile.user_id
             join place_cache place
                 on place.id = post.place_id
             left join (
@@ -70,4 +78,14 @@ public interface CompanionPostDetailQueryJpaRepository extends Repository<Compan
             order by style.keyword
             """)
     List<TravelStyleKeyword> findKeywordsByProfileId(@Param("profileId") Long profileId);
+
+    @Query(value = """
+            select distinct keyword.keyword
+            from companion_review review
+            join companion_review_keyword keyword
+                on keyword.review_id = review.id
+            where review.reviewee_user_id = :userId
+            order by keyword.keyword
+            """, nativeQuery = true)
+    List<String> findMannerKeywordsByUserId(@Param("userId") Long userId);
 }
