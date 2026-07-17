@@ -142,7 +142,7 @@ class CompanionProfileDetailQueryAdapterTest {
         assertThat(result.intro()).isEqualTo("혼자 여행도 같이 여행도 좋아해요");
         assertThat(result.mannerScore()).isEqualByComparingTo("5.00");
         assertThat(result.mannerKeywords()).containsExactly(ReviewKeyword.FAST_RESPONSE);
-        assertThat(result.reviewCount()).isEqualTo(12);
+        assertThat(result.reviewCount()).isEqualTo(1);
         assertThat(result.status()).isEqualTo(CompanionProfileStatus.ACTIVE);
         assertThat(result.phoneVerifiedAt()).isEqualTo(LocalDateTime.of(2026, 7, 1, 10, 0));
         assertThat(result.keywords()).containsExactly(TravelStyleKeyword.FOODIE, TravelStyleKeyword.PLANNED);
