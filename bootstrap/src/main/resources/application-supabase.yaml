@@ -5,6 +5,7 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     hikari:
       maximum-pool-size: ${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:5}
+      connection-init-sql: SET TIME ZONE 'Asia/Seoul'
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST}

@@ -19,6 +19,7 @@ import com.sopt.nearby.place.port.out.SoloDiningFavoriteQueryPort;
 import com.sopt.nearby.place.port.out.SoloDiningFavoriteRepository;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceDetailsPort;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
+import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -73,8 +74,13 @@ public class PlaceUseCaseConfig {
     @Bean
     ManageSoloDiningFavoriteUseCase manageSoloDiningFavoriteUseCase(
             final PlaceCacheRepository placeCacheRepository,
-            final SoloDiningFavoriteRepository soloDiningFavoriteRepository
+            final SoloDiningFavoriteRepository soloDiningFavoriteRepository,
+            final Clock koreaStandardClock
     ) {
-        return new ManageSoloDiningFavoriteService(placeCacheRepository, soloDiningFavoriteRepository);
+        return new ManageSoloDiningFavoriteService(
+                placeCacheRepository,
+                soloDiningFavoriteRepository,
+                koreaStandardClock
+        );
     }
 }

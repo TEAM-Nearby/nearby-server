@@ -95,14 +95,15 @@ public class CompanionUseCaseConfig {
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final ResolvePlaceCacheUseCase resolvePlaceCacheUseCase,
             final CompanionPostRepository companionPostRepository,
-            final CompanionPostStyleRepository companionPostStyleRepository
+            final CompanionPostStyleRepository companionPostStyleRepository,
+            final Clock koreaStandardClock
     ) {
         return new CreateCompanionPostService(
                 requireCompletedOnboardingUseCase,
                 resolvePlaceCacheUseCase,
                 companionPostRepository,
                 companionPostStyleRepository,
-                Clock.systemDefaultZone()
+                koreaStandardClock
         );
     }
 
@@ -111,14 +112,15 @@ public class CompanionUseCaseConfig {
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final CompanionPostRepository companionPostRepository,
             final CompanionApplicationRepository companionApplicationRepository,
-            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase
+            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
+            final Clock koreaStandardClock
     ) {
         return new CreateCompanionRequestService(
                 requireCompletedOnboardingUseCase,
                 companionPostRepository,
                 companionApplicationRepository,
                 createCompanionNotificationUseCase,
-                Clock.systemDefaultZone()
+                koreaStandardClock
         );
     }
 
@@ -159,12 +161,13 @@ public class CompanionUseCaseConfig {
     ReadCompanionPostsUseCase readCompanionPostsUseCase(
             final CompanionPostQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
-            final ResolvePlaceImageUseCase resolvePlaceImageUseCase
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase,
+            final Clock koreaStandardClock
     ) {
         return new ReadCompanionPostsService(
                 queryPort,
                 requireCompletedOnboardingUseCase,
-                Clock.systemDefaultZone(),
+                koreaStandardClock,
                 resolvePlaceImageUseCase
         );
     }
@@ -172,12 +175,13 @@ public class CompanionUseCaseConfig {
     @Bean
     ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase(
             final CompanionPostDetailQueryPort queryPort,
-            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final Clock koreaStandardClock
     ) {
         return new ReadCompanionPostDetailService(
                 queryPort,
                 requireCompletedOnboardingUseCase,
-                Clock.systemDefaultZone()
+                koreaStandardClock
         );
     }
 
@@ -191,9 +195,10 @@ public class CompanionUseCaseConfig {
     @Bean
     ReadMyPageUseCase readMyPageUseCase(
             final MyPageQueryPort queryPort,
-            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final Clock koreaStandardClock
     ) {
-        return new ReadMyPageService(queryPort, requireCompletedOnboardingUseCase, Clock.systemDefaultZone());
+        return new ReadMyPageService(queryPort, requireCompletedOnboardingUseCase, koreaStandardClock);
     }
 
     @Bean
@@ -270,7 +275,8 @@ public class CompanionUseCaseConfig {
             final CompanionMatchParticipantRepository participantRepository,
             final CompanionScheduleRepository companionScheduleRepository,
             final CompanionMeetingRepository companionMeetingRepository,
-            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase
+            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
+            final Clock koreaStandardClock
     ) {
         return new ProcessCompanionRequestService(
                 applicationRepository,
@@ -280,22 +286,24 @@ public class CompanionUseCaseConfig {
                 companionScheduleRepository,
                 companionMeetingRepository,
                 createCompanionNotificationUseCase,
-                Clock.systemDefaultZone()
+                koreaStandardClock
         );
     }
 
     @Bean
     CreateCompanionNotificationUseCase createCompanionNotificationUseCase(
-            final CompanionNotificationRepository repository
+            final CompanionNotificationRepository repository,
+            final Clock koreaStandardClock
     ) {
-        return new CreateCompanionNotificationService(repository, Clock.systemDefaultZone());
+        return new CreateCompanionNotificationService(repository, koreaStandardClock);
     }
 
     @Bean
     MarkCompanionNotificationAsReadUseCase markCompanionNotificationAsReadUseCase(
-            final CompanionNotificationRepository repository
+            final CompanionNotificationRepository repository,
+            final Clock koreaStandardClock
     ) {
-        return new MarkCompanionNotificationAsReadService(repository, Clock.systemDefaultZone());
+        return new MarkCompanionNotificationAsReadService(repository, koreaStandardClock);
     }
 
     @Bean
@@ -324,13 +332,14 @@ public class CompanionUseCaseConfig {
     CheckInCompanionMeetingUseCase checkInCompanionMeetingUseCase(
             final CompanionMeetingCheckInQueryPort queryPort,
             final CompanionMatchParticipantRepository participantRepository,
-            final MeetingCheckInRepository checkInRepository
+            final MeetingCheckInRepository checkInRepository,
+            final Clock koreaStandardClock
     ) {
         return new CheckInCompanionMeetingService(
                 queryPort,
                 participantRepository,
                 checkInRepository,
-                Clock.systemDefaultZone()
+                koreaStandardClock
         );
     }
 
@@ -339,14 +348,15 @@ public class CompanionUseCaseConfig {
             final CompanionMeetingRepository meetingRepository,
             final CompanionMatchRepository matchRepository,
             final CompanionMatchParticipantRepository participantRepository,
-            final MeetingCheckInRepository checkInRepository
+            final MeetingCheckInRepository checkInRepository,
+            final Clock koreaStandardClock
     ) {
         return new CompleteCompanionMeetingService(
                 meetingRepository,
                 matchRepository,
                 participantRepository,
                 checkInRepository,
-                Clock.systemDefaultZone()
+                koreaStandardClock
         );
     }
 
@@ -363,7 +373,8 @@ public class CompanionUseCaseConfig {
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
             final CompanionReviewRepository reviewRepository,
-            final CompanionReviewKeywordRepository reviewKeywordRepository
+            final CompanionReviewKeywordRepository reviewKeywordRepository,
+            final Clock koreaStandardClock
     ) {
         return new CreateCompanionReviewsService(
                 meetingRepository,
@@ -371,7 +382,7 @@ public class CompanionUseCaseConfig {
                 checkInRepository,
                 reviewRepository,
                 reviewKeywordRepository,
-                Clock.systemDefaultZone()
+                koreaStandardClock
         );
     }
 }

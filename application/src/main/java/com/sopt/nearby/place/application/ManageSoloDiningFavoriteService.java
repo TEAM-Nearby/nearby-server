@@ -8,19 +8,23 @@ import com.sopt.nearby.place.domain.model.SoloDiningFavorite;
 import com.sopt.nearby.place.port.in.ManageSoloDiningFavoriteUseCase;
 import com.sopt.nearby.place.port.out.PlaceCacheRepository;
 import com.sopt.nearby.place.port.out.SoloDiningFavoriteRepository;
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 public class ManageSoloDiningFavoriteService implements ManageSoloDiningFavoriteUseCase {
 
     private final PlaceCacheRepository placeCacheRepository;
     private final SoloDiningFavoriteRepository favoriteRepository;
+    private final Clock clock;
 
     public ManageSoloDiningFavoriteService(
             final PlaceCacheRepository placeCacheRepository,
-            final SoloDiningFavoriteRepository favoriteRepository
+            final SoloDiningFavoriteRepository favoriteRepository,
+            final Clock clock
     ) {
         this.placeCacheRepository = placeCacheRepository;
         this.favoriteRepository = favoriteRepository;
+        this.clock = clock;
     }
 
     @Override
@@ -65,7 +69,7 @@ public class ManageSoloDiningFavoriteService implements ManageSoloDiningFavorite
                     null,
                     command.userId(),
                     command.placeId(),
-                    LocalDateTime.now()
+                    LocalDateTime.now(clock)
             ));
         } catch (DuplicateSoloDiningFavoriteException exception) {
             // 동시 등록 요청이 먼저 저장한 경우에도 등록 API는 멱등 성공으로 처리한다.

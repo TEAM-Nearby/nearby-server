@@ -27,7 +27,7 @@ import org.springframework.data.redis.core.ValueOperations;
 @ExtendWith(MockitoExtension.class)
 class RedisRefreshTokenRepositoryAdapterTest {
 
-	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-07T12:00:00Z"), ZoneId.of("UTC"));
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-07T03:00:00Z"), ZoneId.of("Asia/Seoul"));
 	private static final String KEY = "nearby:refresh-token:token-hash";
 
 	@Mock

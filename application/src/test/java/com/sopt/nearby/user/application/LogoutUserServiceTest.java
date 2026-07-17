@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 class LogoutUserServiceTest {
 
-	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-07T12:00:00Z"), ZoneId.of("UTC"));
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-07T03:00:00Z"), ZoneId.of("Asia/Seoul"));
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 7, 12, 0);
 
 	@Test

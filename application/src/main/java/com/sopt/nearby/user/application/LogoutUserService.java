@@ -24,13 +24,6 @@ public class LogoutUserService implements LogoutUserUseCase {
 	@Autowired
 	public LogoutUserService(
 			final RefreshTokenRepository refreshTokenRepository,
-			final RefreshTokenHasher refreshTokenHasher
-	) {
-		this(refreshTokenRepository, refreshTokenHasher, Clock.systemUTC());
-	}
-
-	LogoutUserService(
-			final RefreshTokenRepository refreshTokenRepository,
 			final RefreshTokenHasher refreshTokenHasher,
 			final Clock clock
 	) {

@@ -30,11 +30,7 @@ public class RefreshTokenRepositoryAdapter implements RefreshTokenRepository {
 	private final Clock clock;
 
 	@Autowired
-	public RefreshTokenRepositoryAdapter(final StringRedisTemplate redisTemplate) {
-		this(redisTemplate, Clock.systemUTC());
-	}
-
-	RefreshTokenRepositoryAdapter(final StringRedisTemplate redisTemplate, final Clock clock) {
+	public RefreshTokenRepositoryAdapter(final StringRedisTemplate redisTemplate, final Clock clock) {
 		this.redisTemplate = redisTemplate;
 		this.clock = clock;
 	}

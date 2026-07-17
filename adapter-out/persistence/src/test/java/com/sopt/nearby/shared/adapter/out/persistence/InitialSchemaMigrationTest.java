@@ -10,6 +10,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -355,6 +356,64 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void nineteenthMigrationNormalizesServerGeneratedBusinessTimestampsToKst() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource readStatusMigration = new ClassPathResource(
+				"db/migration/V7__create_companion_application_read_status.sql"
+		);
+		ClassPathResource notificationMigration = new ClassPathResource(
+				"db/migration/V8__create_companion_notification.sql"
+		);
+		ClassPathResource companionPostMigration = new ClassPathResource(
+				"db/migration/V10__add_companion_post_creation_fields.sql"
+		);
+		ClassPathResource completionMigration = new ClassPathResource(
+				"db/migration/V18__add_meeting_check_in_completed_at.sql"
+		);
+		ClassPathResource kstMigration = new ClassPathResource(
+				"db/migration/V19__normalize_business_timestamps_to_kst.sql"
+		);
+
+		assertThat(kstMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_kst_timestamp_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, readStatusMigration);
+			ScriptUtils.executeSqlScript(connection, notificationMigration);
+			ScriptUtils.executeSqlScript(connection, companionPostMigration);
+			ScriptUtils.executeSqlScript(connection, completionMigration);
+			insertUtcBusinessTimestamps(connection);
+
+			ScriptUtils.executeSqlScript(connection, kstMigration);
+
+			assertTimestamp(connection, "select created_at from companion_post where id = 1", "2026-07-17T09:00");
+			assertTimestamp(connection, "select exposure_expires_at from companion_post where id = 1", "2026-07-17T10:00");
+			assertTimestamp(connection, "select meeting_at from companion_post where id = 2", "2026-07-17T19:00");
+			assertTimestamp(connection, "select created_at from companion_post where id = 2", "2026-07-17T09:00");
+			assertTimestamp(connection, "select created_at from companion_application where id = 1", "2026-07-17T09:00");
+			assertTimestamp(connection, "select created_at from companion_match where id = 1", "2026-07-17T09:00");
+			assertTimestamp(connection, "select scheduled_at from companion_schedule where id = 1", "2026-07-17T09:00");
+			assertTimestamp(connection, "select scheduled_at from companion_schedule where id = 2", "2026-07-17T19:00");
+			assertTimestamp(connection, "select started_at from companion_meeting where id = 1", "2026-07-17T09:00");
+			assertTimestamp(connection, "select started_at from companion_meeting where id = 2", "2026-07-17T19:00");
+			assertTimestamp(connection, "select completed_at from companion_meeting where id = 2", "2026-07-18T05:00");
+			assertTimestamp(connection, "select checked_in_at from meeting_check_in where id = 1", "2026-07-17T09:00");
+			assertTimestamp(connection, "select completed_at from meeting_check_in where id = 1", "2026-07-17T10:00");
+			assertTimestamp(connection, "select created_at from companion_notification where id = 1", "2026-07-17T09:00");
+			assertTimestamp(connection, "select read_at from companion_notification where id = 1", "2026-07-17T10:00");
+			assertTimestamp(connection, "select created_at from companion_review where id = 1", "2026-07-17T09:00");
+			assertTimestamp(connection, "select phone_verified_at from user_account where id = 1", "2026-07-17T09:00");
+			assertTimestamp(connection, "select expires_at from phone_verification where id = 1", "2026-07-17T09:03");
+			assertTimestamp(connection, "select verified_at from phone_verification where id = 1", "2026-07-17T09:01");
+			assertTimestamp(connection, "select created_at from solo_dining_favorite where id = 1", "2026-07-17T09:00");
+		}
+	}
+
 	private static void insertDuplicateSoloDiningFavorites(final Connection connection) throws SQLException {
 		try (Statement statement = connection.createStatement()) {
 			statement.executeUpdate("""
@@ -394,6 +453,87 @@ class InitialSchemaMigrationTest {
 					insert into solo_dining_favorite (id, user_id, place_id, created_at)
 					values (2, 7, 12, timestamp '2026-07-03 13:21:00')
 					""");
+		}
+	}
+
+	private static void insertUtcBusinessTimestamps(final Connection connection) throws SQLException {
+		try (Statement statement = connection.createStatement()) {
+			statement.executeUpdate("""
+					insert into user_account (id, role, status, phone_verified_at, onboarding_status, created_at)
+					values (1, 'USER', 'ACTIVE', timestamp '2026-07-17 00:00:00', 'PHONE_VERIFIED', timestamp '2026-07-17 00:00:00')
+					""");
+			statement.executeUpdate("""
+					insert into place_cache (id, google_place_id, name, latitude, longitude, business_status)
+					values (1, 'place-1', '니어바이 카페', 37.56612000, 126.97845000, 'OPERATIONAL')
+					""");
+			statement.executeUpdate("""
+					insert into solo_dining_favorite (id, user_id, place_id, created_at)
+					values (1, 1, 1, timestamp '2026-07-17 00:00:00')
+					""");
+			statement.executeUpdate("""
+					insert into phone_verification (id, user_id, phone_number, status, expires_at, verified_at)
+					values (1, 1, '01012345678', 'VERIFIED', timestamp '2026-07-17 00:03:00', timestamp '2026-07-17 00:01:00')
+					""");
+			statement.executeUpdate("""
+					insert into companion_post (
+					    id, host_user_id, place_id, meeting_at, meeting_time_type, max_participants, content,
+					    open_chat_url, status, created_at, exposure_expires_at, depart_even_if_not_full
+					) values (
+					    1, 1, 1, null, 'NOW', 2, '지금 같이 식사해요.',
+					    'https://open.kakao.com/o/now', 'RECRUITING', timestamp '2026-07-17 00:00:00',
+					    timestamp '2026-07-17 01:00:00', true
+					), (
+					    2, 1, 1, timestamp '2026-07-17 19:00:00', 'SCHEDULED', 2, '저녁 같이 식사해요.',
+					    'https://open.kakao.com/o/scheduled', 'RECRUITING', timestamp '2026-07-17 00:00:00',
+					    timestamp '2026-07-17 01:00:00', true
+					)
+					""");
+			statement.executeUpdate("""
+					insert into companion_application (id, post_id, applicant_user_id, status, created_at)
+					values (1, 1, 2, 'ACCEPTED', timestamp '2026-07-17 00:00:00')
+					""");
+			statement.executeUpdate("""
+					insert into companion_match (id, post_id, status, created_at)
+					values (1, 1, 'MATCHED', timestamp '2026-07-17 00:00:00'),
+					       (2, 2, 'MATCHED', timestamp '2026-07-17 00:00:00')
+					""");
+			statement.executeUpdate("""
+					insert into companion_schedule (id, match_id, place_id, scheduled_at, confirmed)
+					values (1, 1, 1, timestamp '2026-07-17 00:00:00', true),
+					       (2, 2, 1, timestamp '2026-07-17 19:00:00', true)
+					""");
+			statement.executeUpdate("""
+					insert into companion_meeting (id, match_id, status, started_at, completed_at)
+					values (1, 1, 'COMPLETED', timestamp '2026-07-17 00:00:00', timestamp '2026-07-17 01:00:00'),
+					       (2, 2, 'COMPLETED', timestamp '2026-07-17 19:00:00', timestamp '2026-07-17 20:00:00')
+					""");
+			statement.executeUpdate("""
+					insert into meeting_check_in (id, meeting_id, user_id, latitude, longitude, checked_in_at, completed_at)
+					values (1, 1, 1, 37.56612000, 126.97845000, timestamp '2026-07-17 00:00:00', timestamp '2026-07-17 01:00:00')
+					""");
+			statement.executeUpdate("""
+					insert into companion_notification (
+					    id, recipient_user_id, notification_type, target_type, target_id, read_at, created_at
+					) values (
+					    1, 1, 'COMPANION_APPLICATION_CREATED', 'COMPANION_APPLICATION', 1,
+					    timestamp '2026-07-17 01:00:00', timestamp '2026-07-17 00:00:00'
+					)
+					""");
+			statement.executeUpdate("""
+					insert into companion_review (id, meeting_id, reviewer_user_id, reviewee_user_id, rating, created_at)
+					values (1, 1, 1, 2, 5, timestamp '2026-07-17 00:00:00')
+					""");
+		}
+	}
+
+	private static void assertTimestamp(
+			final Connection connection,
+			final String sql,
+			final String expected
+	) throws SQLException {
+		try (Statement statement = connection.createStatement(); ResultSet resultSet = statement.executeQuery(sql)) {
+			assertThat(resultSet.next()).isTrue();
+			assertThat(resultSet.getTimestamp(1).toLocalDateTime()).isEqualTo(LocalDateTime.parse(expected));
 		}
 	}
 

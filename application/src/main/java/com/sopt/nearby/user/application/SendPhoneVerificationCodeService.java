@@ -40,7 +40,8 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 			final PhoneVerificationRepository phoneVerificationRepository,
 			final PhoneVerificationCodeStore phoneVerificationCodeStore,
 			final PhoneVerificationSender phoneVerificationSender,
-			@Value("${nearby.phone-verification.hash-secret}") final String hashSecret
+			@Value("${nearby.phone-verification.hash-secret}") final String hashSecret,
+			final Clock clock
 	) {
 		this(
 				userAccountRepository,
@@ -48,7 +49,7 @@ public class SendPhoneVerificationCodeService implements SendPhoneVerificationCo
 				phoneVerificationCodeStore,
 				phoneVerificationSender,
 				hashSecret,
-				Clock.systemUTC(),
+				clock,
 				() -> SECURE_RANDOM.nextInt(CODE_BOUND)
 		);
 	}

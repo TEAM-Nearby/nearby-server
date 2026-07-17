@@ -29,7 +29,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 class ConfirmPhoneVerificationCodeServiceTest {
 
-	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-04T07:00:00Z"), ZoneId.of("UTC"));
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-03T22:00:00Z"), ZoneId.of("Asia/Seoul"));
 	private static final String HASH_SECRET = "nearby-phone-verification-test-secret-32bytes";
 	private static final String CODE_123456_HASH =
 			"2a0ce34b1c06ef8464a8b86091d1fbfb8ea80db5fae72670fbeebb6ec17ee395";

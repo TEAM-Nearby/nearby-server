@@ -35,14 +35,6 @@ public class JwtTokenAdapter implements TokenIssuer {
 			@Value("${nearby.jwt.access-token-ttl-seconds:${NEARBY_ACCESS_TOKEN_TTL_SECONDS:3600}}")
 			final long accessTokenTtlSeconds,
 			@Value("${nearby.jwt.refresh-token-ttl-seconds:${NEARBY_REFRESH_TOKEN_TTL_SECONDS:1209600}}")
-			final long refreshTokenTtlSeconds
-	) {
-		this(jwtEncoder, accessTokenTtlSeconds, refreshTokenTtlSeconds, Clock.systemUTC());
-	}
-
-	JwtTokenAdapter(
-			final JwtEncoder jwtEncoder,
-			final long accessTokenTtlSeconds,
 			final long refreshTokenTtlSeconds,
 			final Clock clock
 	) {

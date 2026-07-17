@@ -25,7 +25,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 
 class CreateCompanionPostServiceTest {
 
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-02T05:00:00Z"), ZoneOffset.UTC);
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-01T20:00:00Z"), ZoneId.of("Asia/Seoul"));
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 2, 5, 0);
 
     private FakeRequireCompletedOnboardingUseCase onboardingUseCase;
