@@ -5,13 +5,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileStyleEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMeetingEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewKeywordEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileDetailQueryJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileStyleJpaRepository;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileDetail;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
+import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
+import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.user.adapter.out.persistence.entity.UserAccountEntity;
 import com.sopt.nearby.user.adapter.out.persistence.repository.UserAccountJpaRepository;
 import com.sopt.nearby.user.domain.model.UserAccountStatus;
@@ -26,6 +38,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @DataJpaTest
@@ -42,6 +55,9 @@ class CompanionProfileDetailQueryAdapterTest {
 
     @Autowired
     private CompanionProfileDetailQueryJpaRepository companionProfileDetailQueryJpaRepository;
+
+    @Autowired
+    private TestEntityManager entityManager;
 
     @Test
     void findsActiveProfileDetailWithPhoneVerificationAndKeywords() {
@@ -61,6 +77,59 @@ class CompanionProfileDetailQueryAdapterTest {
                 profile.getId(),
                 TravelStyleKeyword.FOODIE
         ));
+        PlaceCacheEntity place = entityManager.persistAndFlush(new PlaceCacheEntity(
+                null,
+                "google-place-id",
+                "니어바이 스시",
+                "서울시 어딘가",
+                new BigDecimal("37.56710000"),
+                new BigDecimal("126.97920000"),
+                "restaurant",
+                null,
+                new BigDecimal("4.50"),
+                10,
+                null,
+                PlaceBusinessStatus.OPERATIONAL
+        ));
+        CompanionPostEntity post = entityManager.persistAndFlush(new CompanionPostEntity(
+                null,
+                user.getId(),
+                place.getId(),
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 2, 12, 0),
+                null,
+                2,
+                true,
+                "동행 모집글",
+                "https://open.kakao.com/o/nearby123",
+                CompanionPostStatus.RECRUITING,
+                LocalDateTime.of(2026, 7, 1, 9, 0)
+        ));
+        CompanionMatchEntity match = entityManager.persistAndFlush(new CompanionMatchEntity(
+                null,
+                post.getId(),
+                CompanionMatchStatus.MATCHED,
+                LocalDateTime.of(2026, 7, 1, 10, 0)
+        ));
+        CompanionMeetingEntity meeting = entityManager.persistAndFlush(new CompanionMeetingEntity(
+                null,
+                match.getId(),
+                CompanionMeetingStatus.COMPLETED,
+                LocalDateTime.of(2026, 7, 2, 12, 0),
+                LocalDateTime.of(2026, 7, 2, 13, 0)
+        ));
+        CompanionReviewEntity review = entityManager.persistAndFlush(new CompanionReviewEntity(
+                null,
+                meeting.getId(),
+                99L,
+                user.getId(),
+                5,
+                LocalDateTime.of(2026, 7, 2, 14, 0)
+        ));
+        entityManager.persistAndFlush(new CompanionReviewKeywordEntity(
+                review.getId(),
+                ReviewKeyword.FAST_RESPONSE
+        ));
 
         CompanionProfileDetail result = adapter.findByProfileId(profile.getId()).orElseThrow();
 
@@ -71,7 +140,8 @@ class CompanionProfileDetailQueryAdapterTest {
         assertThat(result.birthYear()).isNull();
         assertThat(result.profileImageUrl()).isEqualTo("https://cdn.nearby.com/profiles/1.jpg");
         assertThat(result.intro()).isEqualTo("혼자 여행도 같이 여행도 좋아해요");
-        assertThat(result.mannerScore()).isEqualByComparingTo("4.00");
+        assertThat(result.mannerScore()).isEqualByComparingTo("5.00");
+        assertThat(result.mannerKeywords()).containsExactly(ReviewKeyword.FAST_RESPONSE);
         assertThat(result.reviewCount()).isEqualTo(12);
         assertThat(result.status()).isEqualTo(CompanionProfileStatus.ACTIVE);
         assertThat(result.phoneVerifiedAt()).isEqualTo(LocalDateTime.of(2026, 7, 1, 10, 0));
@@ -153,7 +223,13 @@ class CompanionProfileDetailQueryAdapterTest {
     @EntityScan(basePackageClasses = {
             UserAccountEntity.class,
             CompanionProfileEntity.class,
-            CompanionProfileStyleEntity.class
+            CompanionProfileStyleEntity.class,
+            PlaceCacheEntity.class,
+            CompanionPostEntity.class,
+            CompanionMatchEntity.class,
+            CompanionMeetingEntity.class,
+            CompanionReviewEntity.class,
+            CompanionReviewKeywordEntity.class
     })
     @EnableJpaRepositories(basePackageClasses = {
             UserAccountJpaRepository.class,

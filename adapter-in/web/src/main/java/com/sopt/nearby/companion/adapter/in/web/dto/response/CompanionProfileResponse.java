@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.adapter.in.web.dto.response;
 
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileDetail;
+import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,7 +20,8 @@ public record CompanionProfileResponse(
         int reviewCount,
         String status,
         LocalDateTime phoneVerifiedAt,
-        List<String> keywords
+        List<String> keywords,
+        List<String> mannerKeywords
 ) {
 
     public static CompanionProfileResponse from(final CompanionProfileDetail result) {
@@ -37,6 +39,9 @@ public record CompanionProfileResponse(
                 result.phoneVerifiedAt(),
                 result.keywords().stream()
                         .map(TravelStyleKeyword::name)
+                        .toList(),
+                result.mannerKeywords().stream()
+                        .map(ReviewKeyword::name)
                         .toList()
         );
     }

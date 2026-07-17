@@ -117,7 +117,8 @@ class ReadCompanionProfileServiceTest {
                 12,
                 CompanionProfileStatus.ACTIVE,
                 LocalDateTime.of(2026, 7, 1, 10, 0),
-                keywords
+                keywords,
+                List.of()
         );
     }
 
