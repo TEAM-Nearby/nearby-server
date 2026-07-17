@@ -27,6 +27,7 @@ import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.in.AcceptCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
 import com.sopt.nearby.companion.port.in.RejectCompanionRequestUseCase;
+import com.sopt.nearby.shared.adapter.in.web.config.KoreaTimeJacksonConfig;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -72,7 +73,7 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.data.applicationStatus").value("PENDING"))
                 .andExpect(jsonPath("$.data.placeName").value("오노테라"))
                 .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
-                .andExpect(jsonPath("$.data.meetingAt").value("2026-06-18T16:30:00"))
+                .andExpect(jsonPath("$.data.meetingAt").value("2026-06-18T16:30:00+09:00"))
                 .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/nearby123"))
                 .andExpect(jsonPath("$.data.applicantProfile.profileId").value(20))
                 .andExpect(jsonPath("$.data.applicantProfile.profileImageUrl")
@@ -82,7 +83,7 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.data.applicantProfile.birthYear").value(2003))
                 .andExpect(jsonPath("$.data.applicantProfile.mannerScore").value(4.0))
                 .andExpect(jsonPath("$.data.applicantAccount.phoneVerifiedAt")
-                        .value("2026-07-01T09:00:00"));
+                        .value("2026-07-01T09:00:00+09:00"));
 
         assertEquals(100L, useCase.command.hostUserId());
         assertEquals(3L, useCase.command.applicationId());
@@ -147,7 +148,7 @@ class CompanionRequestControllerTest {
                 .andExpect(jsonPath("$.data.matchId").value(1))
                 .andExpect(jsonPath("$.data.matchStatus").value("MATCHED"))
                 .andExpect(jsonPath("$.data.meetingTimeType").doesNotExist())
-                .andExpect(jsonPath("$.data.meetingAt").value("2026-07-15T12:10:00"));
+                .andExpect(jsonPath("$.data.meetingAt").value("2026-07-15T12:10:00+09:00"));
 
         assertEquals(100L, acceptUseCase.command.hostUserId());
         assertEquals(3L, acceptUseCase.command.applicationId());
@@ -241,6 +242,7 @@ class CompanionRequestControllerTest {
     private MappingJackson2HttpMessageConverter jsonMessageConverter() {
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
+                .registerModule(new KoreaTimeJacksonConfig().koreaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return new MappingJackson2HttpMessageConverter(objectMapper);
     }

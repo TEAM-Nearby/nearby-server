@@ -38,6 +38,7 @@ import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
+import com.sopt.nearby.shared.adapter.in.web.config.KoreaTimeJacksonConfig;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import com.sopt.nearby.user.exception.OnboardingRequiredException;
 import java.math.BigDecimal;
@@ -110,7 +111,7 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.posts[0].place.imageAttributions").isArray())
                 .andExpect(jsonPath("$.data.posts[0].contentPreview").value("같이 스시 먹어요"))
                 .andExpect(jsonPath("$.data.posts[0].contentPreviewTruncated").value(false))
-                .andExpect(jsonPath("$.data.posts[0].meetingAt").value("2026-07-03T14:00:00"))
+                .andExpect(jsonPath("$.data.posts[0].meetingAt").value("2026-07-03T14:00:00+09:00"))
                 .andExpect(jsonPath("$.data.posts[0].meetingAtText").value("7월 3일 14:00"))
                 .andExpect(jsonPath("$.data.posts[0].participantCount").value(2))
                 .andExpect(jsonPath("$.data.posts[0].maxParticipants").value(4))
@@ -119,7 +120,7 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.posts[0].participants[1].userId").value(8))
                 .andExpect(jsonPath("$.data.posts[0].participants[1].profileImageUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data.posts[0].participantSummaryText").value("2/4 모집 중"))
-                .andExpect(jsonPath("$.data.posts[0].createdAt").value("2026-07-02T13:30:00"))
+                .andExpect(jsonPath("$.data.posts[0].createdAt").value("2026-07-02T13:30:00+09:00"))
                 .andExpect(jsonPath("$.data.posts[0].createdAgoText").value("30분 전"))
                 .andExpect(jsonPath("$.data.posts[0].mapMarkerText").value("7월 3일 14시 니어바이스시 동행"));
 
@@ -230,7 +231,7 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.place.longitude").value(126.9792))
                 .andExpect(jsonPath("$.data.place.category").value("RESTAURANT"))
                 .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
-                .andExpect(jsonPath("$.data.meetingAt").value("2026-07-03T14:00:00"))
+                .andExpect(jsonPath("$.data.meetingAt").value("2026-07-03T14:00:00+09:00"))
                 .andExpect(jsonPath("$.data.exposureExpiresAt").value(nullValue()))
                 .andExpect(jsonPath("$.data.maxParticipants").value(4))
                 .andExpect(jsonPath("$.data.participantCount").value(1))
@@ -239,7 +240,7 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.styleKeywords[1]").value("PHOTO_LOVER"))
                 .andExpect(jsonPath("$.data.content").value("같이 스시 먹으러 갈 사람 구해요."))
                 .andExpect(jsonPath("$.data.openChatUrl").value("https://open.kakao.com/o/nearby123"))
-                .andExpect(jsonPath("$.data.createdAt").value("2026-07-02T14:00:00"));
+                .andExpect(jsonPath("$.data.createdAt").value("2026-07-02T14:00:00+09:00"));
 
         assertEquals(7L, createUseCase.command.hostUserId());
         assertEquals("google-place-id", createUseCase.command.place().googlePlaceId());
@@ -318,7 +319,7 @@ class CompanionPostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.meetingTimeType").value("NOW"))
                 .andExpect(jsonPath("$.data.meetingAt").value(nullValue()))
-                .andExpect(jsonPath("$.data.exposureExpiresAt").value("2026-07-02T15:00:00"))
+                .andExpect(jsonPath("$.data.exposureExpiresAt").value("2026-07-02T15:00:00+09:00"))
                 .andExpect(jsonPath("$.data.departEvenIfNotFull").value(true))
                 .andExpect(jsonPath("$.data.styleKeywords").isArray())
                 .andExpect(jsonPath("$.data.place.category").value("OTHER"));
@@ -421,7 +422,7 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.applicationId").value(1))
                 .andExpect(jsonPath("$.data.postId").value(10))
                 .andExpect(jsonPath("$.data.applicationStatus").value("PENDING"))
-                .andExpect(jsonPath("$.data.createdAt").value("2026-07-15T12:30:00"));
+                .andExpect(jsonPath("$.data.createdAt").value("2026-07-15T12:30:00+09:00"));
 
         assertEquals(7L, createRequestUseCase.command.applicantUserId());
         assertEquals(10L, createRequestUseCase.command.postId());
@@ -480,12 +481,12 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.hostUserId").value(1))
                 .andExpect(jsonPath("$.data.hostProfileId").value(5))
                 .andExpect(jsonPath("$.data.googlePlaceId").value("google-place-id"))
-                .andExpect(jsonPath("$.data.meetingAt").value("2026-07-03T14:00:00"))
+                .andExpect(jsonPath("$.data.meetingAt").value("2026-07-03T14:00:00+09:00"))
                 .andExpect(jsonPath("$.data.maxParticipants").value(4))
                 .andExpect(jsonPath("$.data.content").value("같이 스시 먹으러 갈 사람 구해요."))
                 .andExpect(jsonPath("$.data.openChatUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data.status").value("RECRUITING"))
-                .andExpect(jsonPath("$.data.createdAt").value("2026-07-02T13:30:00"))
+                .andExpect(jsonPath("$.data.createdAt").value("2026-07-02T13:30:00+09:00"))
                 .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.expiresAt").value(nullValue()))
                 .andExpect(jsonPath("$.data.participantCount").value(2))
@@ -507,7 +508,7 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.hostProfileSummary.birthYear").value(2001))
                 .andExpect(jsonPath("$.data.hostProfileSummary.profileImageUrl").value(nullValue()))
                 .andExpect(jsonPath("$.data.hostProfileSummary.mannerScore").value(4.0))
-                .andExpect(jsonPath("$.data.hostProfileSummary.phoneVerifiedAt").value("2026-07-01T10:00:00"))
+                .andExpect(jsonPath("$.data.hostProfileSummary.phoneVerifiedAt").value("2026-07-01T10:00:00+09:00"))
                 .andExpect(jsonPath("$.data.hostProfileSummary.keywords[0]").value("PLANNED"))
                 .andExpect(jsonPath("$.data.hostProfileSummary.keywords[1]").value("FOODIE"));
 
@@ -692,6 +693,7 @@ class CompanionPostControllerTest {
     private MappingJackson2HttpMessageConverter jsonMessageConverter() {
         ObjectMapper objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
+                .registerModule(new KoreaTimeJacksonConfig().koreaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return new MappingJackson2HttpMessageConverter(objectMapper);
     }
