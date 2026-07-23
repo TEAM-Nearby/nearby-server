@@ -1,0 +1,6 @@
+# Prometheus 메트릭 노출 범위를 설정하는 모니터링 프로파일
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
