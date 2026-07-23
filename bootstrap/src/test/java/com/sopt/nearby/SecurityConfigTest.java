@@ -14,107 +14,118 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 
-@SpringBootTest(properties = "management.health.redis.enabled=false")
+@SpringBootTest(properties = {
+        "management.health.redis.enabled=false",
+        "spring.profiles.active=monitoring"
+})
+@AutoConfigureObservability(metrics = true, tracing = false)
 @AutoConfigureMockMvc
 class SecurityConfigTest {
 
-	@Autowired
-	private MockMvc mockMvc;
+    @Autowired
+    private MockMvc mockMvc;
 
-	@Test
-	void permitsKakaoLoginWithoutBearerToken() throws Exception {
-		mockMvc.perform(post("/api/kakao/login")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("{}"))
-				.andExpect(status().isBadRequest());
-	}
+    @Test
+    void permitsKakaoLoginWithoutBearerToken() throws Exception {
+        mockMvc.perform(post("/api/kakao/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
 
-	@Test
-	void permitsHealthWithoutBearerToken() throws Exception {
-		mockMvc.perform(get("/actuator/health"))
-				.andExpect(status().isOk());
-	}
+    @Test
+    void permitsHealthWithoutBearerToken() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk());
+    }
 
-	@Test
-	void permitsOpenApiDocsWithoutBearerToken() throws Exception {
-		mockMvc.perform(get("/v3/api-docs"))
-				.andExpect(status().isOk());
-	}
+    @Test
+    void permitsOpenApiDocsWithoutBearerToken() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk());
+    }
 
-	@Test
-	void openApiDocsUsesForwardedHttpsScheme() throws Exception {
-		mockMvc.perform(get("/v3/api-docs")
-						.header("X-Forwarded-Proto", "https")
-						.header("X-Forwarded-Host", "api.nearby.test"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.servers[0].url").value("https://api.nearby.test"));
-	}
+    @Test
+    void openApiDocsUsesForwardedHttpsScheme() throws Exception {
+        mockMvc.perform(get("/v3/api-docs")
+                        .header("X-Forwarded-Proto", "https")
+                        .header("X-Forwarded-Host", "api.nearby.test"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.servers[0].url").value("https://api.nearby.test"));
+    }
 
-	@Test
-	void documentsCompanionPostsOnboardingRequiredResponse() throws Exception {
-		mockMvc.perform(get("/v3/api-docs"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.paths['/api/companion-posts'].get.responses['403']"
-						+ ".content['application/json'].examples.ONBOARDING_REQUIRED.value.code")
-						.value("ONBOARDING_REQUIRED"));
-	}
+    @Test
+    void documentsCompanionPostsOnboardingRequiredResponse() throws Exception {
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/companion-posts'].get.responses['403']"
+                        + ".content['application/json'].examples.ONBOARDING_REQUIRED.value.code")
+                        .value("ONBOARDING_REQUIRED"));
+    }
 
-	@Test
-	void rejectsOtherApiWithoutBearerToken() throws Exception {
-		mockMvc.perform(get("/api/protected"))
-				.andExpect(status().isUnauthorized());
-	}
+    @Test
+    void rejectsOtherApiWithoutBearerToken() throws Exception {
+        mockMvc.perform(get("/api/protected"))
+                .andExpect(status().isUnauthorized());
+    }
 
-	@Test
-	void rejectsOnboardingPhoneVerificationWithoutBearerTokenAsCommonJson() throws Exception {
-		mockMvc.perform(post("/api/onboarding/phone-verifications")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"phoneNumber":"01012345678"}
-								"""))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.status").value(401))
-				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-				.andExpect(jsonPath("$.message").value("인증이 필요합니다."))
-				.andExpect(jsonPath("$.data").value(nullValue()));
-	}
+    @Test
+    void rejectsOnboardingPhoneVerificationWithoutBearerTokenAsCommonJson() throws Exception {
+        mockMvc.perform(post("/api/onboarding/phone-verifications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"phoneNumber":"01012345678"}
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("인증이 필요합니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
 
-	@Test
-	void rejectsOnboardingPhoneVerificationConfirmWithoutBearerTokenAsCommonJson() throws Exception {
-		mockMvc.perform(patch("/api/onboarding/phone-verifications/{phoneVerificationId}", 10L)
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"verificationCode":"123456"}
-								"""))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.status").value(401))
-				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-				.andExpect(jsonPath("$.message").value("인증이 필요합니다."))
-				.andExpect(jsonPath("$.data").value(nullValue()));
-	}
+    @Test
+    void rejectsOnboardingPhoneVerificationConfirmWithoutBearerTokenAsCommonJson() throws Exception {
+        mockMvc.perform(patch("/api/onboarding/phone-verifications/{phoneVerificationId}", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"verificationCode":"123456"}
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("인증이 필요합니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
 
-	@Test
-	void rejectsLogoutWithoutBearerTokenAsCommonJson() throws Exception {
-		mockMvc.perform(post("/api/auth/logout")
-						.contentType(MediaType.APPLICATION_JSON)
-						.content("""
-								{"refreshToken":"refresh-token"}
-								"""))
-				.andExpect(status().isUnauthorized())
-				.andExpect(jsonPath("$.status").value(401))
-				.andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-				.andExpect(jsonPath("$.message").value("인증이 필요합니다."))
-				.andExpect(jsonPath("$.data").value(nullValue()));
-	}
+    @Test
+    void rejectsLogoutWithoutBearerTokenAsCommonJson() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"refreshToken":"refresh-token"}
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
+                .andExpect(jsonPath("$.message").value("인증이 필요합니다."))
+                .andExpect(jsonPath("$.data").value(nullValue()));
+    }
 
-	@Test
-	void permitsTokenRefreshWithoutBearerToken() throws Exception {
-		mockMvc.perform(post("/api/auth/refresh")
-					.contentType(MediaType.APPLICATION_JSON)
-					.content("{}"))
-				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.status").value(400))
-				.andExpect(jsonPath("$.code").value("INVALID_TOKEN_REFRESH_REQUEST"));
-	}
+    @Test
+    void permitsTokenRefreshWithoutBearerToken() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("INVALID_TOKEN_REFRESH_REQUEST"));
+    }
+
+    @Test
+    void permitsPrometheusMetricsWithoutBearerToken() throws Exception {
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isOk());
+    }
 }
