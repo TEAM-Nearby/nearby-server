@@ -18,7 +18,9 @@ import org.springframework.boot.test.autoconfigure.actuate.observability.AutoCon
 
 @SpringBootTest(properties = {
         "management.health.redis.enabled=false",
-        "spring.profiles.active=monitoring"
+        "management.endpoint.health.probes.enabled=true",
+        "management.endpoint.health.probes.add-additional-paths=true",
+        "management.endpoints.web.exposure.include=health,prometheus"
 })
 @AutoConfigureObservability(metrics = true, tracing = false)
 @AutoConfigureMockMvc
@@ -38,6 +40,12 @@ class SecurityConfigTest {
     @Test
     void permitsHealthWithoutBearerToken() throws Exception {
         mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void permitsReadinessProbeWithoutBearerToken() throws Exception {
+        mockMvc.perform(get("/readyz"))
                 .andExpect(status().isOk());
     }
 

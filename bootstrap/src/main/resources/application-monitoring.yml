@@ -1,5 +1,15 @@
 # Prometheus 메트릭 노출 범위를 설정하는 모니터링 프로파일
 management:
+  server:
+    port: 9091
+    address: 127.0.0.1
+
+  endpoint:
+    health:
+      probes:
+        enabled: true
+        add-additional-paths: true
+
   endpoints:
     web:
       exposure:
