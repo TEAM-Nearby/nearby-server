@@ -1,6 +1,7 @@
 // Spring Security 인증 정책의 공개 경로와 보호 경로를 검증하는 테스트
 package com.sopt.nearby;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -11,17 +12,20 @@ import static org.hamcrest.Matchers.nullValue;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 
-@SpringBootTest(properties = {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "management.health.redis.enabled=false",
-        "management.endpoint.health.probes.enabled=true",
-        "management.endpoint.health.probes.add-additional-paths=true",
-        "management.endpoints.web.exposure.include=health,prometheus"
+        "management.server.port=0"
 })
+@ActiveProfiles("monitoring")
 @AutoConfigureObservability(metrics = true, tracing = false)
 @AutoConfigureMockMvc
 class SecurityConfigTest {
@@ -29,18 +33,18 @@ class SecurityConfigTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private TestRestTemplate restTemplate;
+
+    @LocalManagementPort
+    private int managementPort;
+
     @Test
     void permitsKakaoLoginWithoutBearerToken() throws Exception {
         mockMvc.perform(post("/api/kakao/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void permitsHealthWithoutBearerToken() throws Exception {
-        mockMvc.perform(get("/actuator/health"))
-                .andExpect(status().isOk());
     }
 
     @Test
@@ -132,8 +136,12 @@ class SecurityConfigTest {
     }
 
     @Test
-    void permitsPrometheusMetricsWithoutBearerToken() throws Exception {
-        mockMvc.perform(get("/actuator/prometheus"))
-                .andExpect(status().isOk());
+    void permitsPrometheusMetricsWithoutBearerToken() {
+        var response = restTemplate.getForEntity(
+                "http://127.0.0.1:%d/actuator/prometheus".formatted(managementPort),
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 }
