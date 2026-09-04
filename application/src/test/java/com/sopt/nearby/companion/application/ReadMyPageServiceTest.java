@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +37,7 @@ class ReadMyPageServiceTest {
         service = new ReadMyPageService(
                 queryPort,
                 onboardingUseCase,
-                Clock.fixed(Instant.parse("2026-07-09T00:00:00Z"), ZoneId.of("Asia/Seoul"))
+                Clock.fixed(Instant.parse("2026-07-09T00:00:00Z"), ZoneOffset.UTC)
         );
     }
 

@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,8 +25,8 @@ import org.junit.jupiter.api.Test;
 class ManageSoloDiningFavoriteServiceTest {
 
     private static final Clock CLOCK = Clock.fixed(
-            Instant.parse("2026-07-17T00:00:00Z"),
-            ZoneId.of("Asia/Seoul")
+            Instant.parse("2026-07-17T09:00:00Z"),
+            ZoneOffset.UTC
     );
 
     private FakePlaceCacheRepository placeCacheRepository;

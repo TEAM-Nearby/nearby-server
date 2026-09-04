@@ -1,4 +1,4 @@
-// 시간 의존 컴포넌트가 공통 Clock을 주입받는지 검증한다.
+// 시간 의존 컴포넌트가 공통 UTC Clock을 주입받는지 검증한다.
 package com.sopt.nearby.shared.config;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -14,7 +14,7 @@ import java.time.Clock;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
-class KoreaTimeClockInjectionTest {
+class UtcTimeClockInjectionTest {
 
     @Test
     void injectsCommonClockIntoTimeDependentComponents() {

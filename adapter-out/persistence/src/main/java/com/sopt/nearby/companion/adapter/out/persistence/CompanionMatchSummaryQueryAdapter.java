@@ -30,6 +30,7 @@ public class CompanionMatchSummaryQueryAdapter implements CompanionMatchSummaryQ
                         row.getHostProfileImageUrl(),
                         UserGender.valueOf(row.getHostGender()),
                         row.getPlaceName(),
+                        row.getPlaceAddress(),
                         row.getMeetingAt(),
                         CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                         row.getCreatedAt(),

@@ -37,7 +37,7 @@ import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +48,7 @@ import org.junit.jupiter.api.Test;
 
 class ProcessCompanionRequestServiceTest {
 
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-15T03:30:00Z"), ZoneId.of("Asia/Seoul"));
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-15T12:30:00Z"), ZoneOffset.UTC);
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 15, 12, 30);
 
     private FakeCompanionApplicationRepository applicationRepository;

@@ -23,7 +23,7 @@ import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 class KakaoLoginServiceTest {
 
-	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-03T03:00:00Z"), ZoneId.of("Asia/Seoul"));
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-03T12:00:00Z"), ZoneOffset.UTC);
 
 	@Test
 	void createsUserAndSocialAccountWhenKakaoAccountIsNew() {

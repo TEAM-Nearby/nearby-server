@@ -96,14 +96,14 @@ public class CompanionUseCaseConfig {
             final ResolvePlaceCacheUseCase resolvePlaceCacheUseCase,
             final CompanionPostRepository companionPostRepository,
             final CompanionPostStyleRepository companionPostStyleRepository,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
         return new CreateCompanionPostService(
                 requireCompletedOnboardingUseCase,
                 resolvePlaceCacheUseCase,
                 companionPostRepository,
                 companionPostStyleRepository,
-                koreaStandardClock
+                clock
         );
     }
 
@@ -113,14 +113,14 @@ public class CompanionUseCaseConfig {
             final CompanionPostRepository companionPostRepository,
             final CompanionApplicationRepository companionApplicationRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
         return new CreateCompanionRequestService(
                 requireCompletedOnboardingUseCase,
                 companionPostRepository,
                 companionApplicationRepository,
                 createCompanionNotificationUseCase,
-                koreaStandardClock
+                clock
         );
     }
 
@@ -145,9 +145,10 @@ public class CompanionUseCaseConfig {
 
     @Bean
     ReadCompanionMatchesUseCase readCompanionMatchesUseCase(
-            final CompanionMatchSummaryQueryPort queryPort
+            final CompanionMatchSummaryQueryPort queryPort,
+            final Clock clock
     ) {
-        return new ReadCompanionMatchesService(queryPort);
+        return new ReadCompanionMatchesService(queryPort, clock);
     }
 
     @Bean
@@ -162,12 +163,12 @@ public class CompanionUseCaseConfig {
             final CompanionPostQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final ResolvePlaceImageUseCase resolvePlaceImageUseCase,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
         return new ReadCompanionPostsService(
                 queryPort,
                 requireCompletedOnboardingUseCase,
-                koreaStandardClock,
+                clock,
                 resolvePlaceImageUseCase
         );
     }
@@ -176,12 +177,12 @@ public class CompanionUseCaseConfig {
     ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase(
             final CompanionPostDetailQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
         return new ReadCompanionPostDetailService(
                 queryPort,
                 requireCompletedOnboardingUseCase,
-                koreaStandardClock
+                clock
         );
     }
 
@@ -196,9 +197,9 @@ public class CompanionUseCaseConfig {
     ReadMyPageUseCase readMyPageUseCase(
             final MyPageQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
-        return new ReadMyPageService(queryPort, requireCompletedOnboardingUseCase, koreaStandardClock);
+        return new ReadMyPageService(queryPort, requireCompletedOnboardingUseCase, clock);
     }
 
     @Bean
@@ -276,7 +277,7 @@ public class CompanionUseCaseConfig {
             final CompanionScheduleRepository companionScheduleRepository,
             final CompanionMeetingRepository companionMeetingRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
         return new ProcessCompanionRequestService(
                 applicationRepository,
@@ -286,24 +287,24 @@ public class CompanionUseCaseConfig {
                 companionScheduleRepository,
                 companionMeetingRepository,
                 createCompanionNotificationUseCase,
-                koreaStandardClock
+                clock
         );
     }
 
     @Bean
     CreateCompanionNotificationUseCase createCompanionNotificationUseCase(
             final CompanionNotificationRepository repository,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
-        return new CreateCompanionNotificationService(repository, koreaStandardClock);
+        return new CreateCompanionNotificationService(repository, clock);
     }
 
     @Bean
     MarkCompanionNotificationAsReadUseCase markCompanionNotificationAsReadUseCase(
             final CompanionNotificationRepository repository,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
-        return new MarkCompanionNotificationAsReadService(repository, koreaStandardClock);
+        return new MarkCompanionNotificationAsReadService(repository, clock);
     }
 
     @Bean
@@ -333,13 +334,13 @@ public class CompanionUseCaseConfig {
             final CompanionMeetingCheckInQueryPort queryPort,
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
         return new CheckInCompanionMeetingService(
                 queryPort,
                 participantRepository,
                 checkInRepository,
-                koreaStandardClock
+                clock
         );
     }
 
@@ -349,14 +350,14 @@ public class CompanionUseCaseConfig {
             final CompanionMatchRepository matchRepository,
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
         return new CompleteCompanionMeetingService(
                 meetingRepository,
                 matchRepository,
                 participantRepository,
                 checkInRepository,
-                koreaStandardClock
+                clock
         );
     }
 
@@ -374,7 +375,7 @@ public class CompanionUseCaseConfig {
             final MeetingCheckInRepository checkInRepository,
             final CompanionReviewRepository reviewRepository,
             final CompanionReviewKeywordRepository reviewKeywordRepository,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
         return new CreateCompanionReviewsService(
                 meetingRepository,
@@ -382,7 +383,7 @@ public class CompanionUseCaseConfig {
                 checkInRepository,
                 reviewRepository,
                 reviewKeywordRepository,
-                koreaStandardClock
+                clock
         );
     }
 }
