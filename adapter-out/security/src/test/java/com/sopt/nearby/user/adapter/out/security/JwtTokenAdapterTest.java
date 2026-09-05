@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HexFormat;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -24,7 +24,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 class JwtTokenAdapterTest {
 
-	private static final Clock CLOCK = Clock.fixed(Instant.parse("2099-01-01T03:00:00Z"), ZoneId.of("Asia/Seoul"));
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2099-01-01T03:00:00Z"), ZoneOffset.UTC);
 	private static final String SECRET = "12345678901234567890123456789012";
 
 	@Test

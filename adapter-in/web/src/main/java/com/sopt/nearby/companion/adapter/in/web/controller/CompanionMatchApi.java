@@ -32,13 +32,52 @@ import java.security.Principal;
 @Tag(name = "CompanionMatch", description = "매칭된 동행 API")
 public interface CompanionMatchApi {
 
+    @ApiResponse(
+            responseCode = "200",
+            description = "매칭된 동행 목록 조회 성공",
+            content = @Content(
+                    mediaType = "application/json",
+                    examples = @ExampleObject(
+                            name = "READ_COMPANION_MATCHES",
+                            value = """
+                                    {
+                                      "status": 200,
+                                      "code": "READ_COMPANION_MATCHES",
+                                      "message": "매칭된 동행 목록을 조회했어요.",
+                                      "data": {
+                                        "matches": [
+                                          {
+                                            "matchId": 1,
+                                            "hostNickname": "호스트A",
+                                            "hostProfileImageUrl": "https://image.example/host-a.png",
+                                            "hostGender": "FEMALE",
+                                            "placeName": "시우다드콘달",
+                                            "city": "MADRID",
+                                            "timeZoneId": "Europe/Madrid",
+                                            "currentLocalTime": "2026-07-01T14:00:00+02:00",
+                                            "meetingAt": "2026-07-01T19:00:00",
+                                            "meetingTimeType": "SCHEDULED",
+                                            "createdAt": "2026-07-01T10:00:00",
+                                            "content": "같이 타파스 드실 분 구해요",
+                                            "matchStatus": "MATCHED"
+                                          }
+                                        ]
+                                      }
+                                    }
+                                    """
+                    )
+            )
+    )
     @Operation(
             summary = "매칭된 동행 목록 보기",
             description = """
                     JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭 목록을 조회합니다.
                     MATCHED 또는 SCHEDULE_CONFIRMED 상태만 반환합니다.
                     meetingTimeType이 NOW인 신규 수락 흐름은 일정이 자동 확정되어 SCHEDULE_CONFIRMED 상태로 반환됩니다.
-                    createdAt과 meetingAt의 화면 표기 문구는 클라이언트에서 포맷팅합니다.
+                    장소 주소에서 MADRID, LONDON, PARIS를 판별해 해당 도시의 IANA 시간대와 현재 현지 시각을 반환합니다.
+                    지원하지 않는 도시라면 city, timeZoneId, currentLocalTime은 null입니다.
+                    currentLocalTime에는 도시의 UTC 오프셋이 포함되며 서머타임도 반영됩니다.
+                    createdAt은 서버 UTC 시각이고 meetingAt은 식당 도시의 예약 시각이며, 화면 표기 문구는 클라이언트에서 포맷팅합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )

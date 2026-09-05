@@ -414,6 +414,67 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void twentiethMigrationRestoresServerGeneratedBusinessTimestampsToUtc() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource readStatusMigration = new ClassPathResource(
+				"db/migration/V7__create_companion_application_read_status.sql"
+		);
+		ClassPathResource notificationMigration = new ClassPathResource(
+				"db/migration/V8__create_companion_notification.sql"
+		);
+		ClassPathResource companionPostMigration = new ClassPathResource(
+				"db/migration/V10__add_companion_post_creation_fields.sql"
+		);
+		ClassPathResource completionMigration = new ClassPathResource(
+				"db/migration/V18__add_meeting_check_in_completed_at.sql"
+		);
+		ClassPathResource kstMigration = new ClassPathResource(
+				"db/migration/V19__normalize_business_timestamps_to_kst.sql"
+		);
+		ClassPathResource utcMigration = new ClassPathResource(
+				"db/migration/V20__normalize_business_timestamps_to_utc.sql"
+		);
+
+		assertThat(utcMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_utc_timestamp_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, readStatusMigration);
+			ScriptUtils.executeSqlScript(connection, notificationMigration);
+			ScriptUtils.executeSqlScript(connection, companionPostMigration);
+			ScriptUtils.executeSqlScript(connection, completionMigration);
+			insertUtcBusinessTimestamps(connection);
+			ScriptUtils.executeSqlScript(connection, kstMigration);
+
+			ScriptUtils.executeSqlScript(connection, utcMigration);
+
+			assertTimestamp(connection, "select created_at from companion_post where id = 1", "2026-07-17T00:00");
+			assertTimestamp(connection, "select exposure_expires_at from companion_post where id = 1", "2026-07-17T01:00");
+			assertTimestamp(connection, "select meeting_at from companion_post where id = 2", "2026-07-17T19:00");
+			assertTimestamp(connection, "select created_at from companion_application where id = 1", "2026-07-17T00:00");
+			assertTimestamp(connection, "select created_at from companion_match where id = 1", "2026-07-17T00:00");
+			assertTimestamp(connection, "select scheduled_at from companion_schedule where id = 1", "2026-07-17T00:00");
+			assertTimestamp(connection, "select scheduled_at from companion_schedule where id = 2", "2026-07-17T19:00");
+			assertTimestamp(connection, "select started_at from companion_meeting where id = 1", "2026-07-17T00:00");
+			assertTimestamp(connection, "select started_at from companion_meeting where id = 2", "2026-07-17T19:00");
+			assertTimestamp(connection, "select completed_at from companion_meeting where id = 2", "2026-07-17T20:00");
+			assertTimestamp(connection, "select checked_in_at from meeting_check_in where id = 1", "2026-07-17T00:00");
+			assertTimestamp(connection, "select completed_at from meeting_check_in where id = 1", "2026-07-17T01:00");
+			assertTimestamp(connection, "select created_at from companion_notification where id = 1", "2026-07-17T00:00");
+			assertTimestamp(connection, "select read_at from companion_notification where id = 1", "2026-07-17T01:00");
+			assertTimestamp(connection, "select created_at from companion_review where id = 1", "2026-07-17T00:00");
+			assertTimestamp(connection, "select phone_verified_at from user_account where id = 1", "2026-07-17T00:00");
+			assertTimestamp(connection, "select expires_at from phone_verification where id = 1", "2026-07-17T00:03");
+			assertTimestamp(connection, "select verified_at from phone_verification where id = 1", "2026-07-17T00:01");
+			assertTimestamp(connection, "select created_at from solo_dining_favorite where id = 1", "2026-07-17T00:00");
+		}
+	}
+
 	private static void insertDuplicateSoloDiningFavorites(final Connection connection) throws SQLException {
 		try (Statement statement = connection.createStatement()) {
 			statement.executeUpdate("""

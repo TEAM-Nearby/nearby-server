@@ -75,12 +75,12 @@ public class PlaceUseCaseConfig {
     ManageSoloDiningFavoriteUseCase manageSoloDiningFavoriteUseCase(
             final PlaceCacheRepository placeCacheRepository,
             final SoloDiningFavoriteRepository soloDiningFavoriteRepository,
-            final Clock koreaStandardClock
+            final Clock clock
     ) {
         return new ManageSoloDiningFavoriteService(
                 placeCacheRepository,
                 soloDiningFavoriteRepository,
-                koreaStandardClock
+                clock
         );
     }
 }

@@ -9,6 +9,7 @@ public interface CompanionMatchSummaryProjection {
     String getHostProfileImageUrl();
     String getHostGender();
     String getPlaceName();
+    String getPlaceAddress();
     LocalDateTime getMeetingAt();
     String getMeetingTimeType();
     LocalDateTime getCreatedAt();

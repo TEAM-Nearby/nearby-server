@@ -13,12 +13,14 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleCommand;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleResult;
+import com.sopt.nearby.companion.application.ReadCompanionMatchResult;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMatchException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
@@ -105,17 +107,22 @@ class CompanionMatchControllerTest {
 
     @Test
     void passesAuthenticatedUserIdFromPrincipalToReadMatchesUseCase() throws Exception {
-        readCompanionMatchesUseCase.result = List.of(new CompanionMatchSummary(
-                1L,
-                "호스트A",
-                "https://image.example/host-a.png",
-                UserGender.FEMALE,
-                "시우다드콘달",
-                LocalDateTime.of(2026, 6, 29, 18, 30),
-                CompanionPostMeetingTimeType.SCHEDULED,
-                LocalDateTime.of(2026, 6, 29, 18, 15),
-                "오늘 저녁 바르셀로나에서 같이 타파스 드실 분 구해요",
-                CompanionMatchStatus.MATCHED
+        readCompanionMatchesUseCase.result = List.of(new ReadCompanionMatchResult(
+                new CompanionMatchSummary(
+                        1L,
+                        "호스트A",
+                        "https://image.example/host-a.png",
+                        UserGender.FEMALE,
+                        "시우다드콘달",
+                        "Madrid, Spain",
+                        LocalDateTime.of(2026, 6, 29, 18, 30),
+                        CompanionPostMeetingTimeType.SCHEDULED,
+                        LocalDateTime.of(2026, 6, 29, 18, 15),
+                        "오늘 저녁 바르셀로나에서 같이 타파스 드실 분 구해요",
+                        CompanionMatchStatus.MATCHED
+                ),
+                CompanionCity.MADRID,
+                LocalDateTime.of(2026, 6, 29, 18, 0).atZone(CompanionCity.MADRID.zoneId())
         ));
 
         mockMvc.perform(get("/api/companion-matches")
@@ -130,6 +137,10 @@ class CompanionMatchControllerTest {
                         .value("https://image.example/host-a.png"))
                 .andExpect(jsonPath("$.data.matches[0].hostGender").value("FEMALE"))
                 .andExpect(jsonPath("$.data.matches[0].placeName").value("시우다드콘달"))
+                .andExpect(jsonPath("$.data.matches[0].city").value("MADRID"))
+                .andExpect(jsonPath("$.data.matches[0].timeZoneId").value("Europe/Madrid"))
+                .andExpect(jsonPath("$.data.matches[0].currentLocalTime")
+                        .value("2026-06-29T18:00:00+02:00"))
                 .andExpect(jsonPath("$.data.matches[0].meetingAt").value("2026-06-29T18:30:00"))
                 .andExpect(jsonPath("$.data.matches[0].meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.matches[0].createdAt").value("2026-06-29T18:15:00"))
@@ -332,11 +343,11 @@ class CompanionMatchControllerTest {
 
     private static final class FakeReadCompanionMatchesUseCase implements ReadCompanionMatchesUseCase {
 
-        private List<CompanionMatchSummary> result = List.of();
+        private List<ReadCompanionMatchResult> result = List.of();
         private Long userId;
 
         @Override
-        public List<CompanionMatchSummary> getMatches(final Long userId) {
+        public List<ReadCompanionMatchResult> getMatches(final Long userId) {
             this.userId = userId;
             return result;
         }

@@ -19,7 +19,7 @@ import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 class RefreshTokenServiceTest {
 
-	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-07T03:00:00Z"), ZoneId.of("Asia/Seoul"));
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-07T12:00:00Z"), ZoneOffset.UTC);
 	private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 7, 12, 0);
 
 	@Test

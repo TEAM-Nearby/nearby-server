@@ -17,6 +17,7 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
                 host_profile.profile_image_url as hostProfileImageUrl,
                 host_profile.gender as hostGender,
                 place.name as placeName,
+                place.address as placeAddress,
                 coalesce(
                     schedule.scheduled_at,
                     case
