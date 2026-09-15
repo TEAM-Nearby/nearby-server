@@ -63,8 +63,12 @@ nearby:
       batch-size: ${NEARBY_PUSH_WORKER_BATCH_SIZE:50}
       max-attempts: ${NEARBY_PUSH_WORKER_MAX_ATTEMPTS:5}
       lease-seconds: ${NEARBY_PUSH_WORKER_LEASE_SECONDS:30}
+      jitter-max-seconds: ${NEARBY_PUSH_WORKER_JITTER_MAX_SECONDS:5}
     firebase:
       project-id: ${NEARBY_PUSH_FIREBASE_PROJECT_ID:}
+      connect-timeout-ms: ${NEARBY_PUSH_FIREBASE_CONNECT_TIMEOUT_MS:5000}
+      read-timeout-ms: ${NEARBY_PUSH_FIREBASE_READ_TIMEOUT_MS:10000}
+      write-timeout-ms: ${NEARBY_PUSH_FIREBASE_WRITE_TIMEOUT_MS:10000}
 
 management:
   tracing:

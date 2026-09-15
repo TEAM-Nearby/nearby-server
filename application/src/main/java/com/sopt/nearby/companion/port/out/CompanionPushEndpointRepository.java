@@ -16,5 +16,14 @@ public interface CompanionPushEndpointRepository {
 
     int deactivateById(Long endpointId, LocalDateTime now);
 
+    default int deactivateIfCurrent(
+            final Long endpointId,
+            final long registrationVersion,
+            final String token,
+            final LocalDateTime now
+    ) {
+        return deactivateById(endpointId, now);
+    }
+
     CompanionPushEndpoint save(CompanionPushEndpoint endpoint);
 }

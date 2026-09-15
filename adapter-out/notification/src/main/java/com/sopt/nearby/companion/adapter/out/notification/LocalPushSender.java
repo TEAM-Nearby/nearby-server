@@ -30,6 +30,7 @@ public class LocalPushSender implements PushSender {
                             message.deliveryId(),
                             PushDeliveryResult.Outcome.SENT,
                             "local-" + message.deliveryId(),
+                            null,
                             null
                     );
                 })

@@ -48,6 +48,7 @@ class RegisterCompanionPushEndpointServiceTest {
                 "old-token",
                 CompanionPushPlatform.ANDROID,
                 false,
+                1L,
                 LocalDateTime.MIN,
                 LocalDateTime.MIN,
                 LocalDateTime.MIN
@@ -65,6 +66,7 @@ class RegisterCompanionPushEndpointServiceTest {
         assertEquals(CompanionPushPlatform.IOS, result.platform());
         assertTrue(result.active());
         assertEquals("new-token", repository.endpoint.token());
+        assertEquals(2L, repository.endpoint.registrationVersion());
     }
 
     private static final class FakeRepository implements CompanionPushEndpointRepository {
@@ -99,6 +101,7 @@ class RegisterCompanionPushEndpointServiceTest {
                         endpoint.token(),
                         endpoint.platform(),
                         endpoint.active(),
+                        endpoint.registrationVersion(),
                         endpoint.lastSeenAt(),
                         endpoint.createdAt(),
                         endpoint.updatedAt()

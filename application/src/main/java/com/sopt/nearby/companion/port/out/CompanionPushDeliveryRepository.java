@@ -30,9 +30,9 @@ public interface CompanionPushDeliveryRepository {
 
     boolean markExpired(Long deliveryId, String claimToken, String errorCode, LocalDateTime now);
 
-    int skipInactiveEndpointDeliveries(LocalDateTime now);
+    int skipInactiveEndpointDeliveries(LocalDateTime now, int limit);
 
-    int expireExpiredDeliveries(LocalDateTime now);
+    int expireExpiredDeliveries(LocalDateTime now, int limit);
 
-    int recoverExpiredLeases(LocalDateTime now);
+    int recoverExpiredLeases(LocalDateTime now, int maxAttempts, int limit);
 }

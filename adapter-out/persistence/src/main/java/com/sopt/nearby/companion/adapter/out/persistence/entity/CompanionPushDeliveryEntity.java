@@ -34,6 +34,9 @@ public class CompanionPushDeliveryEntity {
     @Column(name = "endpoint_id", nullable = false)
     private Long endpointId;
 
+    @Column(name = "endpoint_registration_version", nullable = false)
+    private long endpointRegistrationVersion;
+
     @Column(name = "recipient_user_id", nullable = false)
     private Long recipientUserId;
 
@@ -91,6 +94,7 @@ public class CompanionPushDeliveryEntity {
             final Long id,
             final Long notificationId,
             final Long endpointId,
+            final long endpointRegistrationVersion,
             final Long recipientUserId,
             final String token,
             final String title,
@@ -111,6 +115,7 @@ public class CompanionPushDeliveryEntity {
         this.id = id;
         this.notificationId = notificationId;
         this.endpointId = endpointId;
+        this.endpointRegistrationVersion = endpointRegistrationVersion;
         this.recipientUserId = recipientUserId;
         this.token = token;
         this.title = title;
@@ -132,6 +137,7 @@ public class CompanionPushDeliveryEntity {
     public Long getId() { return id; }
     public Long getNotificationId() { return notificationId; }
     public Long getEndpointId() { return endpointId; }
+    public long getEndpointRegistrationVersion() { return endpointRegistrationVersion; }
     public Long getRecipientUserId() { return recipientUserId; }
     public String getToken() { return token; }
     public String getTitle() { return title; }

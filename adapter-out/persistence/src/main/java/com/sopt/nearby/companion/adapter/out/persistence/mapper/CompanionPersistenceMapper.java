@@ -189,6 +189,7 @@ public final class CompanionPersistenceMapper {
 				model.token(),
 				model.platform(),
 				model.active(),
+				model.registrationVersion(),
 				model.lastSeenAt(),
 				model.createdAt(),
 				model.updatedAt()
@@ -203,6 +204,7 @@ public final class CompanionPersistenceMapper {
 				entity.getToken(),
 				entity.getPlatform(),
 				entity.isActive(),
+				entity.getRegistrationVersion(),
 				entity.getLastSeenAt(),
 				entity.getCreatedAt(),
 				entity.getUpdatedAt()
@@ -214,6 +216,7 @@ public final class CompanionPersistenceMapper {
 				model.id(),
 				model.notificationId(),
 				model.endpointId(),
+				model.endpointRegistrationVersion(),
 				model.recipientUserId(),
 				model.token(),
 				model.title(),
@@ -238,6 +241,7 @@ public final class CompanionPersistenceMapper {
 				entity.getId(),
 				entity.getNotificationId(),
 				entity.getEndpointId(),
+				entity.getEndpointRegistrationVersion(),
 				entity.getRecipientUserId(),
 				entity.getToken(),
 				entity.getTitle(),

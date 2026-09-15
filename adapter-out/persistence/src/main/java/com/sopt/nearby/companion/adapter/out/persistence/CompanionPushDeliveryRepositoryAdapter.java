@@ -27,6 +27,7 @@ public class CompanionPushDeliveryRepositoryAdapter implements CompanionPushDeli
         repository.insertIfAbsent(
                 delivery.notificationId(),
                 delivery.endpointId(),
+                delivery.endpointRegistrationVersion(),
                 delivery.recipientUserId(),
                 delivery.token(),
                 delivery.title(),
@@ -141,37 +142,29 @@ public class CompanionPushDeliveryRepositoryAdapter implements CompanionPushDeli
 
     @Override
     @Transactional
-    public int expireExpiredDeliveries(final LocalDateTime now) {
+    public int expireExpiredDeliveries(final LocalDateTime now, final int limit) {
         return repository.expireExpiredDeliveries(
                 now,
-                CompanionPushDeliveryStatus.EXPIRED,
-                CompanionPushDeliveryStatus.PENDING,
-                CompanionPushDeliveryStatus.RETRY,
-                CompanionPushDeliveryStatus.PROCESSING,
-                "DELIVERY_EXPIRED"
+                limit
         );
     }
 
     @Override
     @Transactional
-    public int skipInactiveEndpointDeliveries(final LocalDateTime now) {
+    public int skipInactiveEndpointDeliveries(final LocalDateTime now, final int limit) {
         return repository.skipInactiveEndpointDeliveries(
                 now,
-                CompanionPushDeliveryStatus.SKIPPED,
-                CompanionPushDeliveryStatus.PENDING,
-                CompanionPushDeliveryStatus.RETRY,
-                "ENDPOINT_INACTIVE"
+                limit
         );
     }
 
     @Override
     @Transactional
-    public int recoverExpiredLeases(final LocalDateTime now) {
+    public int recoverExpiredLeases(final LocalDateTime now, final int maxAttempts, final int limit) {
         return repository.recoverExpiredLeases(
                 now,
-                CompanionPushDeliveryStatus.RETRY,
-                CompanionPushDeliveryStatus.PROCESSING,
-                "LEASE_EXPIRED"
+                maxAttempts,
+                limit
         );
     }
 }

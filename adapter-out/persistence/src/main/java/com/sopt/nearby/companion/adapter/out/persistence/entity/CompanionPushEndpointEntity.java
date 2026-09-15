@@ -43,6 +43,9 @@ public class CompanionPushEndpointEntity {
     @Column(nullable = false)
     private boolean active;
 
+    @Column(name = "registration_version", nullable = false)
+    private long registrationVersion;
+
     @Column(name = "last_seen_at", nullable = false)
     private LocalDateTime lastSeenAt;
 
@@ -62,6 +65,7 @@ public class CompanionPushEndpointEntity {
             final String token,
             final CompanionPushPlatform platform,
             final boolean active,
+            final long registrationVersion,
             final LocalDateTime lastSeenAt,
             final LocalDateTime createdAt,
             final LocalDateTime updatedAt
@@ -72,6 +76,7 @@ public class CompanionPushEndpointEntity {
         this.token = token;
         this.platform = platform;
         this.active = active;
+        this.registrationVersion = registrationVersion;
         this.lastSeenAt = lastSeenAt;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -99,6 +104,10 @@ public class CompanionPushEndpointEntity {
 
     public boolean isActive() {
         return active;
+    }
+
+    public long getRegistrationVersion() {
+        return registrationVersion;
     }
 
     public LocalDateTime getLastSeenAt() {

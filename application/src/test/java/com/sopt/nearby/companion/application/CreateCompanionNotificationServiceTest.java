@@ -115,6 +115,7 @@ class CreateCompanionNotificationServiceTest {
                 "token-" + id,
                 CompanionPushPlatform.ANDROID,
                 active,
+                1L,
                 NOW,
                 NOW,
                 NOW
@@ -305,17 +306,17 @@ class CreateCompanionNotificationServiceTest {
         }
 
         @Override
-        public int skipInactiveEndpointDeliveries(final LocalDateTime now) {
+        public int skipInactiveEndpointDeliveries(final LocalDateTime now, final int limit) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public int expireExpiredDeliveries(final LocalDateTime now) {
+        public int expireExpiredDeliveries(final LocalDateTime now, final int limit) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public int recoverExpiredLeases(final LocalDateTime now) {
+        public int recoverExpiredLeases(final LocalDateTime now, final int maxAttempts, final int limit) {
             throw new UnsupportedOperationException();
         }
     }

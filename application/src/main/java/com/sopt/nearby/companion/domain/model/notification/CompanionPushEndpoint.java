@@ -10,6 +10,7 @@ public record CompanionPushEndpoint(
         String token,
         CompanionPushPlatform platform,
         boolean active,
+        long registrationVersion,
         LocalDateTime lastSeenAt,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
@@ -27,6 +28,9 @@ public record CompanionPushEndpoint(
                 token,
                 platform,
                 true,
+                token.equals(this.token) && platform == this.platform
+                        ? registrationVersion
+                        : registrationVersion + 1,
                 now,
                 createdAt,
                 now
@@ -41,6 +45,7 @@ public record CompanionPushEndpoint(
                 token,
                 platform,
                 false,
+                registrationVersion,
                 lastSeenAt,
                 createdAt,
                 now

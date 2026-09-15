@@ -5,7 +5,8 @@ public record PushDeliveryResult(
         Long deliveryId,
         Outcome outcome,
         String providerMessageId,
-        String errorCode
+        String errorCode,
+        Long retryAfterSeconds
 ) {
 
     public enum Outcome {

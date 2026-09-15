@@ -43,4 +43,21 @@ public interface CompanionPushEndpointJpaRepository extends JpaRepository<Compan
             @Param("endpointId") Long endpointId,
             @Param("now") LocalDateTime now
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update CompanionPushEndpointEntity endpoint
+            set endpoint.active = false,
+                endpoint.updatedAt = :now
+            where endpoint.id = :endpointId
+                and endpoint.registrationVersion = :registrationVersion
+                and endpoint.token = :token
+                and endpoint.active = true
+            """)
+    int deactivateIfCurrent(
+            @Param("endpointId") Long endpointId,
+            @Param("registrationVersion") long registrationVersion,
+            @Param("token") String token,
+            @Param("now") LocalDateTime now
+    );
 }

@@ -39,6 +39,8 @@ class ProcessCompanionPushDeliveriesServiceTest {
         service.processBatch();
 
         assertEquals(1, sender.messages.size());
+        assertEquals(50, repository.cleanupLimit);
+        assertEquals(5, repository.recoveredMaxAttempts);
         assertEquals(CompanionPushDeliveryStatus.SENT, repository.status);
         assertEquals("provider-1", repository.providerMessageId);
         assertNotNull(sender.messages.get(0).data().get("notificationId"));
@@ -74,6 +76,32 @@ class ProcessCompanionPushDeliveriesServiceTest {
         service.processBatch();
 
         assertEquals(3L, endpointRepository.deactivatedEndpointId);
+        assertEquals(1L, endpointRepository.registrationVersion);
+        assertEquals("token", endpointRepository.token);
+    }
+
+    @Test
+    void appliesProviderDelayAndJitterToRetrySchedule() {
+        FakeRepository repository = new FakeRepository(delivery());
+        CapturingSender sender = new CapturingSender(
+                PushDeliveryResult.Outcome.RETRYABLE_FAILURE,
+                "QUOTA_EXCEEDED",
+                90L
+        );
+        ProcessCompanionPushDeliveriesService service = new ProcessCompanionPushDeliveriesService(
+                repository,
+                null,
+                sender,
+                CLOCK,
+                50,
+                5,
+                Duration.ofSeconds(30),
+                () -> 3
+        );
+
+        service.processBatch();
+
+        assertEquals(NOW.plusSeconds(93), repository.nextAttemptAt);
     }
 
     private CompanionPushDelivery delivery() {
@@ -81,6 +109,7 @@ class ProcessCompanionPushDeliveriesServiceTest {
                 1L,
                 2L,
                 3L,
+                1L,
                 7L,
                 "token",
                 "title",
@@ -104,15 +133,25 @@ class ProcessCompanionPushDeliveriesServiceTest {
 
         private final PushDeliveryResult.Outcome outcome;
         private final String errorCode;
+        private final Long retryAfterSeconds;
         private final List<PushMessage> messages = new ArrayList<>();
 
         private CapturingSender(PushDeliveryResult.Outcome outcome) {
-            this(outcome, "TEMPORARY");
+            this(outcome, "TEMPORARY", null);
         }
 
         private CapturingSender(PushDeliveryResult.Outcome outcome, String errorCode) {
+            this(outcome, errorCode, null);
+        }
+
+        private CapturingSender(
+                PushDeliveryResult.Outcome outcome,
+                String errorCode,
+                Long retryAfterSeconds
+        ) {
             this.outcome = outcome;
             this.errorCode = errorCode;
+            this.retryAfterSeconds = retryAfterSeconds;
         }
 
         @Override
@@ -122,7 +161,8 @@ class ProcessCompanionPushDeliveriesServiceTest {
                     message.deliveryId(),
                     outcome,
                     outcome == PushDeliveryResult.Outcome.SENT ? "provider-1" : null,
-                    outcome == PushDeliveryResult.Outcome.SENT ? null : errorCode
+                    outcome == PushDeliveryResult.Outcome.SENT ? null : errorCode,
+                    retryAfterSeconds
             )).toList();
         }
     }
@@ -130,6 +170,21 @@ class ProcessCompanionPushDeliveriesServiceTest {
     private static final class FakeEndpointRepository implements CompanionPushEndpointRepository {
 
         private Long deactivatedEndpointId;
+        private long registrationVersion;
+        private String token;
+
+        @Override
+        public int deactivateIfCurrent(
+                final Long endpointId,
+                final long registrationVersion,
+                final String token,
+                final LocalDateTime now
+        ) {
+            this.deactivatedEndpointId = endpointId;
+            this.registrationVersion = registrationVersion;
+            this.token = token;
+            return 1;
+        }
 
         @Override
         public Optional<CompanionPushEndpoint> findByUserIdAndInstallationId(Long userId, String installationId) {
@@ -165,6 +220,8 @@ class ProcessCompanionPushDeliveriesServiceTest {
         private LocalDateTime nextAttemptAt;
         private String errorCode;
         private String providerMessageId;
+        private int cleanupLimit;
+        private int recoveredMaxAttempts;
 
         private FakeRepository(CompanionPushDelivery delivery) {
             this.delivery = delivery;
@@ -179,7 +236,8 @@ class ProcessCompanionPushDeliveriesServiceTest {
         public List<CompanionPushDelivery> claimDue(int batchSize, LocalDateTime now,
                                                      LocalDateTime leaseUntil, String claimToken) {
             return List.of(new CompanionPushDelivery(
-                    delivery.id(), delivery.notificationId(), delivery.endpointId(), delivery.recipientUserId(),
+                    delivery.id(), delivery.notificationId(), delivery.endpointId(),
+                    delivery.endpointRegistrationVersion(), delivery.recipientUserId(),
                     delivery.token(), delivery.title(), delivery.body(), delivery.targetType(), delivery.targetId(),
                     CompanionPushDeliveryStatus.PROCESSING, 1, delivery.nextAttemptAt(), leaseUntil, claimToken,
                     delivery.providerMessageId(), delivery.lastErrorCode(), delivery.expiresAt(),
@@ -216,12 +274,22 @@ class ProcessCompanionPushDeliveriesServiceTest {
         }
 
         @Override
-        public int recoverExpiredLeases(LocalDateTime now) { return 0; }
+        public int recoverExpiredLeases(LocalDateTime now, int maxAttempts, int limit) {
+            recoveredMaxAttempts = maxAttempts;
+            cleanupLimit = limit;
+            return 0;
+        }
 
         @Override
-        public int expireExpiredDeliveries(LocalDateTime now) { return 0; }
+        public int expireExpiredDeliveries(LocalDateTime now, int limit) {
+            cleanupLimit = limit;
+            return 0;
+        }
 
         @Override
-        public int skipInactiveEndpointDeliveries(LocalDateTime now) { return 0; }
+        public int skipInactiveEndpointDeliveries(LocalDateTime now, int limit) {
+            cleanupLimit = limit;
+            return 0;
+        }
     }
 }

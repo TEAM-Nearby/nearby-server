@@ -49,6 +49,17 @@ public class CompanionPushEndpointRepositoryAdapter implements CompanionPushEndp
     }
 
     @Override
+    @Transactional
+    public int deactivateIfCurrent(
+            final Long endpointId,
+            final long registrationVersion,
+            final String token,
+            final LocalDateTime now
+    ) {
+        return repository.deactivateIfCurrent(endpointId, registrationVersion, token, now);
+    }
+
+    @Override
     public CompanionPushEndpoint save(final CompanionPushEndpoint endpoint) {
         return CompanionPersistenceMapper.toDomain(
                 repository.saveAndFlush(CompanionPersistenceMapper.toEntity(endpoint))

@@ -43,6 +43,7 @@ public class RegisterCompanionPushEndpointService implements RegisterCompanionPu
                         command.token(),
                         command.platform(),
                         true,
+                        1L,
                         now,
                         now,
                         now

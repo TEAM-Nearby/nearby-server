@@ -21,12 +21,12 @@ public interface CompanionPushDeliveryJpaRepository extends JpaRepository<Compan
     @Modifying(flushAutomatically = true)
     @Query(value = """
             insert into companion_push_delivery (
-                notification_id, endpoint_id, recipient_user_id, token, title, body,
+                notification_id, endpoint_id, endpoint_registration_version, recipient_user_id, token, title, body,
                 target_type, target_id, status, attempt_count, next_attempt_at,
                 lease_until, claim_token, provider_message_id, last_error_code,
                 expires_at, created_at, updated_at
             ) values (
-                :notificationId, :endpointId, :recipientUserId, :token, :title, :body,
+                :notificationId, :endpointId, :endpointRegistrationVersion, :recipientUserId, :token, :title, :body,
                 :targetType, :targetId, :status, :attemptCount, :nextAttemptAt,
                 :leaseUntil, :claimToken, :providerMessageId, :lastErrorCode,
                 :expiresAt, :createdAt, :updatedAt
@@ -36,6 +36,7 @@ public interface CompanionPushDeliveryJpaRepository extends JpaRepository<Compan
     int insertIfAbsent(
             @Param("notificationId") Long notificationId,
             @Param("endpointId") Long endpointId,
+            @Param("endpointRegistrationVersion") long endpointRegistrationVersion,
             @Param("recipientUserId") Long recipientUserId,
             @Param("token") String token,
             @Param("title") String title,
@@ -72,69 +73,70 @@ public interface CompanionPushDeliveryJpaRepository extends JpaRepository<Compan
             @Param("batchSize") int batchSize
     );
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-            update CompanionPushDeliveryEntity delivery
-            set delivery.status = :expiredStatus,
-                delivery.leaseUntil = null,
-                delivery.claimToken = null,
-                delivery.lastErrorCode = :errorCode,
-                delivery.updatedAt = :now
-            where delivery.status in (:pendingStatus, :retryStatus, :processingStatus)
-                and delivery.expiresAt <= :now
-            """)
-    int expireExpiredDeliveries(
-            @Param("now") LocalDateTime now,
-            @Param("expiredStatus") CompanionPushDeliveryStatus expiredStatus,
-            @Param("pendingStatus") CompanionPushDeliveryStatus pendingStatus,
-            @Param("retryStatus") CompanionPushDeliveryStatus retryStatus,
-            @Param("processingStatus") CompanionPushDeliveryStatus processingStatus,
-            @Param("errorCode") String errorCode
-    );
+    @Modifying
+    @Query(value = """
+            with candidates as (
+                select id
+                from companion_push_delivery
+                where status in ('PENDING', 'RETRY', 'PROCESSING')
+                    and expires_at <= :now
+                order by id
+                limit :limit
+                for update skip locked
+            )
+            update companion_push_delivery delivery
+            set status = 'EXPIRED', lease_until = null, claim_token = null,
+                last_error_code = 'DELIVERY_EXPIRED', updated_at = :now
+            where delivery.id in (select id from candidates)
+            """, nativeQuery = true)
+    int expireExpiredDeliveries(@Param("now") LocalDateTime now, @Param("limit") int limit);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-            update CompanionPushDeliveryEntity delivery
-            set delivery.status = :skippedStatus,
-                delivery.leaseUntil = null,
-                delivery.claimToken = null,
-                delivery.lastErrorCode = :errorCode,
-                delivery.updatedAt = :now
-            where delivery.status in (:pendingStatus, :retryStatus)
-                and exists (
-                    select 1
-                    from CompanionPushEndpointEntity endpoint
-                    where endpoint.id = delivery.endpointId
-                        and (endpoint.active = false or endpoint.userId <> delivery.recipientUserId)
-                )
-            """)
-    int skipInactiveEndpointDeliveries(
-            @Param("now") LocalDateTime now,
-            @Param("skippedStatus") CompanionPushDeliveryStatus skippedStatus,
-            @Param("pendingStatus") CompanionPushDeliveryStatus pendingStatus,
-            @Param("retryStatus") CompanionPushDeliveryStatus retryStatus,
-            @Param("errorCode") String errorCode
-    );
+    @Modifying
+    @Query(value = """
+            with candidates as (
+                select delivery.id
+                from companion_push_delivery delivery
+                join companion_push_endpoint endpoint on endpoint.id = delivery.endpoint_id
+                where delivery.status in ('PENDING', 'RETRY')
+                    and (endpoint.active = false or endpoint.user_id <> delivery.recipient_user_id)
+                order by delivery.id
+                limit :limit
+                for update of delivery skip locked
+            )
+            update companion_push_delivery delivery
+            set status = 'SKIPPED', lease_until = null, claim_token = null,
+                last_error_code = 'ENDPOINT_INACTIVE', updated_at = :now
+            where delivery.id in (select id from candidates)
+            """, nativeQuery = true)
+    int skipInactiveEndpointDeliveries(@Param("now") LocalDateTime now, @Param("limit") int limit);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-            update CompanionPushDeliveryEntity delivery
-            set delivery.status = :status,
-                delivery.nextAttemptAt = :now,
-                delivery.leaseUntil = null,
-                delivery.claimToken = null,
-                delivery.updatedAt = :now,
-                delivery.lastErrorCode = :errorCode
-            where delivery.status = :processingStatus
-                and delivery.leaseUntil is not null
-                and delivery.leaseUntil <= :now
-                and delivery.expiresAt > :now
-            """)
+    @Modifying
+    @Query(value = """
+            with candidates as (
+                select id, attempt_count
+                from companion_push_delivery
+                where status = 'PROCESSING'
+                    and lease_until is not null
+                    and lease_until <= :now
+                    and expires_at > :now
+                order by id
+                limit :limit
+                for update skip locked
+            )
+            update companion_push_delivery delivery
+            set status = case when candidates.attempt_count >= :maxAttempts
+                              then 'FAILED_PERMANENT' else 'RETRY' end,
+                next_attempt_at = :now, lease_until = null, claim_token = null,
+                last_error_code = case when candidates.attempt_count >= :maxAttempts
+                                      then 'LEASE_EXPIRED_MAX_ATTEMPTS' else 'LEASE_EXPIRED' end,
+                updated_at = :now
+            from candidates
+            where delivery.id = candidates.id
+            """, nativeQuery = true)
     int recoverExpiredLeases(
             @Param("now") LocalDateTime now,
-            @Param("status") CompanionPushDeliveryStatus status,
-            @Param("processingStatus") CompanionPushDeliveryStatus processingStatus,
-            @Param("errorCode") String errorCode
+            @Param("maxAttempts") int maxAttempts,
+            @Param("limit") int limit
     );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

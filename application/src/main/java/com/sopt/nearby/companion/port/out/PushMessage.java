@@ -2,12 +2,14 @@
 package com.sopt.nearby.companion.port.out;
 
 import java.util.Map;
+import java.time.LocalDateTime;
 
 public record PushMessage(
         Long deliveryId,
         String token,
         String title,
         String body,
-        Map<String, String> data
+        Map<String, String> data,
+        LocalDateTime expiresAt
 ) {
 }
