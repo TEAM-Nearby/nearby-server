@@ -10,6 +10,7 @@ Accepted / Implementation in progress. 이슈 #205의 1차 구현을 반영하�
 - 기준: `develop`의 `2d3240d` 커밋.
 - 작업 브랜치: `feat/205`.
 - 관련 문서: [멀티 모듈 아키텍처](ADR-01-multimodule.md), [DB 설정](ADR-02-database-settings.md).
+- 후속 작업: [운영 보완·커서 조회·실기기 검증 작업 계획](../plans/205-companion-push-follow-up-plan.md).
 
 동행 신청·수락·거절에 기기 푸시를 도입하기 위한 설계와 1차 구현을 정리한다. 알림함 기록과 기기별 발송 작업을 같은 트랜잭션에서 저장하고, 별도 워커가 배치로 FCM을 호출하도록 구성했다. 로컬 프로필에서는 외부 호출을 로그 기반 성공 응답으로 대체하며, FCM 프로필은 Google Application Default Credentials를 사용한다.
 
