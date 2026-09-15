@@ -55,6 +55,16 @@ nearby:
       timeout-ms: ${GOOGLE_PLACES_TIMEOUT_MS:1000}
       photo:
         max-width-px: ${GOOGLE_PLACES_PHOTO_MAX_WIDTH_PX:640}
+  push:
+    worker:
+      enabled: ${NEARBY_PUSH_WORKER_ENABLED:false}
+      fixed-delay-ms: ${NEARBY_PUSH_WORKER_FIXED_DELAY_MS:1000}
+      initial-delay-ms: ${NEARBY_PUSH_WORKER_INITIAL_DELAY_MS:1000}
+      batch-size: ${NEARBY_PUSH_WORKER_BATCH_SIZE:50}
+      max-attempts: ${NEARBY_PUSH_WORKER_MAX_ATTEMPTS:5}
+      lease-seconds: ${NEARBY_PUSH_WORKER_LEASE_SECONDS:30}
+    firebase:
+      project-id: ${NEARBY_PUSH_FIREBASE_PROJECT_ID:}
 
 management:
   tracing:

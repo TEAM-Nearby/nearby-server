@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.application.DeactivateCompanionPushEndpointServ
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
 import com.sopt.nearby.companion.application.ProcessCompanionRequestService;
+import com.sopt.nearby.companion.application.ProcessCompanionPushDeliveriesService;
 import com.sopt.nearby.companion.application.RegisterCompanionPushEndpointService;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
@@ -53,6 +54,7 @@ import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.RegisterCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.in.RegisterCompanionPushEndpointUseCase;
+import com.sopt.nearby.companion.port.in.ProcessCompanionPushDeliveriesUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.AcceptedCompanionRequestDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
@@ -84,11 +86,13 @@ import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
+import com.sopt.nearby.companion.port.out.PushSender;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.user.port.in.CompleteCompanionProfileOnboardingUseCase;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.time.Clock;
+import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -321,6 +325,27 @@ public class CompanionUseCaseConfig {
             final Clock clock
     ) {
         return new DeactivateCompanionPushEndpointService(repository, clock);
+    }
+
+    @Bean
+    ProcessCompanionPushDeliveriesUseCase processCompanionPushDeliveriesUseCase(
+            final CompanionPushDeliveryRepository repository,
+            final CompanionPushEndpointRepository endpointRepository,
+            final PushSender sender,
+            final Clock clock,
+            @Value("${nearby.push.worker.batch-size:50}") final int batchSize,
+            @Value("${nearby.push.worker.max-attempts:5}") final int maxAttempts,
+            @Value("${nearby.push.worker.lease-seconds:30}") final long leaseSeconds
+    ) {
+        return new ProcessCompanionPushDeliveriesService(
+                repository,
+                endpointRepository,
+                sender,
+                clock,
+                batchSize,
+                maxAttempts,
+                Duration.ofSeconds(leaseSeconds)
+        );
     }
 
     @Bean
