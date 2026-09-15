@@ -183,11 +183,12 @@ public class ProcessCompanionPushDeliveriesService implements ProcessCompanionPu
                 ? 60L
                 : 0L;
         long jitterSeconds = Math.max(0, jitterSecondsSupplier.getAsInt());
-        long delaySeconds = Math.min(
+        long baseDelaySeconds = Math.min(
                 86_400L,
                 Math.max(exponentialDelaySeconds, Math.max(providerDelaySeconds, minimumDelaySeconds))
-                        + jitterSeconds
         );
+        long remainingDelaySeconds = 86_400L - baseDelaySeconds;
+        long delaySeconds = baseDelaySeconds + Math.min(jitterSeconds, remainingDelaySeconds);
         repository.markRetry(
                 delivery.id(),
                 claimToken,

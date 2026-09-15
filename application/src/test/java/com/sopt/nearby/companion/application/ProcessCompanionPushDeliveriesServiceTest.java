@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import com.sopt.nearby.companion.domain.model.notification.CompanionPushDelivery;
 import com.sopt.nearby.companion.domain.model.notification.CompanionPushDeliveryStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionPushEndpoint;
+import com.sopt.nearby.companion.domain.model.notification.CompanionPushPlatform;
 import com.sopt.nearby.companion.port.out.CompanionPushDeliveryRepository;
 import com.sopt.nearby.companion.port.out.CompanionPushEndpointRepository;
 import com.sopt.nearby.companion.port.out.PushDeliveryResult;
@@ -102,6 +103,30 @@ class ProcessCompanionPushDeliveriesServiceTest {
         service.processBatch();
 
         assertEquals(NOW.plusSeconds(93), repository.nextAttemptAt);
+    }
+
+    @Test
+    void capsProviderDelayBeforeAddingJitter() {
+        FakeRepository repository = new FakeRepository(delivery());
+        CapturingSender sender = new CapturingSender(
+                PushDeliveryResult.Outcome.RETRYABLE_FAILURE,
+                "TEMPORARY",
+                Long.MAX_VALUE
+        );
+        ProcessCompanionPushDeliveriesService service = new ProcessCompanionPushDeliveriesService(
+                repository,
+                null,
+                sender,
+                CLOCK,
+                50,
+                5,
+                Duration.ofSeconds(30),
+                () -> 5
+        );
+
+        service.processBatch();
+
+        assertEquals(NOW.plusHours(24), repository.nextAttemptAt);
     }
 
     private CompanionPushDelivery delivery() {
@@ -205,6 +230,17 @@ class ProcessCompanionPushDeliveriesServiceTest {
         public int deactivateById(Long endpointId, LocalDateTime now) {
             deactivatedEndpointId = endpointId;
             return 1;
+        }
+
+        @Override
+        public CompanionPushEndpoint upsert(
+                final Long userId,
+                final String installationId,
+                final String token,
+                final CompanionPushPlatform platform,
+                final LocalDateTime now
+        ) {
+            throw new UnsupportedOperationException("테스트에서 호출하지 않는 등록 연산입니다.");
         }
 
         @Override

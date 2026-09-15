@@ -92,6 +92,31 @@ class RegisterCompanionPushEndpointServiceTest {
         public int deactivateById(Long endpointId, LocalDateTime now) { return 0; }
 
         @Override
+        public CompanionPushEndpoint upsert(
+                final Long userId,
+                final String installationId,
+                final String token,
+                final CompanionPushPlatform platform,
+                final LocalDateTime now
+        ) {
+            CompanionPushEndpoint updated = findByUserIdAndInstallationId(userId, installationId)
+                    .map(existing -> existing.activate(token, platform, now))
+                    .orElseGet(() -> new CompanionPushEndpoint(
+                            null,
+                            userId,
+                            installationId,
+                            token,
+                            platform,
+                            true,
+                            1L,
+                            now,
+                            now,
+                            now
+                    ));
+            return save(updated);
+        }
+
+        @Override
         public CompanionPushEndpoint save(CompanionPushEndpoint endpoint) {
             if (endpoint.id() == null) {
                 endpoint = new CompanionPushEndpoint(

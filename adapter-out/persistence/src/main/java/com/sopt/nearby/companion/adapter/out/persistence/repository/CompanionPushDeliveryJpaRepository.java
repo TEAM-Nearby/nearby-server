@@ -64,6 +64,8 @@ public interface CompanionPushDeliveryJpaRepository extends JpaRepository<Compan
                 and delivery.expires_at > :now
                 and endpoint.active = true
                 and endpoint.user_id = delivery.recipient_user_id
+                and endpoint.registration_version = delivery.endpoint_registration_version
+                and endpoint.token = delivery.token
             order by delivery.next_attempt_at asc, delivery.id asc
             limit :batchSize
             for update of delivery skip locked
@@ -98,7 +100,12 @@ public interface CompanionPushDeliveryJpaRepository extends JpaRepository<Compan
                 from companion_push_delivery delivery
                 join companion_push_endpoint endpoint on endpoint.id = delivery.endpoint_id
                 where delivery.status in ('PENDING', 'RETRY')
-                    and (endpoint.active = false or endpoint.user_id <> delivery.recipient_user_id)
+                    and (
+                        endpoint.active = false
+                        or endpoint.user_id <> delivery.recipient_user_id
+                        or endpoint.registration_version <> delivery.endpoint_registration_version
+                        or endpoint.token <> delivery.token
+                    )
                 order by delivery.id
                 limit :limit
                 for update of delivery skip locked

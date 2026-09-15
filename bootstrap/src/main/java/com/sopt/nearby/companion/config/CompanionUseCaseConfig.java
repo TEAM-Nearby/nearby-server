@@ -97,6 +97,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -338,6 +339,11 @@ public class CompanionUseCaseConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(
+            prefix = "nearby.push.worker",
+            name = "enabled",
+            havingValue = "true"
+    )
     ProcessCompanionPushDeliveriesUseCase processCompanionPushDeliveriesUseCase(
             final CompanionPushDeliveryRepository repository,
             final CompanionPushEndpointRepository endpointRepository,

@@ -2,7 +2,6 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPushEndpointException;
-import com.sopt.nearby.companion.domain.model.notification.CompanionPushEndpoint;
 import com.sopt.nearby.companion.port.in.RegisterCompanionPushEndpointUseCase;
 import com.sopt.nearby.companion.port.out.CompanionPushEndpointRepository;
 import java.time.Clock;
@@ -30,26 +29,13 @@ public class RegisterCompanionPushEndpointService implements RegisterCompanionPu
     public RegisterCompanionPushEndpointResult register(final RegisterCompanionPushEndpointCommand command) {
         validate(command);
         LocalDateTime now = LocalDateTime.now(clock);
-        repository.deactivateByTokenExceptUser(command.token(), command.userId(), now);
-        CompanionPushEndpoint endpoint = repository.findByUserIdAndInstallationId(
-                        command.userId(),
-                        command.installationId()
-                )
-                .map(existing -> existing.activate(command.token(), command.platform(), now))
-                .orElseGet(() -> new CompanionPushEndpoint(
-                        null,
-                        command.userId(),
-                        command.installationId(),
-                        command.token(),
-                        command.platform(),
-                        true,
-                        1L,
-                        now,
-                        now,
-                        now
-                ));
-
-        return RegisterCompanionPushEndpointResult.from(repository.save(endpoint));
+        return RegisterCompanionPushEndpointResult.from(repository.upsert(
+                command.userId(),
+                command.installationId(),
+                command.token(),
+                command.platform(),
+                now
+        ));
     }
 
     private void validate(final RegisterCompanionPushEndpointCommand command) {

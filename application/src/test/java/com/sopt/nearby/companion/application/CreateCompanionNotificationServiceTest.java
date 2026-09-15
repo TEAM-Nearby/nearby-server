@@ -239,6 +239,18 @@ class CreateCompanionNotificationServiceTest {
         }
 
         @Override
+        public CompanionPushEndpoint upsert(
+                final Long userId,
+                final String installationId,
+                final String token,
+                final CompanionPushPlatform platform,
+                final LocalDateTime now
+        ) {
+            return findByUserIdAndInstallationId(userId, installationId)
+                    .orElseThrow(() -> new IllegalStateException("테스트에서 호출하지 않는 등록 연산입니다."));
+        }
+
+        @Override
         public CompanionPushEndpoint save(final CompanionPushEndpoint endpoint) {
             return endpoint;
         }
