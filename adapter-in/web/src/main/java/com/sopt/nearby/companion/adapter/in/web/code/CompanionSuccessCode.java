@@ -22,6 +22,8 @@ public enum CompanionSuccessCode implements SuccessCode {
     READ_MY_PAGE("마이페이지 정보를 조회했어요."),
     READ_COMPANION_REQUESTS("동행 요청 목록을 조회했어요."),
     MARK_COMPANION_NOTIFICATION_AS_READ("동행 알림을 읽음 처리했어요."),
+    REGISTER_COMPANION_PUSH_ENDPOINT("푸시 알림 수신 기기가 등록되었어요."),
+    DEACTIVATE_COMPANION_PUSH_ENDPOINT("푸시 알림 수신 기기가 해제되었어요."),
     READ_MY_COMPANION_POSTS("내가 작성한 동행 모집글 목록을 조회했어요."),
     READ_ONGOING_COMPANION_MEETINGS("현재 진행 중인 동행 목록을 조회했어요."),
     READ_COMPANION_MEETING_DETAIL("진행 중인 동행 상세 정보를 조회했어요."),
