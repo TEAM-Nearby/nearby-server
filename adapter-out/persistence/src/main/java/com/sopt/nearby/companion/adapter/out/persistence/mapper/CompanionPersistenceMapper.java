@@ -6,6 +6,8 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEn
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchParticipantEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMeetingEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionNotificationEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPushDeliveryEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPushEndpointEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostStyleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostStyleEntityId;
@@ -26,6 +28,8 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
+import com.sopt.nearby.companion.domain.model.notification.CompanionPushDelivery;
+import com.sopt.nearby.companion.domain.model.notification.CompanionPushEndpoint;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStyle;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
@@ -174,6 +178,82 @@ public final class CompanionPersistenceMapper {
 				entity.getTargetId(),
 				entity.getReadAt(),
 				entity.getCreatedAt()
+		);
+	}
+
+	public static CompanionPushEndpointEntity toEntity(final CompanionPushEndpoint model) {
+		return new CompanionPushEndpointEntity(
+				model.id(),
+				model.userId(),
+				model.installationId(),
+				model.token(),
+				model.platform(),
+				model.active(),
+				model.lastSeenAt(),
+				model.createdAt(),
+				model.updatedAt()
+		);
+	}
+
+	public static CompanionPushEndpoint toDomain(final CompanionPushEndpointEntity entity) {
+		return new CompanionPushEndpoint(
+				entity.getId(),
+				entity.getUserId(),
+				entity.getInstallationId(),
+				entity.getToken(),
+				entity.getPlatform(),
+				entity.isActive(),
+				entity.getLastSeenAt(),
+				entity.getCreatedAt(),
+				entity.getUpdatedAt()
+		);
+	}
+
+	public static CompanionPushDeliveryEntity toEntity(final CompanionPushDelivery model) {
+		return new CompanionPushDeliveryEntity(
+				model.id(),
+				model.notificationId(),
+				model.endpointId(),
+				model.recipientUserId(),
+				model.token(),
+				model.title(),
+				model.body(),
+				model.targetType(),
+				model.targetId(),
+				model.status(),
+				model.attemptCount(),
+				model.nextAttemptAt(),
+				model.leaseUntil(),
+				model.claimToken(),
+				model.providerMessageId(),
+				model.lastErrorCode(),
+				model.expiresAt(),
+				model.createdAt(),
+				model.updatedAt()
+		);
+	}
+
+	public static CompanionPushDelivery toDomain(final CompanionPushDeliveryEntity entity) {
+		return new CompanionPushDelivery(
+				entity.getId(),
+				entity.getNotificationId(),
+				entity.getEndpointId(),
+				entity.getRecipientUserId(),
+				entity.getToken(),
+				entity.getTitle(),
+				entity.getBody(),
+				entity.getTargetType(),
+				entity.getTargetId(),
+				entity.getStatus(),
+				entity.getAttemptCount(),
+				entity.getNextAttemptAt(),
+				entity.getLeaseUntil(),
+				entity.getClaimToken(),
+				entity.getProviderMessageId(),
+				entity.getLastErrorCode(),
+				entity.getExpiresAt(),
+				entity.getCreatedAt(),
+				entity.getUpdatedAt()
 		);
 	}
 
