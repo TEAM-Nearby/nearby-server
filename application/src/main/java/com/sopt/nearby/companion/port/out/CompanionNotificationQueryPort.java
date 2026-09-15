@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.port.out;
 
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationPageCursor;
 import java.util.List;
 
 public interface CompanionNotificationQueryPort {
@@ -11,5 +12,11 @@ public interface CompanionNotificationQueryPort {
             Long userId,
             CompanionNotificationDirection direction
     );
-}
 
+    List<CompanionNotificationPageRow> findPageByUserIdAndDirection(
+            Long userId,
+            CompanionNotificationDirection direction,
+            int limit,
+            CompanionNotificationPageCursor cursor
+    );
+}

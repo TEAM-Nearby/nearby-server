@@ -36,6 +36,7 @@ public enum CompanionErrorCode implements ErrorCode {
     INVALID_NOTIFICATION_ID("올바르지 않은 알림 ID입니다."),
     FORBIDDEN_COMPANION_NOTIFICATION("동행 알림을 읽음 처리할 권한이 없습니다."),
     COMPANION_NOTIFICATION_NOT_FOUND("동행 알림을 찾을 수 없습니다."),
+    INVALID_NOTIFICATION_CURSOR("동행 알림 페이지 커서가 올바르지 않습니다."),
     INVALID_PUSH_ENDPOINT("푸시 수신 대상 정보가 올바르지 않습니다."),
     INVALID_CHECK_IN_REQUEST("올바르지 않은 만남 인증 요청입니다."),
     OUT_OF_CHECK_IN_RADIUS("만남 인증 가능 반경 밖에 있습니다."),

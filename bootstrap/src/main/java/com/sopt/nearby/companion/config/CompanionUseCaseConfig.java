@@ -16,6 +16,7 @@ import com.sopt.nearby.companion.application.ProcessCompanionPushDeliveriesServi
 import com.sopt.nearby.companion.application.RegisterCompanionPushEndpointService;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
+import com.sopt.nearby.companion.application.ReadCompanionNotificationPageService;
 import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
 import com.sopt.nearby.companion.application.ReadCompanionRequestReviewService;
 import com.sopt.nearby.companion.application.ReadCompanionRequestResultService;
@@ -40,6 +41,7 @@ import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionNotificationPageUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestResultUseCase;
@@ -93,6 +95,7 @@ import com.sopt.nearby.user.port.in.CompleteCompanionProfileOnboardingUseCase;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -264,6 +267,13 @@ public class CompanionUseCaseConfig {
     }
 
     @Bean
+    ReadCompanionNotificationPageUseCase readCompanionNotificationPageUseCase(
+            final CompanionNotificationQueryPort queryPort
+    ) {
+        return new ReadCompanionNotificationPageService(queryPort);
+    }
+
+    @Bean
     ReadCompanionRequestReviewUseCase readCompanionRequestReviewUseCase(
             final CompanionRequestReviewQueryPort queryPort
     ) {
@@ -335,7 +345,8 @@ public class CompanionUseCaseConfig {
             final Clock clock,
             @Value("${nearby.push.worker.batch-size:50}") final int batchSize,
             @Value("${nearby.push.worker.max-attempts:5}") final int maxAttempts,
-            @Value("${nearby.push.worker.lease-seconds:30}") final long leaseSeconds
+            @Value("${nearby.push.worker.lease-seconds:30}") final long leaseSeconds,
+            @Value("${nearby.push.worker.jitter-max-seconds:5}") final int jitterMaxSeconds
     ) {
         return new ProcessCompanionPushDeliveriesService(
                 repository,
@@ -344,7 +355,8 @@ public class CompanionUseCaseConfig {
                 clock,
                 batchSize,
                 maxAttempts,
-                Duration.ofSeconds(leaseSeconds)
+                Duration.ofSeconds(leaseSeconds),
+                () -> ThreadLocalRandom.current().nextInt(Math.max(0, jitterMaxSeconds) + 1)
         );
     }
 

@@ -7,6 +7,8 @@ import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationHostProfile;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationPageCursor;
+import com.sopt.nearby.companion.port.out.CompanionNotificationPageRow;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,6 +56,16 @@ class ReadCompanionNotificationsServiceTest {
             this.userId = userId;
             this.direction = direction;
             return result;
+        }
+
+        @Override
+        public List<CompanionNotificationPageRow> findPageByUserIdAndDirection(
+                final Long userId,
+                final CompanionNotificationDirection direction,
+                final int limit,
+                final CompanionNotificationPageCursor cursor
+        ) {
+            return List.of();
         }
     }
 }

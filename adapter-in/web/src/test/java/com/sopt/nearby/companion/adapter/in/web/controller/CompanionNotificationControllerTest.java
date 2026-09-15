@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadResult;
+import com.sopt.nearby.companion.application.CompanionNotificationPage;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationHostProfile;
@@ -39,7 +40,11 @@ class CompanionNotificationControllerTest {
         useCase = new FakeReadCompanionNotificationsUseCase();
         markUseCase = new FakeMarkCompanionNotificationAsReadUseCase();
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new CompanionNotificationController(useCase, markUseCase))
+                .standaloneSetup(new CompanionNotificationController(
+                        useCase,
+                        (userId, direction, size, cursor) -> new CompanionNotificationPage(List.of(), null, false),
+                        markUseCase
+                ))
                 .setMessageConverters(jsonMessageConverter())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -125,6 +130,18 @@ class CompanionNotificationControllerTest {
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST_DIRECTION"))
                 .andExpect(jsonPath("$.message").value("올바르지 않은 요청 방향입니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
+    }
+
+    @Test
+    void exposesCursorPageFieldsWithoutChangingExistingListContract() throws Exception {
+        mockMvc.perform(get("/api/users/me/companion-requests/page")
+                        .queryParam("direction", "RECEIVED")
+                        .principal(principal("100")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.direction").value("RECEIVED"))
+                .andExpect(jsonPath("$.data.requests").isArray())
+                .andExpect(jsonPath("$.data.nextCursor").value(nullValue()))
+                .andExpect(jsonPath("$.data.hasNext").value(false));
     }
 
     @Test

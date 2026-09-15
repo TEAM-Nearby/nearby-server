@@ -7,7 +7,10 @@ import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationHostProfile;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationPageCursor;
+import com.sopt.nearby.companion.port.out.CompanionNotificationPageRow;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 
@@ -35,6 +38,29 @@ public class CompanionNotificationQueryAdapter implements CompanionNotificationQ
                 .toList();
     }
 
+    @Override
+    public List<CompanionNotificationPageRow> findPageByUserIdAndDirection(
+            final Long userId,
+            final CompanionNotificationDirection direction,
+            final int limit,
+            final CompanionNotificationPageCursor cursor
+    ) {
+        LocalDateTime cursorCreatedAt = cursor == null ? null : cursor.createdAt();
+        Long cursorId = cursor == null ? null : cursor.notificationId();
+        List<CompanionNotificationProjection> rows = switch (direction) {
+            case SENT -> repository.findSentPage(userId, cursorCreatedAt, cursorId, limit);
+            case RECEIVED -> repository.findReceivedPage(userId, cursorCreatedAt, cursorId, limit);
+        };
+
+        return rows.stream()
+                .map(row -> new CompanionNotificationPageRow(
+                        row.getNotificationId(),
+                        row.getCreatedAt(),
+                        toSummary(direction, row)
+                ))
+                .toList();
+    }
+
     private CompanionNotificationSummary toSummary(
             final CompanionNotificationDirection direction,
             final CompanionNotificationProjection row
@@ -56,4 +82,3 @@ public class CompanionNotificationQueryAdapter implements CompanionNotificationQ
         );
     }
 }
-
