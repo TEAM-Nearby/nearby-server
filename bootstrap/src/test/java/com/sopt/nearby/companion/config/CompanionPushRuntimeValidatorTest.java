@@ -59,4 +59,21 @@ class CompanionPushRuntimeValidatorTest {
                 5
         ));
     }
+
+    @Test
+    void acceptsLocalProfileForDevelopmentWorker() {
+        MockEnvironment environment = new MockEnvironment();
+        environment.setActiveProfiles("local");
+
+        assertDoesNotThrow(() -> new CompanionPushRuntimeValidator(
+                environment,
+                true,
+                "",
+                30,
+                5_000,
+                10_000,
+                10_000,
+                5
+        ));
+    }
 }

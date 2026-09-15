@@ -40,12 +40,14 @@ public class CompanionPushRuntimeValidator {
             return;
         }
         boolean fcmProfile = Arrays.asList(environment.getActiveProfiles()).contains("fcm");
-        if (!fcmProfile) {
+        boolean developmentProfile = Arrays.stream(environment.getActiveProfiles())
+                .anyMatch(profile -> Arrays.asList("local", "dev", "test").contains(profile));
+        if (!fcmProfile && !developmentProfile) {
             throw new IllegalStateException(
-                    "푸시 워커를 활성화하려면 fcm 프로필이 필요합니다. 로컬 푸시 어댑터로 운영 발송할 수 없습니다."
+                    "운영 푸시 워커를 활성화하려면 fcm 프로필이 필요합니다. 로컬 푸시 어댑터로 운영 발송할 수 없습니다."
             );
         }
-        if (firebaseProjectId == null || firebaseProjectId.isBlank()) {
+        if (fcmProfile && (firebaseProjectId == null || firebaseProjectId.isBlank())) {
             throw new IllegalStateException("푸시 워커를 활성화하려면 Firebase 프로젝트 ID가 필요합니다.");
         }
         long requiredLeaseSeconds = (maxFirebaseTimeoutMs + 999L) / 1000L + Math.max(0L, leaseSafetyMarginSeconds);
