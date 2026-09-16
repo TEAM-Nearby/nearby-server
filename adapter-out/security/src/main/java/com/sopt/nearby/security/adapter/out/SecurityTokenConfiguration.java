@@ -18,42 +18,52 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 @Configuration
 public class SecurityTokenConfiguration {
 
-	private static final int HS256_MIN_SECRET_BYTES = 32;
+    private static final int HS256_MIN_SECRET_BYTES = 32;
 
-	@Bean
-	public JwtEncoder jwtEncoder(
-			@Value("${nearby.jwt.secret}")
-			final String secret
-	) {
-		SecretKey secretKey = secretKey(secret);
-		return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey.getEncoded()));
-	}
+    @Bean
+    public JwtEncoder jwtEncoder(
+            @Value("${nearby.jwt.secret}") final String secret
+    ) {
+        SecretKey secretKey = secretKey(secret);
+        return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey.getEncoded()));
+    }
 
-	@Bean
-	public JwtDecoder accessTokenJwtDecoder(
-			@Value("${nearby.jwt.secret}")
-			final String secret
-	) {
-		return NimbusJwtDecoder.withSecretKey(secretKey(secret))
-				.macAlgorithm(MacAlgorithm.HS256)
-				.build();
-	}
+    @Bean
+    public JwtDecoder accessTokenJwtDecoder(
+            @Value("${nearby.jwt.secret}") final String secret
+    ) {
+        return NimbusJwtDecoder.withSecretKey(secretKey(secret))
+                .macAlgorithm(MacAlgorithm.HS256)
+                .build();
+    }
 
-	@Bean
-	public JwtDecoder kakaoJwtDecoder(
-			@Value("${kakao.oidc.issuer-uri:https://kauth.kakao.com}") final String issuerUri,
-			@Value("${kakao.oidc.jwk-set-uri:https://kauth.kakao.com/.well-known/jwks.json}") final String jwkSetUri
-	) {
-		NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
-		decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuerUri));
-		return decoder;
-	}
+    @Bean
+    public JwtDecoder kakaoJwtDecoder(
+            @Value("${kakao.oidc.issuer-uri:https://kauth.kakao.com}") final String issuerUri,
+            @Value("${kakao.oidc.jwk-set-uri:https://kauth.kakao.com/.well-known/jwks.json}") final String jwkSetUri
+    ) {
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuerUri));
+        return decoder;
+    }
 
-	private SecretKey secretKey(final String secret) {
-		byte[] bytes = secret == null ? new byte[0] : secret.getBytes(StandardCharsets.UTF_8);
-		if (bytes.length < HS256_MIN_SECRET_BYTES) {
-			throw new IllegalStateException("nearby.jwt.secret은 HS256 서명을 위해 32바이트 이상이어야 합니다.");
-		}
-		return new SecretKeySpec(bytes, "HmacSHA256");
-	}
+    @Bean
+    public JwtDecoder appleJwtDecoder(
+            @Value("${apple.oidc.issuer-uri:https://appleid.apple.com}") final String issuerUri,
+            @Value("${apple.oidc.jwk-set-uri:https://appleid.apple.com/auth/keys}") final String jwkSetUri
+    ) {
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuerUri));
+        return decoder;
+    }
+
+    private SecretKey secretKey(final String secret) {
+        byte[] bytes = secret == null ? new byte[0] : secret.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < HS256_MIN_SECRET_BYTES) {
+            throw new IllegalStateException("nearby.jwt.secret은 HS256 서명을 위해 32바이트 이상이어야 합니다.");
+        }
+        return new SecretKeySpec(bytes, "HmacSHA256");
+    }
+
+
 }

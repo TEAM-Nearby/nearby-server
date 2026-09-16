@@ -25,7 +25,8 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/kakao/login",
+                                "/api/login/kakao",
+                                "/api/login/apple",
                                 "/api/auth/refresh",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
