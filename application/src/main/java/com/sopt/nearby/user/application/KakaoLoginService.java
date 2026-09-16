@@ -102,7 +102,7 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 	@Override
 	@Transactional
 	public KakaoLoginResult login(final KakaoLoginCommand command) {
-		VerifiedKakaoUser kakaoUser = kakaoIdTokenVerifier.verify(command.idToken(), command.nonce());
+		VerifiedUser kakaoUser = kakaoIdTokenVerifier.verify(command.idToken(), command.nonce());
 		UserAccount userAccount = findOrCreateUser(kakaoUser.providerUserId());
 		IssuedTokens tokens = tokenIssuer.issue(new TokenIssueRequest(
 				userAccount.id(),

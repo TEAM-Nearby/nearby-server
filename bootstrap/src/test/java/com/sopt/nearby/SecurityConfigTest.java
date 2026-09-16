@@ -41,7 +41,15 @@ class SecurityConfigTest {
 
     @Test
     void permitsKakaoLoginWithoutBearerToken() throws Exception {
-        mockMvc.perform(post("/api/kakao/login")
+        mockMvc.perform(post("/api/login/kakao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void permitsAppleLoginWithoutBearerToken() throws Exception {
+        mockMvc.perform(post("/api/login/apple")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());

@@ -15,7 +15,6 @@ import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import com.sopt.nearby.user.exception.KakaoLoginFailedException;
 import com.sopt.nearby.user.exception.SocialAccountAlreadyExistsException;
-import com.sopt.nearby.user.port.out.KakaoIdTokenVerifier;
 import com.sopt.nearby.user.port.out.RefreshTokenRepository;
 import com.sopt.nearby.user.port.out.SocialAccountRepository;
 import com.sopt.nearby.user.port.out.TokenIssuer;
@@ -150,7 +149,7 @@ class KakaoLoginServiceTest {
 			final String providerUserId
 	) {
 		return new KakaoLoginService(
-				(idToken, nonce) -> new VerifiedKakaoUser(providerUserId),
+				(idToken, nonce) -> new VerifiedUser(providerUserId),
 				new FakeTokenIssuer(),
 				userAccounts,
 				socialAccounts,
