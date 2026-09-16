@@ -8,11 +8,15 @@ import com.sopt.nearby.companion.application.CheckInCompanionMeetingService;
 import com.sopt.nearby.companion.application.CompleteCompanionMeetingService;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
+import com.sopt.nearby.companion.application.DeactivateCompanionPushEndpointService;
 import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
 import com.sopt.nearby.companion.application.ProcessCompanionRequestService;
+import com.sopt.nearby.companion.application.ProcessCompanionPushDeliveriesService;
+import com.sopt.nearby.companion.application.RegisterCompanionPushEndpointService;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
+import com.sopt.nearby.companion.application.ReadCompanionNotificationPageService;
 import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
 import com.sopt.nearby.companion.application.ReadCompanionRequestReviewService;
 import com.sopt.nearby.companion.application.ReadCompanionRequestResultService;
@@ -32,10 +36,12 @@ import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.CompleteCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
+import com.sopt.nearby.companion.port.in.DeactivateCompanionPushEndpointUseCase;
 import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionNotificationPageUseCase;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestResultUseCase;
@@ -49,6 +55,8 @@ import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.in.RegisterCompanionProfileUseCase;
+import com.sopt.nearby.companion.port.in.RegisterCompanionPushEndpointUseCase;
+import com.sopt.nearby.companion.port.in.ProcessCompanionPushDeliveriesUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.AcceptedCompanionRequestDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
@@ -56,6 +64,8 @@ import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingCheckInQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
+import com.sopt.nearby.companion.port.out.CompanionPushDeliveryRepository;
+import com.sopt.nearby.companion.port.out.CompanionPushEndpointRepository;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
@@ -78,12 +88,16 @@ import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
+import com.sopt.nearby.companion.port.out.PushSender;
 import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.user.port.in.CompleteCompanionProfileOnboardingUseCase;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.time.Clock;
+import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -254,6 +268,13 @@ public class CompanionUseCaseConfig {
     }
 
     @Bean
+    ReadCompanionNotificationPageUseCase readCompanionNotificationPageUseCase(
+            final CompanionNotificationQueryPort queryPort
+    ) {
+        return new ReadCompanionNotificationPageService(queryPort);
+    }
+
+    @Bean
     ReadCompanionRequestReviewUseCase readCompanionRequestReviewUseCase(
             final CompanionRequestReviewQueryPort queryPort
     ) {
@@ -294,9 +315,55 @@ public class CompanionUseCaseConfig {
     @Bean
     CreateCompanionNotificationUseCase createCompanionNotificationUseCase(
             final CompanionNotificationRepository repository,
+            final CompanionPushEndpointRepository endpointRepository,
+            final CompanionPushDeliveryRepository deliveryRepository,
             final Clock clock
     ) {
-        return new CreateCompanionNotificationService(repository, clock);
+        return new CreateCompanionNotificationService(repository, endpointRepository, deliveryRepository, clock);
+    }
+
+    @Bean
+    RegisterCompanionPushEndpointUseCase registerCompanionPushEndpointUseCase(
+            final CompanionPushEndpointRepository repository,
+            final Clock clock
+    ) {
+        return new RegisterCompanionPushEndpointService(repository, clock);
+    }
+
+    @Bean
+    DeactivateCompanionPushEndpointUseCase deactivateCompanionPushEndpointUseCase(
+            final CompanionPushEndpointRepository repository,
+            final Clock clock
+    ) {
+        return new DeactivateCompanionPushEndpointService(repository, clock);
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            prefix = "nearby.push.worker",
+            name = "enabled",
+            havingValue = "true"
+    )
+    ProcessCompanionPushDeliveriesUseCase processCompanionPushDeliveriesUseCase(
+            final CompanionPushDeliveryRepository repository,
+            final CompanionPushEndpointRepository endpointRepository,
+            final PushSender sender,
+            final Clock clock,
+            @Value("${nearby.push.worker.batch-size:50}") final int batchSize,
+            @Value("${nearby.push.worker.max-attempts:5}") final int maxAttempts,
+            @Value("${nearby.push.worker.lease-seconds:31}") final long leaseSeconds,
+            @Value("${nearby.push.worker.jitter-max-seconds:5}") final int jitterMaxSeconds
+    ) {
+        return new ProcessCompanionPushDeliveriesService(
+                repository,
+                endpointRepository,
+                sender,
+                clock,
+                batchSize,
+                maxAttempts,
+                Duration.ofSeconds(leaseSeconds),
+                () -> ThreadLocalRandom.current().nextInt(Math.max(0, jitterMaxSeconds) + 1)
+        );
     }
 
     @Bean

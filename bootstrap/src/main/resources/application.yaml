@@ -1,6 +1,10 @@
 spring:
   application:
     name: nearby
+  profiles:
+    default: local
+  flyway:
+    locations: classpath:db/migration,classpath:db/migration-{vendor}
   aop:
     proxy-target-class: false
   data:
@@ -55,6 +59,21 @@ nearby:
       timeout-ms: ${GOOGLE_PLACES_TIMEOUT_MS:1000}
       photo:
         max-width-px: ${GOOGLE_PLACES_PHOTO_MAX_WIDTH_PX:640}
+  push:
+    worker:
+      enabled: ${NEARBY_PUSH_WORKER_ENABLED:false}
+      fixed-delay-ms: ${NEARBY_PUSH_WORKER_FIXED_DELAY_MS:1000}
+      initial-delay-ms: ${NEARBY_PUSH_WORKER_INITIAL_DELAY_MS:1000}
+      batch-size: ${NEARBY_PUSH_WORKER_BATCH_SIZE:50}
+      max-attempts: ${NEARBY_PUSH_WORKER_MAX_ATTEMPTS:5}
+      lease-seconds: ${NEARBY_PUSH_WORKER_LEASE_SECONDS:31}
+      lease-safety-margin-seconds: ${NEARBY_PUSH_WORKER_LEASE_SAFETY_MARGIN_SECONDS:5}
+      jitter-max-seconds: ${NEARBY_PUSH_WORKER_JITTER_MAX_SECONDS:5}
+    firebase:
+      project-id: ${NEARBY_PUSH_FIREBASE_PROJECT_ID:}
+      connect-timeout-ms: ${NEARBY_PUSH_FIREBASE_CONNECT_TIMEOUT_MS:5000}
+      read-timeout-ms: ${NEARBY_PUSH_FIREBASE_READ_TIMEOUT_MS:10000}
+      write-timeout-ms: ${NEARBY_PUSH_FIREBASE_WRITE_TIMEOUT_MS:10000}
 
 management:
   tracing:

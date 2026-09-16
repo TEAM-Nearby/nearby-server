@@ -2,11 +2,14 @@
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionNotificationsResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionNotificationPageResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.MarkCompanionNotificationAsReadResponse;
 import com.sopt.nearby.companion.domain.exception.CompanionNotificationNotFoundException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionNotificationException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionNotificationDirectionException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionNotificationIdException;
+import com.sopt.nearby.companion.domain.exception.InvalidCompanionNotificationCursorException;
+import com.sopt.nearby.companion.port.in.ReadCompanionNotificationPageUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +37,26 @@ public interface CompanionNotificationApi {
     );
 
     @ApiExceptions({
+            InvalidCompanionNotificationDirectionException.class,
+            InvalidCompanionNotificationCursorException.class
+    })
+    @Operation(
+            summary = "동행 알림 페이지 조회",
+            description = "JWT 액세스 토큰으로 인증된 사용자의 동행 알림을 커서 기반으로 조회합니다. 기존 전체 조회 API와 별도로 제공합니다.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    CommonResponse<CompanionNotificationPageResponse> getNotificationPage(
+            @Parameter(description = "조회할 요청 방향", required = true, example = "RECEIVED")
+            String direction,
+            @Parameter(description = "페이지 크기(기본 20, 최대 100)", example = "20")
+            int size,
+            @Parameter(description = "이전 응답의 nextCursor", example = "djF8UkVDRUlWRUR8MjAyNi0wOS0xNVQwMDowMDowMHw0Mg")
+            String cursor,
+            @Parameter(hidden = true)
+            Principal principal
+    );
+
+    @ApiExceptions({
             InvalidCompanionNotificationIdException.class,
             ForbiddenCompanionNotificationException.class,
             CompanionNotificationNotFoundException.class
@@ -50,4 +73,3 @@ public interface CompanionNotificationApi {
             Principal principal
     );
 }
-

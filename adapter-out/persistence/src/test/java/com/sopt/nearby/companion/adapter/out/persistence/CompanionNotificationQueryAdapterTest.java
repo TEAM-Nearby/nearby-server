@@ -23,6 +23,7 @@ import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationActionType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationPageCursor;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
@@ -32,6 +33,7 @@ import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
 import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRepository;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
+import com.sopt.nearby.companion.port.out.CompanionNotificationPageRow;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -191,6 +193,30 @@ class CompanionNotificationQueryAdapterTest {
         assertThat(second.matchId()).isNull();
         assertThat(second.actionType()).isEqualTo(CompanionNotificationActionType.VIEW_RESULT);
         assertThat(second.isRead()).isFalse();
+
+        List<CompanionNotificationPageRow> firstPage = adapter.findPageByUserIdAndDirection(
+                7L,
+                CompanionNotificationDirection.SENT,
+                2,
+                null
+        );
+        assertThat(firstPage)
+                .extracting(CompanionNotificationPageRow::notificationId)
+                .containsExactly(recentNotification.getId(), oldNotification.getId());
+
+        List<CompanionNotificationPageRow> afterFirst = adapter.findPageByUserIdAndDirection(
+                7L,
+                CompanionNotificationDirection.SENT,
+                2,
+                CompanionNotificationPageCursor.of(
+                        CompanionNotificationDirection.SENT,
+                        firstPage.get(0).createdAt(),
+                        firstPage.get(0).notificationId()
+                )
+        );
+        assertThat(afterFirst)
+                .extracting(CompanionNotificationPageRow::notificationId)
+                .containsExactly(oldNotification.getId());
     }
 
     @Test

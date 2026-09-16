@@ -8,6 +8,7 @@ dependencies {
 	implementation project(':logging')
 
 	implementation 'com.solapi:sdk:1.0.3'
+	implementation 'com.google.firebase:firebase-admin:9.4.3'
 
 	compileOnly 'org.springframework:spring-context'
 	implementation 'org.slf4j:slf4j-api'

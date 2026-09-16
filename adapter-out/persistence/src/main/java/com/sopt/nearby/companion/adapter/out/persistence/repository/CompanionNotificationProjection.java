@@ -7,6 +7,8 @@ public interface CompanionNotificationProjection {
 
     Long getNotificationId();
 
+    LocalDateTime getCreatedAt();
+
     Long getApplicationId();
 
     String getApplicationStatus();
@@ -25,4 +27,3 @@ public interface CompanionNotificationProjection {
 
     Boolean getReadStatus();
 }
-

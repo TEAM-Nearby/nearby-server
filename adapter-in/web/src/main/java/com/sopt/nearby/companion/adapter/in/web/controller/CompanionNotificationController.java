@@ -3,12 +3,15 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.code.CompanionSuccessCode;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionNotificationsResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionNotificationPageResponse;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.MarkCompanionNotificationAsReadResponse;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadResult;
+import com.sopt.nearby.companion.application.CompanionNotificationPage;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionNotificationPageUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import java.security.Principal;
 import java.util.List;
@@ -24,12 +27,37 @@ import org.springframework.web.bind.annotation.RestController;
 public class CompanionNotificationController implements CompanionNotificationApi {
 
     private final ReadCompanionNotificationsUseCase readCompanionNotificationsUseCase;
+    private final ReadCompanionNotificationPageUseCase readCompanionNotificationPageUseCase;
     private final MarkCompanionNotificationAsReadUseCase markCompanionNotificationAsReadUseCase;
 
     public CompanionNotificationController(final ReadCompanionNotificationsUseCase readCompanionNotificationsUseCase,
+                                           final ReadCompanionNotificationPageUseCase readCompanionNotificationPageUseCase,
                                            final MarkCompanionNotificationAsReadUseCase markCompanionNotificationAsReadUseCase) {
         this.readCompanionNotificationsUseCase = readCompanionNotificationsUseCase;
+        this.readCompanionNotificationPageUseCase = readCompanionNotificationPageUseCase;
         this.markCompanionNotificationAsReadUseCase = markCompanionNotificationAsReadUseCase;
+    }
+
+    @Override
+    @GetMapping("/page")
+    public CommonResponse<CompanionNotificationPageResponse> getNotificationPage(
+            @RequestParam final String direction,
+            @RequestParam(defaultValue = "20") final int size,
+            @RequestParam(required = false) final String cursor,
+            final Principal principal
+    ) {
+        Long userId = Long.valueOf(principal.getName());
+        CompanionNotificationDirection notificationDirection = CompanionNotificationDirection.from(direction);
+        CompanionNotificationPage page = readCompanionNotificationPageUseCase.getPage(
+                userId,
+                notificationDirection,
+                size,
+                cursor
+        );
+        return CommonResponse.success(
+                CompanionSuccessCode.READ_COMPANION_REQUESTS,
+                CompanionNotificationPageResponse.from(notificationDirection, page)
+        );
     }
 
     @Override
@@ -71,4 +99,3 @@ public class CompanionNotificationController implements CompanionNotificationApi
         );
     }
 }
-
