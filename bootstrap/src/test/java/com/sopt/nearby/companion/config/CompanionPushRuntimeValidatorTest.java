@@ -27,7 +27,7 @@ class CompanionPushRuntimeValidatorTest {
     }
 
     @Test
-    void rejectsLeaseNotLongerThanProviderTimeoutAndMargin() {
+    void rejectsLeaseNotLongerThanProviderTimeoutBudgetAndMargin() {
         MockEnvironment environment = new MockEnvironment();
         environment.setActiveProfiles("fcm");
 
@@ -35,7 +35,7 @@ class CompanionPushRuntimeValidatorTest {
                 environment,
                 true,
                 "nearby-project",
-                15,
+                30,
                 5_000,
                 10_000,
                 10_000,
@@ -52,7 +52,7 @@ class CompanionPushRuntimeValidatorTest {
                 environment,
                 true,
                 "nearby-project",
-                30,
+                31,
                 5_000,
                 10_000,
                 10_000,
@@ -69,7 +69,7 @@ class CompanionPushRuntimeValidatorTest {
                 environment,
                 true,
                 "",
-                30,
+                31,
                 5_000,
                 10_000,
                 10_000,

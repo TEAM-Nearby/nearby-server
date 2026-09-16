@@ -66,7 +66,7 @@ nearby:
       initial-delay-ms: ${NEARBY_PUSH_WORKER_INITIAL_DELAY_MS:1000}
       batch-size: ${NEARBY_PUSH_WORKER_BATCH_SIZE:50}
       max-attempts: ${NEARBY_PUSH_WORKER_MAX_ATTEMPTS:5}
-      lease-seconds: ${NEARBY_PUSH_WORKER_LEASE_SECONDS:30}
+      lease-seconds: ${NEARBY_PUSH_WORKER_LEASE_SECONDS:31}
       lease-safety-margin-seconds: ${NEARBY_PUSH_WORKER_LEASE_SAFETY_MARGIN_SECONDS:5}
       jitter-max-seconds: ${NEARBY_PUSH_WORKER_JITTER_MAX_SECONDS:5}
     firebase:

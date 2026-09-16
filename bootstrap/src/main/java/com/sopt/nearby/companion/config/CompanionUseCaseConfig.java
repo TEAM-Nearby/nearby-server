@@ -351,7 +351,7 @@ public class CompanionUseCaseConfig {
             final Clock clock,
             @Value("${nearby.push.worker.batch-size:50}") final int batchSize,
             @Value("${nearby.push.worker.max-attempts:5}") final int maxAttempts,
-            @Value("${nearby.push.worker.lease-seconds:30}") final long leaseSeconds,
+            @Value("${nearby.push.worker.lease-seconds:31}") final long leaseSeconds,
             @Value("${nearby.push.worker.jitter-max-seconds:5}") final int jitterMaxSeconds
     ) {
         return new ProcessCompanionPushDeliveriesService(
