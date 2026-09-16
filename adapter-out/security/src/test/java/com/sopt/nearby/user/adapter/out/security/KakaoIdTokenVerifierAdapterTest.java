@@ -4,7 +4,7 @@ package com.sopt.nearby.user.adapter.out.security;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.sopt.nearby.user.application.VerifiedKakaoUser;
+import com.sopt.nearby.user.application.VerifiedUser;
 import com.sopt.nearby.user.exception.KakaoLoginFailedException;
 import java.time.Instant;
 import java.util.List;
@@ -22,7 +22,7 @@ class KakaoIdTokenVerifierAdapterTest {
 				"native-app-key"
 		);
 
-		VerifiedKakaoUser user = adapter.verify("id-token", "nonce");
+		VerifiedUser user = adapter.verify("id-token", "nonce");
 
 		assertThat(user.providerUserId()).isEqualTo("kakao-subject");
 	}

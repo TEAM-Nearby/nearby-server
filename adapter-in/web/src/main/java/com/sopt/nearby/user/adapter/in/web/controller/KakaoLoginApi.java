@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-@Tag(name = "Kakao Login", description = "카카오 소셜 로그인 API")
+@Tag(name = "Social Login", description = "소셜 로그인 API")
 public interface KakaoLoginApi {
 
 	@Operation(
