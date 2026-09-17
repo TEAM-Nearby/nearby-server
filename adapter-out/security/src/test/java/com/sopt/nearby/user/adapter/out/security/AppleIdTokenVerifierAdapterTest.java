@@ -14,11 +14,13 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 class AppleIdTokenVerifierAdapterTest {
+	private static final String HASHED_NONCE = "78377b525757b494427f89014f97d79928f3938d14eb51e20fb5dec9834eb304";
+	private static final String OTHER_HASHED_NONCE = "59bcb2470d7a22b8a9f227d96aaf80645e61d5055aa187c1374ed78333d10765";
 
 	@Test
-	void returnsAppleSubjectWhenAudienceAndNonceMatch() {
+	void returnsAppleSubjectWhenAudienceAndHashedNonceMatch() {
 		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(
-				token -> jwt("apple-subject", "apple-client-id", "nonce"),
+				token -> jwt("apple-subject", "apple-client-id", HASHED_NONCE),
 				"apple-client-id"
 		);
 
@@ -30,7 +32,7 @@ class AppleIdTokenVerifierAdapterTest {
 	@Test
 	void failsWhenNonceDoesNotMatch() {
 		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(
-				token -> jwt("apple-subject", "apple-client-id", "other-nonce"),
+				token -> jwt("apple-subject", "apple-client-id", OTHER_HASHED_NONCE),
 				"apple-client-id"
 		);
 
@@ -41,7 +43,7 @@ class AppleIdTokenVerifierAdapterTest {
 	@Test
 	void failsWhenAudienceDoesNotMatch() {
 		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(
-				token -> jwt("apple-subject", "other-client-id", "nonce"),
+				token -> jwt("apple-subject", "other-client-id", HASHED_NONCE),
 				"apple-client-id"
 		);
 

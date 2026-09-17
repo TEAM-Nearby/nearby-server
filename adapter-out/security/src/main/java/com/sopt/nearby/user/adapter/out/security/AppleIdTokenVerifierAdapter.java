@@ -51,7 +51,7 @@ public class AppleIdTokenVerifierAdapter implements AppleIdTokenVerifier {
     }
 
     private void validateNonce(final String tokenNonce, final String expectedNonce) {
-        if (isBlank(expectedNonce) || !expectedNonce.equals(tokenNonce)) {
+        if (isBlank(expectedNonce) || !RefreshTokenHashSupport.sha256(expectedNonce).equals(tokenNonce)) {
             throw new AppleLoginFailedException();
         }
     }
