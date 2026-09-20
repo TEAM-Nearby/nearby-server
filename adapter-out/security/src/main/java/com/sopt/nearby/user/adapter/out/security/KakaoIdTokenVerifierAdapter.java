@@ -1,7 +1,7 @@
 // 카카오 OIDC ID 토큰을 검증해 카카오 사용자 식별자를 반환하는 어댑터
 package com.sopt.nearby.user.adapter.out.security;
 
-import com.sopt.nearby.user.application.VerifiedKakaoUser;
+import com.sopt.nearby.user.application.VerifiedUser;
 import com.sopt.nearby.user.exception.KakaoLoginFailedException;
 import com.sopt.nearby.user.port.out.KakaoIdTokenVerifier;
 import java.util.List;
@@ -27,7 +27,7 @@ public class KakaoIdTokenVerifierAdapter implements KakaoIdTokenVerifier {
 	}
 
 	@Override
-	public VerifiedKakaoUser verify(final String idToken, final String nonce) {
+	public VerifiedUser verify(final String idToken, final String nonce) {
 		if (isBlank(nativeAppKey)) {
 			throw new KakaoLoginFailedException();
 		}
@@ -37,7 +37,7 @@ public class KakaoIdTokenVerifierAdapter implements KakaoIdTokenVerifier {
 			validateAudience(jwt.getAudience());
 			validateNonce(jwt.getClaimAsString("nonce"), nonce);
 			validateSubject(jwt.getSubject());
-			return new VerifiedKakaoUser(jwt.getSubject());
+			return new VerifiedUser(jwt.getSubject());
 		} catch (JwtException exception) {
 			throw new KakaoLoginFailedException();
 		}

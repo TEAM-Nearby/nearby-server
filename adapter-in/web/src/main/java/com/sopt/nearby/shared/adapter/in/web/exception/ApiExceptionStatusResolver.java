@@ -12,6 +12,7 @@ public final class ApiExceptionStatusResolver {
     private static final String FORBIDDEN_PREFIX = "FORBIDDEN";
     private static final String UNAUTHORIZED_CODE = "UNAUTHORIZED";
     private static final String KAKAO_LOGIN_FAILED_CODE = "KAKAO_LOGIN_FAILED";
+    private static final String APPLE_LOGIN_FAILED_CODE = "APPLE_LOGIN_FAILED";
     private static final String INVALID_REFRESH_TOKEN_CODE = "INVALID_REFRESH_TOKEN";
     private static final String ONBOARDING_REQUIRED_CODE = "ONBOARDING_REQUIRED";
     private static final String COMPANION_POST_EXPIRED_CODE = "COMPANION_POST_EXPIRED";
@@ -45,6 +46,7 @@ public final class ApiExceptionStatusResolver {
         }
         if (errorCode.name().equals(UNAUTHORIZED_CODE)
                 || errorCode.name().equals(KAKAO_LOGIN_FAILED_CODE)
+                || errorCode.name().equals(APPLE_LOGIN_FAILED_CODE)
                 || errorCode.name().equals(INVALID_REFRESH_TOKEN_CODE)) {
             return HttpStatus.UNAUTHORIZED;
         }

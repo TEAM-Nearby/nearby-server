@@ -1,11 +1,11 @@
-// 카카오 ID 토큰 검증 어댑터의 클레임 검증 동작을 확인하는 테스트
+// 애플 ID 토큰 검증 어댑터의 클레임 검증 동작을 확인하는 테스트
 package com.sopt.nearby.user.adapter.out.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sopt.nearby.user.application.VerifiedUser;
-import com.sopt.nearby.user.exception.KakaoLoginFailedException;
+import com.sopt.nearby.user.exception.AppleLoginFailedException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -13,40 +13,42 @@ import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
-class KakaoIdTokenVerifierAdapterTest {
+class AppleIdTokenVerifierAdapterTest {
+	private static final String HASHED_NONCE = "78377b525757b494427f89014f97d79928f3938d14eb51e20fb5dec9834eb304";
+	private static final String OTHER_HASHED_NONCE = "59bcb2470d7a22b8a9f227d96aaf80645e61d5055aa187c1374ed78333d10765";
 
 	@Test
-	void returnsKakaoSubjectWhenAudienceAndNonceMatch() {
-		KakaoIdTokenVerifierAdapter adapter = new KakaoIdTokenVerifierAdapter(
-				token -> jwt("kakao-subject", "native-app-key", "nonce"),
-				"native-app-key"
+	void returnsAppleSubjectWhenAudienceAndHashedNonceMatch() {
+		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(
+				token -> jwt("apple-subject", "apple-client-id", HASHED_NONCE),
+				"apple-client-id"
 		);
 
 		VerifiedUser user = adapter.verify("id-token", "nonce");
 
-		assertThat(user.providerUserId()).isEqualTo("kakao-subject");
+		assertThat(user.providerUserId()).isEqualTo("apple-subject");
 	}
 
 	@Test
 	void failsWhenNonceDoesNotMatch() {
-		KakaoIdTokenVerifierAdapter adapter = new KakaoIdTokenVerifierAdapter(
-				token -> jwt("kakao-subject", "native-app-key", "other-nonce"),
-				"native-app-key"
+		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(
+				token -> jwt("apple-subject", "apple-client-id", OTHER_HASHED_NONCE),
+				"apple-client-id"
 		);
 
 		assertThatThrownBy(() -> adapter.verify("id-token", "nonce"))
-				.isInstanceOf(KakaoLoginFailedException.class);
+				.isInstanceOf(AppleLoginFailedException.class);
 	}
 
 	@Test
 	void failsWhenAudienceDoesNotMatch() {
-		KakaoIdTokenVerifierAdapter adapter = new KakaoIdTokenVerifierAdapter(
-				token -> jwt("kakao-subject", "other-key", "nonce"),
-				"native-app-key"
+		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(
+				token -> jwt("apple-subject", "other-client-id", HASHED_NONCE),
+				"apple-client-id"
 		);
 
 		assertThatThrownBy(() -> adapter.verify("id-token", "nonce"))
-				.isInstanceOf(KakaoLoginFailedException.class);
+				.isInstanceOf(AppleLoginFailedException.class);
 	}
 
 	@Test
@@ -54,10 +56,10 @@ class KakaoIdTokenVerifierAdapterTest {
 		JwtDecoder decoder = token -> {
 			throw new BadJwtException("bad token");
 		};
-		KakaoIdTokenVerifierAdapter adapter = new KakaoIdTokenVerifierAdapter(decoder, "native-app-key");
+		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(decoder, "apple-client-id");
 
 		assertThatThrownBy(() -> adapter.verify("bad-token", "nonce"))
-				.isInstanceOf(KakaoLoginFailedException.class);
+				.isInstanceOf(AppleLoginFailedException.class);
 	}
 
 	private Jwt jwt(final String subject, final String audience, final String nonce) {

@@ -38,7 +38,11 @@ kakao:
   oidc:
     issuer-uri: ${KAKAO_OIDC_ISSUER_URI:https://kauth.kakao.com}
     jwk-set-uri: ${KAKAO_OIDC_JWK_SET_URI:https://kauth.kakao.com/.well-known/jwks.json}
-
+apple:
+  client-id: ${APPLE_CLIENT_ID:}
+  oidc:
+    issuer-uri: ${APPLE_OIDC_ISSUER_URI:https://appleid.apple.com}
+    jwk-set-uri: ${APPLE_OIDC_JWK_SET_URI:https://appleid.apple.com/auth/keys}
 nearby:
   jwt:
     secret: ${NEARBY_JWT_SECRET}
