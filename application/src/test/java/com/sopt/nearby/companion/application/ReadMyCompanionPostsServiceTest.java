@@ -2,17 +2,23 @@
 package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.post.MyCompanionPostSummary;
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.port.out.MyCompanionPostQueryPort;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ReadMyCompanionPostsServiceTest {
+	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-01T12:00:00Z"), ZoneOffset.UTC);
 
 	private FakeMyCompanionPostQueryPort queryPort;
 	private ReadMyCompanionPostsService service;
@@ -20,13 +26,13 @@ class ReadMyCompanionPostsServiceTest {
 	@BeforeEach
 	void setUp() {
 		queryPort = new FakeMyCompanionPostQueryPort();
-		service = new ReadMyCompanionPostsService(queryPort);
+		service = new ReadMyCompanionPostsService(queryPort, CLOCK);
 	}
 
 	@Test
 	void returnsMyCompanionPostsWithCityNameAndGooglePlaceId() {
 		queryPort.posts = List.of(post(
-				"바르셀로나 Rambla de Catalunya, 16",
+				"Madrid Calle de Cuchilleros, 17",
 				List.of(ReviewKeyword.PUNCTUAL, ReviewKeyword.GOOD_MANNERS)
 		));
 
@@ -36,7 +42,9 @@ class ReadMyCompanionPostsServiceTest {
 		assertEquals(1, result.posts().size());
 		ReadMyCompanionPostsResult.Post post = result.posts().get(0);
 		assertEquals(10L, post.postId());
-		assertEquals("바르셀로나", post.cityName());
+		assertEquals("Madrid", post.cityName());
+		assertEquals(CompanionCity.MADRID, post.city());
+		assertEquals("2026-07-01T14:00+02:00", post.currentLocalTime().toOffsetDateTime().toString());
 		assertEquals(LocalDateTime.of(2026, 6, 29, 19, 0), post.scheduledAt());
 		assertEquals("google-place-id", post.place().googlePlaceId());
 		assertEquals("시우다드 콘달", post.place().name());
@@ -69,6 +77,8 @@ class ReadMyCompanionPostsServiceTest {
 		ReadMyCompanionPostsResult result = service.getPosts(1L);
 
 		assertEquals("시우다드 콘달", result.posts().get(0).cityName());
+		assertNull(result.posts().get(0).city());
+		assertNull(result.posts().get(0).currentLocalTime());
 	}
 
 	private MyCompanionPostSummary post(

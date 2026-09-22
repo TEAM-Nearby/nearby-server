@@ -67,5 +67,10 @@ class ReadCompanionMatchesServiceTest {
         public Optional<String> findPlaceNameByPlaceId(final Long placeId) {
             return Optional.empty();
         }
+
+		@Override
+		public Optional<String> findPlaceAddressByPlaceId(final Long placeId) {
+			return Optional.empty();
+		}
     }
 }

@@ -12,10 +12,14 @@ import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCom
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingDetail;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +30,7 @@ class ReadCompanionMeetingDetailServiceTest {
 
     private static final Long MEETING_ID = 1L;
     private static final Long USER_ID = 7L;
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-01T12:00:00Z"), ZoneOffset.UTC);
 
     private FakeCompanionMeetingDetailQueryPort queryPort;
     private ReadCompanionMeetingDetailService service;
@@ -33,7 +38,7 @@ class ReadCompanionMeetingDetailServiceTest {
     @BeforeEach
     void setUp() {
         queryPort = new FakeCompanionMeetingDetailQueryPort();
-        service = new ReadCompanionMeetingDetailService(queryPort);
+        service = new ReadCompanionMeetingDetailService(queryPort, CLOCK);
         queryPort.put(detail(MatchParticipantRole.GUEST, CompanionMeetingStatus.ONGOING));
     }
 
@@ -49,6 +54,8 @@ class ReadCompanionMeetingDetailServiceTest {
         assertEquals("정지영", result.hostNickname());
         assertEquals(true, result.hostCheckedIn());
         assertEquals("시우다드 콘달", result.placeName());
+        assertEquals(CompanionCity.MADRID, result.city());
+        assertEquals("2026-07-01T14:00+02:00", result.currentLocalTime().toOffsetDateTime().toString());
         assertEquals(LocalDateTime.of(2026, 6, 29, 18, 30), result.meetingAt());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.meetingTimeType());
         assertEquals(CompanionMeetingStatus.ONGOING, result.meetingStatus());
@@ -108,6 +115,7 @@ class ReadCompanionMeetingDetailServiceTest {
                 "정지영",
                 true,
                 "시우다드 콘달",
+                "Calle de Cuchilleros, 17, Madrid, Spain",
                 LocalDateTime.of(2026, 6, 29, 18, 30),
                 CompanionPostMeetingTimeType.SCHEDULED,
                 meetingStatus,

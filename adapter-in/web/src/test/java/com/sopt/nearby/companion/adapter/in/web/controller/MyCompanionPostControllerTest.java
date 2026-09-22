@@ -10,12 +10,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sopt.nearby.companion.application.ReadMyCompanionPostsResult;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.port.in.ReadMyCompanionPostsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
 import java.math.BigDecimal;
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,8 @@ class MyCompanionPostControllerTest {
 		readUseCase.result = new ReadMyCompanionPostsResult(List.of(new ReadMyCompanionPostsResult.Post(
 				1L,
 				"바르셀로나",
+				CompanionCity.MADRID,
+				ZonedDateTime.parse("2026-07-01T14:00:00+02:00[Europe/Madrid]"),
 				LocalDateTime.of(2026, 6, 29, 19, 0),
 				new ReadMyCompanionPostsResult.Place(
 						"google-place-id",
@@ -72,6 +76,9 @@ class MyCompanionPostControllerTest {
 				.andExpect(jsonPath("$.message").value("내가 작성한 동행 모집글 목록을 조회했어요."))
 				.andExpect(jsonPath("$.data.posts[0].postId").value(1))
 				.andExpect(jsonPath("$.data.posts[0].cityName").value("바르셀로나"))
+				.andExpect(jsonPath("$.data.posts[0].city").value("MADRID"))
+				.andExpect(jsonPath("$.data.posts[0].timeZoneId").value("Europe/Madrid"))
+				.andExpect(jsonPath("$.data.posts[0].currentLocalTime").value("2026-07-01T14:00:00+02:00"))
 				.andExpect(jsonPath("$.data.posts[0].scheduledAt").value("2026-06-29T19:00:00"))
 				.andExpect(jsonPath("$.data.posts[0].place.googlePlaceId").value("google-place-id"))
 				.andExpect(jsonPath("$.data.posts[0].place.name").value("시우다드 콘달"))
