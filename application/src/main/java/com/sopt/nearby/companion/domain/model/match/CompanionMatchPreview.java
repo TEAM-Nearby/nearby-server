@@ -3,7 +3,9 @@ package com.sopt.nearby.companion.domain.model.match;
 
 
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 public record CompanionMatchPreview(
@@ -24,9 +26,22 @@ public record CompanionMatchPreview(
             Long postId,
             String content,
             String placeName,
+            String placeAddress,
+            CompanionCity city,
+            ZonedDateTime currentLocalTime,
             CompanionPostMeetingTimeType meetingTimeType,
             LocalDateTime meetingAt
     ) {
+
+		public Post(
+				final Long postId,
+				final String content,
+				final String placeName,
+				final CompanionPostMeetingTimeType meetingTimeType,
+				final LocalDateTime meetingAt
+		) {
+			this(postId, content, placeName, null, null, null, meetingTimeType, meetingAt);
+		}
 
     }
 }

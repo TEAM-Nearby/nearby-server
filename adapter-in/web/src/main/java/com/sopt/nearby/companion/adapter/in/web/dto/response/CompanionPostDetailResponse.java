@@ -2,10 +2,12 @@
 package com.sopt.nearby.companion.adapter.in.web.dto.response;
 
 import com.sopt.nearby.companion.application.CompanionPostDetailResult;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public record CompanionPostDetailResponse(
@@ -13,6 +15,9 @@ public record CompanionPostDetailResponse(
         Long hostUserId,
         Long hostProfileId,
         String googlePlaceId,
+        CompanionCity city,
+        String timeZoneId,
+        OffsetDateTime currentLocalTime,
         LocalDateTime meetingAt,
         int maxParticipants,
         String content,
@@ -34,6 +39,9 @@ public record CompanionPostDetailResponse(
                 result.hostUserId(),
                 result.hostProfileId(),
                 result.googlePlaceId(),
+                result.city(),
+                result.city() == null ? null : result.city().zoneId().getId(),
+                result.currentLocalTime() == null ? null : result.currentLocalTime().toOffsetDateTime(),
                 result.meetingAt(),
                 result.maxParticipants(),
                 result.content(),

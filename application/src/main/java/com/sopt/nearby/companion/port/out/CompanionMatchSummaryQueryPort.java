@@ -9,4 +9,6 @@ public interface CompanionMatchSummaryQueryPort {
     List<CompanionMatchSummary> findAllByParticipantUserId(Long userId);
 
     Optional<String> findPlaceNameByPlaceId(Long placeId);
+
+    Optional<String> findPlaceAddressByPlaceId(Long placeId);
 }

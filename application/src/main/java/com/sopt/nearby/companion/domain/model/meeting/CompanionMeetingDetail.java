@@ -15,9 +15,41 @@ public record CompanionMeetingDetail(
         String hostNickname,
         boolean hostCheckedIn,
         String placeName,
+        String placeAddress,
         LocalDateTime meetingAt,
         CompanionPostMeetingTimeType meetingTimeType,
         CompanionMeetingStatus meetingStatus,
         boolean currentUserCheckedIn
 ) {
+
+    public CompanionMeetingDetail(
+            final Long meetingId,
+            final MatchParticipantRole currentUserRole,
+            final Long hostId,
+            final UserGender hostGender,
+            final String hostProfileImageUrl,
+            final String hostNickname,
+            final boolean hostCheckedIn,
+            final String placeName,
+            final LocalDateTime meetingAt,
+            final CompanionPostMeetingTimeType meetingTimeType,
+            final CompanionMeetingStatus meetingStatus,
+            final boolean currentUserCheckedIn
+    ) {
+        this(
+                meetingId,
+                currentUserRole,
+                hostId,
+                hostGender,
+                hostProfileImageUrl,
+                hostNickname,
+                hostCheckedIn,
+                placeName,
+                null,
+                meetingAt,
+                meetingTimeType,
+                meetingStatus,
+                currentUserCheckedIn
+        );
+    }
 }

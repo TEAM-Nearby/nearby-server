@@ -23,8 +23,6 @@ public interface MyCompanionPostQueryJpaRepository extends Repository<CompanionP
 				post.max_participants as maxParticipants,
 				post.content as content
 			from companion_post post
-			join place_cache place
-				on place.id = post.place_id
 			left join companion_profile host_profile
 				on host_profile.user_id = post.host_user_id
 			left join (
@@ -64,6 +62,8 @@ public interface MyCompanionPostQueryJpaRepository extends Repository<CompanionP
 			left join companion_schedule schedule
 				on schedule.match_id = selected_match.match_id
 				and schedule.confirmed = true
+			join place_cache place
+				on place.id = coalesce(schedule.place_id, post.place_id)
 			where post.host_user_id = :hostUserId
 				and post.status <> 'CANCELED'
 			group by

@@ -2,20 +2,57 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 
 public class ReadOngoingCompanionMeetingsService implements ReadOngoingCompanionMeetingsUseCase {
 
     private final OngoingCompanionMeetingQueryPort queryPort;
+    private final Clock clock;
 
-    public ReadOngoingCompanionMeetingsService(final OngoingCompanionMeetingQueryPort queryPort) {
+    public ReadOngoingCompanionMeetingsService(
+            final OngoingCompanionMeetingQueryPort queryPort,
+            final Clock clock
+    ) {
         this.queryPort = queryPort;
+        this.clock = clock;
     }
 
     @Override
     public List<OngoingCompanionMeetingSummary> getOngoingMeetings(final Long userId) {
-        return queryPort.findAllByParticipantUserId(userId);
+        final Instant now = clock.instant();
+        return queryPort.findAllByParticipantUserId(userId)
+                .stream()
+                .map(summary -> withCurrentLocalTime(summary, now))
+                .toList();
+    }
+
+    private OngoingCompanionMeetingSummary withCurrentLocalTime(
+            final OngoingCompanionMeetingSummary summary,
+            final Instant now
+    ) {
+        final ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+                summary.placeAddress(),
+                now
+        );
+        return new OngoingCompanionMeetingSummary(
+                summary.meetingId(),
+                summary.matchId(),
+                summary.companion(),
+                summary.placeName(),
+                summary.placeAddress(),
+                cityTime.city(),
+                cityTime.currentLocalTime(),
+                summary.meetingAt(),
+                summary.meetingTimeType(),
+                summary.checkedIn(),
+                summary.meetingStatus(),
+                summary.progressStatus()
+        );
     }
 }

@@ -187,6 +187,7 @@ class CompanionMatchSummaryQueryAdapterTest {
 
         assertThat(adapter.findPlaceNameByPlaceId(schedulePlace.getId())).contains("확정 장소");
         assertThat(adapter.findPlaceNameByPlaceId(oldPostPlace.getId())).contains("오래된 모집글 장소");
+		assertThat(adapter.findPlaceAddressByPlaceId(schedulePlace.getId())).contains("서울시 어딘가");
     }
 
     private CompanionPostEntity nowPost(

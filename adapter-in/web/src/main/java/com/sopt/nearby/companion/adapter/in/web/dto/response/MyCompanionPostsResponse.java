@@ -2,9 +2,11 @@
 package com.sopt.nearby.companion.adapter.in.web.dto.response;
 
 import com.sopt.nearby.companion.application.ReadMyCompanionPostsResult;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public record MyCompanionPostsResponse(
@@ -22,6 +24,9 @@ public record MyCompanionPostsResponse(
 	public record PostResponse(
 			Long postId,
 			String cityName,
+			CompanionCity city,
+			String timeZoneId,
+			OffsetDateTime currentLocalTime,
 			LocalDateTime scheduledAt,
 			PlaceResponse place,
 			@Schema(
@@ -46,6 +51,9 @@ public record MyCompanionPostsResponse(
 			return new PostResponse(
 					post.postId(),
 					post.cityName(),
+					post.city(),
+					post.city() == null ? null : post.city().zoneId().getId(),
+					post.currentLocalTime() == null ? null : post.currentLocalTime().toOffsetDateTime(),
 					post.scheduledAt(),
 					PlaceResponse.from(post.place()),
 					post.hostProfileImageUrl(),

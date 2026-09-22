@@ -53,4 +53,11 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
             where place.id = :placeId
             """, nativeQuery = true)
     Optional<String> findPlaceNameByPlaceId(@Param("placeId") Long placeId);
+
+    @Query(value = """
+            select place.address
+            from place_cache place
+            where place.id = :placeId
+            """, nativeQuery = true)
+    Optional<String> findPlaceAddressByPlaceId(@Param("placeId") Long placeId);
 }

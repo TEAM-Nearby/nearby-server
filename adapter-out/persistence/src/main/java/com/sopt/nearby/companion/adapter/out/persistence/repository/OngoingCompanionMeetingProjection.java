@@ -19,6 +19,8 @@ public interface OngoingCompanionMeetingProjection {
 
     String getPlaceName();
 
+    String getPlaceAddress();
+
     LocalDateTime getMeetingAt();
 
     String getMeetingTimeType();

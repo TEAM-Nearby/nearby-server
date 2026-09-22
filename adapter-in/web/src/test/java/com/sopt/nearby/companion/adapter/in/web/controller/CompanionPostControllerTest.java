@@ -27,6 +27,7 @@ import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequ
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostApplyStatus;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
@@ -481,6 +482,9 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.hostUserId").value(1))
                 .andExpect(jsonPath("$.data.hostProfileId").value(5))
                 .andExpect(jsonPath("$.data.googlePlaceId").value("google-place-id"))
+                .andExpect(jsonPath("$.data.city").value("MADRID"))
+                .andExpect(jsonPath("$.data.timeZoneId").value("Europe/Madrid"))
+                .andExpect(jsonPath("$.data.currentLocalTime").value("2026-07-01T14:00:00+02:00"))
                 .andExpect(jsonPath("$.data.meetingAt").value("2026-07-03T14:00:00"))
                 .andExpect(jsonPath("$.data.maxParticipants").value(4))
                 .andExpect(jsonPath("$.data.content").value("같이 스시 먹으러 갈 사람 구해요."))
@@ -652,6 +656,8 @@ class CompanionPostControllerTest {
                 1L,
                 5L,
                 "google-place-id",
+                CompanionCity.MADRID,
+                LocalDateTime.of(2026, 7, 1, 14, 0).atZone(CompanionCity.MADRID.zoneId()),
                 LocalDateTime.of(2026, 7, 3, 14, 0),
                 4,
                 "같이 스시 먹으러 갈 사람 구해요.",

@@ -96,7 +96,11 @@ public interface CompanionPostApi {
     )
     @Operation(
             summary = "동행 모집글 상세 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글 상세 정보를 조회합니다.",
+            description = """
+                    JWT 액세스 토큰으로 인증된 사용자가 동행 모집글 상세 정보를 조회합니다.
+                    장소 주소에서 MADRID, LONDON, PARIS를 판별해 city, timeZoneId, currentLocalTime을 반환합니다.
+                    지원하지 않는 도시라면 세 필드는 null이며, currentLocalTime에는 서머타임이 반영된 UTC 오프셋이 포함됩니다.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionPostDetailResponse> getPost(
