@@ -25,6 +25,8 @@ public class CompanionScheduleDetailQueryAdapter implements CompanionScheduleDet
                 .map(row -> new CompanionScheduleDetail(
                         row.getMatchId(),
                         CompanionMatchStatus.valueOf(row.getMatchStatus()),
+                        null,
+                        null,
                         toSchedule(row),
                         row.getOpenChatUrl(),
                         row.getUserNickname(),
