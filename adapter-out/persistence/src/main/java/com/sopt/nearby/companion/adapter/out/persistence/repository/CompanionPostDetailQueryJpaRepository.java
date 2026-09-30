@@ -52,8 +52,27 @@ public interface CompanionPostDetailQueryJpaRepository extends Repository<Compan
                 group by reviewee_user_id
             ) host_review_stats
                 on host_review_stats.reviewee_user_id = host_profile.user_id
+            left join (
+                select latest_match.post_id, latest_match.id as match_id
+                from (
+                    select
+                        match.id,
+                        match.post_id,
+                        row_number() over (
+                            partition by match.post_id
+                            order by match.created_at desc, match.id desc
+                        ) as rn
+                    from companion_match match
+                    where match.status <> 'CANCELED'
+                ) latest_match
+                where latest_match.rn = 1
+            ) selected_match
+                on selected_match.post_id = post.id
+            left join companion_schedule schedule
+                on schedule.match_id = selected_match.match_id
+                and schedule.confirmed = true
             join place_cache place
-                on place.id = post.place_id
+                on place.id = coalesce(schedule.place_id, post.place_id)
             left join (
                 select app.post_id, count(*) as accepted_count
                 from companion_application app

@@ -40,11 +40,17 @@ public final class CompanionPlaceCityNameResolver {
 			return Optional.empty();
 		}
 
-		String normalized = address.toUpperCase(Locale.ROOT);
-
-		return Arrays.stream(CompanionCity.values())
-				.filter(city -> city.matches(normalized))
-				.findFirst();
+		String[] addressParts = address.toUpperCase(Locale.ROOT).split(",");
+		for (int index = addressParts.length - 1; index >= 0; index--) {
+			String addressPart = addressParts[index];
+			Optional<CompanionCity> city = Arrays.stream(CompanionCity.values())
+					.filter(candidate -> candidate.matches(addressPart))
+					.findFirst();
+			if (city.isPresent()) {
+				return city;
+			}
+		}
+		return Optional.empty();
 	}
 
 	public static ResolvedCityTime resolveCurrentTime(final String address, final Instant instant) {
