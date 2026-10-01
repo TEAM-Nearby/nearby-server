@@ -104,6 +104,9 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.data.meetings[0].companion.nickname").value("정지영"))
                 .andExpect(jsonPath("$.data.meetings[0].companion.gender").value("FEMALE"))
                 .andExpect(jsonPath("$.data.meetings[0].placeName").value("시우다드 콘달"))
+                .andExpect(jsonPath("$.data.meetings[0].city").value("MADRID"))
+                .andExpect(jsonPath("$.data.meetings[0].timeZoneId").value("Europe/Madrid"))
+                .andExpect(jsonPath("$.data.meetings[0].currentLocalTime").value("2026-07-01T14:00:00+02:00"))
                 .andExpect(jsonPath("$.data.meetings[0].meetingAt").value("2026-06-29T16:30:00"))
                 .andExpect(jsonPath("$.data.meetings[0].meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.meetings[0].isCheckedIn").value(false))
@@ -157,6 +160,9 @@ class CompanionMeetingControllerTest {
                 .andExpect(jsonPath("$.data.hostNickname").value("정지영"))
                 .andExpect(jsonPath("$.data.hostCheckedIn").value(true))
                 .andExpect(jsonPath("$.data.placeName").value("시우다드 콘달"))
+                .andExpect(jsonPath("$.data.city").value("MADRID"))
+                .andExpect(jsonPath("$.data.timeZoneId").value("Europe/Madrid"))
+                .andExpect(jsonPath("$.data.currentLocalTime").value("2026-07-01T14:00:00+02:00"))
                 .andExpect(jsonPath("$.data.meetingAt").value("2026-06-29T18:30:00"))
                 .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.meetingStatus").value("ONGOING"))
@@ -493,6 +499,11 @@ class CompanionMeetingControllerTest {
                         UserGender.FEMALE
                 ),
                 "시우다드 콘달",
+                "Madrid, Spain",
+                com.sopt.nearby.companion.domain.model.place.CompanionCity.MADRID,
+                LocalDateTime.of(2026, 7, 1, 14, 0).atZone(
+                        com.sopt.nearby.companion.domain.model.place.CompanionCity.MADRID.zoneId()
+                ),
                 LocalDateTime.of(2026, 6, 29, 16, 30),
                 CompanionPostMeetingTimeType.SCHEDULED,
                 checkedIn,
@@ -530,6 +541,10 @@ class CompanionMeetingControllerTest {
                 "정지영",
                 true,
                 "시우다드 콘달",
+                com.sopt.nearby.companion.domain.model.place.CompanionCity.MADRID,
+                LocalDateTime.of(2026, 7, 1, 14, 0).atZone(
+                        com.sopt.nearby.companion.domain.model.place.CompanionCity.MADRID.zoneId()
+                ),
                 LocalDateTime.of(2026, 6, 29, 18, 30),
                 CompanionPostMeetingTimeType.SCHEDULED,
                 CompanionMeetingStatus.ONGOING,

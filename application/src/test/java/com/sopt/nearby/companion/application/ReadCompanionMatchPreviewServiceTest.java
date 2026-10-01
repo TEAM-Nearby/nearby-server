@@ -15,6 +15,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
@@ -29,7 +30,10 @@ import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +45,7 @@ import org.junit.jupiter.api.Test;
 class ReadCompanionMatchPreviewServiceTest {
 
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 4, 12, 0);
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-01T12:00:00Z"), ZoneOffset.UTC);
 
     private FakeCompanionMatchRepository companionMatchRepository;
     private FakeCompanionPostRepository companionPostRepository;
@@ -64,7 +69,8 @@ class ReadCompanionMatchPreviewServiceTest {
                 companionMatchParticipantRepository,
                 companionProfileRepository,
                 companionScheduleRepository,
-                companionMatchSummaryQueryPort
+                companionMatchSummaryQueryPort,
+                CLOCK
         );
     }
 
@@ -86,6 +92,8 @@ class ReadCompanionMatchPreviewServiceTest {
         assertEquals(20L, preview.companionPost().postId());
         assertEquals("함께 밥 먹을 동행을 구해요.", preview.companionPost().content());
         assertEquals("모집글 장소", preview.companionPost().placeName());
+        assertEquals(CompanionCity.MADRID, preview.companionPost().city());
+        assertEquals("2026-07-01T14:00+02:00", preview.companionPost().currentLocalTime().toOffsetDateTime().toString());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
         assertEquals(NOW.plusDays(1), preview.companionPost().meetingAt());
     }
@@ -104,11 +112,13 @@ class ReadCompanionMatchPreviewServiceTest {
                 true
         ));
         companionMatchSummaryQueryPort.placeNames.put(31L, "확정 장소");
+        companionMatchSummaryQueryPort.placeAddresses.put(31L, "London, United Kingdom");
 
         CompanionMatchPreview preview = service.getPreview(10L, 7L);
 
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
         assertEquals("확정 장소", preview.companionPost().placeName());
+        assertEquals(CompanionCity.LONDON, preview.companionPost().city());
         assertEquals(confirmedScheduleAt, preview.companionPost().meetingAt());
         assertEquals(1, companionScheduleRepository.findConfirmedCallCount);
     }
@@ -240,11 +250,13 @@ class ReadCompanionMatchPreviewServiceTest {
         ));
         companionPostRepository.save(post);
         companionMatchSummaryQueryPort.placeNames.put(post.placeId(), "모집글 장소");
+        companionMatchSummaryQueryPort.placeAddresses.put(post.placeId(), "Madrid, Spain");
     }
 
     private static final class FakeCompanionMatchSummaryQueryPort implements CompanionMatchSummaryQueryPort {
 
         private final Map<Long, String> placeNames = new HashMap<>();
+        private final Map<Long, String> placeAddresses = new HashMap<>();
 
         @Override
         public List<CompanionMatchSummary> findAllByParticipantUserId(final Long userId) {
@@ -255,6 +267,11 @@ class ReadCompanionMatchPreviewServiceTest {
         public Optional<String> findPlaceNameByPlaceId(final Long placeId) {
             return Optional.ofNullable(placeNames.get(placeId));
         }
+
+		@Override
+		public Optional<String> findPlaceAddressByPlaceId(final Long placeId) {
+			return Optional.ofNullable(placeAddresses.get(placeId));
+		}
     }
 
     private void saveDefaultParticipantsAndProfiles() {

@@ -77,6 +77,9 @@ class CompanionMatchControllerTest {
                         20L,
                         "함께 밥 먹을 동행을 구해요.",
                         "바르셀로나 고딕 지구",
+                        "Madrid, Spain",
+                        CompanionCity.MADRID,
+                        LocalDateTime.of(2026, 7, 1, 14, 0).atZone(CompanionCity.MADRID.zoneId()),
                         CompanionPostMeetingTimeType.SCHEDULED,
                         LocalDateTime.of(2026, 6, 29, 18, 30)
                 )
@@ -98,6 +101,9 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.data.companionPost.postId").value(20))
                 .andExpect(jsonPath("$.data.companionPost.content").value("함께 밥 먹을 동행을 구해요."))
                 .andExpect(jsonPath("$.data.companionPost.placeName").value("바르셀로나 고딕 지구"))
+                .andExpect(jsonPath("$.data.companionPost.city").value("MADRID"))
+                .andExpect(jsonPath("$.data.companionPost.timeZoneId").value("Europe/Madrid"))
+                .andExpect(jsonPath("$.data.companionPost.currentLocalTime").value("2026-07-01T14:00:00+02:00"))
                 .andExpect(jsonPath("$.data.companionPost.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.companionPost.meetingAt").value("2026-06-29T18:30:00"));
 
@@ -199,6 +205,8 @@ class CompanionMatchControllerTest {
         readCompanionScheduleUseCase.result = new CompanionScheduleDetail(
                 10L,
                 CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                CompanionCity.MADRID,
+                LocalDateTime.of(2026, 7, 1, 14, 0).atZone(CompanionCity.MADRID.zoneId()),
                 new CompanionScheduleDetail.Schedule(
                         new CompanionScheduleDetail.Place(
                                 "google-place-id",
@@ -223,6 +231,9 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.message").value("동행 일정 정보를 조회했어요."))
                 .andExpect(jsonPath("$.data.matchId").value(10))
                 .andExpect(jsonPath("$.data.matchStatus").value("SCHEDULE_CONFIRMED"))
+                .andExpect(jsonPath("$.data.city").value("MADRID"))
+                .andExpect(jsonPath("$.data.timeZoneId").value("Europe/Madrid"))
+                .andExpect(jsonPath("$.data.currentLocalTime").value("2026-07-01T14:00:00+02:00"))
                 .andExpect(jsonPath("$.data.schedule.place.googlePlaceId").value("google-place-id"))
                 .andExpect(jsonPath("$.data.schedule.place.name").value("Siutat condal"))
                 .andExpect(jsonPath("$.data.schedule.place.address").value("Rambla de Catalunya, 16"))
@@ -243,6 +254,8 @@ class CompanionMatchControllerTest {
         readCompanionScheduleUseCase.result = new CompanionScheduleDetail(
                 10L,
                 CompanionMatchStatus.MATCHED,
+                CompanionCity.MADRID,
+                LocalDateTime.of(2026, 7, 1, 14, 0).atZone(CompanionCity.MADRID.zoneId()),
                 new CompanionScheduleDetail.Schedule(
                         new CompanionScheduleDetail.Place(
                                 "google-place-id",
@@ -276,6 +289,8 @@ class CompanionMatchControllerTest {
         readCompanionScheduleUseCase.result = new CompanionScheduleDetail(
                 10L,
                 CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                CompanionCity.MADRID,
+                LocalDateTime.of(2026, 7, 1, 14, 0).atZone(CompanionCity.MADRID.zoneId()),
                 new CompanionScheduleDetail.Schedule(
                         new CompanionScheduleDetail.Place(
                                 "google-place-id",

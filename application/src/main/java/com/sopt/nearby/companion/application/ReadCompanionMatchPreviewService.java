@@ -13,6 +13,8 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview.Member;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview.Post;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
@@ -23,6 +25,7 @@ import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -35,19 +38,22 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
     private final CompanionProfileRepository companionProfileRepository;
     private final CompanionScheduleRepository companionScheduleRepository;
     private final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort;
+    private final Clock clock;
 
     public ReadCompanionMatchPreviewService(CompanionMatchRepository companionMatchRepository,
                                             CompanionPostRepository companionPostRepository,
                                             CompanionMatchParticipantRepository companionMatchParticipantRepository,
                                             CompanionProfileRepository companionProfileRepository,
                                             CompanionScheduleRepository companionScheduleRepository,
-                                            CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort) {
+                                            CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
+                                            Clock clock) {
         this.companionMatchRepository = companionMatchRepository;
         this.companionPostRepository = companionPostRepository;
         this.companionMatchParticipantRepository = companionMatchParticipantRepository;
         this.companionProfileRepository = companionProfileRepository;
         this.companionScheduleRepository = companionScheduleRepository;
         this.companionMatchSummaryQueryPort = companionMatchSummaryQueryPort;
+        this.clock = clock;
     }
 
     @Override
@@ -100,12 +106,21 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
         Long placeId = confirmedSchedule
                 .map(CompanionSchedule::placeId)
                 .orElse(post.placeId());
+        String placeAddress = companionMatchSummaryQueryPort.findPlaceAddressByPlaceId(placeId)
+                .orElse(null);
+        ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+                placeAddress,
+                clock.instant()
+        );
 
         Post previewPost = new Post(
                 post.id(),
                 post.content(),
                 companionMatchSummaryQueryPort.findPlaceNameByPlaceId(placeId)
                         .orElseThrow(CompanionPostNotFoundException::matchPostNotFound),
+                placeAddress,
+                cityTime.city(),
+                cityTime.currentLocalTime(),
                 post.meetingTimeType(),
                 meetingAt
         );

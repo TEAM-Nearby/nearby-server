@@ -2,7 +2,9 @@
 package com.sopt.nearby.companion.adapter.in.web.dto.response;
 
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailResult;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record CompanionMeetingDetailResponse(
         Long meetingId,
@@ -13,6 +15,9 @@ public record CompanionMeetingDetailResponse(
         String hostNickname,
         boolean hostCheckedIn,
         String placeName,
+        CompanionCity city,
+        String timeZoneId,
+        OffsetDateTime currentLocalTime,
         LocalDateTime meetingAt,
         String meetingTimeType,
         String meetingStatus,
@@ -30,6 +35,9 @@ public record CompanionMeetingDetailResponse(
                 result.hostNickname(),
                 result.hostCheckedIn(),
                 result.placeName(),
+                result.city(),
+                result.city() == null ? null : result.city().zoneId().getId(),
+                result.currentLocalTime() == null ? null : result.currentLocalTime().toOffsetDateTime(),
                 result.meetingAt(),
                 result.meetingTimeType().name(),
                 result.meetingStatus().name(),

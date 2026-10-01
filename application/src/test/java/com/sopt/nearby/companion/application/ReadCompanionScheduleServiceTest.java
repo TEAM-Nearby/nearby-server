@@ -12,10 +12,14 @@ import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdExcepti
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 class ReadCompanionScheduleServiceTest {
 
+    private static final Instant NOW = Instant.parse("2026-07-01T12:00:00Z");
     private static final LocalDateTime SCHEDULED_AT = LocalDateTime.of(2026, 7, 5, 18, 30);
     private static final LocalDateTime EXPOSURE_EXPIRES_AT = LocalDateTime.of(2026, 7, 5, 13, 0);
 
@@ -33,7 +38,7 @@ class ReadCompanionScheduleServiceTest {
     @BeforeEach
     void setUp() {
         queryPort = new FakeCompanionScheduleDetailQueryPort();
-        service = new ReadCompanionScheduleService(queryPort);
+        service = new ReadCompanionScheduleService(queryPort, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @Test
@@ -44,9 +49,11 @@ class ReadCompanionScheduleServiceTest {
 
         assertEquals(1L, result.matchId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+        assertEquals(CompanionCity.MADRID, result.city());
+        assertEquals("2026-07-01T14:00+02:00", result.currentLocalTime().toOffsetDateTime().toString());
         assertEquals("google-place-id", result.schedule().place().googlePlaceId());
         assertEquals("Siutat condal", result.schedule().place().name());
-        assertEquals("Rambla de Catalunya, 16", result.schedule().place().address());
+        assertEquals("Madrid, Rambla de Catalunya, 16", result.schedule().place().address());
         assertEquals(new BigDecimal("41.39020500"), result.schedule().place().latitude());
         assertEquals(new BigDecimal("2.16354800"), result.schedule().place().longitude());
         assertEquals(SCHEDULED_AT, result.schedule().scheduledAt());
@@ -61,6 +68,8 @@ class ReadCompanionScheduleServiceTest {
         queryPort.save(new CompanionScheduleDetail(
                 1L,
                 CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                null,
+                null,
                 new CompanionScheduleDetail.Schedule(
                         new CompanionScheduleDetail.Place(
                                 "google-place-id",
@@ -125,6 +134,8 @@ class ReadCompanionScheduleServiceTest {
                 CompanionMatchStatus.CANCELED,
                 null,
                 null,
+                null,
+                null,
                 "루피",
                 CompanionPostMeetingTimeType.SCHEDULED,
                 MatchParticipantRole.HOST
@@ -154,11 +165,13 @@ class ReadCompanionScheduleServiceTest {
         return new CompanionScheduleDetail(
                 1L,
                 CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                null,
+                null,
                 new CompanionScheduleDetail.Schedule(
                         new CompanionScheduleDetail.Place(
                                 "google-place-id",
                                 "Siutat condal",
-                                "Rambla de Catalunya, 16",
+                                "Madrid, Rambla de Catalunya, 16",
                                 new BigDecimal("41.39020500"),
                                 new BigDecimal("2.16354800")
                         ),
@@ -175,6 +188,8 @@ class ReadCompanionScheduleServiceTest {
         return new CompanionScheduleDetail(
                 1L,
                 CompanionMatchStatus.COMPLETED,
+                null,
+                null,
                 new CompanionScheduleDetail.Schedule(
                         new CompanionScheduleDetail.Place(
                                 "google-place-id",

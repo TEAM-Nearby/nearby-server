@@ -4,14 +4,19 @@ package com.sopt.nearby.companion.adapter.in.web.dto.response;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingProgressStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record OngoingCompanionMeetingResponse(
         Long meetingId,
         Long matchId,
         OngoingCompanionMeetingHostResponse companion,
         String placeName,
+        CompanionCity city,
+        String timeZoneId,
+        OffsetDateTime currentLocalTime,
         LocalDateTime meetingAt,
         CompanionPostMeetingTimeType meetingTimeType,
         boolean isCheckedIn,
@@ -25,6 +30,9 @@ public record OngoingCompanionMeetingResponse(
                 summary.matchId(),
                 OngoingCompanionMeetingHostResponse.from(summary.companion()),
                 summary.placeName(),
+                summary.city(),
+                summary.city() == null ? null : summary.city().zoneId().getId(),
+                summary.currentLocalTime() == null ? null : summary.currentLocalTime().toOffsetDateTime(),
                 summary.meetingAt(),
                 summary.meetingTimeType(),
                 summary.checkedIn(),

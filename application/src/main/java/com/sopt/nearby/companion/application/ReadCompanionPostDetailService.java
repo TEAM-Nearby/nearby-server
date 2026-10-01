@@ -4,6 +4,8 @@ package com.sopt.nearby.companion.application;
 import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostApplyStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostDetail;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
@@ -52,12 +54,18 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
         String openChatUrl = canReadOpenChatUrl(detail, command.userId(), applyStatus)
                 ? detail.openChatUrl()
                 : null;
+        ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+                detail.place().address(),
+                clock.instant()
+        );
 
         return new CompanionPostDetailResult(
                 detail.postId(),
                 detail.hostUserId(),
                 detail.hostProfileSummary().profileId(),
                 detail.place().googlePlaceId(),
+                cityTime.city(),
+                cityTime.currentLocalTime(),
                 detail.meetingAt(),
                 detail.maxParticipants(),
                 detail.content(),

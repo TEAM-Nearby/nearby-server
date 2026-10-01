@@ -41,6 +41,9 @@ public class OngoingCompanionMeetingQueryAdapter implements OngoingCompanionMeet
                         UserGender.valueOf(row.getHostGender())
                 ),
                 row.getPlaceName(),
+                row.getPlaceAddress(),
+                null,
+                null,
                 row.getMeetingAt(),
                 CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                 Boolean.TRUE.equals(row.getCheckedIn()),

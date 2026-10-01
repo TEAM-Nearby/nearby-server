@@ -7,14 +7,22 @@ import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionSchedule
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
+import java.time.Clock;
 
 public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCase {
     private final CompanionScheduleDetailQueryPort companionScheduleDetailQueryPort;
+    private final Clock clock;
 
-    public ReadCompanionScheduleService(CompanionScheduleDetailQueryPort companionScheduleDetailQueryPort) {
+    public ReadCompanionScheduleService(
+            final CompanionScheduleDetailQueryPort companionScheduleDetailQueryPort,
+            final Clock clock
+    ) {
         this.companionScheduleDetailQueryPort = companionScheduleDetailQueryPort;
+        this.clock = clock;
     }
 
     @Override
@@ -32,6 +40,24 @@ public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCas
         if (scheduleDetail.matchStatus() == CompanionMatchStatus.CANCELED) {
             throw new CompanionMatchScheduleNotReadableException();
         }
-        return scheduleDetail;
+
+        String placeAddress = scheduleDetail.schedule() == null || scheduleDetail.schedule().place() == null
+                ? null
+                : scheduleDetail.schedule().place().address();
+        ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+                placeAddress,
+                clock.instant()
+        );
+        return new CompanionScheduleDetail(
+                scheduleDetail.matchId(),
+                scheduleDetail.matchStatus(),
+                cityTime.city(),
+                cityTime.currentLocalTime(),
+                scheduleDetail.schedule(),
+                scheduleDetail.openChatUrl(),
+                scheduleDetail.userNickname(),
+                scheduleDetail.meetingTimeType(),
+                scheduleDetail.currentUserRole()
+        );
     }
 }

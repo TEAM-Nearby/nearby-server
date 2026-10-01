@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfile
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileStyleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReviewKeywordEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApplicationJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostDetailQueryJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostQueryJpaRepository;
@@ -242,6 +243,53 @@ class CompanionPostDetailQueryAdapterTest {
     }
 
     @Test
+    void usesConfirmedSchedulePlaceFromLatestNonCanceledMatch() {
+        CompanionPostDetailQueryAdapter adapter = new CompanionPostDetailQueryAdapter(
+                queryJpaRepository,
+                postQueryJpaRepository
+        );
+
+        UserAccountEntity hostUser = userAccountJpaRepository.saveAndFlush(user(null));
+        profileJpaRepository.saveAndFlush(profile(hostUser.getId(), "니어바이", UserGender.MALE, null));
+        PlaceCacheEntity originalPlace = placeCacheJpaRepository.saveAndFlush(place(
+                "madrid-place-id",
+                "마드리드 식당",
+                "Calle Mayor, Madrid, Spain"
+        ));
+        PlaceCacheEntity confirmedPlace = placeCacheJpaRepository.saveAndFlush(place(
+                "london-place-id",
+                "런던 식당",
+                "10 London Street, London, UK"
+        ));
+        CompanionPostEntity post = postJpaRepository.saveAndFlush(post(
+                hostUser.getId(),
+                originalPlace.getId(),
+                CompanionPostMeetingTimeType.SCHEDULED,
+                NOW.plusHours(2),
+                null
+        ));
+        CompanionMatchEntity match = entityManager.persistAndFlush(new CompanionMatchEntity(
+                null,
+                post.getId(),
+                CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                NOW
+        ));
+        entityManager.persistAndFlush(new CompanionScheduleEntity(
+                null,
+                match.getId(),
+                confirmedPlace.getId(),
+                NOW.plusHours(2),
+                null,
+                true
+        ));
+
+        CompanionPostDetail result = adapter.findByPostId(post.getId(), hostUser.getId()).orElseThrow();
+
+        assertThat(result.place().googlePlaceId()).isEqualTo("london-place-id");
+        assertThat(result.place().address()).isEqualTo("10 London Street, London, UK");
+    }
+
+    @Test
     void returnsEmptyWhenPostDoesNotExist() {
         CompanionPostDetailQueryAdapter adapter = new CompanionPostDetailQueryAdapter(
                 queryJpaRepository,
@@ -285,11 +333,15 @@ class CompanionPostDetailQueryAdapterTest {
     }
 
     private PlaceCacheEntity place() {
+        return place("google-place-id", "니어바이 스시", "서울시 어딘가");
+    }
+
+    private PlaceCacheEntity place(final String googlePlaceId, final String name, final String address) {
         return new PlaceCacheEntity(
                 null,
-                "google-place-id",
-                "니어바이 스시",
-                "서울시 어딘가",
+                googlePlaceId,
+                name,
+                address,
                 new BigDecimal("37.56710000"),
                 new BigDecimal("126.97920000"),
                 "restaurant",
@@ -351,6 +403,7 @@ class CompanionPostDetailQueryAdapterTest {
             CompanionProfileStyleEntity.class,
             CompanionReviewEntity.class,
             CompanionReviewKeywordEntity.class,
+            CompanionScheduleEntity.class,
             PlaceCacheEntity.class,
             UserAccountEntity.class
     })

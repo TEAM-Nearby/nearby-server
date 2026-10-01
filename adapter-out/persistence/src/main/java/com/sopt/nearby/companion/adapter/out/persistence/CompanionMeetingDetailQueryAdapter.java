@@ -37,6 +37,7 @@ public class CompanionMeetingDetailQueryAdapter implements CompanionMeetingDetai
                 row.getHostNickname(),
                 Boolean.TRUE.equals(row.getHostCheckedIn()),
                 row.getPlaceName(),
+                row.getPlaceAddress(),
                 row.getMeetingAt(),
                 CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                 CompanionMeetingStatus.valueOf(row.getMeetingStatus()),

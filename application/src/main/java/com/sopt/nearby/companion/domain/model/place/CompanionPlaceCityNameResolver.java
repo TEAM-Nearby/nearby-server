@@ -1,8 +1,11 @@
 // 동행 장소 주소에서 화면에 표시할 도시 이름을 추출한다.
 package com.sopt.nearby.companion.domain.model.place;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 
 public final class CompanionPlaceCityNameResolver {
@@ -37,10 +40,29 @@ public final class CompanionPlaceCityNameResolver {
 			return Optional.empty();
 		}
 
-		String normalized = address.toUpperCase(Locale.ROOT);
+		String[] addressParts = address.toUpperCase(Locale.ROOT).split(",");
+		for (int index = addressParts.length - 1; index >= 0; index--) {
+			String addressPart = addressParts[index];
+			Optional<CompanionCity> city = Arrays.stream(CompanionCity.values())
+					.filter(candidate -> candidate.matches(addressPart))
+					.findFirst();
+			if (city.isPresent()) {
+				return city;
+			}
+		}
+		return Optional.empty();
+	}
 
-		return Arrays.stream(CompanionCity.values())
-				.filter(city -> city.matches(normalized))
-				.findFirst();
+	public static ResolvedCityTime resolveCurrentTime(final String address, final Instant instant) {
+		Objects.requireNonNull(instant);
+		return resolveSupportedCity(address)
+				.map(city -> new ResolvedCityTime(city, instant.atZone(city.zoneId())))
+				.orElseGet(() -> new ResolvedCityTime(null, null));
+	}
+
+	public record ResolvedCityTime(
+			CompanionCity city,
+			ZonedDateTime currentLocalTime
+	) {
 	}
 }

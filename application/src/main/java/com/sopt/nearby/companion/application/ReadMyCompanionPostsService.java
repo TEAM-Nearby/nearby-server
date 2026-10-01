@@ -2,34 +2,46 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.domain.model.post.MyCompanionPostSummary;
 import com.sopt.nearby.companion.port.in.ReadMyCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.out.MyCompanionPostQueryPort;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
 public class ReadMyCompanionPostsService implements ReadMyCompanionPostsUseCase {
 
 	private final MyCompanionPostQueryPort queryPort;
+	private final Clock clock;
 
-	public ReadMyCompanionPostsService(final MyCompanionPostQueryPort queryPort) {
+	public ReadMyCompanionPostsService(final MyCompanionPostQueryPort queryPort, final Clock clock) {
 		this.queryPort = queryPort;
+		this.clock = clock;
 	}
 
 	@Override
 	@Transactional(readOnly = true)
 	public ReadMyCompanionPostsResult getPosts(final Long userId) {
+		final Instant now = clock.instant();
 		List<ReadMyCompanionPostsResult.Post> posts = queryPort.findAllByHostUserId(userId)
 				.stream()
-				.map(this::toPost)
+				.map(summary -> toPost(summary, now))
 				.toList();
 		return new ReadMyCompanionPostsResult(posts);
 	}
 
-	private ReadMyCompanionPostsResult.Post toPost(final MyCompanionPostSummary summary) {
+	private ReadMyCompanionPostsResult.Post toPost(final MyCompanionPostSummary summary, final Instant now) {
+		final ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+				summary.place().address(),
+				now
+		);
 		return new ReadMyCompanionPostsResult.Post(
 				summary.postId(),
 				CompanionPlaceCityNameResolver.resolve(summary.place().address(), summary.place().name()),
+				cityTime.city(),
+				cityTime.currentLocalTime(),
 				summary.scheduledAt(),
 				new ReadMyCompanionPostsResult.Place(
 						summary.place().googlePlaceId(),

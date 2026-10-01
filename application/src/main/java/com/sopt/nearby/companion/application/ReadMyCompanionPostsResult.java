@@ -1,9 +1,11 @@
 // 내가 작성한 동행 모집글 목록 조회 결과를 표현한다.
 package com.sopt.nearby.companion.application;
 
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 public record ReadMyCompanionPostsResult(
@@ -17,6 +19,8 @@ public record ReadMyCompanionPostsResult(
 	public record Post(
 			Long postId,
 			String cityName,
+			CompanionCity city,
+			ZonedDateTime currentLocalTime,
 			LocalDateTime scheduledAt,
 			Place place,
 			String hostProfileImageUrl,
@@ -30,6 +34,34 @@ public record ReadMyCompanionPostsResult(
 		public Post {
 			members = members == null ? List.of() : List.copyOf(members);
 			reviewKeywords = reviewKeywords == null ? List.of() : List.copyOf(reviewKeywords);
+		}
+
+		public Post(
+				final Long postId,
+				final String cityName,
+				final LocalDateTime scheduledAt,
+				final Place place,
+				final String hostProfileImageUrl,
+				final List<Member> members,
+				final int currentParticipants,
+				final int maxParticipants,
+				final String content,
+				final List<ReviewKeyword> reviewKeywords
+		) {
+			this(
+					postId,
+					cityName,
+					null,
+					null,
+					scheduledAt,
+					place,
+					hostProfileImageUrl,
+					members,
+					currentParticipants,
+					maxParticipants,
+					content,
+					reviewKeywords
+			);
 		}
 	}
 

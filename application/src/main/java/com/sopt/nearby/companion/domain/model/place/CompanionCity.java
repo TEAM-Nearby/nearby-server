@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.domain.model.place;
 
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 
 public enum CompanionCity {
@@ -22,7 +23,8 @@ public enum CompanionCity {
         return zoneId;
     }
 
-    boolean matches(final String normalizedAddress) {
-        return addressTokens.stream().anyMatch(normalizedAddress::contains);
+    boolean matches(final String normalizedAddressPart) {
+        List<String> words = Arrays.asList(normalizedAddressPart.split("[^\\p{L}]+"));
+        return addressTokens.stream().anyMatch(words::contains);
     }
 }

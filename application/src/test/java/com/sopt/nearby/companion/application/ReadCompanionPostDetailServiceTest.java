@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostApplyStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostDetail;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
@@ -60,6 +61,8 @@ class ReadCompanionPostDetailServiceTest {
         assertEquals(7L, queryPort.userId);
         assertEquals(101L, result.postId());
         assertEquals("google-place-id", result.googlePlaceId());
+        assertEquals(CompanionCity.MADRID, result.city());
+        assertEquals("2026-07-02T07:00+02:00", result.currentLocalTime().toOffsetDateTime().toString());
         assertEquals(NOW.plusHours(2), result.meetingAt());
         assertNull(result.expiresAt());
         assertNull(result.openChatUrl());
@@ -216,7 +219,7 @@ class ReadCompanionPostDetailServiceTest {
                 new CompanionPostDetail.Place(
                         "google-place-id",
                         "니어바이 스시",
-                        "서울시 어딘가",
+                        "Calle de Cuchilleros, 17, Madrid, Spain",
                         new BigDecimal("37.56710000"),
                         new BigDecimal("126.97920000"),
                         CompanionPostPlaceCategory.RESTAURANT

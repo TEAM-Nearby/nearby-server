@@ -145,7 +145,8 @@ public class CompanionUseCaseConfig {
             CompanionMatchParticipantRepository companionMatchParticipantRepository,
             CompanionProfileRepository companionProfileRepository,
             CompanionScheduleRepository companionScheduleRepository,
-            CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort
+            CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
+            Clock clock
     ) {
         return new ReadCompanionMatchPreviewService(
                 companionMatchRepository,
@@ -153,7 +154,8 @@ public class CompanionUseCaseConfig {
                 companionMatchParticipantRepository,
                 companionProfileRepository,
                 companionScheduleRepository,
-                companionMatchSummaryQueryPort
+                companionMatchSummaryQueryPort,
+                clock
         );
     }
 
@@ -167,9 +169,10 @@ public class CompanionUseCaseConfig {
 
     @Bean
     ReadCompanionScheduleUseCase readCompanionScheduleUseCase(
-            final CompanionScheduleDetailQueryPort queryPort
+            final CompanionScheduleDetailQueryPort queryPort,
+            final Clock clock
     ) {
-        return new ReadCompanionScheduleService(queryPort);
+        return new ReadCompanionScheduleService(queryPort, clock);
     }
 
     @Bean
@@ -202,9 +205,10 @@ public class CompanionUseCaseConfig {
 
     @Bean
     ReadMyCompanionPostsUseCase readMyCompanionPostsUseCase(
-            final MyCompanionPostQueryPort queryPort
+            final MyCompanionPostQueryPort queryPort,
+            final Clock clock
     ) {
-        return new ReadMyCompanionPostsService(queryPort);
+        return new ReadMyCompanionPostsService(queryPort, clock);
     }
 
     @Bean
@@ -376,9 +380,10 @@ public class CompanionUseCaseConfig {
 
     @Bean
     ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase(
-            final CompanionMeetingDetailQueryPort queryPort
+            final CompanionMeetingDetailQueryPort queryPort,
+            final Clock clock
     ) {
-        return new ReadCompanionMeetingDetailService(queryPort);
+        return new ReadCompanionMeetingDetailService(queryPort, clock);
     }
 
     @Bean
@@ -430,9 +435,10 @@ public class CompanionUseCaseConfig {
 
     @Bean
     ReadOngoingCompanionMeetingsUseCase readOngoingCompanionMeetingsUseCase(
-            final OngoingCompanionMeetingQueryPort queryPort
+            final OngoingCompanionMeetingQueryPort queryPort,
+            final Clock clock
     ) {
-        return new ReadOngoingCompanionMeetingsService(queryPort);
+        return new ReadOngoingCompanionMeetingsService(queryPort, clock);
     }
 
     @Bean

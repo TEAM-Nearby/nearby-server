@@ -4,10 +4,12 @@ package com.sopt.nearby.companion.adapter.in.web.dto.response;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
+import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record CompanionScheduleDetailResponse(
         Long matchId,
@@ -18,6 +20,9 @@ public record CompanionScheduleDetailResponse(
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
         CompanionMatchStatus matchStatus,
+        CompanionCity city,
+        String timeZoneId,
+        OffsetDateTime currentLocalTime,
         @Schema(description = "화면 표시 및 수정에 사용하는 일정 정보", requiredMode = Schema.RequiredMode.REQUIRED)
         CompanionScheduleResponse schedule,
         @Schema(description = "카카오톡 오픈채팅 URL", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -42,6 +47,9 @@ public record CompanionScheduleDetailResponse(
         return new CompanionScheduleDetailResponse(
                 detail.matchId(),
                 detail.matchStatus(),
+                detail.city(),
+                detail.city() == null ? null : detail.city().zoneId().getId(),
+                detail.currentLocalTime() == null ? null : detail.currentLocalTime().toOffsetDateTime(),
                 CompanionScheduleResponse.from(detail.schedule()),
                 detail.openChatUrl(),
                 detail.userNickname(),

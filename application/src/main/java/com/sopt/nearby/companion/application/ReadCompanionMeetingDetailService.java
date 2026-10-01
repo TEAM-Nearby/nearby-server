@@ -8,15 +8,23 @@ import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCan
 import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingDetail;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
+import java.time.Clock;
 
 public class ReadCompanionMeetingDetailService implements ReadCompanionMeetingDetailUseCase {
 
     private final CompanionMeetingDetailQueryPort queryPort;
+    private final Clock clock;
 
-    public ReadCompanionMeetingDetailService(final CompanionMeetingDetailQueryPort queryPort) {
+    public ReadCompanionMeetingDetailService(
+            final CompanionMeetingDetailQueryPort queryPort,
+            final Clock clock
+    ) {
         this.queryPort = queryPort;
+        this.clock = clock;
     }
 
     @Override
@@ -30,7 +38,15 @@ public class ReadCompanionMeetingDetailService implements ReadCompanionMeetingDe
         }
         validateMeetingStatus(detail.meetingStatus());
 
-        return ReadCompanionMeetingDetailResult.from(detail);
+        ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+                detail.placeAddress(),
+                clock.instant()
+        );
+        return ReadCompanionMeetingDetailResult.from(
+                detail,
+                cityTime.city(),
+                cityTime.currentLocalTime()
+        );
     }
 
     private void validateMeetingId(final Long meetingId) {
