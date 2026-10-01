@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionProfileResponse;
 import com.sopt.nearby.companion.domain.exception.CompanionProfileNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileRequiredException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import java.security.Principal;
 public interface CompanionProfileApi {
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             CompanionProfileNotFoundException.class
     })
     @Operation(

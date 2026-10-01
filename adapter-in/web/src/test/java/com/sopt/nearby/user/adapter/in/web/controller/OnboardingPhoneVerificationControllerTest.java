@@ -32,6 +32,8 @@ import java.lang.reflect.Method;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -105,6 +107,22 @@ class OnboardingPhoneVerificationControllerTest {
 		assertEquals(1L, confirmUseCase.command.userId());
 		assertEquals(10L, confirmUseCase.command.phoneVerificationId());
 		assertEquals("123456", confirmUseCase.command.verificationCode());
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = UserOnboardingStatus.class, names = {
+			"COMPLETED", "COMPANION_PROFILE_COMPLETED", "COMPANION_PROFILE_SKIPPED"
+	})
+	void returnsCompletedStatusAfterPhoneReverification(final UserOnboardingStatus onboardingStatus)
+			throws Exception {
+		confirmUseCase.result = new ConfirmPhoneVerificationCodeResult(true, onboardingStatus);
+
+		mockMvc.perform(patch("/api/onboarding/phone-verifications/{phoneVerificationId}", 10L)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(new ConfirmRequest("123456"))))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.phoneVerified", is(true)))
+				.andExpect(jsonPath("$.data.onboardingStatus", is("COMPLETED")));
 	}
 
 	@Test

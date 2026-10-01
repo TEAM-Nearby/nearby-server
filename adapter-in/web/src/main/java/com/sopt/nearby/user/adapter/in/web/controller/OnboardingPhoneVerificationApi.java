@@ -67,7 +67,7 @@ public interface OnboardingPhoneVerificationApi {
 
 	@Operation(
 			summary = "휴대폰 인증 번호 확인",
-			description = "사용자가 입력한 휴대폰 인증 번호를 확인하고 온보딩 상태를 갱신합니다.",
+			description = "휴대폰 인증 번호를 확인합니다. 최초 인증은 PHONE_VERIFIED로 진행하며, 이미 온보딩을 마친 사용자의 상태는 유지합니다.",
 			security = @SecurityRequirement(name = "bearerAuth"),
 			requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
 					required = true,

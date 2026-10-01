@@ -3,6 +3,8 @@ package com.sopt.nearby.user.port.out;
 
 import com.sopt.nearby.common.port.DomainRepository;
 import com.sopt.nearby.user.domain.model.EmergencyContact;
+import java.util.Optional;
 
 public interface EmergencyContactRepository extends DomainRepository<EmergencyContact, Long> {
+	Optional<EmergencyContact> findByUserId(Long userId);
 }

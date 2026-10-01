@@ -18,6 +18,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundExceptio
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMatchException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileRequiredException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,6 +69,7 @@ public interface CompanionMatchApi {
                     )
             )
     )
+    @ApiExceptions({CompanionProfileRequiredException.class})
     @Operation(
             summary = "매칭된 동행 목록 보기",
             description = """
@@ -87,6 +89,7 @@ public interface CompanionMatchApi {
 
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionMatchIdException.class,
             CompanionMatchNotFoundException.class,
             ForbiddenCompanionMatchException.class,
@@ -150,6 +153,7 @@ public interface CompanionMatchApi {
 
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionScheduleRequestException.class,
             ForbiddenCompanionScheduleException.class,
             CompanionMatchNotFoundException.class,
@@ -192,6 +196,7 @@ public interface CompanionMatchApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionMatchIdException.class,
             CompanionMatchNotFoundException.class,
             ForbiddenReadCompanionScheduleException.class,

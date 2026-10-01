@@ -10,6 +10,7 @@ import com.sopt.nearby.companion.domain.exception.InvalidCompanionNotificationDi
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionNotificationIdException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionNotificationCursorException;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationPageUseCase;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileRequiredException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,6 +23,7 @@ import java.security.Principal;
 public interface CompanionNotificationApi {
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionNotificationDirectionException.class
     })
     @Operation(
@@ -37,6 +39,7 @@ public interface CompanionNotificationApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionNotificationDirectionException.class,
             InvalidCompanionNotificationCursorException.class
     })
@@ -57,6 +60,7 @@ public interface CompanionNotificationApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionNotificationIdException.class,
             ForbiddenCompanionNotificationException.class,
             CompanionNotificationNotFoundException.class

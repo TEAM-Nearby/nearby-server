@@ -222,6 +222,11 @@ class SendPhoneVerificationCodeServiceTest {
 		}
 
 		@Override
+		public Optional<UserAccount> findByIdForUpdate(final Long id) {
+		    return findById(id);
+		}
+
+		@Override
 		public Optional<UserAccount> findById(final Long id) {
 			return Optional.ofNullable(accounts.get(id));
 		}

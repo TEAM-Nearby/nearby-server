@@ -7,5 +7,20 @@ public enum UserOnboardingStatus {
 	PHONE_VERIFIED,
 	COMPANION_PROFILE_COMPLETED,
 	COMPANION_PROFILE_SKIPPED,
-	COMPLETED
+	COMPLETED;
+
+	public boolean isCompleted() {
+		return this == COMPLETED || this == COMPANION_PROFILE_COMPLETED || this == COMPANION_PROFILE_SKIPPED;
+	}
+
+	public boolean hasCompanionProfile() {
+		return this == COMPLETED || this == COMPANION_PROFILE_COMPLETED;
+	}
+
+	public String apiStatus() {
+		if (isCompleted()) {
+			return COMPLETED.name();
+		}
+		return this == PHONE_VERIFIED ? PHONE_VERIFIED.name() : STARTED.name();
+	}
 }

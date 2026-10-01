@@ -72,6 +72,8 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 			throw new PhoneVerificationCodeMismatchException();
 		}
 
+		UserAccount userAccount = userAccountRepository.findByIdForUpdate(command.userId())
+				.orElseThrow(UserNotFoundException::new);
 		phoneVerificationRepository.save(new PhoneVerification(
 				phoneVerification.id(),
 				phoneVerification.userId(),
@@ -83,21 +85,24 @@ public class ConfirmPhoneVerificationCodeService implements ConfirmPhoneVerifica
 				now
 		));
 
-		UserAccount userAccount = userAccountRepository.findById(command.userId())
-				.orElseThrow(UserNotFoundException::new);
+		UserOnboardingStatus onboardingStatus = switch (userAccount.onboardingStatus()) {
+			case STARTED, TERMS_AGREED, PHONE_VERIFIED -> UserOnboardingStatus.PHONE_VERIFIED;
+			case COMPANION_PROFILE_COMPLETED, COMPANION_PROFILE_SKIPPED, COMPLETED ->
+					userAccount.onboardingStatus();
+		};
 		userAccountRepository.save(new UserAccount(
 				userAccount.id(),
 				userAccount.role(),
 				userAccount.status(),
 				phoneVerification.phoneNumber(),
 				now,
-				UserOnboardingStatus.PHONE_VERIFIED,
+				onboardingStatus,
 				userAccount.createdAt(),
 				userAccount.deletedAt()
 		));
 		deleteCodeAfterCommit(phoneVerification.id());
 
-		return new ConfirmPhoneVerificationCodeResult(true, UserOnboardingStatus.PHONE_VERIFIED);
+		return new ConfirmPhoneVerificationCodeResult(true, onboardingStatus);
 	}
 
 	private void deleteCodeAfterCommit(final Long phoneVerificationId) {

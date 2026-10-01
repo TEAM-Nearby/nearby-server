@@ -60,6 +60,11 @@ class AppleLoginServiceTest {
 	private UserAccountRepository userAccounts(final UserAccount existingUser) {
 		return new UserAccountRepository() {
 			@Override
+			public Optional<UserAccount> findByIdForUpdate(final Long id) {
+				return findById(id);
+			}
+
+			@Override
 			public UserAccount save(final UserAccount model) {
 				throw new UnsupportedOperationException();
 			}

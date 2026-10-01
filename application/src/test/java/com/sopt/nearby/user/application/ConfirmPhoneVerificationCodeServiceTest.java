@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 class ConfirmPhoneVerificationCodeServiceTest {
@@ -90,6 +92,39 @@ class ConfirmPhoneVerificationCodeServiceTest {
 				PhoneVerificationCodeMismatchException.class,
 				() -> service.confirm(new ConfirmPhoneVerificationCodeCommand(1L, 10L, "abcdef"))
 		);
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = UserOnboardingStatus.class, names = {
+			"COMPLETED", "COMPANION_PROFILE_COMPLETED", "COMPANION_PROFILE_SKIPPED"
+	})
+	void preservesFinishedOnboardingWhenPhoneIsVerifiedAgain(final UserOnboardingStatus status) {
+		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
+		UserAccount existingUser = newUser(1L);
+		userAccounts.save(new UserAccount(
+				existingUser.id(), existingUser.role(), existingUser.status(),
+				"01099998888", LocalDateTime.of(2026, 7, 1, 0, 0),
+				status, existingUser.createdAt(), existingUser.deletedAt()
+		));
+		FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
+		phoneVerifications.save(newPendingVerification(10L, 1L, "01012345678"));
+		FakePhoneVerificationCodeStore codeStore = new FakePhoneVerificationCodeStore();
+		codeStore.save(10L, CODE_123456_HASH, Duration.ofSeconds(180));
+		ConfirmPhoneVerificationCodeService service = new ConfirmPhoneVerificationCodeService(
+				userAccounts, phoneVerifications, codeStore, HASH_SECRET, CLOCK
+		);
+
+		ConfirmPhoneVerificationCodeResult result = service.confirm(
+				new ConfirmPhoneVerificationCodeCommand(1L, 10L, "123456")
+		);
+
+		UserAccount updatedUser = userAccounts.accounts.get(1L);
+		assertEquals(status, updatedUser.onboardingStatus());
+		assertEquals(status, result.onboardingStatus());
+		assertEquals("01012345678", updatedUser.phoneNumber());
+		assertEquals(LocalDateTime.of(2026, 7, 4, 7, 0), updatedUser.phoneVerifiedAt());
+		assertEquals(PhoneVerificationStatus.VERIFIED, phoneVerifications.saved.get(10L).status());
+		assertEquals(false, codeStore.findHash(10L).isPresent());
 	}
 
 	@Test
@@ -316,6 +351,11 @@ class ConfirmPhoneVerificationCodeServiceTest {
 			}
 			accounts.put(model.id(), model);
 			return model;
+		}
+
+		@Override
+		public Optional<UserAccount> findByIdForUpdate(final Long id) {
+		    return findById(id);
 		}
 
 		@Override

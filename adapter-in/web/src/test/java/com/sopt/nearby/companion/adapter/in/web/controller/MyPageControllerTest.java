@@ -109,7 +109,8 @@ class MyPageControllerTest {
                 travelStyleKeywords,
                 8,
                 4,
-                12
+                12,
+                true
         );
     }
 

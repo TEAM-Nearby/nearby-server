@@ -34,6 +34,7 @@ public class RegisterCompanionProfileService implements RegisterCompanionProfile
 	@Override
 	@Transactional
 	public RegisteredCompanionProfileResult register(final RegisterCompanionProfileCommand command) {
+		String onboardingStatus = completeOnboardingUseCase.complete(command.userId());
 		if (companionProfileRepository.existsByNickname(command.nickname())) {
 			throw new DuplicateNicknameException();
 		}
@@ -41,7 +42,6 @@ public class RegisterCompanionProfileService implements RegisterCompanionProfile
 			throw new DuplicateCompanionProfileException();
 		}
 
-		String onboardingStatus = completeOnboardingUseCase.complete(command.userId());
 		CompanionProfile profile = companionProfileRepository.save(new CompanionProfile(
 				null,
 				command.userId(),
@@ -70,4 +70,3 @@ public class RegisterCompanionProfileService implements RegisterCompanionProfile
 		);
 	}
 }
-

@@ -7,11 +7,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record ConfirmPhoneVerificationCodeResponse(
 		@Schema(description = "휴대폰 인증 완료 여부", example = "true")
 		boolean phoneVerified,
-		@Schema(description = "사용자 온보딩 상태", example = "PHONE_VERIFIED")
+		@Schema(
+				description = "인증 후 온보딩 상태. 이미 등록하거나 건너뛴 사용자는 COMPLETED를 반환합니다.",
+				example = "PHONE_VERIFIED",
+				allowableValues = {"PHONE_VERIFIED", "COMPLETED"}
+		)
 		String onboardingStatus
 ) {
 
 	public static ConfirmPhoneVerificationCodeResponse from(final ConfirmPhoneVerificationCodeResult result) {
-		return new ConfirmPhoneVerificationCodeResponse(result.phoneVerified(), result.onboardingStatus().name());
+		return new ConfirmPhoneVerificationCodeResponse(result.phoneVerified(), result.onboardingStatus().apiStatus());
 	}
 }

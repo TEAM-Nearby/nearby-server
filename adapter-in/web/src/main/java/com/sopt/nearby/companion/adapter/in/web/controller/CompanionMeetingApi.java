@@ -38,6 +38,7 @@ import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCom
 import com.sopt.nearby.companion.domain.exception.CurrentUserNotCheckedInException;
 import com.sopt.nearby.companion.domain.exception.RevieweeNotCheckedInException;
 import com.sopt.nearby.companion.domain.exception.RevieweeNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileRequiredException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,6 +50,7 @@ import java.security.Principal;
 @Tag(name = "CompanionMeeting", description = "동행 만남 API")
 public interface CompanionMeetingApi {
 
+    @ApiExceptions({CompanionProfileRequiredException.class})
     @Operation(
             summary = "현재 진행 중인 동행 목록 조회",
             description = """
@@ -67,6 +69,7 @@ public interface CompanionMeetingApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionMeetingIdException.class,
             ForbiddenReadCompanionMeetingException.class,
             CompanionMeetingNotFoundException.class,
@@ -91,6 +94,7 @@ public interface CompanionMeetingApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionMeetingIdException.class,
             ForbiddenCompanionReviewTargetException.class,
             CompanionMeetingNotFoundException.class,
@@ -114,6 +118,7 @@ public interface CompanionMeetingApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCheckInRequestException.class,
             OutOfCheckInRadiusException.class,
             ForbiddenCompanionMeetingException.class,
@@ -137,6 +142,7 @@ public interface CompanionMeetingApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionMeetingIdException.class,
             ForbiddenCompleteCompanionMeetingException.class,
             CompanionMeetingNotFoundException.class,
@@ -161,6 +167,7 @@ public interface CompanionMeetingApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidReviewRequestException.class,
             InvalidReviewTargetException.class,
             InvalidReviewRatingException.class,

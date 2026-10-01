@@ -16,7 +16,8 @@ public record MyPageResponse(
         List<String> travelStyleKeywords,
         int mealTogetherCount,
         int visitedCityCount,
-        int receivedReviewCount
+        int receivedReviewCount,
+        boolean hasCompanionProfile
 ) {
 
     public static MyPageResponse from(final ReadMyPageResult result) {
@@ -25,7 +26,7 @@ public record MyPageResponse(
                 result.nickname(),
                 result.phoneVerified(),
                 result.ageGroup() == null ? null : result.ageGroup().name(),
-                result.gender().name(),
+                result.gender() == null ? null : result.gender().name(),
                 result.mannerScore(),
                 result.mannerKeywords().stream()
                         .map(Enum::name)
@@ -35,7 +36,8 @@ public record MyPageResponse(
                         .toList(),
                 result.mealTogetherCount(),
                 result.visitedCityCount(),
-                result.receivedReviewCount()
+                result.receivedReviewCount(),
+                result.hasCompanionProfile()
         );
     }
 }

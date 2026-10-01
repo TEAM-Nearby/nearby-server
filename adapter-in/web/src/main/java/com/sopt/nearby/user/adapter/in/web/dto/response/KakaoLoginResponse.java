@@ -2,7 +2,6 @@
 package com.sopt.nearby.user.adapter.in.web.dto.response;
 
 import com.sopt.nearby.user.application.KakaoLoginResult;
-import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record KakaoLoginResponse(
@@ -25,7 +24,10 @@ public record KakaoLoginResponse(
 		Long userId,
 
 		@Schema(description = "사용자 온보딩 상태", allowableValues = {"STARTED", "PHONE_VERIFIED", "COMPLETED"})
-		String onboardingStatus
+		String onboardingStatus,
+
+		@Schema(description = "동행 프로필 등록 완료 여부. false이면 동행 화면 진입 시 등록을 안내합니다.")
+		boolean hasCompanionProfile
 ) {
 
 	public static KakaoLoginResponse from(final KakaoLoginResult result) {
@@ -36,15 +38,9 @@ public record KakaoLoginResponse(
 				result.accessTokenExpiresIn(),
 				result.refreshTokenExpiresIn(),
 				result.userId(),
-				toApiOnboardingStatus(result.onboardingStatus())
+				result.onboardingStatus().apiStatus(),
+				result.onboardingStatus().hasCompanionProfile()
 		);
 	}
 
-	private static String toApiOnboardingStatus(final UserOnboardingStatus status) {
-		return switch (status) {
-			case PHONE_VERIFIED -> "PHONE_VERIFIED";
-			case COMPLETED, COMPANION_PROFILE_COMPLETED, COMPANION_PROFILE_SKIPPED -> "COMPLETED";
-			default -> "STARTED";
-		};
-	}
 }

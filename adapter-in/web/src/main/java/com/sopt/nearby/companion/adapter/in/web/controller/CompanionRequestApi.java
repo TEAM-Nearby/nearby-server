@@ -11,6 +11,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundExcept
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotPendingException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileRequiredException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,6 +24,7 @@ import java.security.Principal;
 public interface CompanionRequestApi {
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             ForbiddenCompanionRequestHostOnlyException.class,
             CompanionRequestNotFoundException.class
     })
@@ -39,6 +41,7 @@ public interface CompanionRequestApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             ForbiddenCompanionRequestHostOnlyException.class,
             ForbiddenCompanionRequestSelfException.class,
             CompanionRequestNotFoundException.class,
@@ -59,6 +62,7 @@ public interface CompanionRequestApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             ForbiddenCompanionRequestHostOnlyException.class,
             CompanionRequestNotFoundException.class,
             CompanionRequestNotPendingException.class
