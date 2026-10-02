@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.port.in.UpdateMyCompanionProfileUseCase;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 public class MyCompanionProfileService implements ReadMyCompanionProfileUseCase, UpdateMyCompanionProfileUseCase {
@@ -28,7 +29,7 @@ public class MyCompanionProfileService implements ReadMyCompanionProfileUseCase,
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public MyCompanionProfileResult read(final Long userId) {
         onboarding.requireCompleted(userId);
         CompanionProfile profile = requireActive(profiles.findByUserId(userId)

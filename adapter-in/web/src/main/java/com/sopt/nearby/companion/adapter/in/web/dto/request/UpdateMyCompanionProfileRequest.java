@@ -7,20 +7,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record UpdateMyCompanionProfileRequest(
-        @Schema(description = "닉네임. 앞뒤 공백을 제거하며 본인의 기존 닉네임은 재사용할 수 있습니다.", example = "여행친구")
-        @NotBlank @Size(max = 15)
+        @Schema(description = "닉네임. 앞뒤 공백 제거 후 최대 15자이며 본인의 기존 닉네임은 재사용할 수 있습니다.", example = "여행친구")
+        @NotBlank
         String nickname,
 
-        @Schema(description = "한줄소개. 생략, null, 빈 문자열 또는 공백이면 삭제합니다.", example = "함께 걸어요")
-        @Size(max = 50)
+        @Schema(description = "한줄소개. 앞뒤 공백 제거 후 최대 50자이며 생략, null, 빈 문자열 또는 공백이면 삭제합니다.", example = "함께 걸어요")
         String intro,
 
-        @Schema(description = "업로드 완료된 HTTP(S) 이미지 URL. 생략, null, 빈 문자열 또는 공백이면 삭제합니다.")
-        @Size(max = 255)
+        @Schema(description = "업로드 완료된 HTTP(S) 이미지 URL. 앞뒤 공백 제거 후 최대 255자이며 생략, null, 빈 문자열 또는 공백이면 삭제합니다.")
         String profileImageUrl,
 
         @Schema(description = "전체 여행 스타일 목록. 한 개 이상이며 중복을 허용하지 않습니다.",

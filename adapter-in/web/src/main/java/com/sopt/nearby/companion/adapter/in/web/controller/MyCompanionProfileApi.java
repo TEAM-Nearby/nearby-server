@@ -11,6 +11,9 @@ import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,8 +26,16 @@ public interface MyCompanionProfileApi {
             description = "인증된 사용자 본인의 수정 화면 초기값을 조회합니다. 프로필 미등록 시 "
                     + "COMPANION_PROFILE_REQUIRED를 반환하며 기존 온보딩 프로필 등록 API를 사용해야 합니다.")
     @ApiResponse(responseCode = "200", description = "본인 프로필 정보를 반환합니다.")
-    @ApiResponse(responseCode = "403", description = "ONBOARDING_REQUIRED: 온보딩 미완료, 또는 프로필 미등록·비활성 상태입니다.")
-    @ApiResponse(responseCode = "404", description = "USER_NOT_FOUND: 인증 정보에 해당하는 사용자가 없습니다.")
+    @ApiResponse(responseCode = "403", description = "온보딩 미완료, 또는 프로필 미등록·비활성 상태입니다.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = CommonResponse.class),
+                    examples = @ExampleObject(name = "ONBOARDING_REQUIRED", value = """
+                            {"status":403,"code":"ONBOARDING_REQUIRED","message":"온보딩 과정이 완료되지 않았습니다.","data":null}
+                            """)))
+    @ApiResponse(responseCode = "404", description = "인증 정보에 해당하는 사용자가 없습니다.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = CommonResponse.class),
+                    examples = @ExampleObject(name = "USER_NOT_FOUND", value = """
+                            {"status":404,"code":"USER_NOT_FOUND","message":"사용자를 찾을 수 없습니다.","data":null}
+                            """)))
     @ApiExceptions({CompanionProfileRequiredException.class, InactiveCompanionProfileException.class})
     CommonResponse<MyCompanionProfileResponse> getProfile(@Parameter(hidden = true) Principal principal);
 
@@ -35,8 +46,16 @@ public interface MyCompanionProfileApi {
                     + "본인의 기존 닉네임은 허용하며 타인과 중복되면 DUPLICATE_NICKNAME을 반환합니다. "
                     + "미등록 프로필은 기존 온보딩 등록 API를 사용해야 하며 비활성 프로필은 수정할 수 없습니다.")
     @ApiResponse(responseCode = "200", description = "저장된 프로필 정보를 반환합니다.")
-    @ApiResponse(responseCode = "403", description = "ONBOARDING_REQUIRED: 온보딩 미완료, 또는 프로필 미등록·비활성 상태입니다.")
-    @ApiResponse(responseCode = "404", description = "USER_NOT_FOUND: 인증 정보에 해당하는 사용자가 없습니다.")
+    @ApiResponse(responseCode = "403", description = "온보딩 미완료, 또는 프로필 미등록·비활성 상태입니다.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = CommonResponse.class),
+                    examples = @ExampleObject(name = "ONBOARDING_REQUIRED", value = """
+                            {"status":403,"code":"ONBOARDING_REQUIRED","message":"온보딩 과정이 완료되지 않았습니다.","data":null}
+                            """)))
+    @ApiResponse(responseCode = "404", description = "인증 정보에 해당하는 사용자가 없습니다.",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = CommonResponse.class),
+                    examples = @ExampleObject(name = "USER_NOT_FOUND", value = """
+                            {"status":404,"code":"USER_NOT_FOUND","message":"사용자를 찾을 수 없습니다.","data":null}
+                            """)))
     @ApiExceptions({InvalidCompanionProfileUpdateException.class, DuplicateNicknameException.class,
             CompanionProfileRequiredException.class, InactiveCompanionProfileException.class})
     CommonResponse<MyCompanionProfileResponse> updateProfile(UpdateMyCompanionProfileRequest request,

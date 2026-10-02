@@ -5,12 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
 import com.sopt.nearby.companion.application.UpdateMyCompanionProfileCommand;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
@@ -26,9 +28,11 @@ import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -41,7 +45,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest(properties = {
@@ -57,7 +63,7 @@ class MyCompanionProfileFlowTest {
     private static final String PATH = "/api/users/me/companion-profile";
     @Autowired private MockMvc mvc;
     @Autowired private UserAccountRepository users;
-    @Autowired private CompanionProfileRepository profiles;
+    @MockitoSpyBean private CompanionProfileRepository profiles;
     @Autowired private CompanionProfileStyleRepository styles;
     @Autowired private UpdateMyCompanionProfileUseCase updateProfile;
     @Autowired private DataSource dataSource;
@@ -146,6 +152,49 @@ class MyCompanionProfileFlowTest {
     }
 
     @Test
+    void validatesLengthsAfterTrimmingThroughTheHttpApi() throws Exception {
+        CompanionProfile own = profile(CompanionProfileStatus.ACTIVE);
+        String nickname = "가".repeat(15);
+        String intro = "소".repeat(50);
+        String image = "https://example.com/" + "a".repeat(235);
+        putProfile(own.userId(), """
+                {"nickname":"  %s  ","intro":"  %s  ","profileImageUrl":"  %s  ",
+                 "travelStyleKeywords":["FOODIE"]}
+                """.formatted(nickname, intro, image))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nickname").value(nickname))
+                .andExpect(jsonPath("$.data.intro").value(intro))
+                .andExpect(jsonPath("$.data.profileImageUrl").value(image));
+        CompanionProfile saved = profiles.findById(own.id()).orElseThrow();
+        assertThat(saved.nickname()).isEqualTo(nickname);
+        assertThat(saved.intro()).isEqualTo(intro);
+        assertThat(saved.profileImageUrl()).isEqualTo(image);
+
+        for (String invalid : List.of(
+                body(" " + "가".repeat(16) + " ", "FOODIE"),
+                "{\"nickname\":\"친구\",\"travelStyleKeywords\":[\"FOODIE\"],\"intro\":\" " + "소".repeat(51) + " \"}",
+                "{\"nickname\":\"친구\",\"travelStyleKeywords\":[\"FOODIE\"],\"profileImageUrl\":\" " + image + "x \"}")) {
+            putProfile(own.userId(), invalid).andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_COMPANION_PROFILE_UPDATE"));
+        }
+        assertThat(profiles.findById(own.id()).orElseThrow()).isEqualTo(saved);
+    }
+
+    @Test
+    void clearsWhitespaceOnlyOptionalFieldsEvenWhenTheirRawLengthsExceedLimits() throws Exception {
+        CompanionProfile own = profile(CompanionProfileStatus.ACTIVE);
+        putProfile(own.userId(), """
+                {"nickname":"%s","intro":"%s","profileImageUrl":"%s","travelStyleKeywords":["FOODIE"]}
+                """.formatted(own.nickname(), " ".repeat(51), " ".repeat(256)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.intro").value(nullValue()))
+                .andExpect(jsonPath("$.data.profileImageUrl").value(nullValue()));
+        CompanionProfile saved = profiles.findById(own.id()).orElseThrow();
+        assertThat(saved.intro()).isNull();
+        assertThat(saved.profileImageUrl()).isNull();
+    }
+
+    @Test
     void rejectsInvalidAndIncompleteBodiesWithoutSaving() throws Exception {
         CompanionProfile own = profile(CompanionProfileStatus.ACTIVE);
         for (String body : List.of("{}", "{\"nickname\":\"친구\"}",
@@ -212,6 +261,45 @@ class MyCompanionProfileFlowTest {
     }
 
     @Test
+    void readsOneSnapshotWhenAnUpdateCommitsBetweenProfileAndStyleQueries() throws Exception {
+        CompanionProfile own = profile(CompanionProfileStatus.ACTIVE);
+        CountDownLatch profileRead = new CountDownLatch(1);
+        CountDownLatch continueRead = new CountDownLatch(1);
+        doAnswer(invocation -> {
+            Object result = invocation.callRealMethod();
+            profileRead.countDown();
+            if (!continueRead.await(10, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("프로필 수정 완료 대기 시간 초과");
+            }
+            return result;
+        }).when(profiles).findByUserId(own.userId());
+
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            Future<MvcResult> pendingRead = executor.submit(() -> mvc.perform(get(PATH)
+                    .with(jwt().jwt(token -> token.subject(own.userId().toString()))))
+                    .andExpect(status().isOk()).andReturn());
+            try {
+                assertThat(profileRead.await(10, TimeUnit.SECONDS)).isTrue();
+                putProfile(own.userId(), body("스냅샷" + own.id(), "CAFE_TOUR"))
+                        .andExpect(status().isOk());
+            } finally {
+                continueRead.countDown();
+            }
+            MvcResult response = pendingRead.get(15, TimeUnit.SECONDS);
+            jsonPath("$.data.nickname").value(own.nickname()).match(response);
+            jsonPath("$.data.intro").value(own.intro()).match(response);
+            jsonPath("$.data.profileImageUrl").value(own.profileImageUrl()).match(response);
+            jsonPath("$.data.travelStyleKeywords", containsInAnyOrder("EXTROVERTED", "FOODIE")).match(response);
+        }
+        mvc.perform(get(PATH).with(jwt().jwt(token -> token.subject(own.userId().toString()))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.nickname").value("스냅샷" + own.id()))
+                .andExpect(jsonPath("$.data.intro").value(nullValue()))
+                .andExpect(jsonPath("$.data.profileImageUrl").value(nullValue()))
+                .andExpect(jsonPath("$.data.travelStyleKeywords", containsInAnyOrder("CAFE_TOUR")));
+    }
+
+    @Test
     void concurrentUsersCompetingForOneNicknameReceiveOneSuccessAndOneConflict() throws Exception {
         CompanionProfile first = profile(CompanionProfileStatus.ACTIVE);
         CompanionProfile second = profile(CompanionProfileStatus.ACTIVE);
@@ -233,6 +321,26 @@ class MyCompanionProfileFlowTest {
                         + ".examples.DUPLICATE_NICKNAME.value.code").value("DUPLICATE_NICKNAME"))
                 .andExpect(jsonPath("$.paths['" + PATH + "'].put.responses['403'].content['application/json']"
                         + ".examples.FORBIDDEN_INACTIVE_COMPANION_PROFILE.value.code").value("FORBIDDEN_INACTIVE_COMPANION_PROFILE"));
+    }
+
+    @Test
+    void documentsOnboardingAndMissingUserExamplesMatchingBothHttpOperations() throws Exception {
+        MvcResult docs = mvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk()).andReturn();
+        Long incompleteUserId = user(UserOnboardingStatus.STARTED).id();
+        for (String method : List.of("get", "put")) {
+            for (Long userId : List.of(incompleteUserId, Long.MAX_VALUE)) {
+                var response = method.equals("get")
+                        ? mvc.perform(get(PATH).with(jwt().jwt(token -> token.subject(userId.toString()))))
+                        : putProfile(userId, body("친구", "FOODIE"));
+                int expectedStatus = userId.equals(incompleteUserId) ? 403 : 404;
+                Map<String, Object> actual = JsonPath.read(response.andExpect(status().is(expectedStatus))
+                        .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8), "$");
+                jsonPath("$.paths['" + PATH + "']." + method + ".responses['" + expectedStatus
+                        + "'].content['application/json'].examples." + actual.get("code") + ".value")
+                        .value(actual).match(docs);
+            }
+        }
     }
 
     private ResultActions putProfile(final Long userId, final String body) throws Exception {
