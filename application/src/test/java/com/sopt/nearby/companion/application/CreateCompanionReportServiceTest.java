@@ -2,8 +2,13 @@
 package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.sopt.nearby.companion.domain.exception.CompanionReportCurrentUserAlreadyCompletedException;
+import com.sopt.nearby.companion.domain.exception.CompanionReportCurrentUserNotCheckedInException;
+import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReportException;
+import com.sopt.nearby.companion.domain.exception.InvalidCompanionReportRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
@@ -39,21 +44,11 @@ class CreateCompanionReportServiceTest {
 
 	@Test
 	void sendsMailOnlyAfterTransactionCommit() {
-		CapturingMailSender mailSender = new CapturingMailSender();
-		CreateCompanionReportService service = new CreateCompanionReportService(
-				new MeetingRepository(),
-				new ParticipantRepository(),
-				new CheckInRepository(),
-				new ReportRepository(),
-				new ReportReasonRepository(),
-				new MailContextQueryPort(),
-				mailSender,
-				CLOCK
-		);
+		TestSetup setup = new TestSetup();
 
 		TransactionSynchronizationManager.initSynchronization();
 		try {
-			service.create(new CreateCompanionReportCommand(
+			setup.service.create(new CreateCompanionReportCommand(
 					10L,
 					1L,
 					11L,
@@ -61,16 +56,101 @@ class CreateCompanionReportServiceTest {
 					"상세 내용"
 			));
 
-			assertTrue(mailSender.sent.isEmpty());
+			assertTrue(setup.mailSender.sent.isEmpty());
 			assertEquals(1, TransactionSynchronizationManager.getSynchronizations().size());
 			TransactionSynchronizationManager.getSynchronizations().getFirst().afterCommit();
-			assertEquals(1, mailSender.sent.size());
+			assertEquals(1, setup.mailSender.sent.size());
+			assertEquals(1, setup.meetingRepository.findByIdForUpdateCalls);
 		} finally {
 			TransactionSynchronizationManager.clearSynchronization();
 		}
 	}
 
+	@Test
+	void rejectsNonParticipantReporter() {
+		TestSetup setup = new TestSetup();
+		setup.participantRepository.participants = List.of(
+				new CompanionMatchParticipant(2L, 10L, 11L, null, MatchParticipantRole.GUEST)
+		);
+
+		assertThrows(
+				ForbiddenCompanionReportException.class,
+				() -> setup.service.create(command(10L, 11L, List.of(ReportReason.BAD_ATTITUDE), "상세 내용"))
+		);
+	}
+
+	@Test
+	void rejectsReporterWithoutCheckIn() {
+		TestSetup setup = new TestSetup();
+		setup.checkInRepository.reporterCheckedIn = false;
+
+		assertThrows(
+				CompanionReportCurrentUserNotCheckedInException.class,
+				() -> setup.service.create(command(10L, 11L, List.of(ReportReason.BAD_ATTITUDE), "상세 내용"))
+		);
+	}
+
+	@Test
+	void rejectsReporterAfterCompletingMeeting() {
+		TestSetup setup = new TestSetup();
+		setup.checkInRepository.reporterCompletedAt = NOW;
+
+		assertThrows(
+				CompanionReportCurrentUserAlreadyCompletedException.class,
+				() -> setup.service.create(command(10L, 11L, List.of(ReportReason.BAD_ATTITUDE), "상세 내용"))
+		);
+	}
+
+	@Test
+	void requiresDetailForEtcReason() {
+		TestSetup setup = new TestSetup();
+
+		assertThrows(
+				InvalidCompanionReportRequestException.class,
+				() -> setup.service.create(command(10L, 11L, List.of(ReportReason.ETC), " "))
+		);
+	}
+
+	@Test
+	void allowsReportWhenReportedUserHasNotCheckedIn() {
+		TestSetup setup = new TestSetup();
+		setup.checkInRepository.reportedUserCheckedIn = false;
+
+		setup.service.create(command(10L, 11L, List.of(ReportReason.NO_SHOW), null));
+
+		assertEquals(1, setup.reportRepository.savedReports.size());
+	}
+
+	private CreateCompanionReportCommand command(
+			final Long reporterUserId,
+			final Long reportedUserId,
+			final List<ReportReason> reasons,
+			final String detail
+	) {
+		return new CreateCompanionReportCommand(reporterUserId, 1L, reportedUserId, reasons, detail);
+	}
+
+	private static final class TestSetup {
+		private final MeetingRepository meetingRepository = new MeetingRepository();
+		private final ParticipantRepository participantRepository = new ParticipantRepository();
+		private final CheckInRepository checkInRepository = new CheckInRepository();
+		private final ReportRepository reportRepository = new ReportRepository();
+		private final CapturingMailSender mailSender = new CapturingMailSender();
+		private final CreateCompanionReportService service = new CreateCompanionReportService(
+				meetingRepository,
+				participantRepository,
+				checkInRepository,
+				reportRepository,
+				new ReportReasonRepository(),
+				new MailContextQueryPort(),
+				mailSender,
+				CLOCK
+		);
+	}
+
 	private static final class MeetingRepository implements CompanionMeetingRepository {
+		private int findByIdForUpdateCalls;
+
 		@Override
 		public CompanionMeeting save(final CompanionMeeting model) {
 			return model;
@@ -82,12 +162,22 @@ class CreateCompanionReportServiceTest {
 		}
 
 		@Override
+		public Optional<CompanionMeeting> findByIdForUpdate(final Long id) {
+			findByIdForUpdateCalls++;
+			return findById(id);
+		}
+
+		@Override
 		public boolean completeIfOngoing(final Long meetingId, final LocalDateTime completedAt) {
 			return false;
 		}
 	}
 
 	private static final class ParticipantRepository implements CompanionMatchParticipantRepository {
+		private List<CompanionMatchParticipant> participants = List.of(
+				new CompanionMatchParticipant(1L, 10L, 10L, null, MatchParticipantRole.HOST),
+				new CompanionMatchParticipant(2L, 10L, 11L, null, MatchParticipantRole.GUEST)
+		);
 		@Override
 		public CompanionMatchParticipant save(final CompanionMatchParticipant model) {
 			return model;
@@ -100,10 +190,7 @@ class CreateCompanionReportServiceTest {
 
 		@Override
 		public List<CompanionMatchParticipant> findAllByMatchId(final Long matchId) {
-			return List.of(
-					new CompanionMatchParticipant(1L, 10L, 10L, null, MatchParticipantRole.HOST),
-					new CompanionMatchParticipant(2L, 10L, 11L, null, MatchParticipantRole.GUEST)
-			);
+			return participants;
 		}
 
 		@Override
@@ -113,6 +200,9 @@ class CreateCompanionReportServiceTest {
 	}
 
 	private static final class CheckInRepository implements MeetingCheckInRepository {
+		private boolean reporterCheckedIn = true;
+		private boolean reportedUserCheckedIn = true;
+		private LocalDateTime reporterCompletedAt;
 		@Override
 		public MeetingCheckIn save(final MeetingCheckIn model) {
 			return model;
@@ -125,7 +215,12 @@ class CreateCompanionReportServiceTest {
 
 		@Override
 		public Optional<MeetingCheckIn> findByMeetingIdAndUserId(final Long meetingId, final Long userId) {
-			return Optional.of(new MeetingCheckIn(1L, meetingId, userId, null, null, NOW, null));
+			if (userId == 10L && !reporterCheckedIn || userId == 11L && !reportedUserCheckedIn) {
+				return Optional.empty();
+			}
+			return Optional.of(new MeetingCheckIn(
+					1L, meetingId, userId, null, null, NOW, userId == 10L ? reporterCompletedAt : null
+			));
 		}
 
 		@Override
@@ -145,10 +240,14 @@ class CreateCompanionReportServiceTest {
 	}
 
 	private static final class ReportRepository implements CompanionReportRepository {
+		private final List<CompanionReport> savedReports = new ArrayList<>();
+
 		@Override
 		public CompanionReport save(final CompanionReport model) {
-			return new CompanionReport(1L, model.meetingId(), model.reporterUserId(), model.reportedUserId(),
+			CompanionReport saved = new CompanionReport(1L, model.meetingId(), model.reporterUserId(), model.reportedUserId(),
 					model.detail(), model.createdAt());
+			savedReports.add(saved);
+			return saved;
 		}
 
 		@Override

@@ -72,7 +72,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 	public CreateCompanionReportResult create(final CreateCompanionReportCommand command) {
 		validateCommand(command);
 
-		CompanionMeeting meeting = meetingRepository.findById(command.meetingId())
+		CompanionMeeting meeting = meetingRepository.findByIdForUpdate(command.meetingId())
 				.orElseThrow(CompanionMeetingNotFoundException::new);
 		validateMeeting(meeting);
 

@@ -21,6 +21,9 @@ spring:
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
+      mail.smtp.connectiontimeout: ${NEARBY_MAIL_SMTP_CONNECTION_TIMEOUT_MS:5000}
+      mail.smtp.timeout: ${NEARBY_MAIL_SMTP_TIMEOUT_MS:5000}
+      mail.smtp.writetimeout: ${NEARBY_MAIL_SMTP_WRITE_TIMEOUT_MS:5000}
 
 server:
   forward-headers-strategy: framework
