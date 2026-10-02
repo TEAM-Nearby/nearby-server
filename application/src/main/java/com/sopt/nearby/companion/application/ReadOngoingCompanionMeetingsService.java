@@ -2,12 +2,14 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingProgressStatus;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class ReadOngoingCompanionMeetingsService implements ReadOngoingCompanionMeetingsUseCase {
@@ -26,10 +28,22 @@ public class ReadOngoingCompanionMeetingsService implements ReadOngoingCompanion
     @Override
     public List<OngoingCompanionMeetingSummary> getOngoingMeetings(final Long userId) {
         final Instant now = clock.instant();
+        final LocalDateTime currentTime = LocalDateTime.ofInstant(now, clock.getZone());
         return queryPort.findAllByParticipantUserId(userId)
                 .stream()
+                .filter(summary -> !isExpiredWithoutCheckIn(summary, currentTime))
                 .map(summary -> withCurrentLocalTime(summary, now))
                 .toList();
+    }
+
+    private boolean isExpiredWithoutCheckIn(
+            final OngoingCompanionMeetingSummary summary,
+            final LocalDateTime currentTime
+    ) {
+        return !summary.checkedIn()
+                && summary.progressStatus() == CompanionMeetingProgressStatus.ONGOING
+                && summary.meetingAt() != null
+                && currentTime.isAfter(summary.meetingAt().plusHours(1));
     }
 
     private OngoingCompanionMeetingSummary withCurrentLocalTime(
