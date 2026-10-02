@@ -18,7 +18,8 @@ public record ReadMyPageResult(
         List<TravelStyleKeyword> travelStyleKeywords,
         int mealTogetherCount,
         int visitedCityCount,
-        int receivedReviewCount
+        int receivedReviewCount,
+        boolean hasCompanionProfile
 ) {
 
     public ReadMyPageResult {

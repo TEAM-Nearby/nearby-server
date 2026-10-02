@@ -2,7 +2,6 @@
 package com.sopt.nearby.user.adapter.in.web.dto.response;
 
 import com.sopt.nearby.user.application.AppleLoginResult;
-import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record AppleLoginResponse(
@@ -25,7 +24,10 @@ public record AppleLoginResponse(
 		Long userId,
 
 		@Schema(description = "사용자 온보딩 상태", allowableValues = {"STARTED", "PHONE_VERIFIED", "COMPLETED"})
-		String onboardingStatus
+		String onboardingStatus,
+
+		@Schema(description = "동행 프로필 등록 완료 여부. false이면 동행 화면 진입 시 등록을 안내합니다.")
+		boolean hasCompanionProfile
 ) {
 
 	public static AppleLoginResponse from(final AppleLoginResult result) {
@@ -36,15 +38,9 @@ public record AppleLoginResponse(
 				result.accessTokenExpiresIn(),
 				result.refreshTokenExpiresIn(),
 				result.userId(),
-				toApiOnboardingStatus(result.onboardingStatus())
+				OnboardingStatusMapper.toApiStatus(result.onboardingStatus()),
+				result.onboardingStatus().hasCompanionProfile()
 		);
 	}
 
-	private static String toApiOnboardingStatus(final UserOnboardingStatus status) {
-		return switch (status) {
-			case PHONE_VERIFIED -> "PHONE_VERIFIED";
-			case COMPLETED, COMPANION_PROFILE_COMPLETED, COMPANION_PROFILE_SKIPPED -> "COMPLETED";
-			default -> "STARTED";
-		};
-	}
 }

@@ -14,6 +14,7 @@ import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfE
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileRequiredException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,6 +31,7 @@ import java.security.Principal;
 public interface CompanionPostApi {
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionPostSearchRequestException.class
     })
     @ApiResponse(
@@ -73,6 +75,7 @@ public interface CompanionPostApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             CompanionPostNotFoundException.class,
             CompanionPostExpiredException.class
     })
@@ -112,6 +115,7 @@ public interface CompanionPostApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             InvalidCompanionPostCreateRequestException.class,
             InvalidOpenChatUrlException.class
     })
@@ -169,6 +173,7 @@ public interface CompanionPostApi {
     );
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             CompanionPostNotFoundException.class,
             CompanionRequestAlreadyExistsException.class,
             ForbiddenCompanionRequestSelfException.class,

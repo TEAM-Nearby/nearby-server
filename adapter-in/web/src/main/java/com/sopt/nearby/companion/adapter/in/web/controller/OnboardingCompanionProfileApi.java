@@ -27,7 +27,8 @@ public interface OnboardingCompanionProfileApi {
 
 	@Operation(
 			summary = "동행 프로필 등록 및 온보딩 완료",
-			description = "동행 프로필을 등록하고 사용자 온보딩 상태를 완료로 갱신합니다.",
+			description = "동행 프로필을 등록하고 사용자 온보딩 상태를 완료로 갱신합니다. "
+					+ "프로필 설정을 건너뛴 사용자도 같은 API로 나중에 등록할 수 있으며 비상 연락망은 필수가 아닙니다.",
 			security = @SecurityRequirement(name = "bearerAuth")
 	)
 	CommonResponse<RegisteredCompanionProfileResponse> registerCompanionProfile(
@@ -35,4 +36,3 @@ public interface OnboardingCompanionProfileApi {
 			@Parameter(hidden = true) Jwt jwt
 	);
 }
-

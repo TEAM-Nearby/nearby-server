@@ -22,9 +22,11 @@ public class CompleteCompanionProfileOnboardingService implements CompleteCompan
 	@Override
 	@Transactional
 	public String complete(final Long userId) {
-		UserAccount userAccount = userAccountRepository.findById(userId)
+		UserAccount userAccount = userAccountRepository.findByIdForUpdate(userId)
 				.orElseThrow(UserNotFoundException::new);
-		if (userAccount.onboardingStatus() != UserOnboardingStatus.PHONE_VERIFIED) {
+		if (userAccount.phoneVerifiedAt() == null
+				|| (userAccount.onboardingStatus() != UserOnboardingStatus.PHONE_VERIFIED
+				&& !userAccount.onboardingStatus().isCompleted())) {
 			throw new PhoneVerificationRequiredException();
 		}
 
@@ -41,4 +43,3 @@ public class CompleteCompanionProfileOnboardingService implements CompleteCompan
 		return UserOnboardingStatus.COMPLETED.name();
 	}
 }
-

@@ -21,6 +21,7 @@ public enum CompanionErrorCode implements ErrorCode {
     COMPANION_MATCH_POST_NOT_FOUND("매칭 게시글을 찾을 수 없습니다."),
     INVALID_MATCH_ID("올바르지 않은 매칭 ID입니다."),
     COMPANION_PROFILE_NOT_FOUND("동행 프로필을 찾을 수 없습니다."),
+    COMPANION_PROFILE_REQUIRED("동행 프로필 등록이 필요합니다."),
     INVALID_SCHEDULE_REQUEST("올바르지 않은 일정 수정 요청입니다."),
     FORBIDDEN_COMPANION_SCHEDULE("동행 일정을 수정할 권한이 없습니다."),
     FORBIDDEN_READ_COMPANION_SCHEDULE("동행 일정을 조회할 권한이 없습니다."),

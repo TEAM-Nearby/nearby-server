@@ -8,6 +8,8 @@ import com.sopt.nearby.companion.domain.model.profile.MyPageProfile;
 import com.sopt.nearby.companion.port.in.ReadMyPageUseCase;
 import com.sopt.nearby.companion.port.out.MyPageQueryPort;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
+import com.sopt.nearby.user.port.in.ReadOnboardingStatusUseCase;
+import java.util.List;
 import java.time.Clock;
 import java.time.LocalDate;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,15 +19,18 @@ public class ReadMyPageService implements ReadMyPageUseCase {
     private final MyPageQueryPort queryPort;
     private final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase;
     private final Clock clock;
+    private final ReadOnboardingStatusUseCase readOnboardingStatus;
 
     public ReadMyPageService(
             final MyPageQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final ReadOnboardingStatusUseCase readOnboardingStatus,
             final Clock clock
     ) {
         this.queryPort = queryPort;
         this.requireCompletedOnboardingUseCase = requireCompletedOnboardingUseCase;
         this.clock = clock;
+        this.readOnboardingStatus = readOnboardingStatus;
     }
 
     @Override
@@ -36,6 +41,11 @@ public class ReadMyPageService implements ReadMyPageUseCase {
         }
 
         requireCompletedOnboardingUseCase.requireCompleted(userId);
+        ReadOnboardingStatusUseCase.Status onboarding = readOnboardingStatus.read(userId);
+        if (!onboarding.hasCompanionProfile()) {
+            return new ReadMyPageResult(null, null, onboarding.phoneVerified(), null, null, null,
+                    List.of(), List.of(), 0, 0, 0, false);
+        }
         MyPageProfile profile = queryPort.findByUserId(userId)
                 .orElseThrow(CompanionProfileNotFoundException::new);
 
@@ -50,7 +60,8 @@ public class ReadMyPageService implements ReadMyPageUseCase {
                 profile.travelStyleKeywords(),
                 profile.completedMeetingPlaces().size(),
                 visitedCityCount(profile),
-                profile.reviewCount()
+                profile.reviewCount(),
+                true
         );
     }
 

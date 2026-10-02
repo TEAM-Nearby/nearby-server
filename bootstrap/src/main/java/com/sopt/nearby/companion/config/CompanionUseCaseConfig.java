@@ -93,6 +93,7 @@ import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.user.port.in.CompleteCompanionProfileOnboardingUseCase;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
+import com.sopt.nearby.user.port.in.ReadOnboardingStatusUseCase;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
@@ -215,9 +216,10 @@ public class CompanionUseCaseConfig {
     ReadMyPageUseCase readMyPageUseCase(
             final MyPageQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final ReadOnboardingStatusUseCase readOnboardingStatusUseCase,
             final Clock clock
     ) {
-        return new ReadMyPageService(queryPort, requireCompletedOnboardingUseCase, clock);
+        return new ReadMyPageService(queryPort, requireCompletedOnboardingUseCase, readOnboardingStatusUseCase, clock);
     }
 
     @Bean

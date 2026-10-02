@@ -42,6 +42,14 @@ class CompleteCompanionProfileOnboardingServiceTest {
 	}
 
 	@Test
+	void completesOnboardingAfterProfileWasSkipped() {
+		userAccountRepository.userAccount = user(UserOnboardingStatus.COMPANION_PROFILE_SKIPPED);
+
+		assertEquals("COMPLETED", service.complete(1L));
+		assertEquals(UserOnboardingStatus.COMPLETED, userAccountRepository.savedUserAccount.onboardingStatus());
+	}
+
+	@Test
 	void rejectsMissingUser() {
 		assertThrows(UserNotFoundException.class, () -> service.complete(1L));
 	}
@@ -72,9 +80,13 @@ class CompleteCompanionProfileOnboardingServiceTest {
 		}
 
 		@Override
+		public Optional<UserAccount> findByIdForUpdate(final Long id) {
+		    return findById(id);
+		}
+
+		@Override
 		public Optional<UserAccount> findById(final Long id) {
 			return Optional.ofNullable(userAccount);
 		}
 	}
 }
-

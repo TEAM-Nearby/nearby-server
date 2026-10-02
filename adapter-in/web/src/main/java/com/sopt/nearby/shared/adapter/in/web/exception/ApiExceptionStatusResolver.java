@@ -41,7 +41,8 @@ public final class ApiExceptionStatusResolver {
         if (errorCode.name().startsWith(FORBIDDEN_PREFIX)) {
             return HttpStatus.FORBIDDEN;
         }
-        if (errorCode.name().equals(ONBOARDING_REQUIRED_CODE)) {
+        if (errorCode.name().equals(ONBOARDING_REQUIRED_CODE)
+                || errorCode.name().equals("COMPANION_PROFILE_REQUIRED")) {
             return HttpStatus.FORBIDDEN;
         }
         if (errorCode.name().equals(UNAUTHORIZED_CODE)

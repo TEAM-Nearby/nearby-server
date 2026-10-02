@@ -8,6 +8,7 @@ import com.sopt.nearby.user.adapter.out.persistence.repository.UserAccountJpaRep
 import com.sopt.nearby.user.domain.model.UserAccount;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.util.function.Function;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -15,7 +16,15 @@ public class UserAccountRepositoryAdapter
 		extends SimpleJpaRepositoryAdapter<UserAccount, Long, UserAccountEntity, Long>
 		implements UserAccountRepository {
 
+	private final UserAccountJpaRepository jpaRepository;
+
 	public UserAccountRepositoryAdapter(final UserAccountJpaRepository jpaRepository) {
 		super(jpaRepository, UserPersistenceMapper::toEntity, UserPersistenceMapper::toDomain, Function.identity());
+		this.jpaRepository = jpaRepository;
+	}
+
+	@Override
+	public Optional<UserAccount> findByIdForUpdate(final Long id) {
+		return jpaRepository.findByIdForUpdate(id).map(UserPersistenceMapper::toDomain);
 	}
 }

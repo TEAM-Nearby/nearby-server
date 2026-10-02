@@ -13,7 +13,9 @@ import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.out.MyPageQueryPort;
 import com.sopt.nearby.user.exception.OnboardingRequiredException;
+import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
+import com.sopt.nearby.user.port.in.ReadOnboardingStatusUseCase;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -29,14 +31,17 @@ class ReadMyPageServiceTest {
     private FakeMyPageQueryPort queryPort;
     private FakeRequireCompletedOnboardingUseCase onboardingUseCase;
     private ReadMyPageService service;
+    private ReadOnboardingStatusUseCase.Status onboardingStatus;
 
     @BeforeEach
     void setUp() {
         queryPort = new FakeMyPageQueryPort();
         onboardingUseCase = new FakeRequireCompletedOnboardingUseCase();
+        onboardingStatus = new ReadOnboardingStatusUseCase.Status(UserOnboardingStatus.COMPLETED, true, true, false);
         service = new ReadMyPageService(
                 queryPort,
                 onboardingUseCase,
+                userId -> onboardingStatus,
                 Clock.fixed(Instant.parse("2026-07-09T00:00:00Z"), ZoneOffset.UTC)
         );
     }
@@ -71,6 +76,23 @@ class ReadMyPageServiceTest {
         assertEquals(5, result.mealTogetherCount());
         assertEquals(2, result.visitedCityCount());
         assertEquals(12, result.receivedReviewCount());
+    }
+
+    @Test
+    void returnsEmptyMyPageForUserWhoSkippedProfile() {
+        onboardingStatus = new ReadOnboardingStatusUseCase.Status(
+                UserOnboardingStatus.COMPANION_PROFILE_SKIPPED, true, false, false);
+
+        ReadMyPageResult result = service.read(7L);
+
+        assertEquals(false, result.hasCompanionProfile());
+        assertEquals(true, result.phoneVerified());
+        assertNull(result.nickname());
+        assertNull(result.gender());
+        assertNull(result.mannerScore());
+        assertEquals(List.of(), result.travelStyleKeywords());
+        assertEquals(0, result.mealTogetherCount());
+        assertNull(queryPort.userId);
     }
 
     @Test

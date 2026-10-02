@@ -19,7 +19,8 @@ public interface MyPageApi {
     })
     @Operation(
             summary = "마이페이지 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자의 마이페이지 정보를 조회합니다.",
+            description = "인증된 사용자의 마이페이지를 조회합니다. 프로필을 건너뛴 경우 hasCompanionProfile은 false이고, "
+                    + "프로필 정보는 null, 활동 목록은 빈 배열, 집계는 0입니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<MyPageResponse> getMyPage(

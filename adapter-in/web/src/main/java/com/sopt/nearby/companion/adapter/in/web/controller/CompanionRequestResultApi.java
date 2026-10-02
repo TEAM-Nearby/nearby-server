@@ -6,6 +6,7 @@ import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundExceptio
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestResultNotReadableException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestResultNotReadyException;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileRequiredException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,6 +19,7 @@ import java.security.Principal;
 public interface CompanionRequestResultApi {
 
     @ApiExceptions({
+            CompanionProfileRequiredException.class,
             CompanionRequestNotFoundException.class,
             CompanionRequestResultNotReadyException.class,
             CompanionRequestResultNotReadableException.class,

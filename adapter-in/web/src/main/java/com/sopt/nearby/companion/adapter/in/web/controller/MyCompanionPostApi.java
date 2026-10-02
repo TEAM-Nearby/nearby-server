@@ -2,7 +2,9 @@
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
 import com.sopt.nearby.companion.adapter.in.web.dto.response.MyCompanionPostsResponse;
+import com.sopt.nearby.companion.domain.exception.CompanionProfileRequiredException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
+import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -12,6 +14,7 @@ import java.security.Principal;
 @Tag(name = "MyCompanionPost", description = "내 동행 모집글 API")
 public interface MyCompanionPostApi {
 
+	@ApiExceptions({CompanionProfileRequiredException.class})
 	@Operation(
 			summary = "내가 작성한 동행 모집글 목록 조회",
 				description = """
