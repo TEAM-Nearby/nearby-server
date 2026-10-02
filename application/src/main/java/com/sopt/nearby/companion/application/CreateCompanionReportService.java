@@ -33,6 +33,8 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 public class CreateCompanionReportService implements CreateCompanionReportUseCase {
 
@@ -105,7 +107,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 				new CompanionReportReason(savedReport.id(), reason)
 		));
 
-		mailSender.send(new CompanionReportMail(
+		CompanionReportMail mail = new CompanionReportMail(
 				savedReport,
 				List.copyOf(command.reasons()),
 				mailContext.reporterNickname(),
@@ -117,9 +119,23 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 				mailContext.scheduledAt(),
 				mailContext.meetingTimeType(),
 				mailContext.placeAddress()
-		));
+		);
+		sendMailAfterCommit(mail);
 
 		return new CreateCompanionReportResult(meeting.id(), savedReport.id(), savedReport.createdAt());
+	}
+
+	private void sendMailAfterCommit(final CompanionReportMail mail) {
+		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+			mailSender.send(mail);
+			return;
+		}
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCommit() {
+				mailSender.send(mail);
+			}
+		});
 	}
 
 	private void validateCommand(final CreateCompanionReportCommand command) {
