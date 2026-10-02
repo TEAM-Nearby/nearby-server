@@ -19,6 +19,8 @@ public enum CompanionSuccessCode implements SuccessCode {
     PROFILE_IMAGE_UPLOAD_URL_ISSUED("Presigned URL 발급에 성공했습니다."),
     COMPANION_PROFILE_CREATED("동행 프로필 등록이 완료되었습니다."),
     COMPANION_PROFILE_FOUND("동행 프로필 조회에 성공했어요."),
+    MY_COMPANION_PROFILE_FOUND("내 동행 프로필을 조회했어요."),
+    COMPANION_PROFILE_UPDATED("동행 프로필이 수정되었어요."),
     READ_MY_PAGE("마이페이지 정보를 조회했어요."),
     READ_COMPANION_REQUESTS("동행 요청 목록을 조회했어요."),
     MARK_COMPANION_NOTIFICATION_AS_READ("동행 알림을 읽음 처리했어요."),

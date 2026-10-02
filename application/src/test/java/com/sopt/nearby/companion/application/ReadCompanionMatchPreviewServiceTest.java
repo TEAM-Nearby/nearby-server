@@ -395,6 +395,11 @@ class ReadCompanionMatchPreviewServiceTest {
         private final Map<Long, CompanionProfile> profiles = new HashMap<>();
 
         @Override
+        public Optional<CompanionProfile> findByUserIdForUpdate(final Long userId) {
+            return findByUserId(userId);
+        }
+
+        @Override
         public CompanionProfile save(final CompanionProfile model) {
             profiles.put(model.id(), model);
             return model;
