@@ -13,6 +13,14 @@ spring:
       port: ${SPRING_DATA_REDIS_PORT:6379}
       ssl:
         enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_APP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 
 server:
   forward-headers-strategy: framework
@@ -55,6 +63,9 @@ nearby:
       api-key: ${SOLAPI_API_KEY:}
       api-secret: ${SOLAPI_API_SECRET:}
       from-number: ${SOLAPI_FROM_NUMBER:}
+  report:
+    mail:
+      to: ${REPORT_MAIL_TO:nearbytravel11@gmail.com}
   place:
     default-image-url: ${NEARBY_PLACE_DEFAULT_IMAGE_URL:https://nearby.sopt.org/images/default-place.png}
   google:

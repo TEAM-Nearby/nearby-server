@@ -18,5 +18,21 @@ public class CompanionReportRepositoryAdapter
 	public CompanionReportRepositoryAdapter(final CompanionReportJpaRepository jpaRepository) {
 		super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
 				Function.identity());
+		this.jpaRepository = jpaRepository;
+	}
+
+	private final CompanionReportJpaRepository jpaRepository;
+
+	@Override
+	public boolean existsByMeetingIdAndReporterUserIdAndReportedUserId(
+			final Long meetingId,
+			final Long reporterUserId,
+			final Long reportedUserId
+	) {
+		return jpaRepository.existsByMeetingIdAndReporterUserIdAndReportedUserId(
+				meetingId,
+				reporterUserId,
+				reportedUserId
+		);
 	}
 }
