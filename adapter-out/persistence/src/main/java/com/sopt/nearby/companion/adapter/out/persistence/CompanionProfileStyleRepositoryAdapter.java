@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPro
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStyle;
 import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
+import java.util.List;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -16,8 +17,22 @@ public class CompanionProfileStyleRepositoryAdapter
 				CompanionProfileStyleEntity, CompanionProfileStyleEntityId>
 		implements CompanionProfileStyleRepository {
 
+	private final CompanionProfileStyleJpaRepository jpaRepository;
+
 	public CompanionProfileStyleRepositoryAdapter(final CompanionProfileStyleJpaRepository jpaRepository) {
 		super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
 				CompanionPersistenceMapper::toEntityId);
+		this.jpaRepository = jpaRepository;
+	}
+
+	@Override
+	public List<CompanionProfileStyle> findAllByProfileId(final Long profileId) {
+		return jpaRepository.findAllByProfileIdOrderByKeyword(profileId).stream()
+				.map(CompanionPersistenceMapper::toDomain).toList();
+	}
+
+	@Override
+	public void deleteAllByProfileId(final Long profileId) {
+		jpaRepository.deleteAllByProfileId(profileId);
 	}
 }

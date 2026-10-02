@@ -14,4 +14,6 @@ public interface CompanionProfileRepository extends DomainRepository<CompanionPr
     boolean existsByUserId(Long userId);
 
     Optional<CompanionProfile> findByUserId(Long userId);
+
+    Optional<CompanionProfile> findByUserIdForUpdate(Long userId);
 }

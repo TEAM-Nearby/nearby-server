@@ -62,6 +62,11 @@ public class CompanionProfileRepositoryAdapter
 		return jpaRepository.findByUserId(userId).map(CompanionPersistenceMapper::toDomain);
 	}
 
+	@Override
+	public Optional<CompanionProfile> findByUserIdForUpdate(final Long userId) {
+		return jpaRepository.findByUserIdForUpdate(userId).map(CompanionPersistenceMapper::toDomain);
+	}
+
 	private RuntimeException mapUniqueConstraintViolation(final DataIntegrityViolationException exception) {
 		String normalizedConstraint = constraintMessage(exception).toLowerCase();
 		if (normalizedConstraint.contains("companion_profile_nickname")) {

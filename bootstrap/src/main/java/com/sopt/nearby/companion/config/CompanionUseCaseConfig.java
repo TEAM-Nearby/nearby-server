@@ -30,6 +30,7 @@ import com.sopt.nearby.companion.application.ReadCompanionPostsService;
 import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
 import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
 import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
+import com.sopt.nearby.companion.application.MyCompanionProfileService;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
@@ -270,6 +271,15 @@ public class CompanionUseCaseConfig {
                 companionProfileStyleRepository,
                 completeOnboardingUseCase
         );
+    }
+
+    @Bean
+    MyCompanionProfileService myCompanionProfileService(
+            final CompanionProfileRepository profiles,
+            final CompanionProfileStyleRepository styles,
+            final RequireCompletedOnboardingUseCase onboarding
+    ) {
+        return new MyCompanionProfileService(profiles, styles, onboarding);
     }
 
     @Bean

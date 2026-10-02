@@ -175,6 +175,11 @@ class RegisterCompanionProfileServiceTest {
 		public Optional<CompanionProfile> findByUserId(final Long userId) {
 			return Optional.empty();
 		}
+
+		@Override
+		public Optional<CompanionProfile> findByUserIdForUpdate(final Long userId) {
+			return findByUserId(userId);
+		}
 	}
 
 	static class FakeCompanionProfileStyleRepository implements CompanionProfileStyleRepository {
@@ -190,6 +195,16 @@ class RegisterCompanionProfileServiceTest {
 		@Override
 		public Optional<CompanionProfileStyle> findById(final CompanionProfileStyle.Key key) {
 			return Optional.empty();
+		}
+
+		@Override
+		public List<CompanionProfileStyle> findAllByProfileId(final Long profileId) {
+			return savedStyles.stream().filter(style -> style.profileId().equals(profileId)).toList();
+		}
+
+		@Override
+		public void deleteAllByProfileId(final Long profileId) {
+			savedStyles.removeIf(style -> style.profileId().equals(profileId));
 		}
 	}
 
