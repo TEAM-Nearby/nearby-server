@@ -63,7 +63,17 @@ public enum CompanionErrorCode implements ErrorCode {
     COMPANION_REVIEW_MEETING_ALREADY_CANCELED("취소된 동행에는 후기를 남길 수 없습니다."),
     COMPANION_REVIEW_ALREADY_EXISTS("이미 해당 사용자에게 후기를 남겼습니다."),
     CURRENT_USER_NOT_CHECKED_IN("만남 인증을 완료한 후 후기를 남길 수 있습니다."),
-    REVIEWEE_NOT_CHECKED_IN("만남 인증을 완료한 사용자에게만 후기를 남길 수 있습니다.");
+    REVIEWEE_NOT_CHECKED_IN("만남 인증을 완료한 사용자에게만 후기를 남길 수 있습니다."),
+    INVALID_COMPANION_REPORT_REQUEST("올바르지 않은 신고 요청입니다."),
+    INVALID_COMPANION_REPORT_REASON("올바르지 않은 신고 사유입니다."),
+    FORBIDDEN_COMPANION_REPORT("해당 동행의 참여자만 신고할 수 있습니다."),
+    COMPANION_REPORT_MEETING_NOT_ONGOING("동행 중인 상태에서만 신고할 수 있습니다."),
+    COMPANION_REPORT_CURRENT_USER_NOT_CHECKED_IN("만남 인증을 완료한 후 신고할 수 있습니다."),
+    COMPANION_REPORT_CURRENT_USER_ALREADY_COMPLETED("동행 마치기 전에만 신고할 수 있습니다."),
+    COMPANION_REPORT_TARGET_NOT_FOUND("신고 대상 사용자를 찾을 수 없습니다."),
+    COMPANION_REPORT_SELF_NOT_ALLOWED("자기 자신을 신고할 수 없습니다."),
+    COMPANION_REPORT_ALREADY_EXISTS("이미 해당 사용자를 신고했습니다."),
+    COMPANION_REPORT_CONTEXT_NOT_FOUND("신고 보고서에 필요한 동행 정보를 찾을 수 없습니다.");
 
     private final String message;
 

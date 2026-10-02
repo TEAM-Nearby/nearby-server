@@ -5,4 +5,10 @@ import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionReportE
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CompanionReportJpaRepository extends JpaRepository<CompanionReportEntity, Long> {
+
+	boolean existsByMeetingIdAndReporterUserIdAndReportedUserId(
+			Long meetingId,
+			Long reporterUserId,
+			Long reportedUserId
+	);
 }

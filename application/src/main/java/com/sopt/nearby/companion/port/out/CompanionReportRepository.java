@@ -5,4 +5,10 @@ import com.sopt.nearby.common.port.DomainRepository;
 import com.sopt.nearby.companion.domain.model.report.CompanionReport;
 
 public interface CompanionReportRepository extends DomainRepository<CompanionReport, Long> {
+
+	boolean existsByMeetingIdAndReporterUserIdAndReportedUserId(
+			Long meetingId,
+			Long reporterUserId,
+			Long reportedUserId
+	);
 }

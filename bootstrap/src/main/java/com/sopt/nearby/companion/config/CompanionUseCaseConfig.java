@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.config;
 import com.sopt.nearby.companion.application.CreateCompanionPostService;
 import com.sopt.nearby.companion.application.CreateCompanionRequestService;
 import com.sopt.nearby.companion.application.CreateCompanionReviewsService;
+import com.sopt.nearby.companion.application.CreateCompanionReportService;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingService;
 import com.sopt.nearby.companion.application.CompleteCompanionMeetingService;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
@@ -32,6 +33,7 @@ import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
 import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionReportUseCase;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.CompleteCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
@@ -78,6 +80,10 @@ import com.sopt.nearby.companion.port.out.CompanionRequestReviewQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionReviewKeywordRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
 import com.sopt.nearby.companion.port.out.CompanionReviewTargetQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionReportRepository;
+import com.sopt.nearby.companion.port.out.CompanionReportReasonRepository;
+import com.sopt.nearby.companion.port.out.CompanionReportMailSender;
+import com.sopt.nearby.companion.port.out.CompanionReportMailContextQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
 import com.sopt.nearby.companion.port.out.MyCompanionPostQueryPort;
@@ -431,6 +437,29 @@ public class CompanionUseCaseConfig {
                 matchRepository,
                 participantRepository,
                 checkInRepository,
+                clock
+        );
+    }
+
+    @Bean
+    CreateCompanionReportUseCase createCompanionReportUseCase(
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final MeetingCheckInRepository checkInRepository,
+            final CompanionReportRepository reportRepository,
+            final CompanionReportReasonRepository reportReasonRepository,
+            final CompanionReportMailContextQueryPort mailContextQueryPort,
+            final CompanionReportMailSender mailSender,
+            final Clock clock
+    ) {
+        return new CreateCompanionReportService(
+                meetingRepository,
+                participantRepository,
+                checkInRepository,
+                reportRepository,
+                reportReasonRepository,
+                mailContextQueryPort,
+                mailSender,
                 clock
         );
     }
