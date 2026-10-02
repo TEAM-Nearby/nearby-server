@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.report.ReportReason;
 import com.sopt.nearby.companion.port.out.CompanionReportMail;
 import java.time.ZoneId;
@@ -37,7 +38,7 @@ public final class CompanionReportMailFormatter {
 	}
 
 	public static String body(final CompanionReportMail mail) {
-		String placeTime = formatPlaceDateTime(mail.scheduledAt(), mail.placeAddress());
+		String placeTime = formatPlaceDateTime(mail.scheduledAt(), mail.meetingTimeType(), mail.placeAddress());
 		String reasons = mail.reasons().stream()
 				.map(CompanionReportMailFormatter::reasonLabel)
 				.reduce((left, right) -> left + ", " + right)
@@ -64,7 +65,7 @@ public final class CompanionReportMailFormatter {
 	}
 
 	public static String htmlBody(final CompanionReportMail mail) {
-		String placeTime = formatPlaceDateTime(mail.scheduledAt(), mail.placeAddress());
+		String placeTime = formatPlaceDateTime(mail.scheduledAt(), mail.meetingTimeType(), mail.placeAddress());
 		String reasons = mail.reasons().stream()
 				.map(CompanionReportMailFormatter::reasonLabel)
 				.reduce((left, right) -> left + ", " + right)
@@ -125,6 +126,7 @@ public final class CompanionReportMailFormatter {
 
 	private static String formatPlaceDateTime(
 			final java.time.LocalDateTime value,
+			final CompanionPostMeetingTimeType meetingTimeType,
 			final String placeAddress
 	) {
 		ZoneId placeZone = CompanionPlaceCityNameResolver.resolveSupportedCity(placeAddress)
@@ -133,8 +135,21 @@ public final class CompanionReportMailFormatter {
 		String cityName = CompanionPlaceCityNameResolver.resolveSupportedCity(placeAddress)
 				.map(CompanionCity::displayName)
 				.orElse("도시 미정");
-		return formatUtcLocalDateTime(value, placeZone, CITY_DATE_TIME_FORMATTER)
+		String formattedDateTime = CompanionPostMeetingTimeType.NOW.equals(meetingTimeType)
+				? formatUtcLocalDateTime(value, placeZone, CITY_DATE_TIME_FORMATTER)
+				: formatLocalDateTime(value, CITY_DATE_TIME_FORMATTER);
+		return formattedDateTime
 				+ " (" + cityName + ")";
+	}
+
+	private static String formatLocalDateTime(
+			final java.time.LocalDateTime value,
+			final DateTimeFormatter formatter
+	) {
+		if (value == null) {
+			return "미등록";
+		}
+		return value.format(formatter);
 	}
 
 	private static String formatUtcLocalDateTime(

@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReportMailContextProjection;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionReportMailContextQueryJpaRepository;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.port.out.CompanionReportMailContext;
 import com.sopt.nearby.companion.port.out.CompanionReportMailContextQueryPort;
 import java.util.Optional;
@@ -38,6 +39,7 @@ public class CompanionReportMailContextQueryAdapter implements CompanionReportMa
 				row.getCompanionPostId(),
 				row.getCompanionPostContent(),
 				row.getScheduledAt(),
+				CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
 				row.getPlaceAddress()
 		);
 	}

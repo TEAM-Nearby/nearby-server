@@ -19,5 +19,7 @@ public interface CompanionReportMailContextProjection {
 
 	LocalDateTime getScheduledAt();
 
+	String getMeetingTimeType();
+
 	String getPlaceAddress();
 }

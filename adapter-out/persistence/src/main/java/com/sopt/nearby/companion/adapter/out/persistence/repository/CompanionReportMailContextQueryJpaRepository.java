@@ -18,6 +18,7 @@ public interface CompanionReportMailContextQueryJpaRepository extends Repository
 				post.id as companionPostId,
 				post.content as companionPostContent,
 				schedule.scheduled_at as scheduledAt,
+				post.meeting_time_type as meetingTimeType,
 				place.address as placeAddress
 			from companion_meeting meeting
 			join companion_match m

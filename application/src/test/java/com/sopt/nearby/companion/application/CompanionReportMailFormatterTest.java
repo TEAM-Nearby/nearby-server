@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sopt.nearby.companion.domain.model.report.CompanionReport;
 import com.sopt.nearby.companion.domain.model.report.ReportReason;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.port.out.CompanionReportMail;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,8 +39,15 @@ class CompanionReportMailFormatterTest {
 	}
 
 	@Test
-	void formatsScheduledTimeWithCityNameInsteadOfTimezone() {
-		CompanionReportMail mail = mail("동행 본문");
+	void formatsScheduledTimeDirectlyWithCityName() {
+		CompanionReportMail mail = mail("동행 본문", "Paris, France", CompanionPostMeetingTimeType.SCHEDULED);
+
+		assertTrue(CompanionReportMailFormatter.body(mail).contains("2026-10-02 00:00:00 (Paris)"));
+	}
+
+	@Test
+	void convertsNowTimeToPlaceTimezoneWithCityName() {
+		CompanionReportMail mail = mail("동행 본문", "Paris, France", CompanionPostMeetingTimeType.NOW);
 
 		assertTrue(CompanionReportMailFormatter.body(mail).contains("2026-10-02 02:00:00 (Paris)"));
 	}
@@ -62,10 +70,18 @@ class CompanionReportMailFormatterTest {
 	}
 
 	private CompanionReportMail mail(final String content) {
-		return mail(content, "Paris, France");
+		return mail(content, "Paris, France", CompanionPostMeetingTimeType.SCHEDULED);
 	}
 
 	private CompanionReportMail mail(final String content, final String placeAddress) {
+		return mail(content, placeAddress, CompanionPostMeetingTimeType.SCHEDULED);
+	}
+
+	private CompanionReportMail mail(
+			final String content,
+			final String placeAddress,
+			final CompanionPostMeetingTimeType meetingTimeType
+	) {
 		return new CompanionReportMail(
 				new CompanionReport(
 						1L,
@@ -83,6 +99,7 @@ class CompanionReportMailFormatterTest {
 				5L,
 				content,
 				LocalDateTime.of(2026, 10, 2, 0, 0),
+				meetingTimeType,
 				placeAddress
 		);
 	}

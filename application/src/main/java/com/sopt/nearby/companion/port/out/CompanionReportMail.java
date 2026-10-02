@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.port.out;
 
 import com.sopt.nearby.companion.domain.model.report.CompanionReport;
 import com.sopt.nearby.companion.domain.model.report.ReportReason;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,6 +17,7 @@ public record CompanionReportMail(
 		Long companionPostId,
 		String companionPostContent,
 		LocalDateTime scheduledAt,
+		CompanionPostMeetingTimeType meetingTimeType,
 		String placeAddress
 ) {
 }

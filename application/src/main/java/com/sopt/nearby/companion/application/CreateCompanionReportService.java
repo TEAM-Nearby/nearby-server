@@ -115,6 +115,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 				mailContext.companionPostId(),
 				mailContext.companionPostContent(),
 				mailContext.scheduledAt(),
+				mailContext.meetingTimeType(),
 				mailContext.placeAddress()
 		));
 
