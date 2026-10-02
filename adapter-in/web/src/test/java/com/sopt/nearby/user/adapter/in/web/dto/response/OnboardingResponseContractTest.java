@@ -1,4 +1,4 @@
-// 소셜 로그인 응답에서 온보딩 완료와 프로필 등록 여부를 구분하는지 검증한다.
+// 로그인과 온보딩 조회 응답의 공개 상태 및 프로필 등록 여부 계약을 검증한다.
 package com.sopt.nearby.user.adapter.in.web.dto.response;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -6,10 +6,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.sopt.nearby.user.application.AppleLoginResult;
 import com.sopt.nearby.user.application.KakaoLoginResult;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
+import com.sopt.nearby.user.port.in.ReadOnboardingStatusUseCase;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-class LoginOnboardingResponseTest {
+class OnboardingResponseContractTest {
     @ParameterizedTest
     @CsvSource({
             "STARTED, STARTED, false",
@@ -26,10 +27,14 @@ class LoginOnboardingResponseTest {
                 "access", "refresh", "Bearer", 3600, 1209600, 1L, storedStatus));
         var kakao = KakaoLoginResponse.from(new KakaoLoginResult(
                 "access", "refresh", "Bearer", 3600, 1209600, 1L, storedStatus));
+        var onboarding = OnboardingStatusResponse.from(new ReadOnboardingStatusUseCase.Status(
+                storedStatus, true, hasProfile, false));
 
         assertThat(apple.onboardingStatus()).isEqualTo(apiStatus);
         assertThat(kakao.onboardingStatus()).isEqualTo(apiStatus);
+        assertThat(onboarding.onboardingStatus()).isEqualTo(apiStatus);
         assertThat(apple.hasCompanionProfile()).isEqualTo(hasProfile);
         assertThat(kakao.hasCompanionProfile()).isEqualTo(hasProfile);
+        assertThat(onboarding.hasCompanionProfile()).isEqualTo(hasProfile);
     }
 }

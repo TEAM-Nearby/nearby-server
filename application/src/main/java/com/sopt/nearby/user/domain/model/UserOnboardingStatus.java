@@ -16,11 +16,4 @@ public enum UserOnboardingStatus {
 	public boolean hasCompanionProfile() {
 		return this == COMPLETED || this == COMPANION_PROFILE_COMPLETED;
 	}
-
-	public String apiStatus() {
-		if (isCompleted()) {
-			return COMPLETED.name();
-		}
-		return this == PHONE_VERIFIED ? PHONE_VERIFIED.name() : STARTED.name();
-	}
 }

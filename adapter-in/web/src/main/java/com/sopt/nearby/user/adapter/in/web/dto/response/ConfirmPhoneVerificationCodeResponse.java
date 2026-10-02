@@ -16,6 +16,7 @@ public record ConfirmPhoneVerificationCodeResponse(
 ) {
 
 	public static ConfirmPhoneVerificationCodeResponse from(final ConfirmPhoneVerificationCodeResult result) {
-		return new ConfirmPhoneVerificationCodeResponse(result.phoneVerified(), result.onboardingStatus().apiStatus());
+		return new ConfirmPhoneVerificationCodeResponse(
+				result.phoneVerified(), OnboardingStatusMapper.toApiStatus(result.onboardingStatus()));
 	}
 }

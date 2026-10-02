@@ -11,7 +11,7 @@ public record OnboardingStatusResponse(
         @Schema(description = "선택 사항인 비상 연락망 등록 여부") boolean hasEmergencyContact
 ) {
     public static OnboardingStatusResponse from(final ReadOnboardingStatusUseCase.Status status) {
-        return new OnboardingStatusResponse(status.onboardingStatus(), status.phoneVerified(),
+        return new OnboardingStatusResponse(OnboardingStatusMapper.toApiStatus(status.onboardingStatus()), status.phoneVerified(),
                 status.hasCompanionProfile(), status.hasEmergencyContact());
     }
 }

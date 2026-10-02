@@ -45,7 +45,7 @@ public class UserOnboardingService implements ReadOnboardingStatusUseCase, SkipC
     }
 
     private Status status(final UserAccount user) {
-        return new Status(user.onboardingStatus().apiStatus(), user.phoneVerifiedAt() != null,
+        return new Status(user.onboardingStatus(), user.phoneVerifiedAt() != null,
                 user.onboardingStatus().hasCompanionProfile(), contacts.findByUserId(user.id()).isPresent());
     }
 }

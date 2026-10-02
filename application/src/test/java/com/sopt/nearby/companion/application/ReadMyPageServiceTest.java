@@ -13,6 +13,7 @@ import com.sopt.nearby.companion.domain.model.review.ReviewKeyword;
 import com.sopt.nearby.companion.domain.model.style.TravelStyleKeyword;
 import com.sopt.nearby.companion.port.out.MyPageQueryPort;
 import com.sopt.nearby.user.exception.OnboardingRequiredException;
+import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import com.sopt.nearby.user.port.in.ReadOnboardingStatusUseCase;
 import java.math.BigDecimal;
@@ -36,7 +37,7 @@ class ReadMyPageServiceTest {
     void setUp() {
         queryPort = new FakeMyPageQueryPort();
         onboardingUseCase = new FakeRequireCompletedOnboardingUseCase();
-        onboardingStatus = new ReadOnboardingStatusUseCase.Status("COMPLETED", true, true, false);
+        onboardingStatus = new ReadOnboardingStatusUseCase.Status(UserOnboardingStatus.COMPLETED, true, true, false);
         service = new ReadMyPageService(
                 queryPort,
                 onboardingUseCase,
@@ -79,7 +80,8 @@ class ReadMyPageServiceTest {
 
     @Test
     void returnsEmptyMyPageForUserWhoSkippedProfile() {
-        onboardingStatus = new ReadOnboardingStatusUseCase.Status("COMPLETED", true, false, false);
+        onboardingStatus = new ReadOnboardingStatusUseCase.Status(
+                UserOnboardingStatus.COMPANION_PROFILE_SKIPPED, true, false, false);
 
         ReadMyPageResult result = service.read(7L);
 

@@ -74,6 +74,7 @@ class OnboardingFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.hasCompanionProfile").value(false));
         assertThat(profiles.findByUserId(id)).isEmpty();
+        assertThat(skipProfile.skip(id).onboardingStatus()).isEqualTo(UserOnboardingStatus.COMPANION_PROFILE_SKIPPED);
 
         mvc.perform(get("/api/onboarding").with(authentication))
                 .andExpect(status().isOk())

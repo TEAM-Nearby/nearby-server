@@ -38,7 +38,7 @@ public record KakaoLoginResponse(
 				result.accessTokenExpiresIn(),
 				result.refreshTokenExpiresIn(),
 				result.userId(),
-				result.onboardingStatus().apiStatus(),
+				OnboardingStatusMapper.toApiStatus(result.onboardingStatus()),
 				result.onboardingStatus().hasCompanionProfile()
 		);
 	}
