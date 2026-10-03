@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSum
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingProgressStatus;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
 import java.time.Clock;
@@ -28,22 +29,42 @@ public class ReadOngoingCompanionMeetingsService implements ReadOngoingCompanion
     @Override
     public List<OngoingCompanionMeetingSummary> getOngoingMeetings(final Long userId) {
         final Instant now = clock.instant();
-        final LocalDateTime currentTime = LocalDateTime.ofInstant(now, clock.getZone());
         return queryPort.findAllByParticipantUserId(userId)
                 .stream()
-                .filter(summary -> !isExpiredWithoutCheckIn(summary, currentTime))
+                .filter(summary -> !isExpiredWithoutCheckIn(summary, now))
                 .map(summary -> withCurrentLocalTime(summary, now))
                 .toList();
     }
 
     private boolean isExpiredWithoutCheckIn(
             final OngoingCompanionMeetingSummary summary,
-            final LocalDateTime currentTime
+            final Instant now
     ) {
+        final LocalDateTime currentTime = currentTimeForExpiry(summary, now);
         return !summary.checkedIn()
                 && summary.progressStatus() == CompanionMeetingProgressStatus.ONGOING
                 && summary.meetingAt() != null
+                && currentTime != null
                 && currentTime.isAfter(summary.meetingAt().plusHours(1));
+    }
+
+    private LocalDateTime currentTimeForExpiry(
+            final OngoingCompanionMeetingSummary summary,
+            final Instant now
+    ) {
+        if (summary.meetingTimeType() == CompanionPostMeetingTimeType.NOW) {
+            return LocalDateTime.ofInstant(now, clock.getZone());
+        }
+        if (summary.meetingTimeType() == CompanionPostMeetingTimeType.SCHEDULED) {
+            final ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+                    summary.placeAddress(),
+                    now
+            );
+            return cityTime.currentLocalTime() == null
+                    ? null
+                    : cityTime.currentLocalTime().toLocalDateTime();
+        }
+        return null;
     }
 
     private OngoingCompanionMeetingSummary withCurrentLocalTime(
