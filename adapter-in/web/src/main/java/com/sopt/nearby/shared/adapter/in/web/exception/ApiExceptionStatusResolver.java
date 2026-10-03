@@ -61,6 +61,15 @@ public final class ApiExceptionStatusResolver {
         if (errorCode.name().equals(COMPANION_POST_EXPIRED_CODE)) {
             return HttpStatus.GONE;
         }
+        if (errorCode.name().equals("PLACE_SEARCH_FAILED")) {
+            return HttpStatus.BAD_GATEWAY;
+        }
+        if (errorCode.name().equals("PLACE_SEARCH_RATE_LIMITED")) {
+            return HttpStatus.SERVICE_UNAVAILABLE;
+        }
+        if (errorCode.name().equals("PLACE_SEARCH_TIMEOUT")) {
+            return HttpStatus.GATEWAY_TIMEOUT;
+        }
 
         return HttpStatus.BAD_REQUEST;
     }

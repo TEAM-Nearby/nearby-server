@@ -7,6 +7,9 @@ import com.sopt.nearby.place.application.ReadSoloDiningPlacesService;
 import com.sopt.nearby.place.application.ManageSoloDiningFavoriteService;
 import com.sopt.nearby.place.application.ResolvePlaceCacheService;
 import com.sopt.nearby.place.application.ResolvePlaceImageService;
+import com.sopt.nearby.place.application.SearchPlacesService;
+import com.sopt.nearby.place.port.in.SearchPlacesUseCase;
+import com.sopt.nearby.place.port.out.PlaceTextSearchPort;
 import com.sopt.nearby.place.port.in.ManageSoloDiningFavoriteUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningFavoritesUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
@@ -26,6 +29,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class PlaceUseCaseConfig {
+
+    @Bean
+    SearchPlacesUseCase searchPlacesUseCase(final PlaceTextSearchPort searchPort) {
+        return new SearchPlacesService(searchPort);
+    }
 
     @Bean
     ResolvePlaceCacheUseCase resolvePlaceCacheUseCase(
