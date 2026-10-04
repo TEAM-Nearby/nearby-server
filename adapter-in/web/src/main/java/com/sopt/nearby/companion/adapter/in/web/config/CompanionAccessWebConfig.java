@@ -30,6 +30,7 @@ public class CompanionAccessWebConfig implements WebMvcConfigurer {
                 return true;
             }
         }).addPathPatterns(
+                "/api/companion-places/search",
                 "/api/companion-posts", "/api/companion-posts/**",
                 "/api/companion-profiles", "/api/companion-profiles/**",
                 "/api/companion-requests", "/api/companion-requests/**",
