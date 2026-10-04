@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingProgressStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingHostProfile;
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
@@ -23,7 +24,7 @@ class ReadOngoingCompanionMeetingsServiceTest {
     @Test
     void delegatesToQueryPortWithUserId() {
         FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
-        queryPort.result = List.of(summary());
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 14, 0), false));
         ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
 
         List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
@@ -35,7 +36,115 @@ class ReadOngoingCompanionMeetingsServiceTest {
         assertEquals("2026-07-01T14:00+02:00", result.getFirst().currentLocalTime().toOffsetDateTime().toString());
     }
 
-    private OngoingCompanionMeetingSummary summary() {
+    @Test
+    void excludesUnverifiedMeetingAfterCheckInDeadline() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 10, 59), false));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
+
+        assertEquals(List.of(), result);
+    }
+
+    @Test
+    void keepsUnverifiedScheduledMeetingAtLocalCheckInDeadline() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 13, 0), false));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void keepsUnverifiedMeetingBeforeCheckInDeadline() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 14, 0), false));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void keepsSchedulingMeetingEvenWhenMeetingTimePassed() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(summary(
+                LocalDateTime.of(2026, 7, 1, 10, 59),
+                false,
+                CompanionMeetingProgressStatus.SCHEDULING
+        ));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void keepsMeetingWithoutMeetingTime() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(summary(null, false));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void keepsCheckedInMeetingAfterCheckInDeadline() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 10, 59), true));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void excludesScheduledMeetingUsingPlaceLocalTime() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 12, 0), false));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
+
+        assertEquals(List.of(), result);
+    }
+
+    @Test
+    void keepsNowMeetingUsingServerUtcTime() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(summary(
+                LocalDateTime.of(2026, 7, 1, 11, 0),
+                false,
+                CompanionMeetingProgressStatus.ONGOING,
+                CompanionPostMeetingTimeType.NOW
+        ));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
+
+        assertEquals(1, result.size());
+    }
+
+    private OngoingCompanionMeetingSummary summary(
+            final LocalDateTime meetingAt,
+            final boolean checkedIn
+    ) {
+        return summary(meetingAt, checkedIn, CompanionMeetingProgressStatus.ONGOING);
+    }
+
+    private OngoingCompanionMeetingSummary summary(
+            final LocalDateTime meetingAt,
+            final boolean checkedIn,
+            final CompanionMeetingProgressStatus progressStatus
+    ) {
         return new OngoingCompanionMeetingSummary(
                 1L,
                 10L,
@@ -44,11 +153,33 @@ class ReadOngoingCompanionMeetingsServiceTest {
                 "Calle de Cuchilleros, 17, Madrid, Spain",
                 null,
                 null,
-                LocalDateTime.of(2026, 6, 29, 16, 30),
+                meetingAt,
                 CompanionPostMeetingTimeType.SCHEDULED,
-                false,
+                checkedIn,
                 CompanionMeetingStatus.ONGOING,
-                com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingProgressStatus.ONGOING
+                progressStatus
+        );
+    }
+
+    private OngoingCompanionMeetingSummary summary(
+            final LocalDateTime meetingAt,
+            final boolean checkedIn,
+            final CompanionMeetingProgressStatus progressStatus,
+            final CompanionPostMeetingTimeType meetingTimeType
+    ) {
+        return new OngoingCompanionMeetingSummary(
+                1L,
+                10L,
+                new OngoingCompanionMeetingHostProfile(7L, "https://image.url/profile.png", "정지영", UserGender.FEMALE),
+                "시우다드 콘달",
+                "Calle de Cuchilleros, 17, Madrid, Spain",
+                null,
+                null,
+                meetingAt,
+                meetingTimeType,
+                checkedIn,
+                CompanionMeetingStatus.ONGOING,
+                progressStatus
         );
     }
 
