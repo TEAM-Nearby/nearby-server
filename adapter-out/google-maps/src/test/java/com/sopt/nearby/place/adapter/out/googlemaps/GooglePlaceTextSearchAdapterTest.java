@@ -19,6 +19,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -151,6 +154,69 @@ class GooglePlaceTextSearchAdapterTest {
                 () -> adapter(Duration.ofMillis(100)).search(command("장소", "ko", null)));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"", "{"})
+    void timesOutAndCancelsWhileResponseBodyIsStalled(final String prefix) throws Exception {
+        CountDownLatch headersSent = new CountDownLatch(1);
+        CountDownLatch releaseBody = new CountDownLatch(1);
+        stallResponseBody(prefix, headersSent, releaseBody);
+        HttpClient client = HttpClient.newHttpClient();
+        var adapter = new GooglePlaceTextSearchAdapter(client, mapper, "test-key", uri, Duration.ofSeconds(1));
+        var search = new FutureTask<>(() -> assertThrows(PlaceSearchTimeoutException.class,
+                () -> adapter.search(command("장소", "ko", null))));
+        Thread worker = Thread.ofVirtual().start(search);
+        try {
+            assertTrue(headersSent.await(3, TimeUnit.SECONDS));
+            search.get(3, TimeUnit.SECONDS);
+            client.shutdown();
+            assertTrue(client.awaitTermination(Duration.ofSeconds(2)),
+                    "본문 전송이 멈춰 있어도 시간 초과한 HTTP 요청은 정리되어야 한다.");
+        } finally {
+            releaseBody.countDown();
+            worker.interrupt();
+            worker.join(3000);
+            client.shutdownNow();
+        }
+    }
+
+    @Test
+    void cancelsStalledRequestAndPreservesInterruptFlag() throws Exception {
+        CountDownLatch headersSent = new CountDownLatch(1);
+        CountDownLatch releaseBody = new CountDownLatch(1);
+        stallResponseBody("{", headersSent, releaseBody);
+        HttpClient client = HttpClient.newHttpClient();
+        var adapter = new GooglePlaceTextSearchAdapter(client, mapper, "test-key", uri, Duration.ofSeconds(10));
+        var search = new FutureTask<>(() -> {
+            assertThrows(PlaceSearchFailedException.class, () -> adapter.search(command("장소", "ko", null)));
+            return Thread.currentThread().isInterrupted();
+        });
+        Thread worker = Thread.ofVirtual().start(search);
+        try {
+            assertTrue(headersSent.await(3, TimeUnit.SECONDS));
+            worker.interrupt();
+            assertTrue(search.get(3, TimeUnit.SECONDS));
+            client.shutdown();
+            assertTrue(client.awaitTermination(Duration.ofSeconds(2)),
+                    "인터럽트가 발생한 HTTP 요청은 정리되어야 한다.");
+        } finally {
+            releaseBody.countDown();
+            worker.interrupt();
+            worker.join(3000);
+            client.shutdownNow();
+        }
+    }
+
+    @Test
+    void reportsFailureWhenResponseBodyIsTruncated() {
+        server.createContext("/v1/places:searchText", exchange -> {
+            exchange.sendResponseHeaders(200, 10);
+            exchange.getResponseBody().write("{}".getBytes(StandardCharsets.UTF_8));
+            exchange.close();
+        });
+        assertThrows(PlaceSearchFailedException.class,
+                () -> adapter(Duration.ofSeconds(2)).search(command("장소", "ko", null)));
+    }
+
     @Test
     void failsForMissingKeyWithoutCallingGoogle() {
         var adapter = new GooglePlaceTextSearchAdapter(HttpClient.newHttpClient(), mapper, "", uri, Duration.ofSeconds(1));
@@ -164,6 +230,25 @@ class GooglePlaceTextSearchAdapterTest {
     private SearchPlacesCommand command(final String query, final String language, final String token) {
         return new SearchPlacesCommand(query, new BigDecimal("41.3874"), new BigDecimal("2.1686"),
                 20_000, language, 20, token);
+    }
+
+    private void stallResponseBody(final String prefix, final CountDownLatch headersSent,
+                                   final CountDownLatch releaseBody) {
+        server.createContext("/v1/places:searchText", exchange -> {
+            try {
+                exchange.getRequestBody().readAllBytes();
+                exchange.sendResponseHeaders(200, 2);
+                exchange.getResponseBody().write(prefix.getBytes(StandardCharsets.UTF_8));
+                exchange.getResponseBody().flush();
+                headersSent.countDown();
+                releaseBody.await(10, TimeUnit.SECONDS);
+                exchange.getResponseBody().write("{}".substring(prefix.length()).getBytes(StandardCharsets.UTF_8));
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            } finally {
+                exchange.close();
+            }
+        });
     }
 
     private static void respond(final HttpExchange exchange, final int status, final String body) throws IOException {

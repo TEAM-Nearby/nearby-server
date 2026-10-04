@@ -24,12 +24,18 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class GooglePlaceTextSearchAdapter implements PlaceTextSearchPort {
+    private static final Logger log = LoggerFactory.getLogger(GooglePlaceTextSearchAdapter.class);
     private static final URI SEARCH_URI = URI.create("https://places.googleapis.com/v1/places:searchText");
     private static final String FIELD_MASK = "places.id,places.displayName,places.formattedAddress,"
             + "places.location,places.primaryType,places.types,places.attributions,nextPageToken";
@@ -69,7 +75,10 @@ public class GooglePlaceTextSearchAdapter implements PlaceTextSearchPort {
                     .header("X-Goog-FieldMask", FIELD_MASK)
                     .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(body(command))))
                     .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = send(request);
+            if (response.statusCode() / 100 != 2) {
+                log.warn("Google Places search failed. status={}", response.statusCode());
+            }
             if (response.statusCode() == 429) {
                 throw new PlaceSearchRateLimitedException();
             }
@@ -78,12 +87,37 @@ public class GooglePlaceTextSearchAdapter implements PlaceTextSearchPort {
             }
             return toPage(mapper.readTree(response.body()));
         } catch (HttpTimeoutException exception) {
+            log.warn("Google Places search timed out. type={}", exception.getClass().getSimpleName());
             throw new PlaceSearchTimeoutException();
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+            log.warn("Google Places search interrupted. type={}", exception.getClass().getSimpleName());
             throw new PlaceSearchFailedException();
         } catch (IOException | IllegalArgumentException exception) {
+            log.warn("Google Places search error. type={}", exception.getClass().getSimpleName());
             throw new PlaceSearchFailedException();
+        }
+    }
+
+    private HttpResponse<String> send(final HttpRequest request) throws IOException, InterruptedException {
+        var response = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+        try {
+            return response.get(timeout.toNanos(), TimeUnit.NANOSECONDS);
+        } catch (TimeoutException exception) {
+            response.cancel(true);
+            throw new HttpTimeoutException("Google Places search response timed out");
+        } catch (InterruptedException exception) {
+            response.cancel(true);
+            throw exception;
+        } catch (ExecutionException exception) {
+            Throwable cause = exception.getCause();
+            if (cause instanceof IOException ioException) {
+                throw ioException;
+            }
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new IOException("Google Places search request failed", cause);
         }
     }
 
