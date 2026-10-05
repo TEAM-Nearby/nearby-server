@@ -4,12 +4,14 @@ package com.sopt.nearby.user.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.sopt.nearby.user.domain.model.RefreshToken;
+import com.sopt.nearby.user.domain.model.AppleRefreshToken;
 import com.sopt.nearby.user.domain.model.SocialAccount;
 import com.sopt.nearby.user.domain.model.UserAccount;
 import com.sopt.nearby.user.domain.model.UserAccountStatus;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import com.sopt.nearby.user.port.out.RefreshTokenRepository;
+import com.sopt.nearby.user.port.out.AppleRefreshTokenRepository;
 import com.sopt.nearby.user.port.out.SocialAccountRepository;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.time.Clock;
@@ -38,9 +40,22 @@ class AppleLoginServiceTest {
 		);
 		AtomicReference<String> searchedProvider = new AtomicReference<>();
 		AtomicReference<RefreshToken> savedRefreshToken = new AtomicReference<>();
+		AtomicReference<AppleRefreshToken> savedAppleRefreshToken = new AtomicReference<>();
 
 		AppleLoginService service = new AppleLoginService(
 				(idToken, nonce) -> new VerifiedUser("apple-subject"),
+				new com.sopt.nearby.user.port.out.AppleOAuthClient() {
+					@Override
+					public String exchangeAuthorizationCode(final String authorizationCode) {
+						return "apple-refresh-token";
+					}
+
+					@Override
+					public void revoke(final String refreshToken) {
+						throw new UnsupportedOperationException();
+					}
+				},
+				appleRefreshTokens(savedAppleRefreshToken),
 				request -> new IssuedTokens("access-token", "refresh-token", "refresh-hash", 3600, 1209600),
 				userAccounts(existingUser),
 				socialAccounts(existingUser.id(), searchedProvider),
@@ -48,13 +63,15 @@ class AppleLoginServiceTest {
 				CLOCK
 		);
 
-		AppleLoginResult result = service.login(new AppleLoginCommand("id-token", "nonce"));
+		AppleLoginResult result = service.login(new AppleLoginCommand("id-token", "nonce", "authorization-code"));
 
 		assertEquals("APPLE", searchedProvider.get());
 		assertEquals(existingUser.id(), result.userId());
 		assertEquals("access-token", result.accessToken());
 		assertEquals("refresh-hash", savedRefreshToken.get().tokenHash());
 		assertEquals(LocalDateTime.of(2026, 7, 17, 12, 0), savedRefreshToken.get().expiresAt());
+		assertEquals("apple-refresh-token", savedAppleRefreshToken.get().refreshToken());
+		assertEquals(existingUser.id(), savedAppleRefreshToken.get().userId());
 	}
 
 	private UserAccountRepository userAccounts(final UserAccount existingUser) {
@@ -98,6 +115,38 @@ class AppleLoginServiceTest {
 			) {
 				searchedProvider.set(provider);
 				return Optional.of(new SocialAccount(1L, userId, provider, providerUserId));
+			}
+
+			@Override
+			public java.util.List<SocialAccount> findAllByUserId(final Long ignoredUserId) {
+				return java.util.List.of();
+			}
+
+			@Override
+			public void deleteByUserId(final Long ignoredUserId) {
+				throw new UnsupportedOperationException();
+			}
+		};
+	}
+
+	private AppleRefreshTokenRepository appleRefreshTokens(
+			final AtomicReference<AppleRefreshToken> savedAppleRefreshToken
+	) {
+		return new AppleRefreshTokenRepository() {
+			@Override
+			public AppleRefreshToken save(final AppleRefreshToken token) {
+				savedAppleRefreshToken.set(token);
+				return token;
+			}
+
+			@Override
+			public Optional<AppleRefreshToken> findByUserId(final Long userId) {
+				return Optional.ofNullable(savedAppleRefreshToken.get());
+			}
+
+			@Override
+			public void deleteByUserId(final Long userId) {
+				savedAppleRefreshToken.set(null);
 			}
 		};
 	}

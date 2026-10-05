@@ -240,6 +240,16 @@ class KakaoLoginServiceTest {
 					.filter(account -> account.providerUserId().equals(providerUserId))
 					.findFirst();
 		}
+
+		@Override
+		public java.util.List<SocialAccount> findAllByUserId(final Long userId) {
+			return saved.values().stream().filter(account -> account.userId().equals(userId)).toList();
+		}
+
+		@Override
+		public void deleteByUserId(final Long userId) {
+			saved.values().removeIf(account -> account.userId().equals(userId));
+		}
 	}
 
 	private static final class ConcurrentSocialAccountRepository extends FakeSocialAccountRepository {

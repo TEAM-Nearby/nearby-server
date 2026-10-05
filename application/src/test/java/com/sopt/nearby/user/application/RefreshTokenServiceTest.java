@@ -95,6 +95,22 @@ class RefreshTokenServiceTest {
 				() -> service(refreshTokens, userAccounts()).refresh(new RefreshTokenCommand("old")));
 	}
 
+	@Test
+	void rejectsRefreshTokenForWithdrawnUser() {
+		FakeRefreshTokenRepository refreshTokens = new FakeRefreshTokenRepository();
+		refreshTokens.put(new RefreshToken(1L, 7L, "hash-old", NOW.plusDays(1), null));
+		FakeUserAccountRepository users = userAccounts(7L);
+		users.save(new UserAccount(
+				7L, UserRole.USER, UserAccountStatus.WITHDRAWN, null, null,
+				UserOnboardingStatus.STARTED, NOW, NOW
+		));
+
+		assertThrows(
+				InvalidRefreshTokenException.class,
+				() -> service(refreshTokens, users).refresh(new RefreshTokenCommand("old"))
+		);
+	}
+
 	private RefreshTokenService service(
 			final FakeRefreshTokenRepository refreshTokens,
 			final FakeUserAccountRepository userAccounts
