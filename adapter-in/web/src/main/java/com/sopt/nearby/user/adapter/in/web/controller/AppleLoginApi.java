@@ -19,7 +19,7 @@ public interface AppleLoginApi {
 
 	@Operation(
 			summary = "애플 로그인",
-			description = "애플 SDK에서 받은 ID 토큰과 nonce로 Nearby 토큰을 발급합니다.",
+			description = "애플 SDK에서 받은 ID 토큰, nonce, 인증 코드로 Nearby 토큰을 발급합니다.",
 			requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
 					required = true,
 					content = @Content(
@@ -28,7 +28,8 @@ public interface AppleLoginApi {
 							examples = @ExampleObject(value = """
 									{
 									  "idToken": "apple_oidc_id_token",
-									  "nonce": "login_request_nonce"
+									  "nonce": "login_request_nonce",
+									  "authorizationCode": "apple_authorization_code"
 									}
 									""")
 					)

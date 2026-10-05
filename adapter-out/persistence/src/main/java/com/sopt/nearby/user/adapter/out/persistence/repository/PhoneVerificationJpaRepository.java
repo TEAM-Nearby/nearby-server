@@ -5,4 +5,5 @@ import com.sopt.nearby.user.adapter.out.persistence.entity.PhoneVerificationEnti
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PhoneVerificationJpaRepository extends JpaRepository<PhoneVerificationEntity, Long> {
+	void deleteByUserId(Long userId);
 }

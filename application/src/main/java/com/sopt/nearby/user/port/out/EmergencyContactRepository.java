@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface EmergencyContactRepository extends DomainRepository<EmergencyContact, Long> {
 	Optional<EmergencyContact> findByUserId(Long userId);
+
+	void deleteByUserId(Long userId);
 }

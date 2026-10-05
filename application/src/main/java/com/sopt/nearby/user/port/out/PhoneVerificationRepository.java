@@ -5,4 +5,5 @@ import com.sopt.nearby.common.port.DomainRepository;
 import com.sopt.nearby.user.domain.model.PhoneVerification;
 
 public interface PhoneVerificationRepository extends DomainRepository<PhoneVerification, Long> {
+	void deleteByUserId(Long userId);
 }

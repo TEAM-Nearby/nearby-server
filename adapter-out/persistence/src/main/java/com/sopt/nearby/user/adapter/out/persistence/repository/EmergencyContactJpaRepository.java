@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface EmergencyContactJpaRepository extends JpaRepository<EmergencyContactEntity, Long> {
 	Optional<EmergencyContactEntity> findByUserId(Long userId);
+
+	void deleteByUserId(Long userId);
 }
