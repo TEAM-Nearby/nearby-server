@@ -136,8 +136,12 @@ public class KakaoLoginService implements KakaoLoginUseCase {
 	}
 
 	private UserAccount findUser(final SocialAccount socialAccount) {
-		return userAccountRepository.findById(socialAccount.userId())
+		UserAccount userAccount = userAccountRepository.findById(socialAccount.userId())
 				.orElseThrow(KakaoLoginFailedException::new);
+		if (userAccount.status() != UserAccountStatus.ACTIVE) {
+			throw new KakaoLoginFailedException();
+		}
+		return userAccount;
 	}
 
 	private UserAccount createUser(final String providerUserId) {
