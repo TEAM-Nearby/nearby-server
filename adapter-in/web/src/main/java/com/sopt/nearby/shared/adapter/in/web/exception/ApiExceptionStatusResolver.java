@@ -20,6 +20,7 @@ public final class ApiExceptionStatusResolver {
     private static final String PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE =
             "PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED";
     private static final String PHONE_VERIFICATION_EXPIRED_CODE = "PHONE_VERIFICATION_EXPIRED";
+    private static final String SOCIAL_ACCOUNT_UNLINK_FAILED_CODE = "SOCIAL_ACCOUNT_UNLINK_FAILED";
 
     private ApiExceptionStatusResolver() {
     }
@@ -62,6 +63,9 @@ public final class ApiExceptionStatusResolver {
             return HttpStatus.GONE;
         }
         if (errorCode.name().equals("PLACE_SEARCH_FAILED")) {
+            return HttpStatus.BAD_GATEWAY;
+        }
+        if (errorCode.name().equals(SOCIAL_ACCOUNT_UNLINK_FAILED_CODE)) {
             return HttpStatus.BAD_GATEWAY;
         }
         if (errorCode.name().equals("PLACE_SEARCH_RATE_LIMITED")) {
