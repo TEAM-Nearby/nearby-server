@@ -5,10 +5,9 @@ import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.user.port.in.UserWithdrawnEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class AnonymizeWithdrawnUserProfileListener {
 
 	private static final String WITHDRAWN_NICKNAME_PREFIX = "탈퇴한 사용자-";
@@ -19,7 +18,6 @@ public class AnonymizeWithdrawnUserProfileListener {
 		this.companionProfileRepository = companionProfileRepository;
 	}
 
-	@EventListener
 	public void anonymize(final UserWithdrawnEvent event) {
 		companionProfileRepository.findByUserId(event.userId()).ifPresent(profile ->
 				companionProfileRepository.save(new CompanionProfile(

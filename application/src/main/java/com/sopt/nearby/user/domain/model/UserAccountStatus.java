@@ -3,6 +3,7 @@ package com.sopt.nearby.user.domain.model;
 
 public enum UserAccountStatus {
 	ACTIVE,
+	WITHDRAWING,
 	WITHDRAWN,
 	BLOCKED
 }

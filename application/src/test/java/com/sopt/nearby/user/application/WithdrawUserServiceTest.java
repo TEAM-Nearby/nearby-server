@@ -15,13 +15,16 @@ import com.sopt.nearby.user.domain.model.UserAccount;
 import com.sopt.nearby.user.domain.model.UserAccountStatus;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
+import com.sopt.nearby.user.domain.model.WithdrawalProgress;
 import com.sopt.nearby.user.exception.AppleReauthenticationRequiredException;
+import com.sopt.nearby.user.exception.SocialAccountUnlinkFailedException;
 import com.sopt.nearby.user.port.out.AppleOAuthClient;
 import com.sopt.nearby.user.port.out.AppleRefreshTokenRepository;
 import com.sopt.nearby.user.port.out.EmergencyContactRepository;
 import com.sopt.nearby.user.port.out.PhoneVerificationRepository;
 import com.sopt.nearby.user.port.out.SocialAccountRepository;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
+import com.sopt.nearby.user.port.out.WithdrawalProgressRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -83,6 +86,42 @@ class WithdrawUserServiceTest {
 		assertFalse(fixture.socialAccounts.findAllByUserId(7L).isEmpty());
 	}
 
+	@Test
+	void recordsUncertainKakaoFailureWithoutRepeatingProviderCall() {
+		Fixture fixture = new Fixture("KAKAO");
+		AtomicReference<Integer> calls = new AtomicReference<>(0);
+		WithdrawUserService service = fixture.service(id -> {
+			calls.set(calls.get() + 1);
+			throw new SocialAccountUnlinkFailedException();
+		});
+
+		assertThrows(SocialAccountUnlinkFailedException.class,
+				() -> service.withdraw(new WithdrawUserCommand(7L)));
+		assertThrows(SocialAccountUnlinkFailedException.class,
+				() -> service.withdraw(new WithdrawUserCommand(7L)));
+		assertEquals(1, calls.get());
+		assertEquals(UserAccountStatus.WITHDRAWING, fixture.users.findById(7L).orElseThrow().status());
+		assertEquals(WithdrawalProgress.State.UNKNOWN,
+				fixture.progress.findByUserIdAndProvider(7L, "KAKAO").orElseThrow().state());
+		assertFalse(fixture.socialAccounts.findAllByUserId(7L).isEmpty());
+		assertFalse(fixture.emergencyContacts.deleted);
+	}
+
+	@Test
+	void recordsUncertainAppleRevokeFailureAndKeepsPersonalData() {
+		Fixture fixture = new Fixture("APPLE");
+		fixture.appleTokens.save(new AppleRefreshToken(7L, "apple-refresh", LocalDateTime.now(CLOCK)));
+		fixture.appleOAuthClient.failRevoke = true;
+
+		assertThrows(SocialAccountUnlinkFailedException.class,
+				() -> fixture.service(id -> {}).withdraw(new WithdrawUserCommand(7L)));
+		assertEquals(UserAccountStatus.WITHDRAWING, fixture.users.findById(7L).orElseThrow().status());
+		assertEquals(WithdrawalProgress.State.UNKNOWN,
+				fixture.progress.findByUserIdAndProvider(7L, "APPLE").orElseThrow().state());
+		assertTrue(fixture.appleTokens.findByUserId(7L).isPresent());
+		assertFalse(fixture.phoneVerifications.deleted);
+	}
+
 	private static final class Fixture {
 		private final FakeUserAccountRepository users = new FakeUserAccountRepository();
 		private final FakeSocialAccountRepository socialAccounts = new FakeSocialAccountRepository();
@@ -90,6 +129,7 @@ class WithdrawUserServiceTest {
 		private final FakeEmergencyContactRepository emergencyContacts = new FakeEmergencyContactRepository();
 		private final FakePhoneVerificationRepository phoneVerifications = new FakePhoneVerificationRepository();
 		private final FakeAppleOAuthClient appleOAuthClient = new FakeAppleOAuthClient();
+		private final FakeWithdrawalProgressRepository progress = new FakeWithdrawalProgressRepository();
 
 		private Fixture(final String provider) {
 			users.save(new UserAccount(
@@ -116,10 +156,41 @@ class WithdrawUserServiceTest {
 					phoneVerifications,
 					kakaoAccountUnlinker,
 					appleOAuthClient,
+					progress,
 					event -> {
 					},
 					CLOCK
 			);
+		}
+	}
+
+	private static final class FakeWithdrawalProgressRepository implements WithdrawalProgressRepository {
+		private final Map<String, WithdrawalProgress> values = new HashMap<>();
+
+		@Override
+		public WithdrawalProgress save(final WithdrawalProgress progress) {
+			values.put(progress.userId() + ":" + progress.provider(), progress);
+			return progress;
+		}
+
+		@Override
+		public Optional<WithdrawalProgress> findByUserIdAndProvider(final Long userId, final String provider) {
+			return Optional.ofNullable(values.get(userId + ":" + provider));
+		}
+
+		@Override
+		public java.util.List<WithdrawalProgress> findAllByUserId(final Long userId) {
+			return values.values().stream().filter(value -> value.userId().equals(userId)).toList();
+		}
+
+		@Override
+		public java.util.List<Long> findResumableUserIds(final int limit) {
+			return java.util.List.of();
+		}
+
+		@Override
+		public void deleteByUserId(final Long userId) {
+			values.values().removeIf(value -> value.userId().equals(userId));
 		}
 	}
 
@@ -244,6 +315,7 @@ class WithdrawUserServiceTest {
 
 	private static final class FakeAppleOAuthClient implements AppleOAuthClient {
 		private AtomicReference<String> revokedToken = new AtomicReference<>();
+		private boolean failRevoke;
 
 		@Override
 		public Tokens exchangeAuthorizationCode(final String authorizationCode) {
@@ -252,6 +324,9 @@ class WithdrawUserServiceTest {
 
 		@Override
 		public void revoke(final String refreshToken) {
+			if (failRevoke) {
+				throw new SocialAccountUnlinkFailedException();
+			}
 			revokedToken.set(refreshToken);
 		}
 	}
