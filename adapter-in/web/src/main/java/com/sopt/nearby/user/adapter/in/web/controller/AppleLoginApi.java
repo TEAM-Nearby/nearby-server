@@ -5,6 +5,11 @@ import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.swagger.ApiExceptions;
 import com.sopt.nearby.user.adapter.in.web.dto.request.AppleLoginRequest;
 import com.sopt.nearby.user.adapter.in.web.dto.response.AppleLoginResponse;
+import com.sopt.nearby.user.exception.AppleClientIdNotConfiguredException;
+import com.sopt.nearby.user.exception.AppleIdTokenAudienceMismatchException;
+import com.sopt.nearby.user.exception.AppleIdTokenNonceMismatchException;
+import com.sopt.nearby.user.exception.AppleIdTokenSubjectMissingException;
+import com.sopt.nearby.user.exception.AppleIdTokenVerificationFailedException;
 import com.sopt.nearby.user.exception.AppleLoginFailedException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -59,6 +64,13 @@ public interface AppleLoginApi {
 							""")
 			)
 	)
-	@ApiExceptions(AppleLoginFailedException.class)
+	@ApiExceptions({
+			AppleClientIdNotConfiguredException.class,
+			AppleIdTokenVerificationFailedException.class,
+			AppleIdTokenAudienceMismatchException.class,
+			AppleIdTokenNonceMismatchException.class,
+			AppleIdTokenSubjectMissingException.class,
+			AppleLoginFailedException.class
+	})
 	CommonResponse<AppleLoginResponse> appleLogin(AppleLoginRequest request);
 }
