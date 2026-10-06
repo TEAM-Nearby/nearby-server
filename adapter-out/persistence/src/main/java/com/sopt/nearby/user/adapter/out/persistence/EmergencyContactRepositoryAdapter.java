@@ -27,4 +27,9 @@ public class EmergencyContactRepositoryAdapter
 	public Optional<EmergencyContact> findByUserId(final Long userId) {
 		return jpaRepository.findByUserId(userId).map(UserPersistenceMapper::toDomain);
 	}
+
+	@Override
+	public void deleteByUserId(final Long userId) {
+		jpaRepository.deleteByUserId(userId);
+	}
 }

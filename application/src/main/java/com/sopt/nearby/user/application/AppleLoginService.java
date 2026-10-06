@@ -1,6 +1,7 @@
 // 애플 ID 토큰을 검증하고 회원 토큰을 발급하는 유스케이스
 package com.sopt.nearby.user.application;
 
+import com.sopt.nearby.user.domain.model.AppleRefreshToken;
 import com.sopt.nearby.user.domain.model.RefreshToken;
 import com.sopt.nearby.user.domain.model.SocialAccount;
 import com.sopt.nearby.user.domain.model.UserAccount;
@@ -11,6 +12,8 @@ import com.sopt.nearby.user.exception.AppleLoginFailedException;
 import com.sopt.nearby.user.exception.SocialAccountAlreadyExistsException;
 import com.sopt.nearby.user.port.in.AppleLoginUseCase;
 import com.sopt.nearby.user.port.out.AppleIdTokenVerifier;
+import com.sopt.nearby.user.port.out.AppleOAuthClient;
+import com.sopt.nearby.user.port.out.AppleRefreshTokenRepository;
 import com.sopt.nearby.user.port.out.RefreshTokenRepository;
 import com.sopt.nearby.user.port.out.SocialAccountRepository;
 import com.sopt.nearby.user.port.out.TokenIssuer;
@@ -21,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionOperations;
@@ -34,6 +36,8 @@ public class AppleLoginService implements AppleLoginUseCase {
 	private static final String TOKEN_TYPE = "Bearer";
 
 	private final AppleIdTokenVerifier appleIdTokenVerifier;
+	private final AppleOAuthClient appleOAuthClient;
+	private final AppleRefreshTokenRepository appleRefreshTokenRepository;
 	private final TokenIssuer tokenIssuer;
 	private final UserAccountRepository userAccountRepository;
 	private final SocialAccountRepository socialAccountRepository;
@@ -44,6 +48,8 @@ public class AppleLoginService implements AppleLoginUseCase {
 	@Autowired
 	public AppleLoginService(
 			final AppleIdTokenVerifier appleIdTokenVerifier,
+			final AppleOAuthClient appleOAuthClient,
+			final AppleRefreshTokenRepository appleRefreshTokenRepository,
 			final TokenIssuer tokenIssuer,
 			final UserAccountRepository userAccountRepository,
 			final SocialAccountRepository socialAccountRepository,
@@ -53,6 +59,8 @@ public class AppleLoginService implements AppleLoginUseCase {
 	) {
 		this(
 				appleIdTokenVerifier,
+				appleOAuthClient,
+				appleRefreshTokenRepository,
 				tokenIssuer,
 				userAccountRepository,
 				socialAccountRepository,
@@ -64,6 +72,8 @@ public class AppleLoginService implements AppleLoginUseCase {
 
 	AppleLoginService(
 			final AppleIdTokenVerifier appleIdTokenVerifier,
+			final AppleOAuthClient appleOAuthClient,
+			final AppleRefreshTokenRepository appleRefreshTokenRepository,
 			final TokenIssuer tokenIssuer,
 			final UserAccountRepository userAccountRepository,
 			final SocialAccountRepository socialAccountRepository,
@@ -72,6 +82,8 @@ public class AppleLoginService implements AppleLoginUseCase {
 	) {
 		this(
 				appleIdTokenVerifier,
+				appleOAuthClient,
+				appleRefreshTokenRepository,
 				tokenIssuer,
 				userAccountRepository,
 				socialAccountRepository,
@@ -83,6 +95,8 @@ public class AppleLoginService implements AppleLoginUseCase {
 
 	AppleLoginService(
 			final AppleIdTokenVerifier appleIdTokenVerifier,
+			final AppleOAuthClient appleOAuthClient,
+			final AppleRefreshTokenRepository appleRefreshTokenRepository,
 			final TokenIssuer tokenIssuer,
 			final UserAccountRepository userAccountRepository,
 			final SocialAccountRepository socialAccountRepository,
@@ -91,6 +105,8 @@ public class AppleLoginService implements AppleLoginUseCase {
 			final TransactionOperations createUserTransaction
 	) {
 		this.appleIdTokenVerifier = appleIdTokenVerifier;
+		this.appleOAuthClient = appleOAuthClient;
+		this.appleRefreshTokenRepository = appleRefreshTokenRepository;
 		this.tokenIssuer = tokenIssuer;
 		this.userAccountRepository = userAccountRepository;
 		this.socialAccountRepository = socialAccountRepository;
@@ -100,10 +116,28 @@ public class AppleLoginService implements AppleLoginUseCase {
 	}
 
 	@Override
-	@Transactional
 	public AppleLoginResult login(final AppleLoginCommand command) {
 		VerifiedUser appleUser = appleIdTokenVerifier.verify(command.idToken(), command.nonce());
-		UserAccount userAccount = findOrCreateUser(appleUser.providerUserId());
+		createUserTransaction.execute(status -> {
+			socialAccountRepository.findByProviderAndProviderUserId(APPLE_PROVIDER, appleUser.providerUserId())
+					.ifPresent(this::findUser);
+			return null;
+		});
+		AppleOAuthClient.Tokens appleTokens = appleOAuthClient.exchangeAuthorizationCode(command.authorizationCode());
+		VerifiedUser exchangedUser = appleIdTokenVerifier.verify(appleTokens.idToken(), command.nonce());
+		if (!appleUser.providerUserId().equals(exchangedUser.providerUserId())) {
+			throw new AppleLoginFailedException();
+		}
+		return createUserTransaction.execute(status -> completeLogin(appleUser.providerUserId(), appleTokens.refreshToken()));
+	}
+
+	private AppleLoginResult completeLogin(final String providerUserId, final String appleRefreshToken) {
+		UserAccount userAccount = findOrCreateUser(providerUserId);
+		appleRefreshTokenRepository.save(new AppleRefreshToken(
+				userAccount.id(),
+				appleRefreshToken,
+				LocalDateTime.now(clock)
+		));
 		IssuedTokens tokens = tokenIssuer.issue(new TokenIssueRequest(
 				userAccount.id(),
 				userAccount.role(),
@@ -136,8 +170,12 @@ public class AppleLoginService implements AppleLoginUseCase {
 	}
 
 	private UserAccount findUser(final SocialAccount socialAccount) {
-		return userAccountRepository.findById(socialAccount.userId())
+		UserAccount userAccount = userAccountRepository.findById(socialAccount.userId())
 				.orElseThrow(AppleLoginFailedException::new);
+		if (userAccount.status() != UserAccountStatus.ACTIVE) {
+			throw new AppleLoginFailedException();
+		}
+		return userAccount;
 	}
 
 	private UserAccount createUser(final String providerUserId) {

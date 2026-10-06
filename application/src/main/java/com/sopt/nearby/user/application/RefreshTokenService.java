@@ -3,6 +3,7 @@ package com.sopt.nearby.user.application;
 
 import com.sopt.nearby.user.domain.model.RefreshToken;
 import com.sopt.nearby.user.domain.model.UserAccount;
+import com.sopt.nearby.user.domain.model.UserAccountStatus;
 import com.sopt.nearby.user.exception.InvalidRefreshTokenException;
 import com.sopt.nearby.user.exception.InvalidTokenRefreshRequestException;
 import com.sopt.nearby.user.exception.RefreshTokenAlreadyRevokedException;
@@ -59,6 +60,9 @@ public class RefreshTokenService implements RefreshTokenUseCase {
 		}
 		UserAccount userAccount = userAccountRepository.findById(refreshToken.userId())
 				.orElseThrow(InvalidRefreshTokenException::new);
+		if (userAccount.status() != UserAccountStatus.ACTIVE) {
+			throw new InvalidRefreshTokenException();
+		}
 		IssuedTokens tokens = tokenIssuer.issue(new TokenIssueRequest(
 				userAccount.id(), userAccount.role(), userAccount.onboardingStatus()
 		));

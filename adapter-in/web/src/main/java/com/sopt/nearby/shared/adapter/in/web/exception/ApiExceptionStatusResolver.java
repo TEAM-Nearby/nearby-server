@@ -13,6 +13,11 @@ public final class ApiExceptionStatusResolver {
     private static final String UNAUTHORIZED_CODE = "UNAUTHORIZED";
     private static final String KAKAO_LOGIN_FAILED_CODE = "KAKAO_LOGIN_FAILED";
     private static final String APPLE_LOGIN_FAILED_CODE = "APPLE_LOGIN_FAILED";
+    private static final String APPLE_CLIENT_ID_NOT_CONFIGURED_CODE = "APPLE_CLIENT_ID_NOT_CONFIGURED";
+    private static final String APPLE_ID_TOKEN_VERIFICATION_FAILED_CODE = "APPLE_ID_TOKEN_VERIFICATION_FAILED";
+    private static final String APPLE_ID_TOKEN_AUDIENCE_MISMATCH_CODE = "APPLE_ID_TOKEN_AUDIENCE_MISMATCH";
+    private static final String APPLE_ID_TOKEN_NONCE_MISMATCH_CODE = "APPLE_ID_TOKEN_NONCE_MISMATCH";
+    private static final String APPLE_ID_TOKEN_SUBJECT_MISSING_CODE = "APPLE_ID_TOKEN_SUBJECT_MISSING";
     private static final String INVALID_REFRESH_TOKEN_CODE = "INVALID_REFRESH_TOKEN";
     private static final String ONBOARDING_REQUIRED_CODE = "ONBOARDING_REQUIRED";
     private static final String COMPANION_POST_EXPIRED_CODE = "COMPANION_POST_EXPIRED";
@@ -20,6 +25,7 @@ public final class ApiExceptionStatusResolver {
     private static final String PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE =
             "PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED";
     private static final String PHONE_VERIFICATION_EXPIRED_CODE = "PHONE_VERIFICATION_EXPIRED";
+    private static final String SOCIAL_ACCOUNT_UNLINK_FAILED_CODE = "SOCIAL_ACCOUNT_UNLINK_FAILED";
 
     private ApiExceptionStatusResolver() {
     }
@@ -48,8 +54,15 @@ public final class ApiExceptionStatusResolver {
         if (errorCode.name().equals(UNAUTHORIZED_CODE)
                 || errorCode.name().equals(KAKAO_LOGIN_FAILED_CODE)
                 || errorCode.name().equals(APPLE_LOGIN_FAILED_CODE)
+                || errorCode.name().equals(APPLE_ID_TOKEN_VERIFICATION_FAILED_CODE)
+                || errorCode.name().equals(APPLE_ID_TOKEN_AUDIENCE_MISMATCH_CODE)
+                || errorCode.name().equals(APPLE_ID_TOKEN_NONCE_MISMATCH_CODE)
+                || errorCode.name().equals(APPLE_ID_TOKEN_SUBJECT_MISSING_CODE)
                 || errorCode.name().equals(INVALID_REFRESH_TOKEN_CODE)) {
             return HttpStatus.UNAUTHORIZED;
+        }
+        if (errorCode.name().equals(APPLE_CLIENT_ID_NOT_CONFIGURED_CODE)) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
         }
         if (errorCode.name().equals(PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE)
                 || errorCode.name().equals(GOOGLE_PLACE_API_ERROR_CODE)) {
@@ -62,6 +75,9 @@ public final class ApiExceptionStatusResolver {
             return HttpStatus.GONE;
         }
         if (errorCode.name().equals("PLACE_SEARCH_FAILED")) {
+            return HttpStatus.BAD_GATEWAY;
+        }
+        if (errorCode.name().equals(SOCIAL_ACCOUNT_UNLINK_FAILED_CODE)) {
             return HttpStatus.BAD_GATEWAY;
         }
         if (errorCode.name().equals("PLACE_SEARCH_RATE_LIMITED")) {

@@ -5,7 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sopt.nearby.user.application.VerifiedUser;
-import com.sopt.nearby.user.exception.AppleLoginFailedException;
+import com.sopt.nearby.user.exception.AppleClientIdNotConfiguredException;
+import com.sopt.nearby.user.exception.AppleIdTokenAudienceMismatchException;
+import com.sopt.nearby.user.exception.AppleIdTokenNonceMismatchException;
+import com.sopt.nearby.user.exception.AppleIdTokenSubjectMissingException;
+import com.sopt.nearby.user.exception.AppleIdTokenVerificationFailedException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -37,7 +41,7 @@ class AppleIdTokenVerifierAdapterTest {
 		);
 
 		assertThatThrownBy(() -> adapter.verify("id-token", "nonce"))
-				.isInstanceOf(AppleLoginFailedException.class);
+				.isExactlyInstanceOf(AppleIdTokenNonceMismatchException.class);
 	}
 
 	@Test
@@ -48,7 +52,7 @@ class AppleIdTokenVerifierAdapterTest {
 		);
 
 		assertThatThrownBy(() -> adapter.verify("id-token", "nonce"))
-				.isInstanceOf(AppleLoginFailedException.class);
+				.isExactlyInstanceOf(AppleIdTokenAudienceMismatchException.class);
 	}
 
 	@Test
@@ -59,7 +63,29 @@ class AppleIdTokenVerifierAdapterTest {
 		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(decoder, "apple-client-id");
 
 		assertThatThrownBy(() -> adapter.verify("bad-token", "nonce"))
-				.isInstanceOf(AppleLoginFailedException.class);
+				.isExactlyInstanceOf(AppleIdTokenVerificationFailedException.class);
+	}
+
+	@Test
+	void failsWhenClientIdIsNotConfigured() {
+		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(
+				token -> jwt("apple-subject", "apple-client-id", HASHED_NONCE),
+				""
+		);
+
+		assertThatThrownBy(() -> adapter.verify("id-token", "nonce"))
+				.isExactlyInstanceOf(AppleClientIdNotConfiguredException.class);
+	}
+
+	@Test
+	void failsWhenSubjectIsMissing() {
+		AppleIdTokenVerifierAdapter adapter = new AppleIdTokenVerifierAdapter(
+				token -> jwt("", "apple-client-id", HASHED_NONCE),
+				"apple-client-id"
+		);
+
+		assertThatThrownBy(() -> adapter.verify("id-token", "nonce"))
+				.isExactlyInstanceOf(AppleIdTokenSubjectMissingException.class);
 	}
 
 	private Jwt jwt(final String subject, final String audience, final String nonce) {

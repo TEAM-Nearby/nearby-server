@@ -15,7 +15,15 @@ public class PhoneVerificationRepositoryAdapter
 		extends SimpleJpaRepositoryAdapter<PhoneVerification, Long, PhoneVerificationEntity, Long>
 		implements PhoneVerificationRepository {
 
+	private final PhoneVerificationJpaRepository jpaRepository;
+
 	public PhoneVerificationRepositoryAdapter(final PhoneVerificationJpaRepository jpaRepository) {
 		super(jpaRepository, UserPersistenceMapper::toEntity, UserPersistenceMapper::toDomain, Function.identity());
+		this.jpaRepository = jpaRepository;
+	}
+
+	@Override
+	public void deleteByUserId(final Long userId) {
+		jpaRepository.deleteByUserId(userId);
 	}
 }

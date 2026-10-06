@@ -7,6 +7,8 @@ import com.sopt.nearby.common.exception.BusinessException;
 import com.sopt.nearby.common.exception.ErrorCode;
 import com.sopt.nearby.common.exception.NotFoundException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
+import com.sopt.nearby.user.adapter.in.web.controller.LoginController;
+import com.sopt.nearby.user.adapter.in.web.dto.request.AppleLoginRequest;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.media.Content;
@@ -57,6 +59,27 @@ class ApiExceptionsOperationCustomizerTest {
 		customizer.customize(operation, handlerMethod);
 
 		assertThat(operation.getResponses()).isNull();
+	}
+
+	@Test
+	void addsSeparatedAppleLoginErrorsToSwagger() throws NoSuchMethodException {
+		Operation operation = new Operation();
+		HandlerMethod handlerMethod = handlerMethod(
+				new LoginController(null, null),
+				"appleLogin",
+				AppleLoginRequest.class
+		);
+
+		customizer.customize(operation, handlerMethod);
+
+		assertThat(jsonExamples(operation, "401")).containsKeys(
+				"APPLE_ID_TOKEN_VERIFICATION_FAILED",
+				"APPLE_ID_TOKEN_AUDIENCE_MISMATCH",
+				"APPLE_ID_TOKEN_NONCE_MISMATCH",
+				"APPLE_ID_TOKEN_SUBJECT_MISSING",
+				"APPLE_LOGIN_FAILED"
+		);
+		assertThat(jsonExamples(operation, "500")).containsKey("APPLE_CLIENT_ID_NOT_CONFIGURED");
 	}
 
 	private HandlerMethod handlerMethod(

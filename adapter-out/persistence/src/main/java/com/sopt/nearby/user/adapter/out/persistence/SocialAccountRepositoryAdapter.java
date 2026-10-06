@@ -9,6 +9,7 @@ import com.sopt.nearby.user.domain.model.SocialAccount;
 import com.sopt.nearby.user.exception.SocialAccountAlreadyExistsException;
 import com.sopt.nearby.user.port.out.SocialAccountRepository;
 import java.util.Optional;
+import java.util.List;
 import java.util.function.Function;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
@@ -41,5 +42,17 @@ public class SocialAccountRepositoryAdapter
 	) {
 		return jpaRepository.findByProviderAndProviderUserId(provider, providerUserId)
 				.map(UserPersistenceMapper::toDomain);
+	}
+
+	@Override
+	public List<SocialAccount> findAllByUserId(final Long userId) {
+		return jpaRepository.findAllByUserId(userId).stream()
+				.map(UserPersistenceMapper::toDomain)
+				.toList();
+	}
+
+	@Override
+	public void deleteByUserId(final Long userId) {
+		jpaRepository.deleteByUserId(userId);
 	}
 }

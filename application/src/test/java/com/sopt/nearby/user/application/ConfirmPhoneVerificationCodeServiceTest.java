@@ -378,6 +378,11 @@ class ConfirmPhoneVerificationCodeServiceTest {
 		public Optional<PhoneVerification> findById(final Long id) {
 			return Optional.ofNullable(saved.get(id));
 		}
+
+		@Override
+		public void deleteByUserId(final Long userId) {
+			saved.values().removeIf(verification -> userId.equals(verification.userId()));
+		}
 	}
 
 	private static final class FakePhoneVerificationCodeStore implements PhoneVerificationCodeStore {

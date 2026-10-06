@@ -475,6 +475,29 @@ class InitialSchemaMigrationTest {
 		}
 	}
 
+	@Test
+	void twentySixthMigrationCreatesAppleRefreshTokenTable() throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource appleTokenMigration = new ClassPathResource(
+				"db/migration/V26__create_apple_refresh_token.sql"
+		);
+
+		assertThat(appleTokenMigration.exists()).isTrue();
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_apple_refresh_token_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, appleTokenMigration);
+
+			assertThat(tableNames(connection)).contains("apple_refresh_token");
+			assertThat(columnNames(connection, "apple_refresh_token"))
+					.contains("user_id", "refresh_token", "updated_at");
+		}
+	}
+
 	private static void insertDuplicateSoloDiningFavorites(final Connection connection) throws SQLException {
 		try (Statement statement = connection.createStatement()) {
 			statement.executeUpdate("""

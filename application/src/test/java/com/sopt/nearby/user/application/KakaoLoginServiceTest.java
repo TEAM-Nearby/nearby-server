@@ -85,6 +85,21 @@ class KakaoLoginServiceTest {
 	}
 
 	@Test
+	void rejectsWithdrawnUserWithoutIssuingTokens() {
+		FakeUserAccountRepository users = new FakeUserAccountRepository();
+		UserAccount withdrawn = users.save(new UserAccount(null, UserRole.USER, UserAccountStatus.WITHDRAWN,
+				null, null, UserOnboardingStatus.PHONE_VERIFIED, LocalDateTime.now(CLOCK), LocalDateTime.now(CLOCK)));
+		FakeSocialAccountRepository accounts = new FakeSocialAccountRepository();
+		accounts.save(new SocialAccount(null, withdrawn.id(), "KAKAO", "kakao-subject"));
+		FakeRefreshTokenRepository refreshTokens = new FakeRefreshTokenRepository();
+
+		assertThrows(KakaoLoginFailedException.class,
+				() -> service(users, accounts, refreshTokens, "kakao-subject")
+						.login(new KakaoLoginCommand("id-token", "nonce")));
+		assertTrue(refreshTokens.saved.isEmpty());
+	}
+
+	@Test
 	void reusesExistingUserWhenSocialAccountIsCreatedConcurrently() {
 		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
 		UserAccount existing = userAccounts.save(new UserAccount(
@@ -239,6 +254,16 @@ class KakaoLoginServiceTest {
 					.filter(account -> account.provider().equals(provider))
 					.filter(account -> account.providerUserId().equals(providerUserId))
 					.findFirst();
+		}
+
+		@Override
+		public java.util.List<SocialAccount> findAllByUserId(final Long userId) {
+			return saved.values().stream().filter(account -> account.userId().equals(userId)).toList();
+		}
+
+		@Override
+		public void deleteByUserId(final Long userId) {
+			saved.values().removeIf(account -> account.userId().equals(userId));
 		}
 	}
 

@@ -46,11 +46,20 @@ sentry:
 
 kakao:
   native-app-key: ${KAKAO_NATIVE_APP_KEY:}
+  admin-key: ${KAKAO_ADMIN_KEY:}
+  unlink-uri: ${KAKAO_UNLINK_URI:https://kapi.kakao.com/v1/user/unlink}
   oidc:
     issuer-uri: ${KAKAO_OIDC_ISSUER_URI:https://kauth.kakao.com}
     jwk-set-uri: ${KAKAO_OIDC_JWK_SET_URI:https://kauth.kakao.com/.well-known/jwks.json}
 apple:
+  refresh-token-encryption-key: ${APPLE_REFRESH_TOKEN_ENCRYPTION_KEY:}
   client-id: ${APPLE_CLIENT_ID:}
+  team-id: ${APPLE_TEAM_ID:}
+  key-id: ${APPLE_KEY_ID:}
+  private-key-base64: ${APPLE_PRIVATE_KEY_BASE64:}
+  oauth:
+    token-uri: ${APPLE_OAUTH_TOKEN_URI:https://appleid.apple.com/auth/token}
+    revoke-uri: ${APPLE_OAUTH_REVOKE_URI:https://appleid.apple.com/auth/revoke}
   oidc:
     issuer-uri: ${APPLE_OIDC_ISSUER_URI:https://appleid.apple.com}
     jwk-set-uri: ${APPLE_OIDC_JWK_SET_URI:https://appleid.apple.com/auth/keys}

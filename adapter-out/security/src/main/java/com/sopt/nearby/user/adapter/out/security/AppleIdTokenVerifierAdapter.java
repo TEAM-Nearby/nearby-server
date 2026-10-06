@@ -3,7 +3,11 @@ package com.sopt.nearby.user.adapter.out.security;
 
 
 import com.sopt.nearby.user.application.VerifiedUser;
-import com.sopt.nearby.user.exception.AppleLoginFailedException;
+import com.sopt.nearby.user.exception.AppleClientIdNotConfiguredException;
+import com.sopt.nearby.user.exception.AppleIdTokenAudienceMismatchException;
+import com.sopt.nearby.user.exception.AppleIdTokenNonceMismatchException;
+import com.sopt.nearby.user.exception.AppleIdTokenSubjectMissingException;
+import com.sopt.nearby.user.exception.AppleIdTokenVerificationFailedException;
 import com.sopt.nearby.user.port.out.AppleIdTokenVerifier;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,7 +34,7 @@ public class AppleIdTokenVerifierAdapter implements AppleIdTokenVerifier {
     @Override
     public VerifiedUser verify(final String idToken, final String nonce) {
         if (isBlank(clientId)) {
-            throw new AppleLoginFailedException();
+            throw new AppleClientIdNotConfiguredException();
         }
 
         try {
@@ -40,25 +44,25 @@ public class AppleIdTokenVerifierAdapter implements AppleIdTokenVerifier {
             validateSubject(jwt.getSubject());
             return new VerifiedUser(jwt.getSubject());
         } catch (JwtException exception) {
-            throw new AppleLoginFailedException();
+            throw new AppleIdTokenVerificationFailedException();
         }
     }
 
     private void validateAudience(final List<String> audience) {
         if (audience == null || !audience.contains(clientId)) {
-            throw new AppleLoginFailedException();
+            throw new AppleIdTokenAudienceMismatchException();
         }
     }
 
     private void validateNonce(final String tokenNonce, final String expectedNonce) {
         if (isBlank(expectedNonce) || !RefreshTokenHashSupport.sha256(expectedNonce).equals(tokenNonce)) {
-            throw new AppleLoginFailedException();
+            throw new AppleIdTokenNonceMismatchException();
         }
     }
 
     private void validateSubject(final String subject) {
         if (isBlank(subject)) {
-            throw new AppleLoginFailedException();
+            throw new AppleIdTokenSubjectMissingException();
         }
     }
 

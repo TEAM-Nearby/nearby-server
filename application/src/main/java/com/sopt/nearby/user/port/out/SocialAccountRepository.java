@@ -4,8 +4,13 @@ package com.sopt.nearby.user.port.out;
 import com.sopt.nearby.common.port.DomainRepository;
 import com.sopt.nearby.user.domain.model.SocialAccount;
 import java.util.Optional;
+import java.util.List;
 
 public interface SocialAccountRepository extends DomainRepository<SocialAccount, Long> {
 
 	Optional<SocialAccount> findByProviderAndProviderUserId(String provider, String providerUserId);
+
+	List<SocialAccount> findAllByUserId(Long userId);
+
+	void deleteByUserId(Long userId);
 }

@@ -3,6 +3,7 @@ package com.sopt.nearby.user.application;
 
 public record AppleLoginCommand(
         String idToken,
-        String nonce
+        String nonce,
+        String authorizationCode
 ) {
 }

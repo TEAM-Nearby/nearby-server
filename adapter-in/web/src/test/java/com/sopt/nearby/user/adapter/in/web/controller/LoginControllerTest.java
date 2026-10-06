@@ -110,7 +110,9 @@ class LoginControllerTest {
 	void returnsTokensWhenAppleLoginSucceeds() throws Exception {
 		mockMvc.perform(post("/api/login/apple")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(new Request("apple-id-token", "nonce"))))
+						.content(objectMapper.writeValueAsString(
+								new AppleRequest("apple-id-token", "nonce", "authorization-code")
+						)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.status", is(200)))
 				.andExpect(jsonPath("$.code", is("APPLE_LOGIN_SUCCESS")))
@@ -126,12 +128,28 @@ class LoginControllerTest {
 
 		mockMvc.perform(post("/api/login/apple")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(new Request("bad-token", "nonce"))))
+						.content(objectMapper.writeValueAsString(
+								new AppleRequest("bad-token", "nonce", "authorization-code")
+						)))
 				.andExpect(status().isUnauthorized())
 				.andExpect(jsonPath("$.code", is("APPLE_LOGIN_FAILED")));
 	}
 
+	@Test
+	void returnsValidationErrorWhenAppleAuthorizationCodeIsMissing() throws Exception {
+		mockMvc.perform(post("/api/login/apple")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(objectMapper.writeValueAsString(
+								new AppleRequest("apple-id-token", "nonce", "")
+						)))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code", is("VALIDATION_ERROR")));
+	}
+
 	private record Request(String idToken, String nonce) {
+	}
+
+	private record AppleRequest(String idToken, String nonce, String authorizationCode) {
 	}
 
 	static class FakeKakaoLoginUseCase implements KakaoLoginUseCase {
