@@ -34,7 +34,7 @@ class AnonymizeWithdrawnUserProfileListenerTest {
 		new AnonymizeWithdrawnUserProfileListener(profiles).anonymize(new UserWithdrawnEvent(7L));
 
 		CompanionProfile anonymized = profiles.profile;
-		assertEquals("탈퇴한 사용자-7", anonymized.nickname());
+		assertEquals("탈퇴한 사용자-7-탈퇴완료계정", anonymized.nickname());
 		assertEquals(UserGender.FEMALE, anonymized.gender());
 		assertNull(anonymized.birthYear());
 		assertNull(anonymized.profileImageUrl());

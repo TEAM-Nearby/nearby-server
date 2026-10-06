@@ -8,6 +8,10 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.user.application.WithdrawUserCommand;
 import com.sopt.nearby.user.config.WithdrawalRecoveryScheduler;
 import com.sopt.nearby.user.domain.model.SocialAccount;
@@ -22,6 +26,7 @@ import com.sopt.nearby.user.port.out.KakaoAccountUnlinker;
 import com.sopt.nearby.user.port.out.SocialAccountRepository;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import com.sopt.nearby.user.port.out.WithdrawalProgressRepository;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
@@ -35,6 +40,7 @@ class WithdrawalRecoveryFlowTest {
 	@Autowired private UserAccountRepository users;
 	@Autowired private SocialAccountRepository socialAccounts;
 	@Autowired private WithdrawalProgressRepository progress;
+	@Autowired private CompanionProfileRepository companionProfiles;
 	@Autowired private WithdrawUserUseCase withdraw;
 	@Autowired private WithdrawalRecoveryScheduler scheduler;
 	@MockitoBean private KakaoAccountUnlinker kakaoUnlinker;
@@ -65,5 +71,28 @@ class WithdrawalRecoveryFlowTest {
 		assertThat(socialAccounts.findAllByUserId(user.id())).isEmpty();
 		verify(kakaoUnlinker).unlink("kakao-user");
 		verifyNoMoreInteractions(kakaoUnlinker);
+	}
+
+	@Test
+	void completesWithdrawalWhenLegacyAnonymizedNicknameIsAlreadyTaken() {
+		UserAccount nicknameOwner = users.save(new UserAccount(null, UserRole.USER, UserAccountStatus.ACTIVE,
+				null, null, UserOnboardingStatus.STARTED, LocalDateTime.of(2026, 10, 6, 0, 0), null));
+		UserAccount withdrawingUser = users.save(new UserAccount(null, UserRole.USER, UserAccountStatus.ACTIVE,
+				null, null, UserOnboardingStatus.STARTED, LocalDateTime.of(2026, 10, 6, 0, 0), null));
+		companionProfiles.save(profile(nicknameOwner.id(), "탈퇴한 사용자-" + withdrawingUser.id()));
+		companionProfiles.save(profile(withdrawingUser.id(), "탈퇴대상-" + withdrawingUser.id()));
+		socialAccounts.save(new SocialAccount(null, withdrawingUser.id(), "KAKAO", "kakao-user"));
+
+		withdraw.withdraw(new WithdrawUserCommand(withdrawingUser.id()));
+
+		assertThat(users.findById(withdrawingUser.id()).orElseThrow().status())
+				.isEqualTo(UserAccountStatus.WITHDRAWN);
+		assertThat(companionProfiles.findByUserId(withdrawingUser.id()).orElseThrow().nickname())
+				.isEqualTo("탈퇴한 사용자-" + withdrawingUser.id() + "-탈퇴완료계정");
+	}
+
+	private CompanionProfile profile(final Long userId, final String nickname) {
+		return new CompanionProfile(null, userId, nickname, UserGender.FEMALE, 2000, null, null,
+				new BigDecimal("0.00"), 0, CompanionProfileStatus.ACTIVE);
 	}
 }

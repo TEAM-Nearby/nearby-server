@@ -2,6 +2,7 @@
 package com.sopt.nearby.user.adapter.out.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,8 +12,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -86,6 +92,32 @@ class SocialAccountClientAdapterTest {
 	void rejectsMissingKakaoAdminKeyAtConstruction() {
 		assertThrows(IllegalStateException.class,
 				() -> new KakaoAccountUnlinkerAdapter(HttpClient.newHttpClient(), " ", URI.create("https://example.com")));
+	}
+
+	@Test
+	void timesOutWhenResponseBodyStopsBeforeCompletion() throws Exception {
+		CountDownLatch releaseResponse = new CountDownLatch(1);
+		URI uri = startServer(exchange -> {
+			exchange.sendResponseHeaders(200, 100);
+			exchange.getResponseBody().write('x');
+			exchange.getResponseBody().flush();
+			try {
+				releaseResponse.await();
+			} finally {
+				exchange.close();
+			}
+		});
+		HttpRequest request = HttpRequest.newBuilder(uri).GET().build();
+		Instant startedAt = Instant.now();
+
+		try {
+			assertThatThrownBy(() -> TimedHttpClient.send(
+					HttpClient.newHttpClient(), request, Duration.ofMillis(200)
+			)).isInstanceOf(TimeoutException.class);
+			assertThat(Duration.between(startedAt, Instant.now())).isLessThan(Duration.ofSeconds(2));
+		} finally {
+			releaseResponse.countDown();
+		}
 	}
 
 	private AppleOAuthClientAdapter appleAdapter(final URI tokenUri, final URI revokeUri) {
