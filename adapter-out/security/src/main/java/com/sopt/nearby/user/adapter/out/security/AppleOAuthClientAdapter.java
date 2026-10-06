@@ -144,7 +144,7 @@ public class AppleOAuthClientAdapter implements AppleOAuthClient {
 				.header("Content-Type", FORM_CONTENT_TYPE)
 				.POST(HttpRequest.BodyPublishers.ofString(form(fields)))
 				.build();
-		return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+		return TimedHttpClient.send(httpClient, request, REQUEST_TIMEOUT);
 	}
 
 	private String clientSecret() {

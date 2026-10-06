@@ -51,7 +51,7 @@ public class KakaoAccountUnlinkerAdapter implements KakaoAccountUnlinker {
 				.POST(HttpRequest.BodyPublishers.ofString(body))
 				.build();
 		try {
-			HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+			HttpResponse<String> response = TimedHttpClient.send(httpClient, request, REQUEST_TIMEOUT);
 			if (response.statusCode() < 200 || response.statusCode() >= 300) {
 				throw new SocialAccountUnlinkFailedException();
 			}

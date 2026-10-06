@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 public class AnonymizeWithdrawnUserProfileListener {
 
 	private static final String WITHDRAWN_NICKNAME_PREFIX = "탈퇴한 사용자-";
+	private static final String WITHDRAWN_NICKNAME_SUFFIX = "-탈퇴완료계정";
 
 	private final CompanionProfileRepository companionProfileRepository;
 
@@ -23,7 +24,7 @@ public class AnonymizeWithdrawnUserProfileListener {
 				companionProfileRepository.save(new CompanionProfile(
 						profile.id(),
 						profile.userId(),
-						WITHDRAWN_NICKNAME_PREFIX + profile.userId(),
+						withdrawnNickname(profile.userId()),
 						profile.gender(),
 						null,
 						null,
@@ -33,5 +34,9 @@ public class AnonymizeWithdrawnUserProfileListener {
 						CompanionProfileStatus.INACTIVE
 				))
 		);
+	}
+
+	private String withdrawnNickname(final Long userId) {
+		return WITHDRAWN_NICKNAME_PREFIX + userId + WITHDRAWN_NICKNAME_SUFFIX;
 	}
 }
