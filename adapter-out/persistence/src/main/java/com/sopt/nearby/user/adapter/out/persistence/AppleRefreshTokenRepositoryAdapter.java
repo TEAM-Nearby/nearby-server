@@ -12,15 +12,20 @@ import org.springframework.stereotype.Repository;
 public class AppleRefreshTokenRepositoryAdapter implements AppleRefreshTokenRepository {
 
 	private final AppleRefreshTokenJpaRepository jpaRepository;
+	private final AppleRefreshTokenCipher cipher;
 
-	public AppleRefreshTokenRepositoryAdapter(final AppleRefreshTokenJpaRepository jpaRepository) {
+	public AppleRefreshTokenRepositoryAdapter(
+			final AppleRefreshTokenJpaRepository jpaRepository,
+			final AppleRefreshTokenCipher cipher
+	) {
 		this.jpaRepository = jpaRepository;
+		this.cipher = cipher;
 	}
 
 	@Override
 	public AppleRefreshToken save(final AppleRefreshToken token) {
 		return toDomain(jpaRepository.save(new AppleRefreshTokenEntity(
-				token.userId(), token.refreshToken(), token.updatedAt()
+				token.userId(), cipher.encrypt(token.refreshToken()), token.updatedAt()
 		)));
 	}
 
@@ -35,6 +40,6 @@ public class AppleRefreshTokenRepositoryAdapter implements AppleRefreshTokenRepo
 	}
 
 	private AppleRefreshToken toDomain(final AppleRefreshTokenEntity entity) {
-		return new AppleRefreshToken(entity.getUserId(), entity.getRefreshToken(), entity.getUpdatedAt());
+		return new AppleRefreshToken(entity.getUserId(), cipher.decrypt(entity.getRefreshToken()), entity.getUpdatedAt());
 	}
 }

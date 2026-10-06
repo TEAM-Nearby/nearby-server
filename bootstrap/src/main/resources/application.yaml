@@ -52,6 +52,7 @@ kakao:
     issuer-uri: ${KAKAO_OIDC_ISSUER_URI:https://kauth.kakao.com}
     jwk-set-uri: ${KAKAO_OIDC_JWK_SET_URI:https://kauth.kakao.com/.well-known/jwks.json}
 apple:
+  refresh-token-encryption-key: ${APPLE_REFRESH_TOKEN_ENCRYPTION_KEY:}
   client-id: ${APPLE_CLIENT_ID:}
   team-id: ${APPLE_TEAM_ID:}
   key-id: ${APPLE_KEY_ID:}
