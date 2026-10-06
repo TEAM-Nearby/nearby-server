@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionOperations;
@@ -117,11 +116,23 @@ public class AppleLoginService implements AppleLoginUseCase {
 	}
 
 	@Override
-	@Transactional
 	public AppleLoginResult login(final AppleLoginCommand command) {
 		VerifiedUser appleUser = appleIdTokenVerifier.verify(command.idToken(), command.nonce());
-		String appleRefreshToken = appleOAuthClient.exchangeAuthorizationCode(command.authorizationCode());
-		UserAccount userAccount = findOrCreateUser(appleUser.providerUserId());
+		createUserTransaction.execute(status -> {
+			socialAccountRepository.findByProviderAndProviderUserId(APPLE_PROVIDER, appleUser.providerUserId())
+					.ifPresent(this::findUser);
+			return null;
+		});
+		AppleOAuthClient.Tokens appleTokens = appleOAuthClient.exchangeAuthorizationCode(command.authorizationCode());
+		VerifiedUser exchangedUser = appleIdTokenVerifier.verify(appleTokens.idToken(), command.nonce());
+		if (!appleUser.providerUserId().equals(exchangedUser.providerUserId())) {
+			throw new AppleLoginFailedException();
+		}
+		return createUserTransaction.execute(status -> completeLogin(appleUser.providerUserId(), appleTokens.refreshToken()));
+	}
+
+	private AppleLoginResult completeLogin(final String providerUserId, final String appleRefreshToken) {
+		UserAccount userAccount = findOrCreateUser(providerUserId);
 		appleRefreshTokenRepository.save(new AppleRefreshToken(
 				userAccount.id(),
 				appleRefreshToken,

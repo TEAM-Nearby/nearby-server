@@ -82,7 +82,7 @@ public class AppleOAuthClientAdapter implements AppleOAuthClient {
 	}
 
 	@Override
-	public String exchangeAuthorizationCode(final String authorizationCode) {
+	public Tokens exchangeAuthorizationCode(final String authorizationCode) {
 		if (isBlank(authorizationCode)) {
 			throw new AppleLoginFailedException();
 		}
@@ -98,10 +98,11 @@ public class AppleOAuthClientAdapter implements AppleOAuthClient {
 			}
 			JsonNode responseBody = objectMapper.readTree(response.body());
 			String refreshToken = responseBody.path("refresh_token").asText();
-			if (isBlank(refreshToken)) {
+			String idToken = responseBody.path("id_token").asText();
+			if (isBlank(refreshToken) || isBlank(idToken)) {
 				throw new AppleLoginFailedException();
 			}
-			return refreshToken;
+			return new Tokens(refreshToken, idToken);
 		} catch (AppleLoginFailedException exception) {
 			throw exception;
 		} catch (InterruptedException exception) {

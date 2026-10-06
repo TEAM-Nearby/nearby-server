@@ -3,7 +3,10 @@ package com.sopt.nearby.user.port.out;
 
 public interface AppleOAuthClient {
 
-	String exchangeAuthorizationCode(String authorizationCode);
+	Tokens exchangeAuthorizationCode(String authorizationCode);
 
 	void revoke(String refreshToken);
+
+	record Tokens(String refreshToken, String idToken) {
+	}
 }

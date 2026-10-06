@@ -85,6 +85,21 @@ class KakaoLoginServiceTest {
 	}
 
 	@Test
+	void rejectsWithdrawnUserWithoutIssuingTokens() {
+		FakeUserAccountRepository users = new FakeUserAccountRepository();
+		UserAccount withdrawn = users.save(new UserAccount(null, UserRole.USER, UserAccountStatus.WITHDRAWN,
+				null, null, UserOnboardingStatus.PHONE_VERIFIED, LocalDateTime.now(CLOCK), LocalDateTime.now(CLOCK)));
+		FakeSocialAccountRepository accounts = new FakeSocialAccountRepository();
+		accounts.save(new SocialAccount(null, withdrawn.id(), "KAKAO", "kakao-subject"));
+		FakeRefreshTokenRepository refreshTokens = new FakeRefreshTokenRepository();
+
+		assertThrows(KakaoLoginFailedException.class,
+				() -> service(users, accounts, refreshTokens, "kakao-subject")
+						.login(new KakaoLoginCommand("id-token", "nonce")));
+		assertTrue(refreshTokens.saved.isEmpty());
+	}
+
+	@Test
 	void reusesExistingUserWhenSocialAccountIsCreatedConcurrently() {
 		FakeUserAccountRepository userAccounts = new FakeUserAccountRepository();
 		UserAccount existing = userAccounts.save(new UserAccount(

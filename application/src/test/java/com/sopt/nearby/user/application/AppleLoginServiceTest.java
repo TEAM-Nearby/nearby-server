@@ -2,6 +2,8 @@
 package com.sopt.nearby.user.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.sopt.nearby.user.domain.model.RefreshToken;
 import com.sopt.nearby.user.domain.model.AppleRefreshToken;
@@ -46,8 +48,8 @@ class AppleLoginServiceTest {
 				(idToken, nonce) -> new VerifiedUser("apple-subject"),
 				new com.sopt.nearby.user.port.out.AppleOAuthClient() {
 					@Override
-					public String exchangeAuthorizationCode(final String authorizationCode) {
-						return "apple-refresh-token";
+					public Tokens exchangeAuthorizationCode(final String authorizationCode) {
+						return new Tokens("apple-refresh-token", "exchanged-id-token");
 					}
 
 					@Override
@@ -72,6 +74,56 @@ class AppleLoginServiceTest {
 		assertEquals(LocalDateTime.of(2026, 7, 17, 12, 0), savedRefreshToken.get().expiresAt());
 		assertEquals("apple-refresh-token", savedAppleRefreshToken.get().refreshToken());
 		assertEquals(existingUser.id(), savedAppleRefreshToken.get().userId());
+	}
+
+	@Test
+	void rejectsMismatchedExchangedIdentityBeforeSavingToken() {
+		UserAccount existingUser = new UserAccount(1L, UserRole.USER, UserAccountStatus.ACTIVE,
+				null, null, UserOnboardingStatus.STARTED, LocalDateTime.now(CLOCK), null);
+		AtomicReference<AppleRefreshToken> savedToken = new AtomicReference<>();
+		AppleLoginService service = new AppleLoginService(
+				(idToken, nonce) -> new VerifiedUser(idToken.equals("exchanged-id-token") ? "other-subject" : "apple-subject"),
+				new com.sopt.nearby.user.port.out.AppleOAuthClient() {
+					@Override
+				public Tokens exchangeAuthorizationCode(final String code) {
+						return new Tokens("refresh", "exchanged-id-token");
+					}
+					@Override
+				public void revoke(final String token) {
+					}
+				},
+				appleRefreshTokens(savedToken), request -> { throw new AssertionError("token issued"); },
+				userAccounts(existingUser), socialAccounts(1L, new AtomicReference<>()),
+				refreshTokens(new AtomicReference<>()), CLOCK
+		);
+
+		assertThrows(com.sopt.nearby.user.exception.AppleLoginFailedException.class,
+				() -> service.login(new AppleLoginCommand("id-token", "nonce", "code")));
+		assertNull(savedToken.get());
+	}
+
+	@Test
+	void rejectsWithdrawnUserBeforeExchangingCode() {
+		UserAccount withdrawn = new UserAccount(1L, UserRole.USER, UserAccountStatus.WITHDRAWN,
+				null, null, UserOnboardingStatus.STARTED, LocalDateTime.now(CLOCK), LocalDateTime.now(CLOCK));
+		AppleLoginService service = new AppleLoginService(
+				(idToken, nonce) -> new VerifiedUser("apple-subject"),
+				new com.sopt.nearby.user.port.out.AppleOAuthClient() {
+					@Override
+				public Tokens exchangeAuthorizationCode(final String code) {
+						throw new AssertionError("code exchanged");
+					}
+					@Override
+				public void revoke(final String token) {
+					}
+				},
+				appleRefreshTokens(new AtomicReference<>()), request -> { throw new AssertionError("token issued"); },
+				userAccounts(withdrawn), socialAccounts(1L, new AtomicReference<>()),
+				refreshTokens(new AtomicReference<>()), CLOCK
+		);
+
+		assertThrows(com.sopt.nearby.user.exception.AppleLoginFailedException.class,
+				() -> service.login(new AppleLoginCommand("id-token", "nonce", "code")));
 	}
 
 	private UserAccountRepository userAccounts(final UserAccount existingUser) {

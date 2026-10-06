@@ -28,12 +28,12 @@ public class KakaoAccountUnlinkerAdapter implements KakaoAccountUnlinker {
 			@Value("${kakao.admin-key:}") final String adminKey,
 			@Value("${kakao.unlink-uri:https://kapi.kakao.com/v1/user/unlink}") final URI unlinkUri
 	) {
-		this(HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build(), adminKey, unlinkUri);
+		this(HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build(), requireAdminKey(adminKey), unlinkUri);
 	}
 
 	KakaoAccountUnlinkerAdapter(final HttpClient httpClient, final String adminKey, final URI unlinkUri) {
 		this.httpClient = httpClient;
-		this.adminKey = adminKey;
+		this.adminKey = requireAdminKey(adminKey);
 		this.unlinkUri = unlinkUri;
 	}
 
@@ -67,5 +67,12 @@ public class KakaoAccountUnlinkerAdapter implements KakaoAccountUnlinker {
 
 	private boolean isBlank(final String value) {
 		return value == null || value.isBlank();
+	}
+
+	private static String requireAdminKey(final String adminKey) {
+		if (adminKey == null || adminKey.isBlank()) {
+			throw new IllegalStateException("kakao.admin-key 설정이 필요합니다.");
+		}
+		return adminKey;
 	}
 }

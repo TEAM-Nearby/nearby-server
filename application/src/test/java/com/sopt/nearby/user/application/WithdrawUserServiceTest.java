@@ -246,7 +246,7 @@ class WithdrawUserServiceTest {
 		private AtomicReference<String> revokedToken = new AtomicReference<>();
 
 		@Override
-		public String exchangeAuthorizationCode(final String authorizationCode) {
+		public Tokens exchangeAuthorizationCode(final String authorizationCode) {
 			throw new UnsupportedOperationException();
 		}
 

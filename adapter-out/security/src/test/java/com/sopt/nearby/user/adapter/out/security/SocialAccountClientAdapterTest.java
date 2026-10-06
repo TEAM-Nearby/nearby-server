@@ -2,6 +2,7 @@
 package com.sopt.nearby.user.adapter.out.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
@@ -32,13 +33,14 @@ class SocialAccountClientAdapterTest {
 		AtomicReference<String> requestBody = new AtomicReference<>();
 		URI uri = startServer(exchange -> {
 			requestBody.set(readBody(exchange));
-			respond(exchange, 200, "{\"refresh_token\":\"apple-refresh-token\"}");
+			respond(exchange, 200, "{\"refresh_token\":\"apple-refresh-token\",\"id_token\":\"apple-id-token\"}");
 		});
 		AppleOAuthClientAdapter adapter = appleAdapter(uri, uri);
 
-		String refreshToken = adapter.exchangeAuthorizationCode("authorization-code");
+		var tokens = adapter.exchangeAuthorizationCode("authorization-code");
 
-		assertThat(refreshToken).isEqualTo("apple-refresh-token");
+		assertThat(tokens.refreshToken()).isEqualTo("apple-refresh-token");
+		assertThat(tokens.idToken()).isEqualTo("apple-id-token");
 		assertThat(requestBody.get())
 				.contains("client_id=com.dewby.Nearby")
 				.contains("client_secret=generated-client-secret")
@@ -78,6 +80,12 @@ class SocialAccountClientAdapterTest {
 
 		assertThat(authorization.get()).isEqualTo("KakaoAK admin-key");
 		assertThat(requestBody.get()).isEqualTo("target_id_type=user_id&target_id=1234");
+	}
+
+	@Test
+	void rejectsMissingKakaoAdminKeyAtConstruction() {
+		assertThrows(IllegalStateException.class,
+				() -> new KakaoAccountUnlinkerAdapter(HttpClient.newHttpClient(), " ", URI.create("https://example.com")));
 	}
 
 	private AppleOAuthClientAdapter appleAdapter(final URI tokenUri, final URI revokeUri) {
