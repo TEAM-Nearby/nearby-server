@@ -43,6 +43,12 @@ public final class CompanionPlaceCityNameResolver {
 		String[] addressParts = address.toUpperCase(Locale.ROOT).split(",");
 		for (int index = addressParts.length - 1; index >= 0; index--) {
 			String addressPart = addressParts[index];
+			// 쉼표로 구분된 주소는 우편번호를 제외한 도시명만 허용해 도로명 오탐을 막는다.
+			String cityPart = addressPart.replaceAll("\\b[\\p{L}\\d]*\\d[\\p{L}\\d]*\\b", "")
+					.replaceAll("[^\\p{L}]+", " ").trim();
+			if (addressParts.length > 1 && cityPart.contains(" ")) {
+				continue;
+			}
 			Optional<CompanionCity> city = Arrays.stream(CompanionCity.values())
 					.filter(candidate -> candidate.matches(addressPart))
 					.findFirst();
