@@ -36,7 +36,7 @@ class ReadMyCompanionPostsServiceTest {
 	@Test
 	void returnsMyCompanionPostsWithKoreanCityNameAndGooglePlaceId() {
 		queryPort.posts = List.of(post(
-				"Pasadizo de San Gines, 5, Madrid, Spain",
+				"Madrid Calle de Cuchilleros, 17",
 				List.of(ReviewKeyword.PUNCTUAL, ReviewKeyword.GOOD_MANNERS)
 		));
 
@@ -76,6 +76,7 @@ class ReadMyCompanionPostsServiceTest {
 
 	@ParameterizedTest
 	@CsvSource({
+			"'스페인 마드리드, Calle de Cuchilleros, 17', MADRID, 마드리드",
 			"'Rambla de Catalunya, 18, Barcelona, Spain', BARCELONA, 바르셀로나",
 			"'Pasadizo de San Gines, 5, Madrid, Spain', MADRID, 마드리드",
 			"'Madrid Road, London, UK', LONDON, 런던",

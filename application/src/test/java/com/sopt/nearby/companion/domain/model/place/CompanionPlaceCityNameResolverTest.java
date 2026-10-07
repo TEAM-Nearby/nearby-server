@@ -54,6 +54,10 @@ class CompanionPlaceCityNameResolverTest {
 	@ValueSource(strings = {
 			"Barcelona Street, Rome, Italy",
 			"Barcelona 12, Rome, Italy",
+			"Barcelona 12, Rome, 이탈리아",
+			"Barcelona 12, Rome, IT",
+			"Barcelona 12, Rome, ITA",
+			"Barcelona 12, Oxford, UK",
 			"Barcelona 12, New York, United States"
 	})
 	void doesNotResolveStreetNameWhenCityIsUnsupported(String address) {
@@ -68,6 +72,10 @@ class CompanionPlaceCityNameResolverTest {
 
 	@ParameterizedTest
 	@CsvSource({
+			"'Calle de Cuchilleros, 17, Madrid', MADRID",
+			"'10 Downing Street, Westminster, London', LONDON",
+			"'Madrid Calle de Cuchilleros, 17', MADRID",
+			"'스페인 마드리드, Calle de Cuchilleros, 17', MADRID",
 			"'Rambla de Catalunya, 18, 08007 Barcelona, Spain', BARCELONA",
 			"'Madrid, Rambla de Catalunya, 16', MADRID",
 			"'London, United Kingdom', LONDON",
