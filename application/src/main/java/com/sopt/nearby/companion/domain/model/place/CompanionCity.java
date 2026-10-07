@@ -7,21 +7,25 @@ import java.util.List;
 
 public enum CompanionCity {
 
-    MADRID("Europe/Madrid", "Madrid", List.of("MADRID", "마드리드")),
-    LONDON("Europe/London", "London", List.of("LONDON", "런던")),
-    PARIS("Europe/Paris", "Paris", List.of("PARIS", "파리"));
+    BARCELONA("Europe/Madrid", "Barcelona", "바르셀로나", List.of("BARCELONA", "바르셀로나")),
+    MADRID("Europe/Madrid", "Madrid", "마드리드", List.of("MADRID", "마드리드")),
+    LONDON("Europe/London", "London", "런던", List.of("LONDON", "런던")),
+    PARIS("Europe/Paris", "Paris", "파리", List.of("PARIS", "파리"));
 
     private final ZoneId zoneId;
     private final String displayName;
+    private final String koreanName;
     private final List<String> addressTokens;
 
     CompanionCity(
             final String zoneId,
             final String displayName,
+            final String koreanName,
             final List<String> addressTokens
     ) {
         this.zoneId = ZoneId.of(zoneId);
         this.displayName = displayName;
+        this.koreanName = koreanName;
         this.addressTokens = addressTokens;
     }
 
@@ -31,6 +35,10 @@ public enum CompanionCity {
 
     public String displayName() {
         return displayName;
+    }
+
+    public String koreanName() {
+        return koreanName;
     }
 
     boolean matches(final String normalizedAddressPart) {

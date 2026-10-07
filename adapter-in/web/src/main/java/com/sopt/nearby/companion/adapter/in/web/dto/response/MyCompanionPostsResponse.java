@@ -23,7 +23,8 @@ public record MyCompanionPostsResponse(
 
 	public record PostResponse(
 			Long postId,
-			String cityName,
+			@Schema(description = "도시의 한국어 이름, 지원하지 않거나 판별할 수 없으면 null", example = "마드리드", nullable = true)
+			String cityNameKor,
 			CompanionCity city,
 			String timeZoneId,
 			OffsetDateTime currentLocalTime,
@@ -50,7 +51,7 @@ public record MyCompanionPostsResponse(
 		static PostResponse from(final ReadMyCompanionPostsResult.Post post) {
 			return new PostResponse(
 					post.postId(),
-					post.cityName(),
+					post.cityNameKor(),
 					post.city(),
 					post.city() == null ? null : post.city().zoneId().getId(),
 					post.currentLocalTime() == null ? null : post.currentLocalTime().toOffsetDateTime(),

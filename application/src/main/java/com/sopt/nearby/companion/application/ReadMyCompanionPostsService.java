@@ -39,7 +39,7 @@ public class ReadMyCompanionPostsService implements ReadMyCompanionPostsUseCase 
 		);
 		return new ReadMyCompanionPostsResult.Post(
 				summary.postId(),
-				CompanionPlaceCityNameResolver.resolve(summary.place().address(), summary.place().name()),
+				cityTime.city() == null ? null : cityTime.city().koreanName(),
 				cityTime.city(),
 				cityTime.currentLocalTime(),
 				summary.scheduledAt(),

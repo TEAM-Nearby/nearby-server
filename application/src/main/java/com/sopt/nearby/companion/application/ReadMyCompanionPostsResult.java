@@ -18,7 +18,7 @@ public record ReadMyCompanionPostsResult(
 
 	public record Post(
 			Long postId,
-			String cityName,
+			String cityNameKor,
 			CompanionCity city,
 			ZonedDateTime currentLocalTime,
 			LocalDateTime scheduledAt,
@@ -38,7 +38,7 @@ public record ReadMyCompanionPostsResult(
 
 		public Post(
 				final Long postId,
-				final String cityName,
+				final String cityNameKor,
 				final LocalDateTime scheduledAt,
 				final Place place,
 				final String hostProfileImageUrl,
@@ -50,7 +50,7 @@ public record ReadMyCompanionPostsResult(
 		) {
 			this(
 					postId,
-					cityName,
+					cityNameKor,
 					null,
 					null,
 					scheduledAt,
