@@ -9,6 +9,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CompanionPlaceCityNameResolverTest {
 
@@ -49,10 +50,15 @@ class CompanionPlaceCityNameResolverTest {
 		assertEquals("2026-07-01T13:00+01:00", result.currentLocalTime().toOffsetDateTime().toString());
 	}
 
-	@Test
-	void doesNotResolveStreetNameWhenCityIsUnsupported() {
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"Barcelona Street, Rome, Italy",
+			"Barcelona 12, Rome, Italy",
+			"Barcelona 12, New York, United States"
+	})
+	void doesNotResolveStreetNameWhenCityIsUnsupported(String address) {
 		ResolvedCityTime result = CompanionPlaceCityNameResolver.resolveCurrentTime(
-				"Barcelona Street, Rome, Italy",
+				address,
 				NOW
 		);
 
