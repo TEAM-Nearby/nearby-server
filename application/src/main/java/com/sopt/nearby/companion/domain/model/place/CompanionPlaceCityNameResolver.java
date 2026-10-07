@@ -41,7 +41,14 @@ public final class CompanionPlaceCityNameResolver {
 		}
 
 		String[] addressParts = address.toUpperCase(Locale.ROOT).split(",");
-		for (int index = addressParts.length - 1; index >= 0; index--) {
+		int lastIndex = addressParts.length - 1;
+		int firstIndex = 0;
+		// 도로명, 도시, 국가 순서의 주소는 도시 위치만 판별하고 도로명으로 되돌아가지 않는다.
+		if (addressParts.length >= 3 && addressParts[lastIndex].trim().matches("[\\p{L}\\s.]+")) {
+			lastIndex--;
+			firstIndex = lastIndex;
+		}
+		for (int index = lastIndex; index >= firstIndex; index--) {
 			String addressPart = addressParts[index];
 			// 쉼표로 구분된 주소는 우편번호를 제외한 도시명만 허용해 도로명 오탐을 막는다.
 			String cityPart = addressPart.replaceAll("\\b[\\p{L}\\d]*\\d[\\p{L}\\d]*\\b", "")
