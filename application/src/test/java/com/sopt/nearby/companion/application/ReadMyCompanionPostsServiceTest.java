@@ -16,6 +16,10 @@ import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class ReadMyCompanionPostsServiceTest {
 	private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-01T12:00:00Z"), ZoneOffset.UTC);
@@ -30,9 +34,9 @@ class ReadMyCompanionPostsServiceTest {
 	}
 
 	@Test
-	void returnsMyCompanionPostsWithCityNameAndGooglePlaceId() {
+	void returnsMyCompanionPostsWithKoreanCityNameAndGooglePlaceId() {
 		queryPort.posts = List.of(post(
-				"Madrid Calle de Cuchilleros, 17",
+				"Pasadizo de San Gines, 5, Madrid, Spain",
 				List.of(ReviewKeyword.PUNCTUAL, ReviewKeyword.GOOD_MANNERS)
 		));
 
@@ -42,7 +46,7 @@ class ReadMyCompanionPostsServiceTest {
 		assertEquals(1, result.posts().size());
 		ReadMyCompanionPostsResult.Post post = result.posts().get(0);
 		assertEquals(10L, post.postId());
-		assertEquals("Madrid", post.cityName());
+		assertEquals("마드리드", post.cityNameKor());
 		assertEquals(CompanionCity.MADRID, post.city());
 		assertEquals("2026-07-01T14:00+02:00", post.currentLocalTime().toOffsetDateTime().toString());
 		assertEquals(LocalDateTime.of(2026, 6, 29, 19, 0), post.scheduledAt());
@@ -70,13 +74,31 @@ class ReadMyCompanionPostsServiceTest {
 		assertEquals(List.of(), result.posts());
 	}
 
-	@Test
-	void usesPlaceNameWhenAddressIsBlank() {
-		queryPort.posts = List.of(post(" ", List.of()));
+	@ParameterizedTest
+	@CsvSource({
+			"'Rambla de Catalunya, 18, Barcelona, Spain', BARCELONA, 바르셀로나",
+			"'Pasadizo de San Gines, 5, Madrid, Spain', MADRID, 마드리드",
+			"'Madrid Road, London, UK', LONDON, 런던",
+			"'10 Rue de Rivoli, Paris, France', PARIS, 파리"
+	})
+	void returnsKoreanNameForSupportedCity(String address, CompanionCity city, String koreanName) {
+		queryPort.posts = List.of(post(address, List.of()));
+
+		ReadMyCompanionPostsResult.Post result = service.getPosts(1L).posts().get(0);
+
+		assertEquals(city, result.city());
+		assertEquals(koreanName, result.cityNameKor());
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	@ValueSource(strings = {" ", "Via dei Giubbonari, 21, Rome, Italy"})
+	void returnsNullCityFieldsWhenCityCannotBeResolved(String address) {
+		queryPort.posts = List.of(post(address, List.of()));
 
 		ReadMyCompanionPostsResult result = service.getPosts(1L);
 
-		assertEquals("시우다드 콘달", result.posts().get(0).cityName());
+		assertNull(result.posts().get(0).cityNameKor());
 		assertNull(result.posts().get(0).city());
 		assertNull(result.posts().get(0).currentLocalTime());
 	}

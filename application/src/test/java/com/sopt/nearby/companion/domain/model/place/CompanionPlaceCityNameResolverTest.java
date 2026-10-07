@@ -7,10 +7,25 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class CompanionPlaceCityNameResolverTest {
 
 	private static final Instant NOW = Instant.parse("2026-07-01T12:00:00Z");
+
+	@ParameterizedTest
+	@CsvSource({
+			"'Rambla de Catalunya, 18, Barcelona, Spain', 2026-07-01T12:00:00Z, 2026-07-01T14:00+02:00",
+			"'스페인 바르셀로나', 2026-01-01T12:00:00Z, 2026-01-01T13:00+01:00"
+	})
+	void resolvesBarcelonaWithSeasonalOffset(String address, String instant, String localTime) {
+		ResolvedCityTime result = CompanionPlaceCityNameResolver.resolveCurrentTime(address, Instant.parse(instant));
+
+		assertEquals(CompanionCity.BARCELONA, result.city());
+		assertEquals("Europe/Madrid", result.city().zoneId().getId());
+		assertEquals(localTime, result.currentLocalTime().toOffsetDateTime().toString());
+	}
 
 	@Test
 	void resolvesSupportedCityWithDaylightSavingTime() {

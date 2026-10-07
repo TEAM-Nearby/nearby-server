@@ -45,7 +45,7 @@ class MyCompanionPostControllerTest {
 		readUseCase.result = new ReadMyCompanionPostsResult(List.of(new ReadMyCompanionPostsResult.Post(
 				1L,
 				"바르셀로나",
-				CompanionCity.MADRID,
+				CompanionCity.BARCELONA,
 				ZonedDateTime.parse("2026-07-01T14:00:00+02:00[Europe/Madrid]"),
 				LocalDateTime.of(2026, 6, 29, 19, 0),
 				new ReadMyCompanionPostsResult.Place(
@@ -75,8 +75,9 @@ class MyCompanionPostControllerTest {
 				.andExpect(jsonPath("$.code").value("READ_MY_COMPANION_POSTS"))
 				.andExpect(jsonPath("$.message").value("내가 작성한 동행 모집글 목록을 조회했어요."))
 				.andExpect(jsonPath("$.data.posts[0].postId").value(1))
-				.andExpect(jsonPath("$.data.posts[0].cityName").value("바르셀로나"))
-				.andExpect(jsonPath("$.data.posts[0].city").value("MADRID"))
+				.andExpect(jsonPath("$.data.posts[0].cityNameKor").value("바르셀로나"))
+				.andExpect(jsonPath("$.data.posts[0].cityName").doesNotHaveJsonPath())
+				.andExpect(jsonPath("$.data.posts[0].city").value("BARCELONA"))
 				.andExpect(jsonPath("$.data.posts[0].timeZoneId").value("Europe/Madrid"))
 				.andExpect(jsonPath("$.data.posts[0].currentLocalTime").value("2026-07-01T14:00:00+02:00"))
 				.andExpect(jsonPath("$.data.posts[0].scheduledAt").value("2026-06-29T19:00:00"))
