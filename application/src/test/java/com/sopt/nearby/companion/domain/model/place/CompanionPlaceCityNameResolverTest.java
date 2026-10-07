@@ -50,6 +50,29 @@ class CompanionPlaceCityNameResolverTest {
 	}
 
 	@Test
+	void doesNotResolveStreetNameWhenCityIsUnsupported() {
+		ResolvedCityTime result = CompanionPlaceCityNameResolver.resolveCurrentTime(
+				"Barcelona Street, Rome, Italy",
+				NOW
+		);
+
+		assertNull(result.city());
+		assertNull(result.currentLocalTime());
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"'Rambla de Catalunya, 18, 08007 Barcelona, Spain', BARCELONA",
+			"'Madrid, Rambla de Catalunya, 16', MADRID",
+			"'London, United Kingdom', LONDON",
+			"'10 Downing Street, London SW1A 2AA, UK', LONDON",
+			"'Paris, France', PARIS"
+	})
+	void preservesSupportedCityComponents(String address, CompanionCity expectedCity) {
+		assertEquals(expectedCity, CompanionPlaceCityNameResolver.resolveSupportedCity(address).orElseThrow());
+	}
+
+	@Test
 	void returnsNullFieldsForUnsupportedCity() {
 		ResolvedCityTime result = CompanionPlaceCityNameResolver.resolveCurrentTime(
 				"Via dei Giubbonari, 21, Rome, Italy",
