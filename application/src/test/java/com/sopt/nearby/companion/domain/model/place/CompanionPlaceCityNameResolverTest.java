@@ -7,10 +7,26 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CompanionPlaceCityNameResolverTest {
 
 	private static final Instant NOW = Instant.parse("2026-07-01T12:00:00Z");
+
+	@ParameterizedTest
+	@CsvSource({
+			"'Rambla de Catalunya, 18, Barcelona, Spain', 2026-07-01T12:00:00Z, 2026-07-01T14:00+02:00",
+			"'스페인 바르셀로나', 2026-01-01T12:00:00Z, 2026-01-01T13:00+01:00"
+	})
+	void resolvesBarcelonaWithSeasonalOffset(String address, String instant, String localTime) {
+		ResolvedCityTime result = CompanionPlaceCityNameResolver.resolveCurrentTime(address, Instant.parse(instant));
+
+		assertEquals(CompanionCity.BARCELONA, result.city());
+		assertEquals("Europe/Madrid", result.city().zoneId().getId());
+		assertEquals(localTime, result.currentLocalTime().toOffsetDateTime().toString());
+	}
 
 	@Test
 	void resolvesSupportedCityWithDaylightSavingTime() {
@@ -32,6 +48,42 @@ class CompanionPlaceCityNameResolverTest {
 
 		assertEquals(CompanionCity.LONDON, result.city());
 		assertEquals("2026-07-01T13:00+01:00", result.currentLocalTime().toOffsetDateTime().toString());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"Barcelona Street, Rome, Italy",
+			"Barcelona 12, Rome, Italy",
+			"Barcelona 12, Rome, 이탈리아",
+			"Barcelona 12, Rome, IT",
+			"Barcelona 12, Rome, ITA",
+			"Barcelona 12, Oxford, UK",
+			"Barcelona 12, New York, United States"
+	})
+	void doesNotResolveStreetNameWhenCityIsUnsupported(String address) {
+		ResolvedCityTime result = CompanionPlaceCityNameResolver.resolveCurrentTime(
+				address,
+				NOW
+		);
+
+		assertNull(result.city());
+		assertNull(result.currentLocalTime());
+	}
+
+	@ParameterizedTest
+	@CsvSource({
+			"'Calle de Cuchilleros, 17, Madrid', MADRID",
+			"'10 Downing Street, Westminster, London', LONDON",
+			"'Madrid Calle de Cuchilleros, 17', MADRID",
+			"'스페인 마드리드, Calle de Cuchilleros, 17', MADRID",
+			"'Rambla de Catalunya, 18, 08007 Barcelona, Spain', BARCELONA",
+			"'Madrid, Rambla de Catalunya, 16', MADRID",
+			"'London, United Kingdom', LONDON",
+			"'10 Downing Street, London SW1A 2AA, UK', LONDON",
+			"'Paris, France', PARIS"
+	})
+	void preservesSupportedCityComponents(String address, CompanionCity expectedCity) {
+		assertEquals(expectedCity, CompanionPlaceCityNameResolver.resolveSupportedCity(address).orElseThrow());
 	}
 
 	@Test

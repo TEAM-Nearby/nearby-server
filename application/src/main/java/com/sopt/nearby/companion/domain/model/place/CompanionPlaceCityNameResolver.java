@@ -7,8 +7,20 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public final class CompanionPlaceCityNameResolver {
+
+	private static final Set<String> COUNTRY_NAMES = Arrays.stream(Locale.getISOCountries())
+			.map(code -> Locale.of("", code))
+			.flatMap(country -> Stream.of(
+					country.getCountry(), country.getISO3Country(),
+					country.getDisplayCountry(Locale.ENGLISH), country.getDisplayCountry(Locale.KOREAN)
+			))
+			.map(name -> name.toUpperCase(Locale.ROOT))
+			.collect(Collectors.toUnmodifiableSet());
 
 	private CompanionPlaceCityNameResolver() {
 	}
@@ -41,7 +53,14 @@ public final class CompanionPlaceCityNameResolver {
 		}
 
 		String[] addressParts = address.toUpperCase(Locale.ROOT).split(",");
-		for (int index = addressParts.length - 1; index >= 0; index--) {
+		int lastIndex = addressParts.length - 1;
+		int firstIndex = 0;
+		// 실제 국가명으로 끝나는 주소만 도시 위치로 제한해 도로명으로 되돌아가지 않는다.
+		if (addressParts.length >= 3 && isCountry(addressParts[lastIndex].trim())) {
+			lastIndex--;
+			firstIndex = lastIndex;
+		}
+		for (int index = lastIndex; index >= firstIndex; index--) {
 			String addressPart = addressParts[index];
 			Optional<CompanionCity> city = Arrays.stream(CompanionCity.values())
 					.filter(candidate -> candidate.matches(addressPart))
@@ -51,6 +70,10 @@ public final class CompanionPlaceCityNameResolver {
 			}
 		}
 		return Optional.empty();
+	}
+
+	private static boolean isCountry(final String addressPart) {
+		return COUNTRY_NAMES.contains(addressPart) || "UK".equals(addressPart);
 	}
 
 	public static ResolvedCityTime resolveCurrentTime(final String address, final Instant instant) {
