@@ -173,7 +173,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 				.map(CompanionMatchParticipant::userId)
 				.toList();
 		return profileRepository.findAllByUserIdIn(guestUserIds).stream()
-				.filter(profile -> profile.nickname().equals(command.detail().trim()))
+				.filter(profile -> profile.nickname().equals(command.detail().strip()))
 				.map(CompanionProfile::userId)
 				.findFirst()
 				.orElseThrow(CompanionReportTargetNotFoundException::new);

@@ -137,6 +137,15 @@ class CreateCompanionReportServiceTest {
 	}
 
 	@Test
+	void resolvesReportedUserByNicknameWithUnicodeWhitespace() {
+		TestSetup setup = new TestSetup();
+
+		setup.service.create(command(10L, null, List.of(ReportReason.NO_SHOW), "\u3000피신고자\u3000"));
+
+		assertEquals(11L, setup.reportRepository.savedReports.getFirst().reportedUserId());
+	}
+
+	@Test
 	void rejectsMissingReportedUserIdFromGuest() {
 		TestSetup setup = new TestSetup();
 
