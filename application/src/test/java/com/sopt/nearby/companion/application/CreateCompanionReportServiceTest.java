@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sopt.nearby.companion.domain.exception.CompanionReportCurrentUserAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.exception.CompanionReportCurrentUserNotCheckedInException;
+import com.sopt.nearby.companion.domain.exception.CompanionReportTargetNotFoundException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReportException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionReportRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
@@ -15,11 +16,15 @@ import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfileStatus;
+import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.domain.model.report.CompanionReport;
 import com.sopt.nearby.companion.domain.model.report.CompanionReportReason;
 import com.sopt.nearby.companion.domain.model.report.ReportReason;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
+import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionReportMail;
 import com.sopt.nearby.companion.port.out.CompanionReportMailContext;
 import com.sopt.nearby.companion.port.out.CompanionReportMailContextQueryPort;
@@ -27,6 +32,7 @@ import com.sopt.nearby.companion.port.out.CompanionReportMailSender;
 import com.sopt.nearby.companion.port.out.CompanionReportReasonRepository;
 import com.sopt.nearby.companion.port.out.CompanionReportRepository;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -121,6 +127,45 @@ class CreateCompanionReportServiceTest {
 		assertEquals(1, setup.reportRepository.savedReports.size());
 	}
 
+	@Test
+	void resolvesReportedUserByNicknameWhenHostOmitsUserId() {
+		TestSetup setup = new TestSetup();
+
+		setup.service.create(command(10L, null, List.of(ReportReason.NO_SHOW), " 피신고자 "));
+
+		assertEquals(11L, setup.reportRepository.savedReports.getFirst().reportedUserId());
+	}
+
+	@Test
+	void rejectsMissingReportedUserIdFromGuest() {
+		TestSetup setup = new TestSetup();
+
+		assertThrows(
+				InvalidCompanionReportRequestException.class,
+				() -> setup.service.create(command(11L, null, List.of(ReportReason.BAD_ATTITUDE), "신고자"))
+		);
+	}
+
+	@Test
+	void rejectsUnknownNicknameWhenHostOmitsUserId() {
+		TestSetup setup = new TestSetup();
+
+		assertThrows(
+				CompanionReportTargetNotFoundException.class,
+				() -> setup.service.create(command(10L, null, List.of(ReportReason.NO_SHOW), "없는 닉네임"))
+		);
+	}
+
+	@Test
+	void requiresNicknameWhenHostOmitsUserId() {
+		TestSetup setup = new TestSetup();
+
+		assertThrows(
+				InvalidCompanionReportRequestException.class,
+				() -> setup.service.create(command(10L, null, List.of(ReportReason.NO_SHOW), " "))
+		);
+	}
+
 	private CreateCompanionReportCommand command(
 			final Long reporterUserId,
 			final Long reportedUserId,
@@ -133,12 +178,14 @@ class CreateCompanionReportServiceTest {
 	private static final class TestSetup {
 		private final MeetingRepository meetingRepository = new MeetingRepository();
 		private final ParticipantRepository participantRepository = new ParticipantRepository();
+		private final ProfileRepository profileRepository = new ProfileRepository();
 		private final CheckInRepository checkInRepository = new CheckInRepository();
 		private final ReportRepository reportRepository = new ReportRepository();
 		private final CapturingMailSender mailSender = new CapturingMailSender();
 		private final CreateCompanionReportService service = new CreateCompanionReportService(
 				meetingRepository,
 				participantRepository,
+				profileRepository,
 				checkInRepository,
 				reportRepository,
 				new ReportReasonRepository(),
@@ -146,6 +193,56 @@ class CreateCompanionReportServiceTest {
 				mailSender,
 				CLOCK
 		);
+	}
+
+	private static final class ProfileRepository implements CompanionProfileRepository {
+		private final List<CompanionProfile> profiles = List.of(
+				profile(1L, 10L, "신고자"),
+				profile(2L, 11L, "피신고자"),
+				profile(3L, 12L, "다른 참여자")
+		);
+
+		@Override
+		public CompanionProfile save(final CompanionProfile model) {
+			return model;
+		}
+
+		@Override
+		public Optional<CompanionProfile> findById(final Long id) {
+			return profiles.stream().filter(profile -> profile.id().equals(id)).findFirst();
+		}
+
+		@Override
+		public List<CompanionProfile> findAllByUserIdIn(final List<Long> userIds) {
+			return profiles.stream().filter(profile -> userIds.contains(profile.userId())).toList();
+		}
+
+		@Override
+		public boolean existsByNickname(final String nickname) {
+			return profiles.stream().anyMatch(profile -> profile.nickname().equals(nickname));
+		}
+
+		@Override
+		public boolean existsByUserId(final Long userId) {
+			return profiles.stream().anyMatch(profile -> profile.userId().equals(userId));
+		}
+
+		@Override
+		public Optional<CompanionProfile> findByUserId(final Long userId) {
+			return profiles.stream().filter(profile -> profile.userId().equals(userId)).findFirst();
+		}
+
+		@Override
+		public Optional<CompanionProfile> findByUserIdForUpdate(final Long userId) {
+			return findByUserId(userId);
+		}
+
+		private static CompanionProfile profile(final Long id, final Long userId, final String nickname) {
+			return new CompanionProfile(
+					id, userId, nickname, UserGender.MALE, 2000, null, null,
+					BigDecimal.ZERO, 0, CompanionProfileStatus.ACTIVE
+			);
+		}
 	}
 
 	private static final class MeetingRepository implements CompanionMeetingRepository {
@@ -176,7 +273,8 @@ class CreateCompanionReportServiceTest {
 	private static final class ParticipantRepository implements CompanionMatchParticipantRepository {
 		private List<CompanionMatchParticipant> participants = List.of(
 				new CompanionMatchParticipant(1L, 10L, 10L, null, MatchParticipantRole.HOST),
-				new CompanionMatchParticipant(2L, 10L, 11L, null, MatchParticipantRole.GUEST)
+				new CompanionMatchParticipant(2L, 10L, 11L, null, MatchParticipantRole.GUEST),
+				new CompanionMatchParticipant(3L, 10L, 12L, null, MatchParticipantRole.GUEST)
 		);
 		@Override
 		public CompanionMatchParticipant save(final CompanionMatchParticipant model) {
