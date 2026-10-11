@@ -40,7 +40,10 @@ public interface CompanionReportApi {
 	})
 	@Operation(
 			summary = "동행 사용자 신고",
-			description = "동행 중이며 현재 사용자가 동행 마치기를 누르기 전 상대방을 신고합니다.",
+			description = """
+					동행 중이며 현재 사용자가 동행 마치기를 누르기 전 상대방을 신고합니다.
+					호스트는 reportedUserId를 생략하고 detail에 신고 대상 참여자의 정확한 닉네임을 입력할 수 있습니다.
+					""",
 			security = @SecurityRequirement(name = "bearerAuth")
 	)
 	CommonResponse<CreateCompanionReportResponse> createReport(
