@@ -12,15 +12,18 @@ import com.sopt.nearby.companion.domain.exception.CompanionReportTargetNotFoundE
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReportException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionReportRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
+import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
+import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.domain.model.report.CompanionReport;
 import com.sopt.nearby.companion.domain.model.report.CompanionReportReason;
 import com.sopt.nearby.companion.domain.model.report.ReportReason;
 import com.sopt.nearby.companion.port.in.CreateCompanionReportUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
+import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionReportMail;
 import com.sopt.nearby.companion.port.out.CompanionReportMailContext;
 import com.sopt.nearby.companion.port.out.CompanionReportMailContextQueryPort;
@@ -40,6 +43,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 
 	private final CompanionMeetingRepository meetingRepository;
 	private final CompanionMatchParticipantRepository participantRepository;
+	private final CompanionProfileRepository profileRepository;
 	private final MeetingCheckInRepository checkInRepository;
 	private final CompanionReportRepository reportRepository;
 	private final CompanionReportReasonRepository reportReasonRepository;
@@ -50,6 +54,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 	public CreateCompanionReportService(
 			final CompanionMeetingRepository meetingRepository,
 			final CompanionMatchParticipantRepository participantRepository,
+			final CompanionProfileRepository profileRepository,
 			final MeetingCheckInRepository checkInRepository,
 			final CompanionReportRepository reportRepository,
 			final CompanionReportReasonRepository reportReasonRepository,
@@ -59,6 +64,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 	) {
 		this.meetingRepository = meetingRepository;
 		this.participantRepository = participantRepository;
+		this.profileRepository = profileRepository;
 		this.checkInRepository = checkInRepository;
 		this.reportRepository = reportRepository;
 		this.reportReasonRepository = reportReasonRepository;
@@ -77,7 +83,8 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 		validateMeeting(meeting);
 
 		List<CompanionMatchParticipant> participants = participantRepository.findAllByMatchId(meeting.matchId());
-		validateParticipants(participants, command.reporterUserId(), command.reportedUserId());
+		Long reportedUserId = resolveReportedUserId(command, participants);
+		validateParticipants(participants, command.reporterUserId(), reportedUserId);
 		MeetingCheckIn reporterCheckIn = checkInRepository
 				.findByMeetingIdAndUserId(meeting.id(), command.reporterUserId())
 				.orElseThrow(CompanionReportCurrentUserNotCheckedInException::new);
@@ -86,12 +93,12 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 		}
 		validateReasons(command.reasons(), command.detail());
 		if (reportRepository.existsByMeetingIdAndReporterUserIdAndReportedUserId(
-				meeting.id(), command.reporterUserId(), command.reportedUserId())) {
+				meeting.id(), command.reporterUserId(), reportedUserId)) {
 			throw new CompanionReportAlreadyExistsException();
 		}
 
 		CompanionReportMailContext mailContext = mailContextQueryPort
-				.findByMeetingIdAndUserIds(meeting.id(), command.reporterUserId(), command.reportedUserId())
+				.findByMeetingIdAndUserIds(meeting.id(), command.reporterUserId(), reportedUserId)
 				.orElseThrow(CompanionReportContextNotFoundException::new);
 
 		LocalDateTime now = LocalDateTime.now(clock);
@@ -99,7 +106,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 				null,
 				meeting.id(),
 				command.reporterUserId(),
-				command.reportedUserId(),
+				reportedUserId,
 				command.detail(),
 				now
 		));
@@ -141,9 +148,35 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 	private void validateCommand(final CreateCompanionReportCommand command) {
 		if (command == null || command.reporterUserId() == null || command.reporterUserId() <= 0
 				|| command.meetingId() == null || command.meetingId() <= 0
-				|| command.reportedUserId() == null || command.reportedUserId() <= 0) {
+				|| (command.reportedUserId() != null && command.reportedUserId() <= 0)) {
 			throw new InvalidCompanionReportRequestException();
 		}
+	}
+
+	private Long resolveReportedUserId(
+			final CreateCompanionReportCommand command,
+			final List<CompanionMatchParticipant> participants
+	) {
+		if (command.reportedUserId() != null) {
+			return command.reportedUserId();
+		}
+		CompanionMatchParticipant reporter = participants.stream()
+				.filter(participant -> participant.userId().equals(command.reporterUserId()))
+				.findFirst()
+				.orElseThrow(ForbiddenCompanionReportException::new);
+		if (reporter.role() != MatchParticipantRole.HOST
+				|| command.detail() == null || command.detail().isBlank()) {
+			throw new InvalidCompanionReportRequestException();
+		}
+		List<Long> guestUserIds = participants.stream()
+				.filter(participant -> participant.role() == MatchParticipantRole.GUEST)
+				.map(CompanionMatchParticipant::userId)
+				.toList();
+		return profileRepository.findAllByUserIdIn(guestUserIds).stream()
+				.filter(profile -> profile.nickname().equals(command.detail().strip()))
+				.map(CompanionProfile::userId)
+				.findFirst()
+				.orElseThrow(CompanionReportTargetNotFoundException::new);
 	}
 
 	private void validateMeeting(final CompanionMeeting meeting) {
