@@ -455,6 +455,7 @@ public class CompanionUseCaseConfig {
     CreateCompanionReportUseCase createCompanionReportUseCase(
             final CompanionMeetingRepository meetingRepository,
             final CompanionMatchParticipantRepository participantRepository,
+            final CompanionProfileRepository profileRepository,
             final MeetingCheckInRepository checkInRepository,
             final CompanionReportRepository reportRepository,
             final CompanionReportReasonRepository reportReasonRepository,
@@ -465,6 +466,7 @@ public class CompanionUseCaseConfig {
         return new CreateCompanionReportService(
                 meetingRepository,
                 participantRepository,
+                profileRepository,
                 checkInRepository,
                 reportRepository,
                 reportReasonRepository,
