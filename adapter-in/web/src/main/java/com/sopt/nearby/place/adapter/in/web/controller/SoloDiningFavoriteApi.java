@@ -20,7 +20,7 @@ public interface SoloDiningFavoriteApi {
     @ApiExceptions(InvalidSoloDiningFavoritesRequestException.class)
     @Operation(
             summary = "혼밥 맛집 즐겨찾기 목록 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 즐겨찾기 등록한 혼밥 맛집 목록을 조회합니다.",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 즐겨찾기 등록한 혼밥 맛집 목록을 조회합니다. category는 대표 분류이며 categories는 전체 분류입니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponse(
@@ -46,6 +46,7 @@ public interface SoloDiningFavoriteApi {
                                     "photoReference": "places/ChIJxxxxxxxx/photos/ATKogp...",
                                     "imageUrl": "https://lh3.googleusercontent.com/place.jpg",
                                     "category": "CAFE",
+                                    "categories": ["CAFE", "DESSERT"],
                                     "distanceMeters": 800,
                                     "rating": 4.3,
                                     "reviewCount": 22870,
@@ -63,7 +64,7 @@ public interface SoloDiningFavoriteApi {
             String latitude,
             @Parameter(description = "사용자 현재 위치 경도", required = true, example = "126.97800000")
             String longitude,
-            @Parameter(description = "음식 카테고리", example = "CAFE")
+            @Parameter(description = "음식 카테고리(RESTAURANT, CAFE, PUB, DESSERT). 복수 분류 중 하나라도 일치하면 조회합니다.", example = "CAFE")
             String category,
             @Parameter(description = "정렬 기준", example = "LATEST")
             String sort,

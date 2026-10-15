@@ -173,6 +173,7 @@ class ReadSoloDiningFavoritesServiceTest {
                 "서울특별시 중구 세종대로 110",
                 "places/google-place-id/photos/photo-resource",
                 category,
+                category == null ? List.of() : List.of(category),
                 80,
                 new BigDecimal("4.30"),
                 22870,

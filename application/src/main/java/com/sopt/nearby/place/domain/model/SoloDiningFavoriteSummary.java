@@ -3,6 +3,7 @@ package com.sopt.nearby.place.domain.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record SoloDiningFavoriteSummary(
         Long favoriteId,
@@ -13,6 +14,7 @@ public record SoloDiningFavoriteSummary(
         String address,
         String photoReference,
         SoloDiningPlaceCategory category,
+        List<SoloDiningPlaceCategory> categories,
         int distanceMeters,
         BigDecimal rating,
         Integer reviewCount,

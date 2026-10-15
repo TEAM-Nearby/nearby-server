@@ -4,6 +4,7 @@ package com.sopt.nearby.place.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
+import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCategoryEntity;
 import com.sopt.nearby.place.adapter.out.persistence.entity.SoloDiningFavoriteEntity;
 import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRepository;
 import com.sopt.nearby.place.adapter.out.persistence.repository.SoloDiningFavoriteJpaRepository;
@@ -22,6 +23,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @DataJpaTest
@@ -38,6 +40,40 @@ class SoloDiningPlaceQueryAdapterTest {
 
     @Autowired
     private SoloDiningPlaceQueryJpaRepository queryJpaRepository;
+
+    @Autowired
+    private TestEntityManager entityManager;
+
+    @Test
+    void filtersByEveryStoredCategoryWithoutDuplicatesAndPreservesOrder() {
+        SoloDiningPlaceQueryAdapter adapter = new SoloDiningPlaceQueryAdapter(queryJpaRepository);
+        PlaceCacheEntity dessertCafe = placeCacheJpaRepository.saveAndFlush(place(
+                "dessert-cafe", "디저트 카페", "restaurant", "37.56652000", "126.97802000"
+        ));
+        entityManager.persist(new PlaceCategoryEntity(dessertCafe.getId(), "DESSERT", 0));
+        entityManager.persistAndFlush(new PlaceCategoryEntity(dessertCafe.getId(), "CAFE", 1));
+        favoriteJpaRepository.saveAndFlush(favorite(7L, dessertCafe.getId(), LocalDateTime.of(2026, 10, 15, 12, 0)));
+
+        for (SoloDiningPlaceCategory category : List.of(SoloDiningPlaceCategory.DESSERT, SoloDiningPlaceCategory.CAFE)) {
+            List<SoloDiningPlaceSummary> nearby = adapter.findAllNearby(
+                    7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, category, 1000);
+            assertThat(nearby).extracting(SoloDiningPlaceSummary::placeId).containsExactly(dessertCafe.getId());
+            assertThat(nearby.getFirst().category()).isEqualTo(SoloDiningPlaceCategory.DESSERT);
+            assertThat(nearby.getFirst().categories()).containsExactly(
+                    SoloDiningPlaceCategory.DESSERT, SoloDiningPlaceCategory.CAFE);
+            assertThat(adapter.findAllByUserId(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE,
+                    category, SoloDiningFavoriteSort.LATEST))
+                    .extracting(SoloDiningFavoriteSummary::categories)
+                    .containsExactly(List.of(SoloDiningPlaceCategory.DESSERT, SoloDiningPlaceCategory.CAFE));
+        }
+        assertThat(adapter.findAllNearby(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, null, 1000)).hasSize(1);
+        assertThat(adapter.findAllNearby(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE,
+                SoloDiningPlaceCategory.RESTAURANT, 1000)).isEmpty();
+        assertThat(adapter.findAllByUserId(8L, CURRENT_LATITUDE, CURRENT_LONGITUDE,
+                SoloDiningPlaceCategory.DESSERT, SoloDiningFavoriteSort.LATEST)).isEmpty();
+        assertThat(adapter.findAllByPlaceIds(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, List.of(dessertCafe.getId()))
+                .getFirst().categories()).containsExactly(SoloDiningPlaceCategory.DESSERT, SoloDiningPlaceCategory.CAFE);
+    }
 
     @Test
     void findsAllNearbyPlacesSortedByDistanceWithFavoriteFlag() {

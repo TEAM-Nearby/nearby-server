@@ -38,6 +38,32 @@ class SoloDiningPlaceControllerTest {
     private FakeReadSoloDiningPlaceUseCase readDetailUseCase;
     private FakeManageSoloDiningFavoriteUseCase favoriteUseCase;
 
+    @Test
+    void acceptsDessertFilterAndReturnsAllCategoriesInListAndDetails() throws Exception {
+        readUseCase.result = result("서울특별시 중구 세종대로 110");
+        readDetailUseCase.result = detailResult();
+
+        mockMvc.perform(get("/api/solo-dining/places")
+                        .queryParam("latitude", "37.56650000")
+                        .queryParam("longitude", "126.97800000")
+                        .queryParam("category", "dessert")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.places[0].category").value("CAFE"))
+                .andExpect(jsonPath("$.data.places[0].categories[0]").value("CAFE"))
+                .andExpect(jsonPath("$.data.places[0].categories[1]").value("DESSERT"));
+        assertEquals(SoloDiningPlaceCategory.DESSERT, readUseCase.command.category());
+
+        mockMvc.perform(get("/api/solo-dining/places/12")
+                        .queryParam("latitude", "37.56650000")
+                        .queryParam("longitude", "126.97800000")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.category").value("CAFE"))
+                .andExpect(jsonPath("$.data.categories[0]").value("CAFE"))
+                .andExpect(jsonPath("$.data.categories[1]").value("DESSERT"));
+    }
+
     @BeforeEach
     void setUp() {
         readUseCase = new FakeReadSoloDiningPlacesUseCase();
@@ -311,6 +337,7 @@ class SoloDiningPlaceControllerTest {
                 "places/google-place-id/photos/photo-resource",
                 "https://lh3.googleusercontent.com/place.jpg",
                 SoloDiningPlaceCategory.CAFE,
+                List.of(SoloDiningPlaceCategory.CAFE, SoloDiningPlaceCategory.DESSERT),
                 80,
                 new BigDecimal("4.30"),
                 22870,
@@ -330,6 +357,7 @@ class SoloDiningPlaceControllerTest {
                 new BigDecimal("37.56612000"),
                 new BigDecimal("126.97845000"),
                 SoloDiningPlaceCategory.CAFE,
+                List.of(SoloDiningPlaceCategory.CAFE, SoloDiningPlaceCategory.DESSERT),
                 80,
                 new BigDecimal("4.30"),
                 22870,

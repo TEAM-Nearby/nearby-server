@@ -29,7 +29,7 @@ public interface SoloDiningPlaceApi {
     })
     @Operation(
             summary = "혼밥 맛집 목록 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치 주변의 혼밥 맛집 목록을 조회합니다.",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치 주변의 혼밥 맛집 목록을 조회합니다. category는 대표 분류이며 categories는 전체 분류입니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponse(
@@ -52,6 +52,7 @@ public interface SoloDiningPlaceApi {
                                     "photoReference": "places/ChIJxxxxxxxx/photos/ATKogp...",
                                     "imageUrl": "https://lh3.googleusercontent.com/place.jpg",
                                     "category": "CAFE",
+                                    "categories": ["CAFE", "DESSERT"],
                                     "distanceMeters": 800,
                                     "rating": 4.3,
                                     "reviewCount": 22870,
@@ -71,7 +72,7 @@ public interface SoloDiningPlaceApi {
             String latitude,
             @Parameter(description = "사용자 현재 위치 경도", required = true, example = "126.97800000")
             String longitude,
-            @Parameter(description = "음식 카테고리", example = "CAFE")
+            @Parameter(description = "음식 카테고리(RESTAURANT, CAFE, PUB, DESSERT). 복수 분류 중 하나라도 일치하면 조회합니다.", example = "CAFE")
             String category,
             @Parameter(hidden = true)
             Principal principal
@@ -84,7 +85,7 @@ public interface SoloDiningPlaceApi {
     })
     @Operation(
             summary = "혼밥 맛집 상세 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 혼밥 맛집 상세 정보를 조회합니다.",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 혼밥 맛집 상세 정보를 조회합니다. category와 categories는 저장된 분류를 반환합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponse(
@@ -105,6 +106,7 @@ public interface SoloDiningPlaceApi {
                                 "latitude": 37.56612000,
                                 "longitude": 126.97845000,
                                 "category": "CAFE",
+                                "categories": ["CAFE", "DESSERT"],
                                 "distanceMeters": 800,
                                 "rating": 4.3,
                                 "reviewCount": 22870,

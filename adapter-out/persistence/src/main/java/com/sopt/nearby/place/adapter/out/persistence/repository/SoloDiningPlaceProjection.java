@@ -17,6 +17,8 @@ public interface SoloDiningPlaceProjection {
 
     String getCategory();
 
+    String getCategories();
+
     Number getDistanceMeters();
 
     BigDecimal getRating();

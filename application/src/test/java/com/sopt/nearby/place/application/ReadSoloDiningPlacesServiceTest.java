@@ -143,6 +143,7 @@ class ReadSoloDiningPlacesServiceTest {
                 "서울특별시 중구 세종대로 110",
                 "places/" + googlePlaceId + "/photos/photo-resource",
                 SoloDiningPlaceCategory.CAFE,
+                List.of(SoloDiningPlaceCategory.CAFE),
                 80,
                 new BigDecimal("4.30"),
                 22870,

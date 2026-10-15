@@ -18,6 +18,9 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
                 place.address as address,
                 place.photo_reference as photoReference,
                 upper(coalesce(place.category, 'OTHER')) as category,
+                (select string_agg(classification.category, ',' order by classification.category_order)
+                    from place_category classification
+                    where classification.place_id = place.id) as categories,
                 cast(round(6371000 * acos(least(1.0, greatest(-1.0,
                     cos(radians(:latitude)) * cos(radians(cast(place.latitude as double precision)))
                     * cos(radians(cast(place.longitude as double precision)) - radians(:longitude))
@@ -35,7 +38,12 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
                 place.longitude as longitude,
                 place.business_status as businessStatus
             from place_cache place
-            where (:category is null or upper(coalesce(place.category, 'OTHER')) = :category)
+            where (:category is null or exists (
+                    select 1 from place_category classification
+                    where classification.place_id = place.id and classification.category = :category
+                ) or (not exists (
+                    select 1 from place_category classification where classification.place_id = place.id
+                ) and upper(place.category) = :category))
                 and 6371000 * acos(least(1.0, greatest(-1.0,
                     cos(radians(:latitude)) * cos(radians(cast(place.latitude as double precision)))
                     * cos(radians(cast(place.longitude as double precision)) - radians(:longitude))
@@ -59,6 +67,9 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
                 place.address as address,
                 place.photo_reference as photoReference,
                 upper(coalesce(place.category, 'OTHER')) as category,
+                (select string_agg(classification.category, ',' order by classification.category_order)
+                    from place_category classification
+                    where classification.place_id = place.id) as categories,
                 cast(round(6371000 * acos(least(1.0, greatest(-1.0,
                     cos(radians(:latitude)) * cos(radians(cast(place.latitude as double precision)))
                     * cos(radians(cast(place.longitude as double precision)) - radians(:longitude))
@@ -96,6 +107,9 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
                 place.address as address,
                 place.photo_reference as photoReference,
                 upper(place.category) as category,
+                (select string_agg(classification.category, ',' order by classification.category_order)
+                    from place_category classification
+                    where classification.place_id = place.id) as categories,
                 cast(round(6371000 * acos(least(1.0, greatest(-1.0,
                     cos(radians(:latitude)) * cos(radians(cast(place.latitude as double precision)))
                     * cos(radians(cast(place.longitude as double precision)) - radians(:longitude))
@@ -107,7 +121,12 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
             from solo_dining_favorite favorite
             join place_cache place on place.id = favorite.place_id
             where favorite.user_id = :userId
-                and (:category is null or upper(place.category) = :category)
+                and (:category is null or exists (
+                    select 1 from place_category classification
+                    where classification.place_id = place.id and classification.category = :category
+                ) or (not exists (
+                    select 1 from place_category classification where classification.place_id = place.id
+                ) and upper(place.category) = :category))
             order by
                 case when :sort = 'LATEST' then favorite.created_at end desc,
                 case when :sort = 'LATEST' then favorite.id end desc,

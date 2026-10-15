@@ -60,7 +60,8 @@ class ReadSoloDiningPlaceServiceTest {
         assertEquals("서울특별시 중구 세종대로 110", result.address());
         assertEquals(new BigDecimal("37.56612000"), result.latitude());
         assertEquals(new BigDecimal("126.97845000"), result.longitude());
-        assertEquals(SoloDiningPlaceCategory.CAFE, result.category());
+        assertEquals(SoloDiningPlaceCategory.RESTAURANT, result.category());
+        assertEquals(List.of(SoloDiningPlaceCategory.RESTAURANT, SoloDiningPlaceCategory.DESSERT), result.categories());
         assertEquals(80, result.distanceMeters());
         assertEquals(new BigDecimal("4.30"), result.rating());
         assertEquals(22870, result.reviewCount());
@@ -109,7 +110,7 @@ class ReadSoloDiningPlaceServiceTest {
     }
 
     @Test
-    void returnsNullCategoryWhenGoogleDetailsCategoryIsMissing() {
+    void preservesStoredCategoriesWhenGoogleDetailsCategoryIsMissing() {
         queryPort.result = List.of(summary());
         detailsPort.result = new SoloDiningPlaceDetailsResult(
                 "google-place-id",
@@ -132,7 +133,8 @@ class ReadSoloDiningPlaceServiceTest {
 
         SoloDiningPlaceResult result = service.read(validCommand());
 
-        assertNull(result.category());
+        assertEquals(SoloDiningPlaceCategory.RESTAURANT, result.category());
+        assertEquals(List.of(SoloDiningPlaceCategory.RESTAURANT, SoloDiningPlaceCategory.DESSERT), result.categories());
     }
 
     @Test
@@ -185,6 +187,7 @@ class ReadSoloDiningPlaceServiceTest {
                 "캐시 주소",
                 "places/google-place-id/photos/cached-photo",
                 SoloDiningPlaceCategory.RESTAURANT,
+                List.of(SoloDiningPlaceCategory.RESTAURANT, SoloDiningPlaceCategory.DESSERT),
                 80,
                 new BigDecimal("4.10"),
                 100,

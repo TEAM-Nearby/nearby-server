@@ -2,6 +2,7 @@
 package com.sopt.nearby.place.domain.model;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record SoloDiningPlaceSummary(
         Long placeId,
@@ -10,6 +11,7 @@ public record SoloDiningPlaceSummary(
         String address,
         String photoReference,
         SoloDiningPlaceCategory category,
+        List<SoloDiningPlaceCategory> categories,
         int distanceMeters,
         BigDecimal rating,
         Integer reviewCount,
