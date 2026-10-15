@@ -1,0 +1,250 @@
+# main 브랜치에서 운영 EC2 배포 권한을 점검하거나 애플리케이션을 수동 배포합니다.
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      check_only:
+        description: 'Check AWS and EC2 access without deploying the application'
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Production deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      AWS_REGION: ${{ vars.PROD_AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ vars.PROD_AWS_ACCOUNT_ID }}
+      EC2_INSTANCE_ID: ${{ vars.PROD_EC2_INSTANCE_ID }}
+      APP_SERVICE_NAME: ${{ vars.PROD_APP_SERVICE_NAME }}
+      APP_DIR: ${{ vars.PROD_APP_DIR }}
+      APP_JAR_PATH: ${{ vars.PROD_APP_JAR_PATH }}
+      APP_PORT: ${{ vars.PROD_APP_PORT }}
+      SERVICE_URL: ${{ vars.PROD_SERVICE_URL }}
+      DEPLOY_S3_BUCKET: ${{ vars.PROD_DEPLOY_S3_BUCKET }}
+      HEALTHCHECK_PATH: ${{ vars.PROD_HEALTHCHECK_PATH }}
+      SSM_ENV_PATH: ${{ vars.PROD_SSM_ENV_PATH }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Validate deploy settings
+        shell: bash
+        env:
+          AWS_ROLE_TO_ASSUME: ${{ vars.PROD_AWS_ROLE_ARN }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Production deployment is allowed only from main" >&2
+            exit 1
+          fi
+
+          for name in AWS_REGION AWS_ACCOUNT_ID EC2_INSTANCE_ID APP_SERVICE_NAME APP_DIR APP_JAR_PATH APP_PORT SERVICE_URL DEPLOY_S3_BUCKET HEALTHCHECK_PATH SSM_ENV_PATH AWS_ROLE_TO_ASSUME; do
+            if [ -z "${!name}" ]; then
+              echo "$name is required" >&2
+              exit 1
+            fi
+          done
+
+      - name: Require release source on main
+        if: ${{ !inputs.check_only }}
+        run: |
+          if [ ! -f bootstrap/build.gradle ]; then
+            echo "main does not contain the server release yet. Merge the reviewed release before deploying." >&2
+            exit 1
+          fi
+
+      - name: Set up Java 21
+        if: ${{ !inputs.check_only }}
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Create swap space
+        if: ${{ !inputs.check_only }}
+        run: |
+          swapfile="$RUNNER_TEMP/nearby-swapfile"
+          sudo fallocate -l 4G "$swapfile"
+          sudo chmod 600 "$swapfile"
+          sudo mkswap "$swapfile"
+          sudo swapon "$swapfile"
+          free -h
+
+      - name: Make Gradle wrapper executable
+        if: ${{ !inputs.check_only }}
+        run: chmod +x ./gradlew
+
+      - name: Run tests
+        if: ${{ !inputs.check_only }}
+        run: ./gradlew test --no-daemon
+
+      - name: Build application jar
+        if: ${{ !inputs.check_only }}
+        run: ./gradlew :bootstrap:bootJar --no-daemon
+
+      - name: Resolve boot jar
+        if: ${{ !inputs.check_only }}
+        id: boot_jar
+        shell: bash
+        run: |
+          jars=()
+          while IFS= read -r candidate; do
+            if unzip -p "$candidate" META-INF/MANIFEST.MF | grep -q '^Implementation-Title: bootstrap'; then
+              jars+=("$candidate")
+            fi
+          done < <(find bootstrap/build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' | sort)
+
+          if [ "${#jars[@]}" -ne 1 ]; then
+            printf 'Expected one bootstrap boot jar, found %s:\n' "${#jars[@]}" >&2
+            printf '%s\n' "${jars[@]}" >&2
+            exit 1
+          fi
+
+          jar="${jars[0]}"
+          test -s "$jar"
+          unzip -p "$jar" META-INF/MANIFEST.MF | grep -q '^Main-Class: org.springframework.boot.loader.launch.JarLauncher'
+          unzip -p "$jar" META-INF/MANIFEST.MF | grep -q '^Start-Class: com.sopt.nearby.NearbyApplication'
+          echo "path=$jar" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ vars.PROD_AWS_ROLE_ARN }}
+          role-session-name: nearby-production-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+          allowed-account-ids: ${{ env.AWS_ACCOUNT_ID }}
+
+      - name: Verify AWS and production EC2 access
+        shell: bash
+        run: |
+          set -euo pipefail
+          account="$(aws sts get-caller-identity --query Account --output text)"
+          test "$account" = "$AWS_ACCOUNT_ID"
+          target="$(aws ec2 describe-instances --instance-ids "$EC2_INSTANCE_ID" --query 'Reservations[0].Instances[0].Tags[?Key==`Environment`].Value | [0]' --output text)"
+          test "$target" = production
+          aws s3api head-bucket --bucket "$DEPLOY_S3_BUCKET"
+          parameters="$(jq -n --arg path "$SSM_ENV_PATH" --arg region "$AWS_REGION" '{commands: [
+            "set -eu",
+            "cloud-init status",
+            "java -version 2>&1",
+            "test -d /opt/nearby",
+            "systemctl cat nearby.service >/dev/null",
+            "systemctl is-active caddy amazon-cloudwatch-agent",
+            "count=$(aws ssm get-parameters-by-path --path \($path) --region \($region) --recursive --with-decryption --query \"length(Parameters)\" --output json); test \"$count\" -gt 0; echo Runtime_parameters_read=$count"
+          ]}')"
+          command_id="$(aws ssm send-command --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name AWS-RunShellScript --comment "Verify production deployment access" \
+            --parameters "$parameters" --query Command.CommandId --output text)"
+          aws ssm wait command-executed --command-id "$command_id" --instance-id "$EC2_INSTANCE_ID" || {
+            aws ssm get-command-invocation --command-id "$command_id" --instance-id "$EC2_INSTANCE_ID" \
+              --query '{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}' --output json
+            exit 1
+          }
+          aws ssm get-command-invocation --command-id "$command_id" --instance-id "$EC2_INSTANCE_ID" \
+            --query '{status:Status,stdout:StandardOutputContent}' --output json
+
+      - name: Upload jar to S3
+        id: upload_artifact
+        if: ${{ !inputs.check_only }}
+        shell: bash
+        env:
+          BOOT_JAR: ${{ steps.boot_jar.outputs.path }}
+        run: |
+          set -euo pipefail
+          s3_uri="s3://${DEPLOY_S3_BUCKET}/production/releases/${GITHUB_SHA}/app.jar"
+          aws s3 cp "$BOOT_JAR" "$s3_uri"
+          echo "s3_uri=$s3_uri" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy through SSM
+        if: ${{ !inputs.check_only }}
+        shell: bash
+        env:
+          S3_URI: ${{ steps.upload_artifact.outputs.s3_uri }}
+        run: |
+          set -euo pipefail
+          parameters="$(jq -n \
+            --arg s3_uri "$S3_URI" \
+            --arg app_dir "$APP_DIR" \
+            --arg app_jar_path "$APP_JAR_PATH" \
+            --arg app_service_name "$APP_SERVICE_NAME" \
+            --arg app_port "$APP_PORT" \
+            --arg healthcheck_path "$HEALTHCHECK_PATH" \
+            --arg ssm_env_path "$SSM_ENV_PATH" \
+            --arg aws_region "$AWS_REGION" \
+            --arg app_env_path "$APP_DIR/app.env" \
+            --arg service_unit "/etc/systemd/system/${APP_SERVICE_NAME}.service" \
+            '{commands: [
+              "#!/bin/bash",
+              "set -euo pipefail",
+              "aws s3 cp \($s3_uri) /tmp/nearby-app.jar",
+              "sudo test -d \($app_dir)",
+              "sudo install -o nearby -g nearby -m 0644 /tmp/nearby-app.jar \($app_jar_path)",
+              "tmp_env=$(mktemp); aws ssm get-parameters-by-path --path \($ssm_env_path) --region \($aws_region) --recursive --with-decryption --query \"Parameters[*].[Name,Value]\" --output text | while IFS=$(printf \"\\t\") read -r name value; do key=\"${name##*/}\"; value=\"${value//\\\\/\\\\\\\\}\"; value=\"${value//\\\"/\\\\\\\"}\"; printf \"%s=\\\"%s\\\"\\n\" \"$key\" \"$value\"; done > \"$tmp_env\"; status=$?; if [ $status -eq 0 ]; then sudo install -o nearby -g nearby -m 0600 \"$tmp_env\" \($app_env_path); status=$?; fi; rm -f \"$tmp_env\"; if [ $status -ne 0 ]; then exit $status; fi",
+              "if ! sudo grep -qxF \"EnvironmentFile=\($app_env_path)\" \($service_unit); then sudo sed -i \"/^\\[Service\\]$/a EnvironmentFile=\($app_env_path)\" \($service_unit); fi",
+              "sudo systemctl daemon-reload",
+              "sudo systemctl enable \($app_service_name)",
+              "sudo systemctl restart \($app_service_name)",
+              "sudo systemctl is-active \($app_service_name)",
+              "for i in $(seq 1 30); do curl -fsS --connect-timeout 3 --max-time 5 http://127.0.0.1:\($app_port)\($healthcheck_path) && exit 0; sleep 2; done; echo health check timed out >&2; sudo systemctl status \($app_service_name) --no-pager >&2 || true; sudo journalctl -u \($app_service_name) -n 200 --no-pager >&2 || true; exit 1"
+            ]}')"
+
+          command_id="$(aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy nearby ${GITHUB_SHA}" \
+            --parameters "$parameters" \
+            --query 'Command.CommandId' \
+            --output text)"
+
+          for _ in {1..60}; do
+            status="$(aws ssm get-command-invocation \
+              --command-id "$command_id" \
+              --instance-id "$EC2_INSTANCE_ID" \
+              --query Status \
+              --output text 2>/dev/null || true)"
+
+            case "$status" in
+              Success)
+                aws ssm get-command-invocation \
+                  --command-id "$command_id" \
+                  --instance-id "$EC2_INSTANCE_ID" \
+                  --query '{stdout:StandardOutputContent,stderr:StandardErrorContent}' \
+                  --output json
+                exit 0
+                ;;
+              Cancelled|Cancelling|Failed|TimedOut)
+                aws ssm get-command-invocation \
+                  --command-id "$command_id" \
+                  --instance-id "$EC2_INSTANCE_ID" \
+                  --query '{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}' \
+                  --output json || true
+                exit 1
+                ;;
+            esac
+
+            sleep 5
+          done
+
+          echo "SSM command timed out: $command_id" >&2
+          exit 1
+
+      - name: Run external health check
+        if: ${{ !inputs.check_only }}
+        run: curl -fsS --retry 6 --retry-delay 5 --retry-connrefused --retry-max-time 60 --connect-timeout 5 --max-time 10 "${SERVICE_URL}${HEALTHCHECK_PATH}"
