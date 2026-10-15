@@ -1,0 +1,22 @@
+// 여행 성향 키워드를 정의하는 enum
+package com.sopt.nearby.companion.domain.model.style;
+
+public enum TravelStyleKeyword {
+	EXTROVERTED,
+	INTROVERTED,
+	PLANNED,
+	SPONTANEOUS,
+	CAFE_TOUR,
+	WALKING_TOUR,
+	PHOTO_SPOT_TOUR,
+	FOODIE,
+	DESSERT_LOVER,
+	PROP_SHOP_TOUR,
+	NIGHT_VIEW_LOVER,
+	HISTORY_TOUR,
+	EXHIBITION_LOVER,
+	SLOW_TRAVEL,
+	ACTIVE_TRAVEL,
+	DRINKING_LOVER,
+	NON_DRINKER
+}

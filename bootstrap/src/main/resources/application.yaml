@@ -1,0 +1,108 @@
+spring:
+  application:
+    name: nearby
+  profiles:
+    default: local
+  flyway:
+    locations: classpath:db/migration,classpath:db/migration-{vendor}
+  aop:
+    proxy-target-class: false
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      ssl:
+        enabled: ${SPRING_DATA_REDIS_SSL_ENABLED:false}
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_APP_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.connectiontimeout: ${NEARBY_MAIL_SMTP_CONNECTION_TIMEOUT_MS:5000}
+      mail.smtp.timeout: ${NEARBY_MAIL_SMTP_TIMEOUT_MS:5000}
+      mail.smtp.writetimeout: ${NEARBY_MAIL_SMTP_WRITE_TIMEOUT_MS:5000}
+
+server:
+  forward-headers-strategy: framework
+
+springdoc:
+  swagger-ui:
+    disable-swagger-default-url: true
+
+sentry:
+  environment: ${SENTRY_ENVIRONMENT:production}
+  send-default-pii: false
+  max-request-body-size: none
+  exception-resolver-order: 1
+  logging:
+    enabled: true
+    minimum-event-level: error
+    minimum-breadcrumb-level: info
+    loggers:
+      - com.sopt.nearby
+
+kakao:
+  native-app-key: ${KAKAO_NATIVE_APP_KEY:}
+  admin-key: ${KAKAO_ADMIN_KEY:}
+  unlink-uri: ${KAKAO_UNLINK_URI:https://kapi.kakao.com/v1/user/unlink}
+  oidc:
+    issuer-uri: ${KAKAO_OIDC_ISSUER_URI:https://kauth.kakao.com}
+    jwk-set-uri: ${KAKAO_OIDC_JWK_SET_URI:https://kauth.kakao.com/.well-known/jwks.json}
+apple:
+  refresh-token-encryption-key: ${APPLE_REFRESH_TOKEN_ENCRYPTION_KEY:}
+  client-id: ${APPLE_CLIENT_ID:}
+  team-id: ${APPLE_TEAM_ID:}
+  key-id: ${APPLE_KEY_ID:}
+  private-key-base64: ${APPLE_PRIVATE_KEY_BASE64:}
+  oauth:
+    token-uri: ${APPLE_OAUTH_TOKEN_URI:https://appleid.apple.com/auth/token}
+    revoke-uri: ${APPLE_OAUTH_REVOKE_URI:https://appleid.apple.com/auth/revoke}
+  oidc:
+    issuer-uri: ${APPLE_OIDC_ISSUER_URI:https://appleid.apple.com}
+    jwk-set-uri: ${APPLE_OIDC_JWK_SET_URI:https://appleid.apple.com/auth/keys}
+nearby:
+  jwt:
+    secret: ${NEARBY_JWT_SECRET}
+    access-token-ttl-seconds: ${NEARBY_ACCESS_TOKEN_TTL_SECONDS:3600}
+    refresh-token-ttl-seconds: ${NEARBY_REFRESH_TOKEN_TTL_SECONDS:1209600}
+  phone-verification:
+    hash-secret: ${NEARBY_PHONE_VERIFICATION_HASH_SECRET:${nearby.jwt.secret}}
+  sms:
+    solapi:
+      api-key: ${SOLAPI_API_KEY:}
+      api-secret: ${SOLAPI_API_SECRET:}
+      from-number: ${SOLAPI_FROM_NUMBER:}
+  report:
+    mail:
+      to: ${REPORT_MAIL_TO:nearbytravel11@gmail.com}
+  place:
+    default-image-url: ${NEARBY_PLACE_DEFAULT_IMAGE_URL:https://nearby.sopt.org/images/default-place.png}
+  google:
+    places:
+      api-key: ${GOOGLE_PLACES_API_KEY:}
+      timeout-ms: ${GOOGLE_PLACES_TIMEOUT_MS:1000}
+      search-timeout-ms: ${GOOGLE_PLACES_SEARCH_TIMEOUT_MS:5000}
+      photo:
+        max-width-px: ${GOOGLE_PLACES_PHOTO_MAX_WIDTH_PX:640}
+  push:
+    worker:
+      enabled: ${NEARBY_PUSH_WORKER_ENABLED:false}
+      fixed-delay-ms: ${NEARBY_PUSH_WORKER_FIXED_DELAY_MS:1000}
+      initial-delay-ms: ${NEARBY_PUSH_WORKER_INITIAL_DELAY_MS:1000}
+      batch-size: ${NEARBY_PUSH_WORKER_BATCH_SIZE:50}
+      max-attempts: ${NEARBY_PUSH_WORKER_MAX_ATTEMPTS:5}
+      lease-seconds: ${NEARBY_PUSH_WORKER_LEASE_SECONDS:31}
+      lease-safety-margin-seconds: ${NEARBY_PUSH_WORKER_LEASE_SAFETY_MARGIN_SECONDS:5}
+      jitter-max-seconds: ${NEARBY_PUSH_WORKER_JITTER_MAX_SECONDS:5}
+    firebase:
+      project-id: ${NEARBY_PUSH_FIREBASE_PROJECT_ID:}
+      connect-timeout-ms: ${NEARBY_PUSH_FIREBASE_CONNECT_TIMEOUT_MS:5000}
+      read-timeout-ms: ${NEARBY_PUSH_FIREBASE_READ_TIMEOUT_MS:10000}
+      write-timeout-ms: ${NEARBY_PUSH_FIREBASE_WRITE_TIMEOUT_MS:10000}
+
+management:
+  tracing:
+    enabled: false

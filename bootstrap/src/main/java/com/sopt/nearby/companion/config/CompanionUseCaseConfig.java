@@ -1,0 +1,505 @@
+// 동행 유스케이스 구현체를 Spring Bean으로 조립하는 설정 클래스
+package com.sopt.nearby.companion.config;
+
+import com.sopt.nearby.companion.application.CreateCompanionPostService;
+import com.sopt.nearby.companion.application.CreateCompanionRequestService;
+import com.sopt.nearby.companion.application.CreateCompanionReviewsService;
+import com.sopt.nearby.companion.application.CreateCompanionReportService;
+import com.sopt.nearby.companion.application.CheckInCompanionMeetingService;
+import com.sopt.nearby.companion.application.CompleteCompanionMeetingService;
+import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
+import com.sopt.nearby.companion.application.CreateCompanionNotificationService;
+import com.sopt.nearby.companion.application.DeactivateCompanionPushEndpointService;
+import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
+import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
+import com.sopt.nearby.companion.application.ProcessCompanionRequestService;
+import com.sopt.nearby.companion.application.ProcessCompanionPushDeliveriesService;
+import com.sopt.nearby.companion.application.RegisterCompanionPushEndpointService;
+import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailService;
+import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
+import com.sopt.nearby.companion.application.ReadCompanionNotificationPageService;
+import com.sopt.nearby.companion.application.ReadOngoingCompanionMeetingsService;
+import com.sopt.nearby.companion.application.ReadCompanionRequestReviewService;
+import com.sopt.nearby.companion.application.ReadCompanionRequestResultService;
+import com.sopt.nearby.companion.application.ReadCompanionReviewTargetsService;
+import com.sopt.nearby.companion.application.ReadMyPageService;
+import com.sopt.nearby.companion.application.ReadCompanionPostDetailService;
+import com.sopt.nearby.companion.application.ReadMyCompanionPostsService;
+import com.sopt.nearby.companion.application.ReadCompanionProfileService;
+import com.sopt.nearby.companion.application.ReadCompanionPostsService;
+import com.sopt.nearby.companion.application.ReadCompanionMatchesService;
+import com.sopt.nearby.companion.application.ReadCompanionScheduleService;
+import com.sopt.nearby.companion.application.RegisterCompanionProfileService;
+import com.sopt.nearby.companion.application.MyCompanionProfileService;
+import com.sopt.nearby.companion.port.in.CreateCompanionPostUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionReviewsUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionReportUseCase;
+import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
+import com.sopt.nearby.companion.port.in.CompleteCompanionMeetingUseCase;
+import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
+import com.sopt.nearby.companion.port.in.DeactivateCompanionPushEndpointUseCase;
+import com.sopt.nearby.companion.port.in.IssueProfileImageUploadUrlUseCase;
+import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionNotificationPageUseCase;
+import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionRequestResultUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionReviewTargetsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionPostDetailUseCase;
+import com.sopt.nearby.companion.port.in.ReadMyCompanionPostsUseCase;
+import com.sopt.nearby.companion.port.in.ReadMyPageUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionProfileUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionMatchPreviewUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
+import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
+import com.sopt.nearby.companion.port.in.RegisterCompanionProfileUseCase;
+import com.sopt.nearby.companion.port.in.RegisterCompanionPushEndpointUseCase;
+import com.sopt.nearby.companion.port.in.ProcessCompanionPushDeliveriesUseCase;
+import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
+import com.sopt.nearby.companion.port.out.AcceptedCompanionRequestDetailQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
+import com.sopt.nearby.companion.port.out.CompanionMeetingCheckInQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
+import com.sopt.nearby.companion.port.out.CompanionPushDeliveryRepository;
+import com.sopt.nearby.companion.port.out.CompanionPushEndpointRepository;
+import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionPostRepository;
+import com.sopt.nearby.companion.port.out.CompanionPostDetailQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
+import com.sopt.nearby.companion.port.out.CompanionProfileDetailQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
+import com.sopt.nearby.companion.port.out.CompanionProfileStyleRepository;
+import com.sopt.nearby.companion.port.out.CompanionRequestReviewQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionReviewKeywordRepository;
+import com.sopt.nearby.companion.port.out.CompanionReviewRepository;
+import com.sopt.nearby.companion.port.out.CompanionReviewTargetQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionReportRepository;
+import com.sopt.nearby.companion.port.out.CompanionReportReasonRepository;
+import com.sopt.nearby.companion.port.out.CompanionReportMailSender;
+import com.sopt.nearby.companion.port.out.CompanionReportMailContextQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
+import com.sopt.nearby.companion.port.out.MyCompanionPostQueryPort;
+import com.sopt.nearby.companion.port.out.MyPageQueryPort;
+import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
+import com.sopt.nearby.companion.port.out.ProfileImageUploadUrlIssuer;
+import com.sopt.nearby.companion.application.ReadCompanionMatchPreviewService;
+import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
+import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
+import com.sopt.nearby.companion.port.out.PushSender;
+import com.sopt.nearby.place.port.in.ResolvePlaceCacheUseCase;
+import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
+import com.sopt.nearby.user.port.in.CompleteCompanionProfileOnboardingUseCase;
+import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
+import com.sopt.nearby.user.port.in.ReadOnboardingStatusUseCase;
+import java.time.Clock;
+import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class CompanionUseCaseConfig {
+
+    @Bean
+    CreateCompanionPostUseCase createCompanionPostUseCase(
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final ResolvePlaceCacheUseCase resolvePlaceCacheUseCase,
+            final CompanionPostRepository companionPostRepository,
+            final CompanionPostStyleRepository companionPostStyleRepository,
+            final Clock clock
+    ) {
+        return new CreateCompanionPostService(
+                requireCompletedOnboardingUseCase,
+                resolvePlaceCacheUseCase,
+                companionPostRepository,
+                companionPostStyleRepository,
+                clock
+        );
+    }
+
+    @Bean
+    CreateCompanionRequestUseCase createCompanionRequestUseCase(
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final CompanionPostRepository companionPostRepository,
+            final CompanionApplicationRepository companionApplicationRepository,
+            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
+            final Clock clock
+    ) {
+        return new CreateCompanionRequestService(
+                requireCompletedOnboardingUseCase,
+                companionPostRepository,
+                companionApplicationRepository,
+                createCompanionNotificationUseCase,
+                clock
+        );
+    }
+
+    @Bean
+    ReadCompanionMatchPreviewUseCase readCompanionMatchPreviewUseCase(
+            CompanionMatchRepository companionMatchRepository,
+            CompanionPostRepository companionPostRepository,
+            CompanionMatchParticipantRepository companionMatchParticipantRepository,
+            CompanionProfileRepository companionProfileRepository,
+            CompanionScheduleRepository companionScheduleRepository,
+            CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
+            Clock clock
+    ) {
+        return new ReadCompanionMatchPreviewService(
+                companionMatchRepository,
+                companionPostRepository,
+                companionMatchParticipantRepository,
+                companionProfileRepository,
+                companionScheduleRepository,
+                companionMatchSummaryQueryPort,
+                clock
+        );
+    }
+
+    @Bean
+    ReadCompanionMatchesUseCase readCompanionMatchesUseCase(
+            final CompanionMatchSummaryQueryPort queryPort,
+            final Clock clock
+    ) {
+        return new ReadCompanionMatchesService(queryPort, clock);
+    }
+
+    @Bean
+    ReadCompanionScheduleUseCase readCompanionScheduleUseCase(
+            final CompanionScheduleDetailQueryPort queryPort,
+            final Clock clock
+    ) {
+        return new ReadCompanionScheduleService(queryPort, clock);
+    }
+
+    @Bean
+    ReadCompanionPostsUseCase readCompanionPostsUseCase(
+            final CompanionPostQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase,
+            final Clock clock
+    ) {
+        return new ReadCompanionPostsService(
+                queryPort,
+                requireCompletedOnboardingUseCase,
+                clock,
+                resolvePlaceImageUseCase
+        );
+    }
+
+    @Bean
+    ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase(
+            final CompanionPostDetailQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final Clock clock
+    ) {
+        return new ReadCompanionPostDetailService(
+                queryPort,
+                requireCompletedOnboardingUseCase,
+                clock
+        );
+    }
+
+    @Bean
+    ReadMyCompanionPostsUseCase readMyCompanionPostsUseCase(
+            final MyCompanionPostQueryPort queryPort,
+            final Clock clock
+    ) {
+        return new ReadMyCompanionPostsService(queryPort, clock);
+    }
+
+    @Bean
+    ReadMyPageUseCase readMyPageUseCase(
+            final MyPageQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final ReadOnboardingStatusUseCase readOnboardingStatusUseCase,
+            final Clock clock
+    ) {
+        return new ReadMyPageService(queryPort, requireCompletedOnboardingUseCase, readOnboardingStatusUseCase, clock);
+    }
+
+    @Bean
+    ReadCompanionProfileUseCase readCompanionProfileUseCase(
+            final CompanionProfileDetailQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase
+    ) {
+        return new ReadCompanionProfileService(queryPort, requireCompletedOnboardingUseCase);
+    }
+
+    @Bean
+    ConfirmCompanionScheduleUseCase confirmCompanionScheduleUseCase(
+            final CompanionMatchRepository companionMatchRepository,
+            final CompanionPostRepository companionPostRepository,
+            final CompanionScheduleRepository companionScheduleRepository,
+            final CompanionMeetingRepository companionMeetingRepository
+    ) {
+        return new ConfirmCompanionScheduleService(
+                companionMatchRepository,
+                companionPostRepository,
+                companionScheduleRepository,
+                companionMeetingRepository
+        );
+    }
+
+    @Bean
+    IssueProfileImageUploadUrlUseCase issueProfileImageUploadUrlUseCase(
+            final ProfileImageUploadUrlIssuer issuer,
+            @Value("${nearby.storage.profile-image.max-file-size-bytes:5242880}") final long maxFileSizeBytes
+    ) {
+        return new IssueProfileImageUploadUrlService(issuer, maxFileSizeBytes);
+    }
+
+    @Bean
+    RegisterCompanionProfileUseCase registerCompanionProfileUseCase(
+            final CompanionProfileRepository companionProfileRepository,
+            final CompanionProfileStyleRepository companionProfileStyleRepository,
+            final CompleteCompanionProfileOnboardingUseCase completeOnboardingUseCase
+    ) {
+        return new RegisterCompanionProfileService(
+                companionProfileRepository,
+                companionProfileStyleRepository,
+                completeOnboardingUseCase
+        );
+    }
+
+    @Bean
+    MyCompanionProfileService myCompanionProfileService(
+            final CompanionProfileRepository profiles,
+            final CompanionProfileStyleRepository styles,
+            final RequireCompletedOnboardingUseCase onboarding
+    ) {
+        return new MyCompanionProfileService(profiles, styles, onboarding);
+    }
+
+    @Bean
+    ReadCompanionNotificationsUseCase readCompanionNotificationsUseCase(
+            final CompanionNotificationQueryPort queryPort
+    ) {
+        return new ReadCompanionNotificationsService(queryPort);
+    }
+
+    @Bean
+    ReadCompanionNotificationPageUseCase readCompanionNotificationPageUseCase(
+            final CompanionNotificationQueryPort queryPort
+    ) {
+        return new ReadCompanionNotificationPageService(queryPort);
+    }
+
+    @Bean
+    ReadCompanionRequestReviewUseCase readCompanionRequestReviewUseCase(
+            final CompanionRequestReviewQueryPort queryPort
+    ) {
+        return new ReadCompanionRequestReviewService(queryPort);
+    }
+
+    @Bean
+    ReadCompanionRequestResultUseCase readCompanionRequestResultUseCase(
+            final CompanionApplicationRepository applicationRepository,
+            final AcceptedCompanionRequestDetailQueryPort detailQueryPort
+    ) {
+        return new ReadCompanionRequestResultService(applicationRepository, detailQueryPort);
+    }
+
+    @Bean
+    ProcessCompanionRequestService processCompanionRequestService(
+            final CompanionApplicationRepository applicationRepository,
+            final CompanionPostRepository postRepository,
+            final CompanionMatchRepository matchRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final CompanionScheduleRepository companionScheduleRepository,
+            final CompanionMeetingRepository companionMeetingRepository,
+            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
+            final Clock clock
+    ) {
+        return new ProcessCompanionRequestService(
+                applicationRepository,
+                postRepository,
+                matchRepository,
+                participantRepository,
+                companionScheduleRepository,
+                companionMeetingRepository,
+                createCompanionNotificationUseCase,
+                clock
+        );
+    }
+
+    @Bean
+    CreateCompanionNotificationUseCase createCompanionNotificationUseCase(
+            final CompanionNotificationRepository repository,
+            final CompanionPushEndpointRepository endpointRepository,
+            final CompanionPushDeliveryRepository deliveryRepository,
+            final Clock clock
+    ) {
+        return new CreateCompanionNotificationService(repository, endpointRepository, deliveryRepository, clock);
+    }
+
+    @Bean
+    RegisterCompanionPushEndpointUseCase registerCompanionPushEndpointUseCase(
+            final CompanionPushEndpointRepository repository,
+            final Clock clock
+    ) {
+        return new RegisterCompanionPushEndpointService(repository, clock);
+    }
+
+    @Bean
+    DeactivateCompanionPushEndpointUseCase deactivateCompanionPushEndpointUseCase(
+            final CompanionPushEndpointRepository repository,
+            final Clock clock
+    ) {
+        return new DeactivateCompanionPushEndpointService(repository, clock);
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+            prefix = "nearby.push.worker",
+            name = "enabled",
+            havingValue = "true"
+    )
+    ProcessCompanionPushDeliveriesUseCase processCompanionPushDeliveriesUseCase(
+            final CompanionPushDeliveryRepository repository,
+            final CompanionPushEndpointRepository endpointRepository,
+            final PushSender sender,
+            final Clock clock,
+            @Value("${nearby.push.worker.batch-size:50}") final int batchSize,
+            @Value("${nearby.push.worker.max-attempts:5}") final int maxAttempts,
+            @Value("${nearby.push.worker.lease-seconds:31}") final long leaseSeconds,
+            @Value("${nearby.push.worker.jitter-max-seconds:5}") final int jitterMaxSeconds
+    ) {
+        return new ProcessCompanionPushDeliveriesService(
+                repository,
+                endpointRepository,
+                sender,
+                clock,
+                batchSize,
+                maxAttempts,
+                Duration.ofSeconds(leaseSeconds),
+                () -> ThreadLocalRandom.current().nextInt(Math.max(0, jitterMaxSeconds) + 1)
+        );
+    }
+
+    @Bean
+    MarkCompanionNotificationAsReadUseCase markCompanionNotificationAsReadUseCase(
+            final CompanionNotificationRepository repository,
+            final Clock clock
+    ) {
+        return new MarkCompanionNotificationAsReadService(repository, clock);
+    }
+
+    @Bean
+    ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase(
+            final CompanionMeetingDetailQueryPort queryPort,
+            final Clock clock
+    ) {
+        return new ReadCompanionMeetingDetailService(queryPort, clock);
+    }
+
+    @Bean
+    ReadCompanionReviewTargetsUseCase readCompanionReviewTargetsUseCase(
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final MeetingCheckInRepository checkInRepository,
+            final CompanionReviewTargetQueryPort queryPort
+    ) {
+        return new ReadCompanionReviewTargetsService(
+                meetingRepository,
+                participantRepository,
+                checkInRepository,
+                queryPort
+        );
+    }
+
+    @Bean
+    CheckInCompanionMeetingUseCase checkInCompanionMeetingUseCase(
+            final CompanionMeetingCheckInQueryPort queryPort,
+            final CompanionMatchParticipantRepository participantRepository,
+            final MeetingCheckInRepository checkInRepository,
+            final Clock clock
+    ) {
+        return new CheckInCompanionMeetingService(
+                queryPort,
+                participantRepository,
+                checkInRepository,
+                clock
+        );
+    }
+
+    @Bean
+    CompleteCompanionMeetingUseCase completeCompanionMeetingUseCase(
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchRepository matchRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final MeetingCheckInRepository checkInRepository,
+            final Clock clock
+    ) {
+        return new CompleteCompanionMeetingService(
+                meetingRepository,
+                matchRepository,
+                participantRepository,
+                checkInRepository,
+                clock
+        );
+    }
+
+    @Bean
+    CreateCompanionReportUseCase createCompanionReportUseCase(
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final CompanionProfileRepository profileRepository,
+            final MeetingCheckInRepository checkInRepository,
+            final CompanionReportRepository reportRepository,
+            final CompanionReportReasonRepository reportReasonRepository,
+            final CompanionReportMailContextQueryPort mailContextQueryPort,
+            final CompanionReportMailSender mailSender,
+            final Clock clock
+    ) {
+        return new CreateCompanionReportService(
+                meetingRepository,
+                participantRepository,
+                profileRepository,
+                checkInRepository,
+                reportRepository,
+                reportReasonRepository,
+                mailContextQueryPort,
+                mailSender,
+                clock
+        );
+    }
+
+    @Bean
+    ReadOngoingCompanionMeetingsUseCase readOngoingCompanionMeetingsUseCase(
+            final OngoingCompanionMeetingQueryPort queryPort,
+            final Clock clock
+    ) {
+        return new ReadOngoingCompanionMeetingsService(queryPort, clock);
+    }
+
+    @Bean
+    CreateCompanionReviewsUseCase createCompanionReviewsUseCase(
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final MeetingCheckInRepository checkInRepository,
+            final CompanionReviewRepository reviewRepository,
+            final CompanionReviewKeywordRepository reviewKeywordRepository,
+            final Clock clock
+    ) {
+        return new CreateCompanionReviewsService(
+                meetingRepository,
+                participantRepository,
+                checkInRepository,
+                reviewRepository,
+                reviewKeywordRepository,
+                clock
+        );
+    }
+}

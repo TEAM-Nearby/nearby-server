@@ -1,0 +1,49 @@
+// 동행 매칭 성공 코드 정의
+package com.sopt.nearby.companion.adapter.in.web.code;
+
+import com.sopt.nearby.shared.adapter.in.web.response.SuccessCode;
+
+public enum CompanionSuccessCode implements SuccessCode {
+    COMPANION_POST_CREATED("동행 모집 글 작성에 성공했습니다."),
+    COMPANION_POSTS_FOUND("동행 모집 글 목록 조회에 성공했습니다."),
+    COMPANION_POST_FOUND("동행 모집 글 상세 조회에 성공했어요."),
+    CREATE_COMPANION_REQUEST("동행 신청이 완료되었어요."),
+    READ_COMPANION_REQUEST_REVIEW("동행 신청 상세 정보를 조회했어요."),
+    READ_COMPANION_REQUEST_RESULT("동행 신청 결과를 조회했어요."),
+    ACCEPT_COMPANION_REQUEST("동행 신청을 수락했어요."),
+    REJECT_COMPANION_REQUEST("동행 신청을 거절했어요."),
+    READ_COMPANION_MATCH_PREVIEW("매칭된 동행 미리보기 정보를 조회했어요."),
+    READ_COMPANION_MATCHES("매칭된 동행 목록을 조회했어요."),
+    CONFIRM_COMPANION_SCHEDULE("동행 일정이 수정되었어요."),
+    READ_COMPANION_SCHEDULE("동행 일정 정보를 조회했어요."),
+    PROFILE_IMAGE_UPLOAD_URL_ISSUED("Presigned URL 발급에 성공했습니다."),
+    COMPANION_PROFILE_CREATED("동행 프로필 등록이 완료되었습니다."),
+    COMPANION_PROFILE_FOUND("동행 프로필 조회에 성공했어요."),
+    MY_COMPANION_PROFILE_FOUND("내 동행 프로필을 조회했어요."),
+    COMPANION_PROFILE_UPDATED("동행 프로필이 수정되었어요."),
+    READ_MY_PAGE("마이페이지 정보를 조회했어요."),
+    READ_COMPANION_REQUESTS("동행 요청 목록을 조회했어요."),
+    MARK_COMPANION_NOTIFICATION_AS_READ("동행 알림을 읽음 처리했어요."),
+    REGISTER_COMPANION_PUSH_ENDPOINT("푸시 알림 수신 기기가 등록되었어요."),
+    DEACTIVATE_COMPANION_PUSH_ENDPOINT("푸시 알림 수신 기기가 해제되었어요."),
+    READ_MY_COMPANION_POSTS("내가 작성한 동행 모집글 목록을 조회했어요."),
+    READ_ONGOING_COMPANION_MEETINGS("현재 진행 중인 동행 목록을 조회했어요."),
+    READ_COMPANION_MEETING_DETAIL("진행 중인 동행 상세 정보를 조회했어요."),
+    READ_COMPANION_REVIEW_TARGETS("동행 후기 대상 목록을 조회했어요."),
+    CHECK_IN_COMPANION_MEETING("만남 인증이 완료되었어요."),
+    CHECK_IN_COMPANION_MEETING_ALREADY_COMPLETED("이미 만남 인증이 완료되어 있어요."),
+    COMPLETE_COMPANION_MEETING("동행 마치기가 반영되었어요."),
+    CREATE_COMPANION_REVIEWS("동행 후기가 등록되었어요."),
+    CREATE_COMPANION_REPORT("신고가 접수되었어요.");
+
+    private final String message;
+
+    CompanionSuccessCode(String message) {
+        this.message = message;
+    }
+
+    @Override
+    public String message() {
+        return message;
+    }
+}

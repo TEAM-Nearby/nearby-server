@@ -1,0 +1,10 @@
+plugins {
+	id 'java-library'
+}
+
+dependencies {
+	compileOnly 'org.springframework.modulith:spring-modulith-api'
+
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}

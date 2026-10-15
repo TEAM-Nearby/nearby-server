@@ -1,0 +1,59 @@
+// 혼밥 맛집 즐겨찾기 목록 조회 API 응답을 표현한다.
+package com.sopt.nearby.place.adapter.in.web.dto.response;
+
+import com.sopt.nearby.place.application.SoloDiningFavoritesResult;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+public record SoloDiningFavoritesResponse(
+        int totalCount,
+        List<FavoriteResponse> favorites
+) {
+
+    public static SoloDiningFavoritesResponse from(final SoloDiningFavoritesResult result) {
+        List<FavoriteResponse> favorites = result.favorites().stream()
+                .map(FavoriteResponse::from)
+                .toList();
+        return new SoloDiningFavoritesResponse(favorites.size(), favorites);
+    }
+
+    public record FavoriteResponse(
+            Long favoriteId,
+            LocalDateTime createdAt,
+            Long placeId,
+            String googlePlaceId,
+            String name,
+            String address,
+            String photoReference,
+            String imageUrl,
+            String category,
+            List<String> categories,
+            int distanceMeters,
+            BigDecimal rating,
+            Integer reviewCount,
+            boolean isFavorite,
+            String businessStatus
+    ) {
+
+        static FavoriteResponse from(final SoloDiningFavoritesResult.Favorite favorite) {
+            return new FavoriteResponse(
+                    favorite.favoriteId(),
+                    favorite.createdAt(),
+                    favorite.placeId(),
+                    favorite.googlePlaceId(),
+                    favorite.name(),
+                    favorite.address(),
+                    favorite.photoReference(),
+                    favorite.imageUrl(),
+                    favorite.category() == null ? null : favorite.category().name(),
+                    favorite.categories().stream().map(Enum::name).toList(),
+                    favorite.distanceMeters(),
+                    favorite.rating(),
+                    favorite.reviewCount(),
+                    favorite.isFavorite(),
+                    favorite.businessStatus().name()
+            );
+        }
+    }
+}

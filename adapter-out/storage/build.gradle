@@ -1,0 +1,17 @@
+plugins {
+	id 'java-library'
+}
+
+dependencies {
+	implementation project(':application')
+	implementation project(':common')
+	implementation platform('software.amazon.awssdk:bom:2.47.5')
+	implementation 'software.amazon.awssdk:s3'
+
+	compileOnly 'org.springframework:spring-context'
+
+	testImplementation 'org.junit.jupiter:junit-jupiter'
+	testImplementation 'org.assertj:assertj-core'
+	testImplementation 'org.springframework:spring-context'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
