@@ -14,6 +14,7 @@ public record SoloDiningPlaceResult(
         BigDecimal latitude,
         BigDecimal longitude,
         SoloDiningPlaceCategory category,
+        List<SoloDiningPlaceCategory> categories,
         int distanceMeters,
         BigDecimal rating,
         Integer reviewCount,

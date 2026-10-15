@@ -33,6 +33,23 @@ class SoloDiningFavoriteControllerTest {
     private MockMvc mockMvc;
     private FakeReadSoloDiningFavoritesUseCase readUseCase;
 
+    @Test
+    void acceptsDessertFilterAndReturnsAllCategories() throws Exception {
+        readUseCase.result = result("서울특별시 중구 세종대로 110");
+
+        mockMvc.perform(get("/api/solo-dining/favorites")
+                        .queryParam("latitude", "37.56650000")
+                        .queryParam("longitude", "126.97800000")
+                        .queryParam("category", "DESSERT")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.favorites[0].category").value("CAFE"))
+                .andExpect(jsonPath("$.data.favorites[0].categories[0]").value("CAFE"))
+                .andExpect(jsonPath("$.data.favorites[0].categories[1]").value("DESSERT"));
+
+        assertEquals(SoloDiningPlaceCategory.DESSERT, readUseCase.command.category());
+    }
+
     @BeforeEach
     void setUp() {
         readUseCase = new FakeReadSoloDiningFavoritesUseCase();
@@ -148,6 +165,7 @@ class SoloDiningFavoriteControllerTest {
                 address,
                 "places/google-place-id/photos/photo-resource",
                 SoloDiningPlaceCategory.CAFE,
+                List.of(SoloDiningPlaceCategory.CAFE, SoloDiningPlaceCategory.DESSERT),
                 80,
                 new BigDecimal("4.30"),
                 22870,

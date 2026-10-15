@@ -5,5 +5,6 @@ public enum SoloDiningPlaceCategory {
     RESTAURANT,
     CAFE,
     PUB,
+    DESSERT,
     OTHER
 }

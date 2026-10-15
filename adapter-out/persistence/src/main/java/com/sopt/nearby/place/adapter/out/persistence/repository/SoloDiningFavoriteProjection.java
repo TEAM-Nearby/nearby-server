@@ -22,6 +22,8 @@ public interface SoloDiningFavoriteProjection {
 
     String getCategory();
 
+    String getCategories();
+
     Number getDistanceMeters();
 
     BigDecimal getRating();

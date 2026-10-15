@@ -12,6 +12,7 @@ import com.sopt.nearby.place.port.out.SoloDiningFavoriteQueryPort;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Repository;
@@ -79,13 +80,15 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
     }
 
     private SoloDiningPlaceSummary toSummary(final SoloDiningPlaceProjection row) {
+        List<SoloDiningPlaceCategory> categories = categories(row.getCategories(), category(row.getCategory()));
         return new SoloDiningPlaceSummary(
                 row.getPlaceId(),
                 row.getGooglePlaceId(),
                 row.getName(),
                 row.getAddress(),
                 row.getPhotoReference(),
-                category(row.getCategory()),
+                categories.getFirst(),
+                categories,
                 row.getDistanceMeters().intValue(),
                 row.getRating(),
                 row.getReviewCount(),
@@ -97,6 +100,7 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
     }
 
     private SoloDiningFavoriteSummary toFavoriteSummary(final SoloDiningFavoriteProjection row) {
+        List<SoloDiningPlaceCategory> categories = categories(row.getCategories(), nullableCategory(row.getCategory()));
         return new SoloDiningFavoriteSummary(
                 row.getFavoriteId(),
                 row.getCreatedAt(),
@@ -105,7 +109,8 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
                 row.getName(),
                 row.getAddress(),
                 row.getPhotoReference(),
-                nullableCategory(row.getCategory()),
+                categories.isEmpty() ? null : categories.getFirst(),
+                categories,
                 row.getDistanceMeters().intValue(),
                 row.getRating(),
                 row.getReviewCount(),
@@ -120,6 +125,13 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
         } catch (RuntimeException exception) {
             return SoloDiningPlaceCategory.OTHER;
         }
+    }
+
+    private List<SoloDiningPlaceCategory> categories(final String values, final SoloDiningPlaceCategory fallback) {
+        if (values == null || values.isBlank()) {
+            return fallback == null ? List.of() : List.of(fallback);
+        }
+        return Arrays.stream(values.split(",")).map(this::category).distinct().toList();
     }
 
     private SoloDiningPlaceCategory nullableCategory(final String value) {
