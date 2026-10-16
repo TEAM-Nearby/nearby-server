@@ -1,6 +1,6 @@
 -- 파리 혼밥 맛집과 모든 요청 카테고리를 등록·갱신한다.
--- PostgreSQL / Supabase SQL Editor용. 변경된 서버의 Flyway로 V28 적용 후 이 파일 전체를 실행한다.
--- V28 마이그레이션 파일은 수동 실행하지 않는다. 앱 기동 시 Flyway가 적용 이력을 관리한다.
+-- PostgreSQL / Supabase SQL Editor용. 변경된 서버의 Flyway로 V29 적용 후 이 파일 전체를 실행한다.
+-- 마이그레이션 파일은 수동 실행하지 않는다. 앱 기동 시 Flyway가 적용 이력을 관리한다.
 -- 원본: 혼밥 맛집_파리_정지영.xlsx / 기획 요청!B5:E105.
 -- 장소 정보: 2026-10-15 Google Places API 조회. 원본 100건은 공유 링크의 CID와 좌표까지 일치 확인.
 -- 포르투를 가리키던 26행은 사용자 요청에 따라 파리 Opéra점으로 교체했다.
@@ -354,6 +354,12 @@ on conflict (google_place_id) do update set
     review_count = excluded.review_count,
     photo_reference = excluded.photo_reference,
     business_status = excluded.business_status;
+
+insert into solo_dining_place (place_id)
+select place.id
+from paris_solo_dining_seed seed
+join place_cache place on place.google_place_id = seed.google_place_id
+on conflict (place_id) do nothing;
 
 delete from place_category classification
 using place_cache place, paris_solo_dining_seed seed

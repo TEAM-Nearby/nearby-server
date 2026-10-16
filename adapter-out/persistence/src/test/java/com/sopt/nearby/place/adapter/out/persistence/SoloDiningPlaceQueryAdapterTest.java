@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCategoryEntity;
+import com.sopt.nearby.place.adapter.out.persistence.entity.SoloDiningPlaceEntity;
 import com.sopt.nearby.place.adapter.out.persistence.entity.SoloDiningFavoriteEntity;
 import com.sopt.nearby.place.adapter.out.persistence.repository.PlaceCacheJpaRepository;
 import com.sopt.nearby.place.adapter.out.persistence.repository.SoloDiningFavoriteJpaRepository;
@@ -50,6 +51,7 @@ class SoloDiningPlaceQueryAdapterTest {
         PlaceCacheEntity dessertCafe = placeCacheJpaRepository.saveAndFlush(place(
                 "dessert-cafe", "디저트 카페", "restaurant", "37.56652000", "126.97802000"
         ));
+        entityManager.persistAndFlush(new SoloDiningPlaceEntity(dessertCafe.getId()));
         entityManager.persist(new PlaceCategoryEntity(dessertCafe.getId(), "DESSERT", 0));
         entityManager.persistAndFlush(new PlaceCategoryEntity(dessertCafe.getId(), "CAFE", 1));
         favoriteJpaRepository.saveAndFlush(favorite(7L, dessertCafe.getId(), LocalDateTime.of(2026, 10, 15, 12, 0)));
@@ -92,13 +94,17 @@ class SoloDiningPlaceQueryAdapterTest {
                 "37.57000000",
                 "126.98200000"
         ));
-        placeCacheJpaRepository.saveAndFlush(place(
+        PlaceCacheEntity outsideRadius = placeCacheJpaRepository.saveAndFlush(place(
                 "outside-radius",
                 "반경 밖 장소",
                 "pub",
                 "37.57650000",
                 "126.97801000"
         ));
+        for (PlaceCacheEntity place : List.of(nearCafe, farRestaurant, outsideRadius)) {
+            entityManager.persist(new SoloDiningPlaceEntity(place.getId()));
+        }
+        entityManager.flush();
         favoriteJpaRepository.saveAndFlush(new SoloDiningFavoriteEntity(
                 null,
                 7L,
@@ -135,13 +141,15 @@ class SoloDiningPlaceQueryAdapterTest {
                 "37.56652000",
                 "126.97802000"
         ));
-        placeCacheJpaRepository.saveAndFlush(place(
+        PlaceCacheEntity restaurant = placeCacheJpaRepository.saveAndFlush(place(
                 "restaurant",
                 "식당",
                 "restaurant",
                 "37.56653000",
                 "126.97803000"
         ));
+        entityManager.persist(new SoloDiningPlaceEntity(cafe.getId()));
+        entityManager.persistAndFlush(new SoloDiningPlaceEntity(restaurant.getId()));
 
         List<SoloDiningPlaceSummary> result = adapter.findAllNearby(
                 7L,
