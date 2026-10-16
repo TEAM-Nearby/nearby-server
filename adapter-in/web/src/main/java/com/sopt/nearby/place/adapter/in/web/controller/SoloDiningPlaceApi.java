@@ -29,7 +29,7 @@ public interface SoloDiningPlaceApi {
     })
     @Operation(
             summary = "혼밥 맛집 목록 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치 주변의 혼밥 맛집 목록을 조회합니다. category는 대표 분류이며 categories는 전체 분류입니다.",
+            description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치 반경 1km 이내의 혼밥 지도 등록 장소를 조회합니다. 동행에서만 등록한 장소는 포함하지 않습니다. category는 대표 분류이며 categories는 전체 분류입니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponse(

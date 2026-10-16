@@ -38,6 +38,7 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
                 place.longitude as longitude,
                 place.business_status as businessStatus
             from place_cache place
+            join solo_dining_place registered on registered.place_id = place.id
             where (:category is null or exists (
                     select 1 from place_category classification
                     where classification.place_id = place.id and classification.category = :category
