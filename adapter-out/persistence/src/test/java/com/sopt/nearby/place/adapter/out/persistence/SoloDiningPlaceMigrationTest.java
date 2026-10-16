@@ -56,9 +56,11 @@ class SoloDiningPlaceMigrationTest {
                 assertThat(ids(connection, "select place_id from solo_dining_place order by place_id"))
                         .containsExactly(1L, 2L);
 
-                for (long id : new long[]{1, 999}) {
-                    assertThatThrownBy(() -> statement.executeUpdate("insert into solo_dining_place values (" + id + ")"))
-                            .isInstanceOf(SQLException.class);
+                try (var insert = connection.prepareStatement("insert into solo_dining_place (place_id) values (?)")) {
+                    for (long id : new long[]{1, 999}) {
+                        insert.setLong(1, id);
+                        assertThatThrownBy(insert::executeUpdate).isInstanceOf(SQLException.class);
+                    }
                 }
                 statement.executeUpdate("insert into solo_dining_place values (4)");
                 statement.executeUpdate("delete from place_cache where id = 4");

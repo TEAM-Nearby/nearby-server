@@ -35,6 +35,7 @@ reviews:
 
   path_filters:
     - "**/*.java"
+    - "**/*.sql"
     - "**/*.gradle"
     - "**/*.yaml"
     - "**/*.yml"
