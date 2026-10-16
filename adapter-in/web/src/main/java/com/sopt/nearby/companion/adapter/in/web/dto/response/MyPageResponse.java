@@ -2,12 +2,19 @@
 package com.sopt.nearby.companion.adapter.in.web.dto.response;
 
 import com.sopt.nearby.companion.application.ReadMyPageResult;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.List;
 
 public record MyPageResponse(
+        @Schema(description = "본인의 동행 프로필 ID. 프로필 등록을 건너뛴 경우 null입니다.",
+                example = "5", types = {"integer", "null"})
+        Long profileId,
         String profileImageUrl,
         String nickname,
+        @Schema(description = "저장된 한 줄 소개. 소개가 없거나 프로필 등록을 건너뛴 경우 null입니다.",
+                example = "맛집을 함께 찾아다니는 여행을 좋아해요.", types = {"string", "null"})
+        String intro,
         boolean isPhoneVerified,
         String ageGroup,
         String gender,
@@ -22,8 +29,10 @@ public record MyPageResponse(
 
     public static MyPageResponse from(final ReadMyPageResult result) {
         return new MyPageResponse(
+                result.profileId(),
                 result.profileImageUrl(),
                 result.nickname(),
+                result.intro(),
                 result.phoneVerified(),
                 result.ageGroup() == null ? null : result.ageGroup().name(),
                 result.gender() == null ? null : result.gender().name(),

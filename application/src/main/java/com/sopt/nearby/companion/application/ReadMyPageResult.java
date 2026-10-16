@@ -8,8 +8,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record ReadMyPageResult(
+        Long profileId,
         String profileImageUrl,
         String nickname,
+        String intro,
         boolean phoneVerified,
         AgeGroup ageGroup,
         UserGender gender,

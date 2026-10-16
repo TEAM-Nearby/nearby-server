@@ -16,6 +16,7 @@ public interface MyPageQueryJpaRepository extends Repository<CompanionProfileEnt
                 profile.id as profileId,
                 profile.user_id as userId,
                 profile.nickname as nickname,
+                profile.intro as intro,
                 profile.gender as gender,
                 profile.birth_year as birthYear,
                 profile.profile_image_url as profileImageUrl,
