@@ -1,6 +1,7 @@
 // 마이페이지 조회 컨트롤러의 요청 전달과 응답 형식을 검증한다.
 package com.sopt.nearby.companion.adapter.in.web.controller;
 
+import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -44,7 +45,8 @@ class MyPageControllerTest {
 
     @Test
     void getsMyPage() throws Exception {
-        useCase.result = result(AgeGroup.TWENTIES, List.of(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.FOODIE));
+        useCase.result = result(AgeGroup.TWENTIES, List.of(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.FOODIE),
+                "혼자 여행도 같이 여행도 좋아해요");
 
         mockMvc.perform(get("/api/users/me/mypage")
                         .principal(principal("7")))
@@ -52,6 +54,8 @@ class MyPageControllerTest {
                 .andExpect(jsonPath("$.status").value(200))
                 .andExpect(jsonPath("$.code").value("READ_MY_PAGE"))
                 .andExpect(jsonPath("$.message").value("마이페이지 정보를 조회했어요."))
+                .andExpect(jsonPath("$.data.profileId").value(5))
+                .andExpect(jsonPath("$.data.intro").value("혼자 여행도 같이 여행도 좋아해요"))
                 .andExpect(jsonPath("$.data.profileImageUrl").value("https://cdn.nearby.com/profiles/1.jpg"))
                 .andExpect(jsonPath("$.data.nickname").value("니어바이"))
                 .andExpect(jsonPath("$.data.isPhoneVerified").value(true))
@@ -70,15 +74,35 @@ class MyPageControllerTest {
     }
 
     @Test
-    void getsMyPageWithNullAgeGroupAndEmptyKeywords() throws Exception {
-        useCase.result = result(null, List.of());
+    void getsMyPageWithNullAgeGroupAndIntroAndEmptyKeywords() throws Exception {
+        useCase.result = result(null, List.of(), null);
 
         mockMvc.perform(get("/api/users/me/mypage")
                         .principal(principal("7")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.ageGroup").value(nullValue()))
+                .andExpect(jsonPath("$.data.profileId").value(5))
+                .andExpect(jsonPath("$.data").value(hasKey("intro")))
+                .andExpect(jsonPath("$.data.intro").value(nullValue()))
+                .andExpect(jsonPath("$.data.hasCompanionProfile").value(true))
                 .andExpect(jsonPath("$.data.travelStyleKeywords").isArray())
                 .andExpect(jsonPath("$.data.travelStyleKeywords").isEmpty());
+    }
+
+    @Test
+    void getsMyPageWithNullProfileIdAndIntroForSkippedProfile() throws Exception {
+        useCase.result = new ReadMyPageResult(
+                null, null, null, null, true, null, null, null,
+                List.of(), List.of(), 0, 0, 0, false
+        );
+
+        mockMvc.perform(get("/api/users/me/mypage").principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.hasCompanionProfile").value(false))
+                .andExpect(jsonPath("$.data").value(hasKey("profileId")))
+                .andExpect(jsonPath("$.data.profileId").value(nullValue()))
+                .andExpect(jsonPath("$.data").value(hasKey("intro")))
+                .andExpect(jsonPath("$.data.intro").value(nullValue()));
     }
 
     @Test
@@ -96,11 +120,14 @@ class MyPageControllerTest {
 
     private ReadMyPageResult result(
             final AgeGroup ageGroup,
-            final List<TravelStyleKeyword> travelStyleKeywords
+            final List<TravelStyleKeyword> travelStyleKeywords,
+            final String intro
     ) {
         return new ReadMyPageResult(
+                5L,
                 "https://cdn.nearby.com/profiles/1.jpg",
                 "니어바이",
+                intro,
                 true,
                 ageGroup,
                 UserGender.FEMALE,

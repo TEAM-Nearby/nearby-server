@@ -11,6 +11,7 @@ public record MyPageProfile(
         Long profileId,
         Long userId,
         String nickname,
+        String intro,
         UserGender gender,
         Integer birthYear,
         String profileImageUrl,

@@ -57,13 +57,16 @@ class ReadMyPageServiceTest {
                         new MyPageProfile.CompletedMeetingPlace("망원 카페", "서울 마포구"),
                         new MyPageProfile.CompletedMeetingPlace("주소 없는 식당", null),
                         new MyPageProfile.CompletedMeetingPlace("주소 공백 카페", " ")
-                )
+                ),
+                "혼자 여행도 같이 여행도 좋아해요"
         ));
 
         ReadMyPageResult result = service.read(7L);
 
         assertEquals(7L, onboardingUseCase.userId);
         assertEquals(7L, queryPort.userId);
+        assertEquals(5L, result.profileId());
+        assertEquals("혼자 여행도 같이 여행도 좋아해요", result.intro());
         assertEquals("https://cdn.nearby.com/profiles/1.jpg", result.profileImageUrl());
         assertEquals("니어바이", result.nickname());
         assertEquals(true, result.phoneVerified());
@@ -88,6 +91,8 @@ class ReadMyPageServiceTest {
         assertEquals(false, result.hasCompanionProfile());
         assertEquals(true, result.phoneVerified());
         assertNull(result.nickname());
+        assertNull(result.profileId());
+        assertNull(result.intro());
         assertNull(result.gender());
         assertNull(result.mannerScore());
         assertEquals(List.of(), result.travelStyleKeywords());
@@ -96,13 +101,16 @@ class ReadMyPageServiceTest {
     }
 
     @Test
-    void returnsNullAgeGroupWhenBirthYearIsMissing() {
-        queryPort.result = Optional.of(profile(null, null, List.of()));
+    void returnsNullAgeGroupAndIntroWhenMissing() {
+        queryPort.result = Optional.of(profile(null, null, List.of(), null));
 
         ReadMyPageResult result = service.read(7L);
 
         assertEquals(false, result.phoneVerified());
         assertNull(result.ageGroup());
+        assertNull(result.intro());
+        assertEquals(5L, result.profileId());
+        assertEquals(true, result.hasCompanionProfile());
         assertEquals(0, result.mealTogetherCount());
         assertEquals(0, result.visitedCityCount());
     }
@@ -141,12 +149,14 @@ class ReadMyPageServiceTest {
     private MyPageProfile profile(
             final Integer birthYear,
             final LocalDateTime phoneVerifiedAt,
-            final List<MyPageProfile.CompletedMeetingPlace> completedMeetingPlaces
+            final List<MyPageProfile.CompletedMeetingPlace> completedMeetingPlaces,
+            final String intro
     ) {
         return new MyPageProfile(
                 5L,
                 7L,
                 "니어바이",
+                intro,
                 UserGender.FEMALE,
                 birthYear,
                 "https://cdn.nearby.com/profiles/1.jpg",
