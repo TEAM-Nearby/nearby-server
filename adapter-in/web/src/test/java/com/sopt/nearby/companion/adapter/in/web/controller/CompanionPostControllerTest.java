@@ -48,6 +48,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -184,15 +186,17 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data").value(nullValue()));
     }
 
-    @Test
-    void createsCompanionPost() throws Exception {
+    @ParameterizedTest
+    @CsvSource({"1, 2", "7, 8"})
+    void createsCompanionPost(final int recruitmentCapacity, final int maxParticipants) throws Exception {
         createUseCase.result = createResult(
                 CompanionPostMeetingTimeType.SCHEDULED,
                 LocalDateTime.of(2026, 7, 3, 14, 0),
                 null,
                 true,
                 List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
-                CompanionPostPlaceCategory.RESTAURANT
+                CompanionPostPlaceCategory.RESTAURANT,
+                maxParticipants
         );
 
         mockMvc.perform(post("/api/companion-posts")
@@ -209,13 +213,13 @@ class CompanionPostControllerTest {
                                   },
                                   "meetingTimeType": "SCHEDULED",
                                   "meetingAt": "2026-07-03T14:00:00",
-                                  "recruitmentCapacity": 3,
+                                  "recruitmentCapacity": %d,
                                   "departEvenIfNotFull": true,
                                   "styleKeywords": ["NEW_FOOD_CHALLENGE", "PHOTO_LOVER"],
                                   "content": "같이 스시 먹으러 갈 사람 구해요.",
                                   "openChatUrl": "https://open.kakao.com/o/nearby123"
                                 }
-                                """)
+                                """.formatted(recruitmentCapacity))
                         .principal(principal("7")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(200))
@@ -234,7 +238,7 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.meetingTimeType").value("SCHEDULED"))
                 .andExpect(jsonPath("$.data.meetingAt").value("2026-07-03T14:00:00"))
                 .andExpect(jsonPath("$.data.exposureExpiresAt").value(nullValue()))
-                .andExpect(jsonPath("$.data.maxParticipants").value(4))
+                .andExpect(jsonPath("$.data.maxParticipants").value(maxParticipants))
                 .andExpect(jsonPath("$.data.participantCount").value(1))
                 .andExpect(jsonPath("$.data.departEvenIfNotFull").value(true))
                 .andExpect(jsonPath("$.data.styleKeywords[0]").value("NEW_FOOD_CHALLENGE"))
@@ -248,7 +252,7 @@ class CompanionPostControllerTest {
         assertEquals(CompanionPostPlaceCategory.RESTAURANT, createUseCase.command.place().category());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, createUseCase.command.meetingTimeType());
         assertEquals(LocalDateTime.of(2026, 7, 3, 14, 0), createUseCase.command.meetingAt());
-        assertEquals(3, createUseCase.command.recruitmentCapacity());
+        assertEquals(recruitmentCapacity, createUseCase.command.recruitmentCapacity());
         assertEquals(true, createUseCase.command.departEvenIfNotFull());
         assertEquals(
                 List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
@@ -621,6 +625,19 @@ class CompanionPostControllerTest {
             final List<CompanionPostKeyword> styleKeywords,
             final CompanionPostPlaceCategory category
     ) {
+        return createResult(meetingTimeType, meetingAt, exposureExpiresAt,
+                departEvenIfNotFull, styleKeywords, category, 4);
+    }
+
+    private CreateCompanionPostResult createResult(
+            final CompanionPostMeetingTimeType meetingTimeType,
+            final LocalDateTime meetingAt,
+            final LocalDateTime exposureExpiresAt,
+            final boolean departEvenIfNotFull,
+            final List<CompanionPostKeyword> styleKeywords,
+            final CompanionPostPlaceCategory category,
+            final int maxParticipants
+    ) {
         return new CreateCompanionPostResult(
                 101L,
                 CompanionPostStatus.RECRUITING,
@@ -637,7 +654,7 @@ class CompanionPostControllerTest {
                 meetingTimeType,
                 meetingAt,
                 exposureExpiresAt,
-                4,
+                maxParticipants,
                 1,
                 departEvenIfNotFull,
                 styleKeywords,

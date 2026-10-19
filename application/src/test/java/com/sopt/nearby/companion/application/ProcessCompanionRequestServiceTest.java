@@ -187,6 +187,36 @@ class ProcessCompanionRequestServiceTest {
     }
 
     @Test
+    void acceptsSevenGuestsAndRejectsAdditionalAcceptanceAtEightTotalParticipants() {
+        postRepository.save(post(10L, 100L, 8));
+        for (long applicantId = 1; applicantId <= 8; applicantId++) {
+            applicationRepository.save(application(
+                    applicantId, 10L, applicantId, CompanionApplicationStatus.PENDING, null));
+        }
+
+        for (long applicationId = 1; applicationId <= 7; applicationId++) {
+            AcceptedCompanionRequestResult result = service.accept(
+                    new AcceptCompanionRequestCommand(100L, applicationId));
+
+            assertEquals(CompanionApplicationStatus.ACCEPTED, result.applicationStatus());
+            assertEquals(1L, result.matchId());
+        }
+
+        assertEquals(7, applicationRepository.countAcceptedByPostId(10L));
+        assertEquals(8, participantRepository.participants.size());
+        assertTrue(participantRepository.existsByMatchIdAndUserId(1L, 100L));
+
+        assertThrows(CompanionPostCapacityReachedException.class,
+                () -> service.accept(new AcceptCompanionRequestCommand(100L, 8L)));
+
+        assertEquals(CompanionApplicationStatus.PENDING, applicationRepository.findById(8L).orElseThrow().status());
+        assertEquals(7, applicationRepository.countAcceptedByPostId(10L));
+        assertEquals(8, participantRepository.participants.size());
+        assertFalse(participantRepository.existsByMatchIdAndUserId(1L, 8L));
+        assertEquals(7, notificationUseCase.commands.size());
+    }
+
+    @Test
     void acceptsNowRequestAndReusesExistingScheduleConfirmedMatchGroup() {
         applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
         postRepository.save(nowPost(10L, 100L));
