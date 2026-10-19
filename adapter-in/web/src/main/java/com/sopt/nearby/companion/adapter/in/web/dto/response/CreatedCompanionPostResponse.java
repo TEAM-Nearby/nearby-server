@@ -15,7 +15,7 @@ public record CreatedCompanionPostResponse(
         String meetingTimeType,
         LocalDateTime meetingAt,
         LocalDateTime exposureExpiresAt,
-        @Schema(description = "작성자를 포함한 전체 정원", example = "2")
+        @Schema(description = "작성자를 포함한 전체 정원", example = "2", minimum = "2", maximum = "8")
         int maxParticipants,
         int participantCount,
         boolean departEvenIfNotFull,

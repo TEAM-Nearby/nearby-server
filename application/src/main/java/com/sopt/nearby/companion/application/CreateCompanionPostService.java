@@ -28,7 +28,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
 
     private static final String OPEN_CHAT_URL_PREFIX = "https://open.kakao.com/";
     private static final int MIN_RECRUITMENT_CAPACITY = 1;
-    private static final int MAX_RECRUITMENT_CAPACITY = 6;
+    private static final int MAX_RECRUITMENT_CAPACITY = 7;
     private static final int MAX_CONTENT_LENGTH_EXCLUDING_WHITESPACE = 100;
     private static final BigDecimal MIN_LATITUDE = new BigDecimal("-90");
     private static final BigDecimal MAX_LATITUDE = new BigDecimal("90");
