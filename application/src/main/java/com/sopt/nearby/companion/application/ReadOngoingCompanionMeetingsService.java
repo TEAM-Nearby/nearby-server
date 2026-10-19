@@ -11,6 +11,7 @@ import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 public class ReadOngoingCompanionMeetingsService implements ReadOngoingCompanionMeetingsUseCase {
@@ -83,11 +84,26 @@ public class ReadOngoingCompanionMeetingsService implements ReadOngoingCompanion
                 summary.placeAddress(),
                 cityTime.city(),
                 cityTime.currentLocalTime(),
-                summary.meetingAt(),
+                meetingAtForResponse(summary, cityTime),
                 summary.meetingTimeType(),
                 summary.checkedIn(),
                 summary.meetingStatus(),
                 summary.progressStatus()
         );
+    }
+
+    private LocalDateTime meetingAtForResponse(
+            final OngoingCompanionMeetingSummary summary,
+            final ResolvedCityTime cityTime
+    ) {
+        if (summary.meetingTimeType() != CompanionPostMeetingTimeType.NOW
+                || summary.meetingAt() == null
+                || cityTime.city() == null) {
+            return summary.meetingAt();
+        }
+        return summary.meetingAt()
+                .atZone(ZoneOffset.UTC)
+                .withZoneSameInstant(cityTime.city().zoneId())
+                .toLocalDateTime();
     }
 }

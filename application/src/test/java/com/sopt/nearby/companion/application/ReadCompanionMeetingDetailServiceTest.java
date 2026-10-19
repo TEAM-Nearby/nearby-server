@@ -75,6 +75,52 @@ class ReadCompanionMeetingDetailServiceTest {
     }
 
     @Test
+    void returnsNowMeetingAtInPlaceLocalTime() {
+        queryPort.put(new CompanionMeetingDetail(
+                MEETING_ID,
+                MatchParticipantRole.HOST,
+                1L,
+                UserGender.FEMALE,
+                "https://image.url/profile.png",
+                "윤짱이",
+                false,
+                "McDonald's",
+                "116 Rue de Rivoli, 75001 Paris, France",
+                LocalDateTime.of(2026, 10, 16, 15, 41),
+                CompanionPostMeetingTimeType.NOW,
+                CompanionMeetingStatus.ONGOING,
+                false
+        ));
+
+        ReadCompanionMeetingDetailResult result = service.getDetail(MEETING_ID, USER_ID);
+
+        assertEquals(LocalDateTime.of(2026, 10, 16, 17, 41), result.meetingAt());
+    }
+
+    @Test
+    void returnsNowMeetingAtInPlaceLocalTimeDuringWinter() {
+        queryPort.put(new CompanionMeetingDetail(
+                MEETING_ID,
+                MatchParticipantRole.HOST,
+                1L,
+                UserGender.FEMALE,
+                "https://image.url/profile.png",
+                "윤짱이",
+                false,
+                "McDonald's",
+                "116 Rue de Rivoli, 75001 Paris, France",
+                LocalDateTime.of(2026, 12, 16, 15, 41),
+                CompanionPostMeetingTimeType.NOW,
+                CompanionMeetingStatus.ONGOING,
+                false
+        ));
+
+        ReadCompanionMeetingDetailResult result = service.getDetail(MEETING_ID, USER_ID);
+
+        assertEquals(LocalDateTime.of(2026, 12, 16, 16, 41), result.meetingAt());
+    }
+
+    @Test
     void rejectsInvalidMeetingId() {
         assertThrows(InvalidCompanionMeetingIdException.class, () -> service.getDetail(null, USER_ID));
         assertThrows(InvalidCompanionMeetingIdException.class, () -> service.getDetail(0L, USER_ID));
