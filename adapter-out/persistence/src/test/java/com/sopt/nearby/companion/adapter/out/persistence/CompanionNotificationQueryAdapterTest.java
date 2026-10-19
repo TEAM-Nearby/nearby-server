@@ -79,7 +79,7 @@ class CompanionNotificationQueryAdapterTest {
     private PlaceCacheJpaRepository placeCacheJpaRepository;
 
     @Test
-    void findsSentNotificationsWithHostProfileReadStatusMatchIdAndLatestOrder() {
+    void findsSentRequestsIncludingPendingWithHostProfileReadStatusMatchIdAndLatestOrder() {
         CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
 
         CompanionProfileEntity hostA = profileJpaRepository.saveAndFlush(profile(100L, "호스트A", "host-a.png"));
@@ -90,6 +90,26 @@ class CompanionNotificationQueryAdapterTest {
         PlaceCacheEntity schedulePlace = placeCacheJpaRepository.saveAndFlush(place(
                 "google-schedule-place",
                 "확정 장소"
+        ));
+
+        LocalDateTime pendingMeetingAt = NOW.plusDays(3);
+        CompanionPostEntity pendingPost = postJpaRepository.saveAndFlush(post(
+                hostA.getUserId(),
+                placeA.getId(),
+                pendingMeetingAt
+        ));
+        CompanionApplicationEntity pendingApplication = applicationJpaRepository.saveAndFlush(application(
+                pendingPost.getId(),
+                7L,
+                CompanionApplicationStatus.PENDING,
+                NOW.plusHours(3)
+        ));
+        entityManager.persistAndFlush(notification(
+                hostA.getUserId(),
+                CompanionNotificationType.COMPANION_APPLICATION_CREATED,
+                pendingApplication.getId(),
+                null,
+                NOW.plusHours(7)
         ));
 
         CompanionPostEntity recentPost = postJpaRepository.saveAndFlush(nowPost(
@@ -166,33 +186,46 @@ class CompanionNotificationQueryAdapterTest {
 
         assertThat(result)
                 .extracting(CompanionNotificationSummary::notificationId)
-                .containsExactly(recentNotification.getId(), oldNotification.getId())
+                .containsExactly(null, recentNotification.getId(), oldNotification.getId())
                 .doesNotContain(mismatchedRecipientNotification.getId());
 
         CompanionNotificationSummary first = result.get(0);
-        assertThat(first.notificationId()).isEqualTo(recentNotification.getId());
-        assertThat(first.applicationId()).isEqualTo(recentApplication.getId());
-        assertThat(first.applicationStatus()).isEqualTo(CompanionApplicationStatus.ACCEPTED);
+        assertThat(first.notificationId()).isNull();
+        assertThat(first.applicationId()).isEqualTo(pendingApplication.getId());
+        assertThat(first.applicationStatus()).isEqualTo(CompanionApplicationStatus.PENDING);
         assertThat(first.host().userId()).isEqualTo(100L);
         assertThat(first.host().profileImageUrl()).isEqualTo("host-a.png");
         assertThat(first.host().nickname()).isEqualTo("호스트A");
-        assertThat(first.placeName()).isEqualTo("확정 장소");
-        assertThat(first.meetingAt()).isEqualTo(scheduledAt);
-        assertThat(first.matchId()).isEqualTo(match.getId());
-        assertThat(first.actionType()).isEqualTo(CompanionNotificationActionType.VIEW_RESULT);
+        assertThat(first.placeName()).isEqualTo("오노테라");
+        assertThat(first.meetingAt()).isEqualTo(pendingMeetingAt);
+        assertThat(first.matchId()).isNull();
+        assertThat(first.actionType()).isEqualTo(CompanionNotificationActionType.NONE);
         assertThat(first.isRead()).isTrue();
 
         CompanionNotificationSummary second = result.get(1);
-        assertThat(second.notificationId()).isEqualTo(oldNotification.getId());
-        assertThat(second.applicationId()).isEqualTo(oldApplication.getId());
-        assertThat(second.applicationStatus()).isEqualTo(CompanionApplicationStatus.REJECTED);
-        assertThat(second.host().userId()).isEqualTo(200L);
-        assertThat(second.host().profileImageUrl()).isNull();
-        assertThat(second.host().nickname()).isEqualTo("호스트B");
-        assertThat(second.placeName()).isEqualTo("시우다드 콘달");
-        assertThat(second.matchId()).isNull();
+        assertThat(second.notificationId()).isEqualTo(recentNotification.getId());
+        assertThat(second.applicationId()).isEqualTo(recentApplication.getId());
+        assertThat(second.applicationStatus()).isEqualTo(CompanionApplicationStatus.ACCEPTED);
+        assertThat(second.host().userId()).isEqualTo(100L);
+        assertThat(second.host().profileImageUrl()).isEqualTo("host-a.png");
+        assertThat(second.host().nickname()).isEqualTo("호스트A");
+        assertThat(second.placeName()).isEqualTo("확정 장소");
+        assertThat(second.meetingAt()).isEqualTo(scheduledAt);
+        assertThat(second.matchId()).isEqualTo(match.getId());
         assertThat(second.actionType()).isEqualTo(CompanionNotificationActionType.VIEW_RESULT);
-        assertThat(second.isRead()).isFalse();
+        assertThat(second.isRead()).isTrue();
+
+        CompanionNotificationSummary third = result.get(2);
+        assertThat(third.notificationId()).isEqualTo(oldNotification.getId());
+        assertThat(third.applicationId()).isEqualTo(oldApplication.getId());
+        assertThat(third.applicationStatus()).isEqualTo(CompanionApplicationStatus.REJECTED);
+        assertThat(third.host().userId()).isEqualTo(200L);
+        assertThat(third.host().profileImageUrl()).isNull();
+        assertThat(third.host().nickname()).isEqualTo("호스트B");
+        assertThat(third.placeName()).isEqualTo("시우다드 콘달");
+        assertThat(third.matchId()).isNull();
+        assertThat(third.actionType()).isEqualTo(CompanionNotificationActionType.VIEW_RESULT);
+        assertThat(third.isRead()).isFalse();
 
         List<CompanionNotificationPageRow> firstPage = adapter.findPageByUserIdAndDirection(
                 7L,

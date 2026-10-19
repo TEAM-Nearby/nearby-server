@@ -13,7 +13,7 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
     @Query(value = """
             select
                 notification.id as notificationId,
-                notification.created_at as createdAt,
+                app.created_at as createdAt,
                 app.id as applicationId,
                 app.status as applicationStatus,
                 host_profile.user_id as hostUserId,
@@ -23,13 +23,21 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case
+                    when app.status = 'PENDING' then true
                     when notification.read_at is null then false
                     else true
                 end as readStatus
-            from companion_notification notification
-            join companion_application app
-                on app.id = notification.target_id
+            from companion_application app
+            left join companion_notification notification
+                on notification.target_id = app.id
                 and notification.target_type = 'COMPANION_APPLICATION'
+                and notification.recipient_user_id = :userId
+                and (
+                    (app.status = 'ACCEPTED'
+                        and notification.notification_type = 'COMPANION_APPLICATION_ACCEPTED')
+                    or (app.status = 'REJECTED'
+                        and notification.notification_type = 'COMPANION_APPLICATION_REJECTED')
+                )
             join companion_post post
                 on post.id = app.post_id
             join companion_profile host_profile
@@ -41,13 +49,9 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 and schedule.confirmed = true
             left join place_cache place
                 on place.id = coalesce(schedule.place_id, post.place_id)
-            where notification.recipient_user_id = :userId
-                and app.applicant_user_id = :userId
-                and notification.notification_type in (
-                    'COMPANION_APPLICATION_ACCEPTED',
-                    'COMPANION_APPLICATION_REJECTED'
-                )
-            order by notification.created_at desc, notification.id desc
+            where app.applicant_user_id = :userId
+                and (app.status = 'PENDING' or notification.id is not null)
+            order by app.created_at desc, app.id desc
             """, nativeQuery = true)
     List<CompanionNotificationProjection> findSentByUserId(@Param("userId") Long userId);
 
