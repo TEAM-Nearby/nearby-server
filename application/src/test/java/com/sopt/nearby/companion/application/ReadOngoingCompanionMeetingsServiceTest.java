@@ -34,6 +34,7 @@ class ReadOngoingCompanionMeetingsServiceTest {
         assertEquals(UserGender.FEMALE, result.getFirst().companion().gender());
         assertEquals(CompanionCity.MADRID, result.getFirst().city());
         assertEquals("2026-07-01T14:00+02:00", result.getFirst().currentLocalTime().toOffsetDateTime().toString());
+        assertEquals(LocalDateTime.of(2026, 7, 1, 14, 0), result.getFirst().meetingAt());
     }
 
     @Test
