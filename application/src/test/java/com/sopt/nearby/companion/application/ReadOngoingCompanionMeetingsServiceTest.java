@@ -157,6 +157,30 @@ class ReadOngoingCompanionMeetingsServiceTest {
         assertEquals(LocalDateTime.of(2026, 7, 1, 13, 41), result.meetingAt());
     }
 
+    @Test
+    void returnsNowMeetingAtInPlaceLocalTimeDuringWinter() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(new OngoingCompanionMeetingSummary(
+                1L,
+                10L,
+                new OngoingCompanionMeetingHostProfile(7L, "https://image.url/profile.png", "윤짱이", UserGender.FEMALE),
+                "McDonald's",
+                "116 Rue de Rivoli, 75001 Paris, France",
+                null,
+                null,
+                LocalDateTime.of(2026, 12, 16, 15, 41),
+                CompanionPostMeetingTimeType.NOW,
+                true,
+                CompanionMeetingStatus.ONGOING,
+                CompanionMeetingProgressStatus.ONGOING
+        ));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        OngoingCompanionMeetingSummary result = service.getOngoingMeetings(7L).getFirst();
+
+        assertEquals(LocalDateTime.of(2026, 12, 16, 16, 41), result.meetingAt());
+    }
+
     private OngoingCompanionMeetingSummary summary(
             final LocalDateTime meetingAt,
             final boolean checkedIn
