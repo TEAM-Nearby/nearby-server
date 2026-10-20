@@ -57,6 +57,57 @@ class SoloDiningPlaceRegistrationFlowTest {
     @MockitoBean private PlaceImageLookupPort imageLookup;
 
     @Test
+    void zoomingOutAndMovingMapChangesResultsWithoutChangingUserDistance() throws Exception {
+        long viewer = user();
+        long near = resolvePlace.resolve(new ResolvePlaceCacheCommand(
+                "map-near-" + viewer, "가까운 혼밥 식당", "Paris",
+                new BigDecimal("48.8567"), new BigDecimal("2.3523"), "RESTAURANT"
+        )).placeId();
+        long far = resolvePlace.resolve(new ResolvePlaceCacheCommand(
+                "map-far-" + viewer, "확대한 지도 안 식당", "Paris",
+                new BigDecimal("48.88"), new BigDecimal("2.38"), "RESTAURANT"
+        )).placeId();
+        executeUpdate("insert into solo_dining_place (place_id) values (?)", near);
+        executeUpdate("insert into solo_dining_place (place_id) values (?)", far);
+
+        var legacy = mvc.perform(get("/api/solo-dining/places")
+                        .with(jwt().jwt(token -> token.subject(Long.toString(viewer))))
+                        .param("latitude", "48.8566").param("longitude", "2.3522")
+                        .param("category", "RESTAURANT"))
+                .andExpect(status().isOk()).andReturn();
+        List<Map<String, Object>> legacyPlaces = JsonPath.read(
+                legacy.getResponse().getContentAsString(StandardCharsets.UTF_8), "$.data.places");
+        assertThat(legacyPlaces).anyMatch(place -> id(place) == near).noneMatch(place -> id(place) == far);
+
+        var expanded = mvc.perform(get("/api/solo-dining/places")
+                        .with(jwt().jwt(token -> token.subject(Long.toString(viewer))))
+                        .param("latitude", "48.8566").param("longitude", "2.3522")
+                        .param("category", "RESTAURANT")
+                        .param("southLatitude", "48.83").param("northLatitude", "48.89")
+                        .param("westLongitude", "2.30").param("eastLongitude", "2.40"))
+                .andExpect(status().isOk()).andReturn();
+        List<Map<String, Object>> expandedPlaces = JsonPath.read(
+                expanded.getResponse().getContentAsString(StandardCharsets.UTF_8), "$.data.places");
+        assertThat(expandedPlaces).anyMatch(place -> id(place) == near).anyMatch(place -> id(place) == far);
+        Map<String, Object> farPlace = expandedPlaces.stream()
+                .filter(place -> id(place) == far).findFirst().orElseThrow();
+        assertThat(((Number) farPlace.get("distanceMeters")).intValue()).isGreaterThan(1000);
+
+        var moved = mvc.perform(get("/api/solo-dining/places")
+                        .with(jwt().jwt(token -> token.subject(Long.toString(viewer))))
+                        .param("latitude", "48.8566").param("longitude", "2.3522")
+                        .param("category", "RESTAURANT")
+                        .param("southLatitude", "48.87").param("northLatitude", "48.885")
+                        .param("westLongitude", "2.37").param("eastLongitude", "2.39"))
+                .andExpect(status().isOk()).andReturn();
+        List<Map<String, Object>> movedPlaces = JsonPath.read(
+                moved.getResponse().getContentAsString(StandardCharsets.UTF_8), "$.data.places");
+        assertThat(movedPlaces).anyMatch(place -> id(place) == far).noneMatch(place -> id(place) == near);
+        assertThat(movedPlaces.stream().filter(place -> id(place) == far).findFirst().orElseThrow()
+                .get("distanceMeters")).isEqualTo(farPlace.get("distanceMeters"));
+    }
+
+    @Test
     void excludesNewCompanionPlaceForAllUsersUntilExplicitlyRegistered() throws Exception {
         long host = user();
         long viewer = user();
