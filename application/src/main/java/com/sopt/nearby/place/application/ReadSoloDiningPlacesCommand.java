@@ -2,12 +2,14 @@
 package com.sopt.nearby.place.application;
 
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import java.math.BigDecimal;
 
 public record ReadSoloDiningPlacesCommand(
         Long userId,
         BigDecimal latitude,
         BigDecimal longitude,
-        SoloDiningPlaceCategory category
+        SoloDiningPlaceCategory category,
+        SoloDiningMapBounds bounds
 ) {
 }

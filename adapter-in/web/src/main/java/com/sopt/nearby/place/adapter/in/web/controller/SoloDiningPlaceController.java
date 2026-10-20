@@ -45,9 +45,15 @@ public class SoloDiningPlaceController implements SoloDiningPlaceApi {
             @RequestParam(required = false) final String latitude,
             @RequestParam(required = false) final String longitude,
             @RequestParam(required = false) final String category,
+            @RequestParam(required = false) final String southLatitude,
+            @RequestParam(required = false) final String northLatitude,
+            @RequestParam(required = false) final String westLongitude,
+            @RequestParam(required = false) final String eastLongitude,
             final Principal principal
     ) {
-        SoloDiningPlacesRequest request = new SoloDiningPlacesRequest(latitude, longitude, category);
+        SoloDiningPlacesRequest request = new SoloDiningPlacesRequest(
+                latitude, longitude, category, southLatitude, northLatitude, westLongitude, eastLongitude
+        );
 
         return CommonResponse.success(
                 PlaceSuccessCode.SOLO_DINING_PLACES_FOUND,

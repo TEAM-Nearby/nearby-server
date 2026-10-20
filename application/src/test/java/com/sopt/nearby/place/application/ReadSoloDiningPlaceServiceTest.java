@@ -10,6 +10,7 @@ import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlaceRequestExcep
 import com.sopt.nearby.place.domain.exception.PlaceNotFoundException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
@@ -258,7 +259,9 @@ class ReadSoloDiningPlaceServiceTest {
                 final BigDecimal latitude,
                 final BigDecimal longitude,
                 final SoloDiningPlaceCategory category,
-                final int radiusMeters
+                final int radiusMeters,
+                final SoloDiningMapBounds bounds,
+                final Integer maxResults
         ) {
             return List.of();
         }

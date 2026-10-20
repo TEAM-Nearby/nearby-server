@@ -3,6 +3,7 @@ package com.sopt.nearby.place.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,6 +11,7 @@ import com.sopt.nearby.place.domain.exception.GooglePlaceApiException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
@@ -41,7 +43,7 @@ class ReadSoloDiningPlacesServiceTest {
 
     @Test
     void readsAllNearbyCachedPlacesWithoutResultLimit() {
-        queryPort.result = IntStream.rangeClosed(1, 21)
+        queryPort.result = IntStream.rangeClosed(1, 101)
                 .mapToObj(index -> summary((long) index, "google-place-" + index, "장소 " + index, false))
                 .toList();
 
@@ -49,7 +51,8 @@ class ReadSoloDiningPlacesServiceTest {
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
-                SoloDiningPlaceCategory.CAFE
+                SoloDiningPlaceCategory.CAFE,
+                null
         ));
 
         assertEquals(7L, queryPort.userId);
@@ -57,9 +60,30 @@ class ReadSoloDiningPlacesServiceTest {
         assertEquals(new BigDecimal("126.97800000"), queryPort.longitude);
         assertEquals(SoloDiningPlaceCategory.CAFE, queryPort.category);
         assertEquals(1000, queryPort.radiusMeters);
-        assertEquals(21, result.places().size());
+        assertNull(queryPort.bounds);
+        assertNull(queryPort.maxResults);
+        assertEquals(101, result.places().size());
         assertEquals("장소 1", result.places().getFirst().name());
-        assertEquals("장소 21", result.places().getLast().name());
+        assertEquals("장소 101", result.places().getLast().name());
+    }
+
+    @Test
+    void passesMapBoundsSeparatelyFromUserLocation() {
+        SoloDiningMapBounds bounds = new SoloDiningMapBounds(
+                new BigDecimal("48.83"), new BigDecimal("48.89"),
+                new BigDecimal("2.30"), new BigDecimal("2.40")
+        );
+
+        service.read(new ReadSoloDiningPlacesCommand(
+                7L, new BigDecimal("48.8566"), new BigDecimal("2.3522"),
+                SoloDiningPlaceCategory.RESTAURANT, bounds
+        ));
+
+        assertEquals(bounds, queryPort.bounds);
+        assertEquals(100, queryPort.maxResults);
+        assertEquals(new BigDecimal("48.8566"), queryPort.latitude);
+        assertEquals(new BigDecimal("2.3522"), queryPort.longitude);
+        assertEquals(SoloDiningPlaceCategory.RESTAURANT, queryPort.category);
     }
 
     @Test
@@ -110,6 +134,7 @@ class ReadSoloDiningPlacesServiceTest {
                 7L,
                 new BigDecimal("91.00000000"),
                 new BigDecimal("126.97800000"),
+                null,
                 null
         )));
 
@@ -117,7 +142,8 @@ class ReadSoloDiningPlacesServiceTest {
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
-                SoloDiningPlaceCategory.OTHER
+                SoloDiningPlaceCategory.OTHER,
+                null
         )));
     }
 
@@ -126,6 +152,7 @@ class ReadSoloDiningPlacesServiceTest {
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
+                null,
                 null
         );
     }
@@ -161,6 +188,8 @@ class ReadSoloDiningPlacesServiceTest {
         private BigDecimal longitude;
         private SoloDiningPlaceCategory category;
         private int radiusMeters;
+        private SoloDiningMapBounds bounds;
+        private Integer maxResults;
         private List<SoloDiningPlaceSummary> result = List.of();
 
         @Override
@@ -169,13 +198,17 @@ class ReadSoloDiningPlacesServiceTest {
                 final BigDecimal latitude,
                 final BigDecimal longitude,
                 final SoloDiningPlaceCategory category,
-                final int radiusMeters
+                final int radiusMeters,
+                final SoloDiningMapBounds bounds,
+                final Integer maxResults
         ) {
             this.userId = userId;
             this.latitude = latitude;
             this.longitude = longitude;
             this.category = category;
             this.radiusMeters = radiusMeters;
+            this.bounds = bounds;
+            this.maxResults = maxResults;
             return result;
         }
 

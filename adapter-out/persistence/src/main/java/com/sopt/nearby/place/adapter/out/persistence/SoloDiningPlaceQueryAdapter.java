@@ -8,6 +8,7 @@ import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSort;
 import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSummary;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import com.sopt.nearby.place.port.out.SoloDiningFavoriteQueryPort;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
@@ -15,6 +16,8 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -32,14 +35,22 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
             final BigDecimal latitude,
             final BigDecimal longitude,
             final SoloDiningPlaceCategory category,
-            final int radiusMeters
+            final int radiusMeters,
+            final SoloDiningMapBounds bounds,
+            final Integer maxResults
     ) {
         return repository.findAllNearby(
                         userId,
                         latitude,
                         longitude,
                         category == null ? null : category.name(),
-                        radiusMeters
+                        radiusMeters,
+                        bounds != null,
+                        bounds == null ? BigDecimal.ZERO : bounds.southLatitude(),
+                        bounds == null ? BigDecimal.ZERO : bounds.northLatitude(),
+                        bounds == null ? BigDecimal.ZERO : bounds.westLongitude(),
+                        bounds == null ? BigDecimal.ZERO : bounds.eastLongitude(),
+                        maxResults == null ? Pageable.unpaged() : PageRequest.of(0, maxResults)
                 )
                 .stream()
                 .map(this::toSummary)

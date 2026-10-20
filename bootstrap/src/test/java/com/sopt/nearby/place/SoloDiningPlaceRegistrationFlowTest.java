@@ -2,6 +2,11 @@
 package com.sopt.nearby.place;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,6 +32,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
@@ -55,6 +61,98 @@ class SoloDiningPlaceRegistrationFlowTest {
     @Autowired private ResolvePlaceCacheUseCase resolvePlace;
     @Autowired private DataSource dataSource;
     @MockitoBean private PlaceImageLookupPort imageLookup;
+
+    @Test
+    void limitsMapPlacesAndImageLookupsTo100WhileKeepingLegacyResultsUnlimited() throws Exception {
+        long viewer = user();
+        List<Long> farthestFirst = new ArrayList<>();
+        for (int index = 101; index >= 1; index--) {
+            long placeId = resolvePlace.resolve(new ResolvePlaceCacheCommand(
+                    "map-limit-" + viewer + "-" + index, "상한 검증 식당 " + index, "Map limit test",
+                    new BigDecimal("-20").add(BigDecimal.valueOf(index, 5)),
+                    new BigDecimal("130"), "RESTAURANT"
+            )).placeId();
+            executeUpdate("insert into solo_dining_place (place_id) values (?)", placeId);
+            farthestFirst.add(placeId);
+        }
+        clearInvocations(imageLookup);
+
+        var bounded = mvc.perform(get("/api/solo-dining/places")
+                        .with(jwt().jwt(token -> token.subject(Long.toString(viewer))))
+                        .param("latitude", "-20").param("longitude", "130")
+                        .param("category", "RESTAURANT")
+                        .param("southLatitude", "-90").param("northLatitude", "90")
+                        .param("westLongitude", "-180").param("eastLongitude", "180"))
+                .andExpect(status().isOk()).andReturn();
+        List<Map<String, Object>> boundedPlaces = JsonPath.read(
+                bounded.getResponse().getContentAsString(StandardCharsets.UTF_8), "$.data.places");
+        assertThat(boundedPlaces).extracting(this::id)
+                .containsExactlyElementsOf(farthestFirst.reversed().subList(0, 100));
+        assertThat(boundedPlaces).extracting(place -> ((Number) place.get("distanceMeters")).intValue()).isSorted();
+        verify(imageLookup, times(100)).findImage(anyString(), isNull());
+
+        clearInvocations(imageLookup);
+        var legacy = mvc.perform(get("/api/solo-dining/places")
+                        .with(jwt().jwt(token -> token.subject(Long.toString(viewer))))
+                        .param("latitude", "-20").param("longitude", "130")
+                        .param("category", "RESTAURANT"))
+                .andExpect(status().isOk()).andReturn();
+        List<Map<String, Object>> legacyPlaces = JsonPath.read(
+                legacy.getResponse().getContentAsString(StandardCharsets.UTF_8), "$.data.places");
+        assertThat(legacyPlaces).extracting(this::id).containsExactlyElementsOf(farthestFirst.reversed());
+        verify(imageLookup, times(101)).findImage(anyString(), isNull());
+    }
+
+    @Test
+    void zoomingOutAndMovingMapChangesResultsWithoutChangingUserDistance() throws Exception {
+        long viewer = user();
+        long near = resolvePlace.resolve(new ResolvePlaceCacheCommand(
+                "map-near-" + viewer, "가까운 혼밥 식당", "Paris",
+                new BigDecimal("48.8567"), new BigDecimal("2.3523"), "RESTAURANT"
+        )).placeId();
+        long far = resolvePlace.resolve(new ResolvePlaceCacheCommand(
+                "map-far-" + viewer, "확대한 지도 안 식당", "Paris",
+                new BigDecimal("48.88"), new BigDecimal("2.38"), "RESTAURANT"
+        )).placeId();
+        executeUpdate("insert into solo_dining_place (place_id) values (?)", near);
+        executeUpdate("insert into solo_dining_place (place_id) values (?)", far);
+
+        var legacy = mvc.perform(get("/api/solo-dining/places")
+                        .with(jwt().jwt(token -> token.subject(Long.toString(viewer))))
+                        .param("latitude", "48.8566").param("longitude", "2.3522")
+                        .param("category", "RESTAURANT"))
+                .andExpect(status().isOk()).andReturn();
+        List<Map<String, Object>> legacyPlaces = JsonPath.read(
+                legacy.getResponse().getContentAsString(StandardCharsets.UTF_8), "$.data.places");
+        assertThat(legacyPlaces).anyMatch(place -> id(place) == near).noneMatch(place -> id(place) == far);
+
+        var expanded = mvc.perform(get("/api/solo-dining/places")
+                        .with(jwt().jwt(token -> token.subject(Long.toString(viewer))))
+                        .param("latitude", "48.8566").param("longitude", "2.3522")
+                        .param("category", "RESTAURANT")
+                        .param("southLatitude", "48.83").param("northLatitude", "48.89")
+                        .param("westLongitude", "2.30").param("eastLongitude", "2.40"))
+                .andExpect(status().isOk()).andReturn();
+        List<Map<String, Object>> expandedPlaces = JsonPath.read(
+                expanded.getResponse().getContentAsString(StandardCharsets.UTF_8), "$.data.places");
+        assertThat(expandedPlaces).anyMatch(place -> id(place) == near).anyMatch(place -> id(place) == far);
+        Map<String, Object> farPlace = expandedPlaces.stream()
+                .filter(place -> id(place) == far).findFirst().orElseThrow();
+        assertThat(((Number) farPlace.get("distanceMeters")).intValue()).isGreaterThan(1000);
+
+        var moved = mvc.perform(get("/api/solo-dining/places")
+                        .with(jwt().jwt(token -> token.subject(Long.toString(viewer))))
+                        .param("latitude", "48.8566").param("longitude", "2.3522")
+                        .param("category", "RESTAURANT")
+                        .param("southLatitude", "48.87").param("northLatitude", "48.885")
+                        .param("westLongitude", "2.37").param("eastLongitude", "2.39"))
+                .andExpect(status().isOk()).andReturn();
+        List<Map<String, Object>> movedPlaces = JsonPath.read(
+                moved.getResponse().getContentAsString(StandardCharsets.UTF_8), "$.data.places");
+        assertThat(movedPlaces).anyMatch(place -> id(place) == far).noneMatch(place -> id(place) == near);
+        assertThat(movedPlaces.stream().filter(place -> id(place) == far).findFirst().orElseThrow()
+                .get("distanceMeters")).isEqualTo(farPlace.get("distanceMeters"));
+    }
 
     @Test
     void excludesNewCompanionPlaceForAllUsersUntilExplicitlyRegistered() throws Exception {
