@@ -16,6 +16,8 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -34,7 +36,8 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
             final BigDecimal longitude,
             final SoloDiningPlaceCategory category,
             final int radiusMeters,
-            final SoloDiningMapBounds bounds
+            final SoloDiningMapBounds bounds,
+            final Integer maxResults
     ) {
         return repository.findAllNearby(
                         userId,
@@ -46,7 +49,8 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
                         bounds == null ? BigDecimal.ZERO : bounds.southLatitude(),
                         bounds == null ? BigDecimal.ZERO : bounds.northLatitude(),
                         bounds == null ? BigDecimal.ZERO : bounds.westLongitude(),
-                        bounds == null ? BigDecimal.ZERO : bounds.eastLongitude()
+                        bounds == null ? BigDecimal.ZERO : bounds.eastLongitude(),
+                        maxResults == null ? Pageable.unpaged() : PageRequest.of(0, maxResults)
                 )
                 .stream()
                 .map(this::toSummary)

@@ -20,6 +20,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -66,11 +68,11 @@ class SoloDiningPlaceQueryAdapterTest {
         favoriteJpaRepository.saveAndFlush(favorite(7L, far.getId(), LocalDateTime.of(2026, 10, 20, 12, 0)));
 
         assertThat(adapter.findAllNearby(7L, userLatitude, userLongitude,
-                SoloDiningPlaceCategory.RESTAURANT, 1000, null))
+                SoloDiningPlaceCategory.RESTAURANT, 1000, null, null))
                 .extracting(SoloDiningPlaceSummary::placeId).containsExactly(near.getId());
 
         List<SoloDiningPlaceSummary> expanded = adapter.findAllNearby(7L, userLatitude, userLongitude,
-                SoloDiningPlaceCategory.RESTAURANT, 1000, bounds("48.83", "48.89", "2.30", "2.40"));
+                SoloDiningPlaceCategory.RESTAURANT, 1000, bounds("48.83", "48.89", "2.30", "2.40"), 100);
         assertThat(expanded).extracting(SoloDiningPlaceSummary::placeId)
                 .containsExactlyInAnyOrder(near.getId(), far.getId(), southWest.getId(), northEast.getId());
         assertThat(expanded).extracting(SoloDiningPlaceSummary::distanceMeters).isSorted();
@@ -82,7 +84,7 @@ class SoloDiningPlaceQueryAdapterTest {
                 SoloDiningPlaceCategory.CAFE, SoloDiningPlaceCategory.RESTAURANT);
 
         List<SoloDiningPlaceSummary> moved = adapter.findAllNearby(7L, userLatitude, userLongitude,
-                SoloDiningPlaceCategory.RESTAURANT, 1000, bounds("48.87", "48.885", "2.37", "2.39"));
+                SoloDiningPlaceCategory.RESTAURANT, 1000, bounds("48.87", "48.885", "2.37", "2.39"), 100);
         assertThat(moved).extracting(SoloDiningPlaceSummary::placeId).containsExactly(far.getId());
         assertThat(moved.getFirst().distanceMeters()).isEqualTo(farSummary.distanceMeters());
     }
@@ -97,7 +99,7 @@ class SoloDiningPlaceQueryAdapterTest {
         placeCacheJpaRepository.saveAndFlush(place("date-unregistered", "미등록 식당", "restaurant", "0", "-179.5"));
 
         assertThat(adapter.findAllNearby(7L, BigDecimal.ZERO, new BigDecimal("179.9"),
-                SoloDiningPlaceCategory.RESTAURANT, 1000, bounds("-1", "1", "179", "-179")))
+                SoloDiningPlaceCategory.RESTAURANT, 1000, bounds("-1", "1", "179", "-179"), 100))
                 .extracting(SoloDiningPlaceSummary::placeId)
                 .containsExactly(west.getId(), east.getId());
     }
@@ -115,7 +117,7 @@ class SoloDiningPlaceQueryAdapterTest {
 
         for (SoloDiningPlaceCategory category : List.of(SoloDiningPlaceCategory.DESSERT, SoloDiningPlaceCategory.CAFE)) {
             List<SoloDiningPlaceSummary> nearby = adapter.findAllNearby(
-                    7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, category, 1000, null);
+                    7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, category, 1000, null, null);
             assertThat(nearby).extracting(SoloDiningPlaceSummary::placeId).containsExactly(dessertCafe.getId());
             assertThat(nearby.getFirst().category()).isEqualTo(SoloDiningPlaceCategory.DESSERT);
             assertThat(nearby.getFirst().categories()).containsExactly(
@@ -125,9 +127,9 @@ class SoloDiningPlaceQueryAdapterTest {
                     .extracting(SoloDiningFavoriteSummary::categories)
                     .containsExactly(List.of(SoloDiningPlaceCategory.DESSERT, SoloDiningPlaceCategory.CAFE));
         }
-        assertThat(adapter.findAllNearby(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, null, 1000, null)).hasSize(1);
+        assertThat(adapter.findAllNearby(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, null, 1000, null, null)).hasSize(1);
         assertThat(adapter.findAllNearby(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE,
-                SoloDiningPlaceCategory.RESTAURANT, 1000, null)).isEmpty();
+                SoloDiningPlaceCategory.RESTAURANT, 1000, null, null)).isEmpty();
         assertThat(adapter.findAllByUserId(8L, CURRENT_LATITUDE, CURRENT_LONGITUDE,
                 SoloDiningPlaceCategory.DESSERT, SoloDiningFavoriteSort.LATEST)).isEmpty();
         assertThat(adapter.findAllByPlaceIds(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, List.of(dessertCafe.getId()))
@@ -175,6 +177,7 @@ class SoloDiningPlaceQueryAdapterTest {
                 CURRENT_LONGITUDE,
                 null,
                 1000,
+                null,
                 null
         );
 
@@ -215,10 +218,33 @@ class SoloDiningPlaceQueryAdapterTest {
                 CURRENT_LONGITUDE,
                 SoloDiningPlaceCategory.CAFE,
                 1000,
+                null,
                 null
         );
 
         assertThat(result).extracting(SoloDiningPlaceSummary::placeId).containsExactly(cafe.getId());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"-180, 180", "179, -179"})
+    void limitsMapResultsAfterFilteringAndSorting(final String west, final String east) {
+        SoloDiningPlaceQueryAdapter adapter = new SoloDiningPlaceQueryAdapter(queryJpaRepository);
+        registeredPlace("far", "restaurant", "0.5", "179.5");
+        PlaceCacheEntity olderTie = registeredPlace("older-tie", "restaurant", "0.2", "179.5");
+        PlaceCacheEntity newerTie = registeredPlace("newer-tie", "restaurant", "0.2", "179.5");
+        PlaceCacheEntity near = registeredPlace("near", "restaurant", "0.1", "179.5");
+        registeredPlace("wrong-category", "cafe", "0", "179.5");
+        placeCacheJpaRepository.saveAndFlush(
+                place("unregistered", "미등록 식당", "restaurant", "0", "179.5"));
+
+        List<SoloDiningPlaceSummary> result = adapter.findAllNearby(
+                7L, BigDecimal.ZERO, new BigDecimal("179.5"), SoloDiningPlaceCategory.RESTAURANT,
+                1000, bounds("-1", "1", west, east), 3
+        );
+
+        assertThat(result).extracting(SoloDiningPlaceSummary::placeId)
+                .containsExactly(near.getId(), newerTie.getId(), olderTie.getId());
+        assertThat(result).extracting(SoloDiningPlaceSummary::distanceMeters).isSorted();
     }
 
     @Test

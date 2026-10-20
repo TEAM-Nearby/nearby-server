@@ -9,13 +9,15 @@ import java.util.List;
 
 public interface SoloDiningPlaceQueryPort {
 
+    // 거리 오름차순·동일 거리의 장소 ID 내림차순으로 조회하며, maxResults가 null이면 개수를 제한하지 않는다.
     List<SoloDiningPlaceSummary> findAllNearby(
             Long userId,
             BigDecimal latitude,
             BigDecimal longitude,
             SoloDiningPlaceCategory category,
             int radiusMeters,
-            SoloDiningMapBounds bounds
+            SoloDiningMapBounds bounds,
+            Integer maxResults
     );
 
     List<SoloDiningPlaceSummary> findAllByPlaceIds(

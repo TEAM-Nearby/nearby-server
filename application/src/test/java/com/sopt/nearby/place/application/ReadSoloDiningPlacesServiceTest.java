@@ -43,7 +43,7 @@ class ReadSoloDiningPlacesServiceTest {
 
     @Test
     void readsAllNearbyCachedPlacesWithoutResultLimit() {
-        queryPort.result = IntStream.rangeClosed(1, 21)
+        queryPort.result = IntStream.rangeClosed(1, 101)
                 .mapToObj(index -> summary((long) index, "google-place-" + index, "장소 " + index, false))
                 .toList();
 
@@ -61,9 +61,10 @@ class ReadSoloDiningPlacesServiceTest {
         assertEquals(SoloDiningPlaceCategory.CAFE, queryPort.category);
         assertEquals(1000, queryPort.radiusMeters);
         assertNull(queryPort.bounds);
-        assertEquals(21, result.places().size());
+        assertNull(queryPort.maxResults);
+        assertEquals(101, result.places().size());
         assertEquals("장소 1", result.places().getFirst().name());
-        assertEquals("장소 21", result.places().getLast().name());
+        assertEquals("장소 101", result.places().getLast().name());
     }
 
     @Test
@@ -79,6 +80,7 @@ class ReadSoloDiningPlacesServiceTest {
         ));
 
         assertEquals(bounds, queryPort.bounds);
+        assertEquals(100, queryPort.maxResults);
         assertEquals(new BigDecimal("48.8566"), queryPort.latitude);
         assertEquals(new BigDecimal("2.3522"), queryPort.longitude);
         assertEquals(SoloDiningPlaceCategory.RESTAURANT, queryPort.category);
@@ -187,6 +189,7 @@ class ReadSoloDiningPlacesServiceTest {
         private SoloDiningPlaceCategory category;
         private int radiusMeters;
         private SoloDiningMapBounds bounds;
+        private Integer maxResults;
         private List<SoloDiningPlaceSummary> result = List.of();
 
         @Override
@@ -196,7 +199,8 @@ class ReadSoloDiningPlacesServiceTest {
                 final BigDecimal longitude,
                 final SoloDiningPlaceCategory category,
                 final int radiusMeters,
-                final SoloDiningMapBounds bounds
+                final SoloDiningMapBounds bounds,
+                final Integer maxResults
         ) {
             this.userId = userId;
             this.latitude = latitude;
@@ -204,6 +208,7 @@ class ReadSoloDiningPlacesServiceTest {
             this.category = category;
             this.radiusMeters = radiusMeters;
             this.bounds = bounds;
+            this.maxResults = maxResults;
             return result;
         }
 

@@ -4,6 +4,7 @@ package com.sopt.nearby.place.adapter.out.persistence.repository;
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
 import java.math.BigDecimal;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -68,7 +69,8 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
             @Param("southLatitude") BigDecimal southLatitude,
             @Param("northLatitude") BigDecimal northLatitude,
             @Param("westLongitude") BigDecimal westLongitude,
-            @Param("eastLongitude") BigDecimal eastLongitude
+            @Param("eastLongitude") BigDecimal eastLongitude,
+            Pageable pageable
     );
 
     @Query(value = """

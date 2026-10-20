@@ -59,7 +59,8 @@ class PlaceUseCaseConfigTest {
                 final BigDecimal longitude,
                 final SoloDiningPlaceCategory category,
                 final int radiusMeters,
-                final SoloDiningMapBounds bounds
+                final SoloDiningMapBounds bounds,
+                final Integer maxResults
         ) {
             return List.of();
         }
