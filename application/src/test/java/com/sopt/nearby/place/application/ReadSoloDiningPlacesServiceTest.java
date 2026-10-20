@@ -3,6 +3,7 @@ package com.sopt.nearby.place.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -59,9 +60,28 @@ class ReadSoloDiningPlacesServiceTest {
         assertEquals(new BigDecimal("126.97800000"), queryPort.longitude);
         assertEquals(SoloDiningPlaceCategory.CAFE, queryPort.category);
         assertEquals(1000, queryPort.radiusMeters);
+        assertNull(queryPort.bounds);
         assertEquals(21, result.places().size());
         assertEquals("장소 1", result.places().getFirst().name());
         assertEquals("장소 21", result.places().getLast().name());
+    }
+
+    @Test
+    void passesMapBoundsSeparatelyFromUserLocation() {
+        SoloDiningMapBounds bounds = new SoloDiningMapBounds(
+                new BigDecimal("48.83"), new BigDecimal("48.89"),
+                new BigDecimal("2.30"), new BigDecimal("2.40")
+        );
+
+        service.read(new ReadSoloDiningPlacesCommand(
+                7L, new BigDecimal("48.8566"), new BigDecimal("2.3522"),
+                SoloDiningPlaceCategory.RESTAURANT, bounds
+        ));
+
+        assertEquals(bounds, queryPort.bounds);
+        assertEquals(new BigDecimal("48.8566"), queryPort.latitude);
+        assertEquals(new BigDecimal("2.3522"), queryPort.longitude);
+        assertEquals(SoloDiningPlaceCategory.RESTAURANT, queryPort.category);
     }
 
     @Test
@@ -166,6 +186,7 @@ class ReadSoloDiningPlacesServiceTest {
         private BigDecimal longitude;
         private SoloDiningPlaceCategory category;
         private int radiusMeters;
+        private SoloDiningMapBounds bounds;
         private List<SoloDiningPlaceSummary> result = List.of();
 
         @Override
@@ -182,6 +203,7 @@ class ReadSoloDiningPlacesServiceTest {
             this.longitude = longitude;
             this.category = category;
             this.radiusMeters = radiusMeters;
+            this.bounds = bounds;
             return result;
         }
 
