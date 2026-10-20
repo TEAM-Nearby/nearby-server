@@ -58,7 +58,7 @@ class SoloDiningPlaceQueryAdapterTest {
 
         for (SoloDiningPlaceCategory category : List.of(SoloDiningPlaceCategory.DESSERT, SoloDiningPlaceCategory.CAFE)) {
             List<SoloDiningPlaceSummary> nearby = adapter.findAllNearby(
-                    7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, category, 1000);
+                    7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, category, 1000, null);
             assertThat(nearby).extracting(SoloDiningPlaceSummary::placeId).containsExactly(dessertCafe.getId());
             assertThat(nearby.getFirst().category()).isEqualTo(SoloDiningPlaceCategory.DESSERT);
             assertThat(nearby.getFirst().categories()).containsExactly(
@@ -68,9 +68,9 @@ class SoloDiningPlaceQueryAdapterTest {
                     .extracting(SoloDiningFavoriteSummary::categories)
                     .containsExactly(List.of(SoloDiningPlaceCategory.DESSERT, SoloDiningPlaceCategory.CAFE));
         }
-        assertThat(adapter.findAllNearby(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, null, 1000)).hasSize(1);
+        assertThat(adapter.findAllNearby(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, null, 1000, null)).hasSize(1);
         assertThat(adapter.findAllNearby(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE,
-                SoloDiningPlaceCategory.RESTAURANT, 1000)).isEmpty();
+                SoloDiningPlaceCategory.RESTAURANT, 1000, null)).isEmpty();
         assertThat(adapter.findAllByUserId(8L, CURRENT_LATITUDE, CURRENT_LONGITUDE,
                 SoloDiningPlaceCategory.DESSERT, SoloDiningFavoriteSort.LATEST)).isEmpty();
         assertThat(adapter.findAllByPlaceIds(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, List.of(dessertCafe.getId()))
@@ -117,7 +117,8 @@ class SoloDiningPlaceQueryAdapterTest {
                 CURRENT_LATITUDE,
                 CURRENT_LONGITUDE,
                 null,
-                1000
+                1000,
+                null
         );
 
         assertThat(result).hasSize(2);
@@ -156,7 +157,8 @@ class SoloDiningPlaceQueryAdapterTest {
                 CURRENT_LATITUDE,
                 CURRENT_LONGITUDE,
                 SoloDiningPlaceCategory.CAFE,
-                1000
+                1000,
+                null
         );
 
         assertThat(result).extracting(SoloDiningPlaceSummary::placeId).containsExactly(cafe.getId());

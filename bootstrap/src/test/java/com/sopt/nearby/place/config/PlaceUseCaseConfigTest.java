@@ -7,6 +7,7 @@ import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSort;
 import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSummary;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import com.sopt.nearby.place.port.in.ReadSoloDiningFavoritesUseCase;
 import com.sopt.nearby.place.port.in.ReadSoloDiningPlaceUseCase;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
@@ -57,7 +58,8 @@ class PlaceUseCaseConfigTest {
                 final BigDecimal latitude,
                 final BigDecimal longitude,
                 final SoloDiningPlaceCategory category,
-                final int radiusMeters
+                final int radiusMeters,
+                final SoloDiningMapBounds bounds
         ) {
             return List.of();
         }

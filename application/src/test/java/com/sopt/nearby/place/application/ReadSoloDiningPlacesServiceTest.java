@@ -10,6 +10,7 @@ import com.sopt.nearby.place.domain.exception.GooglePlaceApiException;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
@@ -49,7 +50,8 @@ class ReadSoloDiningPlacesServiceTest {
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
-                SoloDiningPlaceCategory.CAFE
+                SoloDiningPlaceCategory.CAFE,
+                null
         ));
 
         assertEquals(7L, queryPort.userId);
@@ -110,6 +112,7 @@ class ReadSoloDiningPlacesServiceTest {
                 7L,
                 new BigDecimal("91.00000000"),
                 new BigDecimal("126.97800000"),
+                null,
                 null
         )));
 
@@ -117,7 +120,8 @@ class ReadSoloDiningPlacesServiceTest {
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
-                SoloDiningPlaceCategory.OTHER
+                SoloDiningPlaceCategory.OTHER,
+                null
         )));
     }
 
@@ -126,6 +130,7 @@ class ReadSoloDiningPlacesServiceTest {
                 7L,
                 new BigDecimal("37.56650000"),
                 new BigDecimal("126.97800000"),
+                null,
                 null
         );
     }
@@ -169,7 +174,8 @@ class ReadSoloDiningPlacesServiceTest {
                 final BigDecimal latitude,
                 final BigDecimal longitude,
                 final SoloDiningPlaceCategory category,
-                final int radiusMeters
+                final int radiusMeters,
+                final SoloDiningMapBounds bounds
         ) {
             this.userId = userId;
             this.latitude = latitude;

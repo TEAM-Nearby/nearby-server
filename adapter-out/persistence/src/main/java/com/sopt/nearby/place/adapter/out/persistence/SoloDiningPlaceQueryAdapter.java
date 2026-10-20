@@ -8,6 +8,7 @@ import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSort;
 import com.sopt.nearby.place.domain.model.SoloDiningFavoriteSummary;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import com.sopt.nearby.place.port.out.SoloDiningFavoriteQueryPort;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.out.SoloDiningPlaceQueryPort;
@@ -32,14 +33,20 @@ public class SoloDiningPlaceQueryAdapter implements SoloDiningPlaceQueryPort, So
             final BigDecimal latitude,
             final BigDecimal longitude,
             final SoloDiningPlaceCategory category,
-            final int radiusMeters
+            final int radiusMeters,
+            final SoloDiningMapBounds bounds
     ) {
         return repository.findAllNearby(
                         userId,
                         latitude,
                         longitude,
                         category == null ? null : category.name(),
-                        radiusMeters
+                        radiusMeters,
+                        bounds != null,
+                        bounds == null ? BigDecimal.ZERO : bounds.southLatitude(),
+                        bounds == null ? BigDecimal.ZERO : bounds.northLatitude(),
+                        bounds == null ? BigDecimal.ZERO : bounds.westLongitude(),
+                        bounds == null ? BigDecimal.ZERO : bounds.eastLongitude()
                 )
                 .stream()
                 .map(this::toSummary)

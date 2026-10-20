@@ -19,7 +19,8 @@ public record SoloDiningPlacesRequest(
                     userId,
                     parseDecimal(latitude),
                     parseDecimal(longitude),
-                    parseCategory(category)
+                    parseCategory(category),
+                    null
             );
         } catch (RuntimeException exception) {
             throw new InvalidSoloDiningPlacesRequestException();

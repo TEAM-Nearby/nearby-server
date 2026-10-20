@@ -46,7 +46,8 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
                 command.latitude(),
                 command.longitude(),
                 command.category(),
-                SEARCH_RADIUS_METERS
+                SEARCH_RADIUS_METERS,
+                command.bounds()
         )));
     }
 

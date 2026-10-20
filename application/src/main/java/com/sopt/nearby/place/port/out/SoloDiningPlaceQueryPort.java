@@ -3,6 +3,7 @@ package com.sopt.nearby.place.port.out;
 
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -13,7 +14,8 @@ public interface SoloDiningPlaceQueryPort {
             BigDecimal latitude,
             BigDecimal longitude,
             SoloDiningPlaceCategory category,
-            int radiusMeters
+            int radiusMeters,
+            SoloDiningMapBounds bounds
     );
 
     List<SoloDiningPlaceSummary> findAllByPlaceIds(
