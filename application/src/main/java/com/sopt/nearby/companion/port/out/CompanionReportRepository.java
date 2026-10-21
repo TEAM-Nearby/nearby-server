@@ -6,8 +6,8 @@ import com.sopt.nearby.companion.domain.model.report.CompanionReport;
 
 public interface CompanionReportRepository extends DomainRepository<CompanionReport, Long> {
 
-	boolean existsByMeetingIdAndReporterUserIdAndReportedUserId(
-			Long meetingId,
+	boolean existsByMatchIdAndReporterUserIdAndReportedUserId(
+			Long matchId,
 			Long reporterUserId,
 			Long reportedUserId
 	);

@@ -637,6 +637,12 @@ class ProcessCompanionRequestServiceTest {
 
     private static final class FakeCompanionMeetingRepository implements CompanionMeetingRepository {
 
+        @Override
+        public Optional<CompanionMeeting> findByMatchId(final Long matchId) {
+            return meetings.values().stream().filter(meeting -> meeting.matchId().equals(matchId)).findFirst();
+        }
+
+
         private final Map<Long, CompanionMeeting> meetings = new HashMap<>();
         private long nextId = 1L;
 

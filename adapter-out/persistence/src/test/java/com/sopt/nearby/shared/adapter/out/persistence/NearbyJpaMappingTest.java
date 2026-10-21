@@ -105,7 +105,7 @@ class NearbyJpaMappingTest {
 	}
 
 	@Test
-	void companionReportPreventsDuplicateReportsForSameMeetingAndUsers() {
+	void companionReportPreventsDuplicateReportsForSameMatchAndUsers() {
 		Table table = CompanionReportEntity.class.getAnnotation(Table.class);
 
 		assertThat(table).isNotNull();
@@ -153,9 +153,9 @@ class NearbyJpaMappingTest {
 	}
 
 	private static void assertCompanionReportUniqueConstraint(final UniqueConstraint uniqueConstraint) {
-		assertThat(uniqueConstraint.name()).isEqualTo("uk_companion_report_meeting_reporter_reported");
+		assertThat(uniqueConstraint.name()).isEqualTo("uk_companion_report_match_reporter_reported");
 		assertThat(uniqueConstraint.columnNames())
-				.containsExactly("meeting_id", "reporter_user_id", "reported_user_id");
+				.containsExactly("match_id", "reporter_user_id", "reported_user_id");
 	}
 
 	private static void assertSoloDiningFavoriteUniqueConstraint(final UniqueConstraint uniqueConstraint) {

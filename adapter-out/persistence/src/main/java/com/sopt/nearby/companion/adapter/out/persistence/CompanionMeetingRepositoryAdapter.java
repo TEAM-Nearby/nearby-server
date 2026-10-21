@@ -26,6 +26,11 @@ public class CompanionMeetingRepositoryAdapter
 	}
 
 	@Override
+	public Optional<CompanionMeeting> findByMatchId(final Long matchId) {
+		return jpaRepository.findByMatchId(matchId).map(CompanionPersistenceMapper::toDomain);
+	}
+
+	@Override
 	public Optional<CompanionMeeting> findByIdForUpdate(final Long meetingId) {
 		return jpaRepository.findByIdForUpdate(meetingId)
 				.map(CompanionPersistenceMapper::toDomain);

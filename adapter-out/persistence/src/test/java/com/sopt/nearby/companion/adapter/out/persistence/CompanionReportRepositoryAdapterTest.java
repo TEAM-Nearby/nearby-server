@@ -49,12 +49,12 @@ class CompanionReportRepositoryAdapterTest {
 		CompanionReportRepositoryAdapter adapter = new CompanionReportRepositoryAdapter(reportJpaRepository);
 		CompanionMeetingEntity meeting = meeting();
 
-		CompanionReport saved = adapter.save(report(meeting.getId()));
+		CompanionReport saved = adapter.save(report(meeting.getMatchId(), meeting.getId()));
 
 		assertThat(saved.id()).isNotNull();
 		assertThat(adapter.findById(saved.id())).isPresent();
-		assertThat(adapter.existsByMeetingIdAndReporterUserIdAndReportedUserId(
-				meeting.getId(), 10L, 11L
+		assertThat(adapter.existsByMatchIdAndReporterUserIdAndReportedUserId(
+				meeting.getMatchId(), 10L, 11L
 		)).isTrue();
 	}
 
@@ -62,9 +62,9 @@ class CompanionReportRepositoryAdapterTest {
 	void translatesConcurrentDuplicateReportToAlreadyExistsException() {
 		CompanionReportRepositoryAdapter adapter = new CompanionReportRepositoryAdapter(reportJpaRepository);
 		CompanionMeetingEntity meeting = meeting();
-		adapter.save(report(meeting.getId()));
+		adapter.save(report(meeting.getMatchId(), meeting.getId()));
 
-		assertThatThrownBy(() -> adapter.save(report(meeting.getId())))
+		assertThatThrownBy(() -> adapter.save(report(meeting.getMatchId(), meeting.getId())))
 				.isInstanceOf(CompanionReportAlreadyExistsException.class);
 	}
 
@@ -72,7 +72,25 @@ class CompanionReportRepositoryAdapterTest {
 	void rethrowsDataIntegrityViolationWhenMeetingDoesNotExist() {
 		CompanionReportRepositoryAdapter adapter = new CompanionReportRepositoryAdapter(reportJpaRepository);
 
-		assertThatThrownBy(() -> adapter.save(report(999L)))
+		assertThatThrownBy(() -> adapter.save(report(meeting().getMatchId(), 999L)))
+				.isInstanceOf(DataIntegrityViolationException.class);
+	}
+
+	@Test
+	void savesReportWithoutMeetingAndRejectsDuplicateAfterMeetingIsLinked() {
+		CompanionReportRepositoryAdapter adapter = new CompanionReportRepositoryAdapter(reportJpaRepository);
+		CompanionMeetingEntity meeting = meeting();
+		CompanionReport saved = adapter.save(report(meeting.getMatchId(), null));
+		assertThat(saved.matchId()).isEqualTo(meeting.getMatchId());
+		assertThat(saved.meetingId()).isNull();
+		assertThatThrownBy(() -> adapter.save(report(meeting.getMatchId(), meeting.getId())))
+				.isInstanceOf(CompanionReportAlreadyExistsException.class);
+	}
+
+	@Test
+	void rejectsReportWithoutExistingMatch() {
+		CompanionReportRepositoryAdapter adapter = new CompanionReportRepositoryAdapter(reportJpaRepository);
+		assertThatThrownBy(() -> adapter.save(report(999L, null)))
 				.isInstanceOf(DataIntegrityViolationException.class);
 	}
 
@@ -103,8 +121,8 @@ class CompanionReportRepositoryAdapterTest {
 		));
 	}
 
-	private CompanionReport report(final Long meetingId) {
-		return new CompanionReport(null, meetingId, 10L, 11L, "상세 내용", NOW);
+	private CompanionReport report(final Long matchId, final Long meetingId) {
+		return new CompanionReport(null, matchId, meetingId, 10L, 11L, "상세 내용", NOW);
 	}
 
 	@SpringBootConfiguration

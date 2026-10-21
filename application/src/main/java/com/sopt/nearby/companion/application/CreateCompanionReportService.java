@@ -2,26 +2,27 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMeetingNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionReportAlreadyExistsException;
 import com.sopt.nearby.companion.domain.exception.CompanionReportContextNotFoundException;
-import com.sopt.nearby.companion.domain.exception.CompanionReportCurrentUserAlreadyCompletedException;
-import com.sopt.nearby.companion.domain.exception.CompanionReportCurrentUserNotCheckedInException;
-import com.sopt.nearby.companion.domain.exception.CompanionReportMeetingNotOngoingException;
+import com.sopt.nearby.companion.domain.exception.CompanionReportAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionReportSelfNotAllowedException;
 import com.sopt.nearby.companion.domain.exception.CompanionReportTargetNotFoundException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionReportException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionReportRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
-import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.domain.model.report.CompanionReport;
 import com.sopt.nearby.companion.domain.model.report.CompanionReportReason;
 import com.sopt.nearby.companion.domain.model.report.ReportReason;
 import com.sopt.nearby.companion.port.in.CreateCompanionReportUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileRepository;
 import com.sopt.nearby.companion.port.out.CompanionReportMail;
@@ -30,7 +31,6 @@ import com.sopt.nearby.companion.port.out.CompanionReportMailContextQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionReportMailSender;
 import com.sopt.nearby.companion.port.out.CompanionReportReasonRepository;
 import com.sopt.nearby.companion.port.out.CompanionReportRepository;
-import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -42,9 +42,9 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class CreateCompanionReportService implements CreateCompanionReportUseCase {
 
 	private final CompanionMeetingRepository meetingRepository;
+	private final CompanionMatchRepository matchRepository;
 	private final CompanionMatchParticipantRepository participantRepository;
 	private final CompanionProfileRepository profileRepository;
-	private final MeetingCheckInRepository checkInRepository;
 	private final CompanionReportRepository reportRepository;
 	private final CompanionReportReasonRepository reportReasonRepository;
 	private final CompanionReportMailContextQueryPort mailContextQueryPort;
@@ -53,9 +53,9 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 
 	public CreateCompanionReportService(
 			final CompanionMeetingRepository meetingRepository,
+			final CompanionMatchRepository matchRepository,
 			final CompanionMatchParticipantRepository participantRepository,
 			final CompanionProfileRepository profileRepository,
-			final MeetingCheckInRepository checkInRepository,
 			final CompanionReportRepository reportRepository,
 			final CompanionReportReasonRepository reportReasonRepository,
 			final CompanionReportMailContextQueryPort mailContextQueryPort,
@@ -63,9 +63,9 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 			final Clock clock
 	) {
 		this.meetingRepository = meetingRepository;
+		this.matchRepository = matchRepository;
 		this.participantRepository = participantRepository;
 		this.profileRepository = profileRepository;
-		this.checkInRepository = checkInRepository;
 		this.reportRepository = reportRepository;
 		this.reportReasonRepository = reportReasonRepository;
 		this.mailContextQueryPort = mailContextQueryPort;
@@ -78,33 +78,35 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 	public CreateCompanionReportResult create(final CreateCompanionReportCommand command) {
 		validateCommand(command);
 
-		CompanionMeeting meeting = meetingRepository.findByIdForUpdate(command.meetingId())
-				.orElseThrow(CompanionMeetingNotFoundException::new);
-		validateMeeting(meeting);
+		CompanionMeeting meeting = command.meetingId() == null ? null
+				: meetingRepository.findById(command.meetingId()).orElseThrow(CompanionMeetingNotFoundException::new);
+		Long matchId = meeting == null ? command.matchId() : meeting.matchId();
+		CompanionMatch match = matchRepository.findByIdForUpdate(matchId)
+				.orElseThrow(CompanionMatchNotFoundException::new);
+		if (meeting == null) {
+			meeting = meetingRepository.findByMatchId(matchId).orElse(null);
+		}
 
-		List<CompanionMatchParticipant> participants = participantRepository.findAllByMatchId(meeting.matchId());
+		List<CompanionMatchParticipant> participants = participantRepository.findAllByMatchId(matchId);
 		Long reportedUserId = resolveReportedUserId(command, participants);
 		validateParticipants(participants, command.reporterUserId(), reportedUserId);
-		MeetingCheckIn reporterCheckIn = checkInRepository
-				.findByMeetingIdAndUserId(meeting.id(), command.reporterUserId())
-				.orElseThrow(CompanionReportCurrentUserNotCheckedInException::new);
-		if (reporterCheckIn.completedAt() != null) {
-			throw new CompanionReportCurrentUserAlreadyCompletedException();
-		}
+		validateStatus(match, meeting);
 		validateReasons(command.reasons(), command.detail());
-		if (reportRepository.existsByMeetingIdAndReporterUserIdAndReportedUserId(
-				meeting.id(), command.reporterUserId(), reportedUserId)) {
+		if (reportRepository.existsByMatchIdAndReporterUserIdAndReportedUserId(
+				matchId, command.reporterUserId(), reportedUserId)) {
 			throw new CompanionReportAlreadyExistsException();
 		}
 
 		CompanionReportMailContext mailContext = mailContextQueryPort
-				.findByMeetingIdAndUserIds(meeting.id(), command.reporterUserId(), reportedUserId)
+				.findByMatchIdAndUserIds(matchId, command.reporterUserId(), reportedUserId)
 				.orElseThrow(CompanionReportContextNotFoundException::new);
 
 		LocalDateTime now = LocalDateTime.now(clock);
+		Long meetingId = meeting == null ? null : meeting.id();
 		CompanionReport savedReport = reportRepository.save(new CompanionReport(
 				null,
-				meeting.id(),
+				matchId,
+				meetingId,
 				command.reporterUserId(),
 				reportedUserId,
 				command.detail(),
@@ -129,7 +131,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 		);
 		sendMailAfterCommit(mail);
 
-		return new CreateCompanionReportResult(meeting.id(), savedReport.id(), savedReport.createdAt());
+		return new CreateCompanionReportResult(meetingId, matchId, savedReport.id(), savedReport.createdAt());
 	}
 
 	private void sendMailAfterCommit(final CompanionReportMail mail) {
@@ -147,7 +149,9 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 
 	private void validateCommand(final CreateCompanionReportCommand command) {
 		if (command == null || command.reporterUserId() == null || command.reporterUserId() <= 0
-				|| command.meetingId() == null || command.meetingId() <= 0
+				|| (command.meetingId() == null) == (command.matchId() == null)
+				|| (command.meetingId() != null && command.meetingId() <= 0)
+				|| (command.matchId() != null && command.matchId() <= 0)
 				|| (command.reportedUserId() != null && command.reportedUserId() <= 0)) {
 			throw new InvalidCompanionReportRequestException();
 		}
@@ -179,9 +183,10 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 				.orElseThrow(CompanionReportTargetNotFoundException::new);
 	}
 
-	private void validateMeeting(final CompanionMeeting meeting) {
-		if (meeting.status() != CompanionMeetingStatus.ONGOING) {
-			throw new CompanionReportMeetingNotOngoingException();
+	private void validateStatus(final CompanionMatch match, final CompanionMeeting meeting) {
+		if (match.status() == CompanionMatchStatus.CANCELED
+				|| (meeting != null && meeting.status() == CompanionMeetingStatus.CANCELED)) {
+			throw new CompanionReportAlreadyCanceledException();
 		}
 	}
 

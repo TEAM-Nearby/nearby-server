@@ -69,6 +69,17 @@ class CompanionReportMailFormatterTest {
 		assertTrue(html.contains("<strong>신고 ID:</strong>"));
 	}
 
+	@Test
+	void displaysUnconfirmedScheduleInTextAndHtmlMail() {
+		CompanionReportMail source = mail("동행 본문");
+		CompanionReportMail mail = new CompanionReportMail(
+				source.report(), source.reasons(), source.reporterNickname(), source.reporterPhoneNumber(),
+				source.reportedNickname(), source.reportedPhoneNumber(), source.companionPostId(),
+				source.companionPostContent(), null, CompanionPostMeetingTimeType.UNDECIDED, source.placeAddress());
+		assertTrue(CompanionReportMailFormatter.body(mail).contains("일정 미확정"));
+		assertTrue(CompanionReportMailFormatter.htmlBody(mail).contains("일정 미확정"));
+	}
+
 	private CompanionReportMail mail(final String content) {
 		return mail(content, "Paris, France", CompanionPostMeetingTimeType.SCHEDULED);
 	}
@@ -85,6 +96,7 @@ class CompanionReportMailFormatterTest {
 		return new CompanionReportMail(
 				new CompanionReport(
 						1L,
+						10L,
 						2L,
 						3L,
 						4L,

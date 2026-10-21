@@ -378,6 +378,7 @@ public final class CompanionPersistenceMapper {
 	public static CompanionReportEntity toEntity(final CompanionReport model) {
 		return new CompanionReportEntity(
 				model.id(),
+				model.matchId(),
 				model.meetingId(),
 				model.reporterUserId(),
 				model.reportedUserId(),
@@ -389,6 +390,7 @@ public final class CompanionPersistenceMapper {
 	public static CompanionReport toDomain(final CompanionReportEntity entity) {
 		return new CompanionReport(
 				entity.getId(),
+				entity.getMatchId(),
 				entity.getMeetingId(),
 				entity.getReporterUserId(),
 				entity.getReportedUserId(),

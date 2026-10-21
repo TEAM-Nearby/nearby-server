@@ -17,8 +17,8 @@ import java.time.LocalDateTime;
 @Table(
 		name = "companion_report",
 		uniqueConstraints = @UniqueConstraint(
-				name = "uk_companion_report_meeting_reporter_reported",
-				columnNames = {"meeting_id", "reporter_user_id", "reported_user_id"}
+				name = "uk_companion_report_match_reporter_reported",
+				columnNames = {"match_id", "reporter_user_id", "reported_user_id"}
 		)
 )
 public class CompanionReportEntity {
@@ -27,7 +27,10 @@ public class CompanionReportEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "meeting_id", nullable = false)
+	@Column(name = "match_id", nullable = false)
+	private Long matchId;
+
+	@Column(name = "meeting_id")
 	private Long meetingId;
 
 	@Column(name = "reporter_user_id", nullable = false)
@@ -46,11 +49,16 @@ public class CompanionReportEntity {
 	@JoinColumn(name = "meeting_id", insertable = false, updatable = false)
 	private CompanionMeetingEntity meeting;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "match_id", insertable = false, updatable = false)
+	private CompanionMatchEntity match;
+
 	protected CompanionReportEntity() {
 	}
 
 	public CompanionReportEntity(
 			final Long id,
+			final Long matchId,
 			final Long meetingId,
 			final Long reporterUserId,
 			final Long reportedUserId,
@@ -58,6 +66,7 @@ public class CompanionReportEntity {
 			final LocalDateTime createdAt
 	) {
 		this.id = id;
+		this.matchId = matchId;
 		this.meetingId = meetingId;
 		this.reporterUserId = reporterUserId;
 		this.reportedUserId = reportedUserId;
@@ -71,6 +80,10 @@ public class CompanionReportEntity {
 
 	public Long getMeetingId() {
 		return meetingId;
+	}
+
+	public Long getMatchId() {
+		return matchId;
 	}
 
 	public Long getReporterUserId() {

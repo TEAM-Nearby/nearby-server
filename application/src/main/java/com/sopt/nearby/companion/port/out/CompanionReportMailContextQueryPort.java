@@ -5,8 +5,8 @@ import java.util.Optional;
 
 public interface CompanionReportMailContextQueryPort {
 
-	Optional<CompanionReportMailContext> findByMeetingIdAndUserIds(
-			Long meetingId,
+	Optional<CompanionReportMailContext> findByMatchIdAndUserIds(
+			Long matchId,
 			Long reporterUserId,
 			Long reportedUserId
 	);
