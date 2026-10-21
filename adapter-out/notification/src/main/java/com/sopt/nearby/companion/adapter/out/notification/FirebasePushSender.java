@@ -7,6 +7,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.messaging.AndroidConfig;
 import com.google.firebase.messaging.ApnsConfig;
+import com.google.firebase.messaging.Aps;
 import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
@@ -86,6 +87,7 @@ public class FirebasePushSender implements PushSender {
                         .build())
                 .setAndroidConfig(AndroidConfig.builder().setTtl(ttlSeconds * 1_000L).build())
                 .setApnsConfig(ApnsConfig.builder()
+                        .setAps(Aps.builder().build())
                         .putHeader("apns-expiration", String.valueOf(message.expiresAt().toEpochSecond(ZoneOffset.UTC)))
                         .build())
                 .putAllData(message.data())
