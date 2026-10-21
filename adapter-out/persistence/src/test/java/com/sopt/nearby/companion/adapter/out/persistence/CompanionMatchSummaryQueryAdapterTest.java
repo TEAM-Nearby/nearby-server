@@ -62,14 +62,18 @@ class CompanionMatchSummaryQueryAdapterTest {
     private CompanionMatchSummaryJpaRepository summaryJpaRepository;
 
     @Test
-    void findsParticipantMatchesWithHostNicknamePlaceNameAndResolvedMeetingAtOrderByMatchCreatedAtDesc() {
+    void findsParticipantMatchesAndMasksInactiveHostNickname() {
         CompanionMatchSummaryQueryAdapter adapter = new CompanionMatchSummaryQueryAdapter(summaryJpaRepository);
 
         PlaceCacheEntity postPlace = placeCacheJpaRepository.saveAndFlush(place("post-place", "모집글 장소"));
         PlaceCacheEntity schedulePlace = placeCacheJpaRepository.saveAndFlush(place("schedule-place", "확정 장소"));
         PlaceCacheEntity oldPostPlace = placeCacheJpaRepository.saveAndFlush(place("old-post-place", "오래된 모집글 장소"));
 
-        companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트A"));
+        companionProfileJpaRepository.saveAndFlush(profile(
+                100L,
+                "탈퇴한 사용자-100-탈퇴완료계정",
+                CompanionProfileStatus.INACTIVE
+        ));
         companionProfileJpaRepository.saveAndFlush(profile(200L, "호스트B"));
         companionProfileJpaRepository.saveAndFlush(profile(300L, "호스트C"));
 
@@ -151,7 +155,7 @@ class CompanionMatchSummaryQueryAdapterTest {
 
         CompanionMatchSummary first = result.get(0);
         assertThat(first.matchId()).isEqualTo(recentMatch.getId());
-        assertThat(first.hostNickname()).isEqualTo("호스트A");
+        assertThat(first.hostNickname()).isEqualTo("탈퇴한 사용자");
         assertThat(first.hostProfileImageUrl()).isEqualTo("https://image.example/100.png");
         assertThat(first.hostGender()).isEqualTo(UserGender.FEMALE);
         assertThat(first.placeName()).isEqualTo("확정 장소");
@@ -230,6 +234,14 @@ class CompanionMatchSummaryQueryAdapterTest {
     }
 
     private CompanionProfileEntity profile(final Long userId, final String nickname) {
+        return profile(userId, nickname, CompanionProfileStatus.ACTIVE);
+    }
+
+    private CompanionProfileEntity profile(
+            final Long userId,
+            final String nickname,
+            final CompanionProfileStatus status
+    ) {
         return new CompanionProfileEntity(
                 null,
                 userId,
@@ -240,7 +252,7 @@ class CompanionMatchSummaryQueryAdapterTest {
                 "반가워요.",
                 new BigDecimal("4.50"),
                 0,
-                CompanionProfileStatus.ACTIVE
+                status
         );
     }
 
