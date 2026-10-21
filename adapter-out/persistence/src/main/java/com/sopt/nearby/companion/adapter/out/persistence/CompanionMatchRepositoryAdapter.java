@@ -26,6 +26,11 @@ public class CompanionMatchRepositoryAdapter
 	}
 
 	@Override
+	public Optional<CompanionMatch> findByIdForUpdate(final Long matchId) {
+		return jpaRepository.findByIdForUpdate(matchId).map(CompanionPersistenceMapper::toDomain);
+	}
+
+	@Override
 	public Optional<CompanionMatch> findFirstByPostIdAndStatus(
 			final Long postId,
 			final CompanionMatchStatus status

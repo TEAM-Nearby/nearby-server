@@ -6,8 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CompanionReportJpaRepository extends JpaRepository<CompanionReportEntity, Long> {
 
-	boolean existsByMeetingIdAndReporterUserIdAndReportedUserId(
-			Long meetingId,
+	boolean existsByMatchIdAndReporterUserIdAndReportedUserId(
+			Long matchId,
 			Long reporterUserId,
 			Long reportedUserId
 	);

@@ -19,7 +19,7 @@ public class CompanionReportRepositoryAdapter
 		implements CompanionReportRepository {
 
 	private static final String REPORT_UNIQUE_CONSTRAINT_NAME =
-			"uk_companion_report_meeting_reporter_reported";
+			"uk_companion_report_match_reporter_reported";
 
 	public CompanionReportRepositoryAdapter(final CompanionReportJpaRepository jpaRepository) {
 		super(jpaRepository, CompanionPersistenceMapper::toEntity, CompanionPersistenceMapper::toDomain,
@@ -44,13 +44,13 @@ public class CompanionReportRepositoryAdapter
 	}
 
 	@Override
-	public boolean existsByMeetingIdAndReporterUserIdAndReportedUserId(
-			final Long meetingId,
+	public boolean existsByMatchIdAndReporterUserIdAndReportedUserId(
+			final Long matchId,
 			final Long reporterUserId,
 			final Long reportedUserId
 	) {
-		return jpaRepository.existsByMeetingIdAndReporterUserIdAndReportedUserId(
-				meetingId,
+		return jpaRepository.existsByMatchIdAndReporterUserIdAndReportedUserId(
+				matchId,
 				reporterUserId,
 				reportedUserId
 		);
@@ -61,7 +61,7 @@ public class CompanionReportRepositoryAdapter
 		return normalizedMessage.contains(REPORT_UNIQUE_CONSTRAINT_NAME)
 				|| (normalizedMessage.contains("unique")
 				&& normalizedMessage.contains("companion_report")
-				&& normalizedMessage.contains("meeting_id")
+				&& normalizedMessage.contains("match_id")
 				&& normalizedMessage.contains("reporter_user_id")
 				&& normalizedMessage.contains("reported_user_id"));
 	}

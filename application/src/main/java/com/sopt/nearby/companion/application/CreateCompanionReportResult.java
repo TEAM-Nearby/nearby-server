@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 public record CreateCompanionReportResult(
 		Long meetingId,
+		Long matchId,
 		Long reportId,
 		LocalDateTime reportedAt
 ) {

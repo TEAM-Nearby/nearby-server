@@ -45,7 +45,7 @@ class GmailCompanionReportMailSenderTest {
 
 	private CompanionReportMail mail() {
 		return new CompanionReportMail(
-				new CompanionReport(1L, 2L, 10L, 11L, "상세 내용", LocalDateTime.of(2026, 10, 2, 0, 0)),
+				new CompanionReport(1L, 20L, 2L, 10L, 11L, "상세 내용", LocalDateTime.of(2026, 10, 2, 0, 0)),
 				List.of(ReportReason.BAD_ATTITUDE),
 				"신고자",
 				null,

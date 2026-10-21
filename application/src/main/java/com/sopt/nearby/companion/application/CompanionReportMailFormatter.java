@@ -135,7 +135,8 @@ public final class CompanionReportMailFormatter {
 		String cityName = CompanionPlaceCityNameResolver.resolveSupportedCity(placeAddress)
 				.map(CompanionCity::displayName)
 				.orElse("도시 미정");
-		String formattedDateTime = CompanionPostMeetingTimeType.NOW.equals(meetingTimeType)
+		String formattedDateTime = value == null ? "일정 미확정"
+				: CompanionPostMeetingTimeType.NOW.equals(meetingTimeType)
 				? formatUtcLocalDateTime(value, placeZone, CITY_DATE_TIME_FORMATTER)
 				: formatLocalDateTime(value, CITY_DATE_TIME_FORMATTER);
 		return formattedDateTime
