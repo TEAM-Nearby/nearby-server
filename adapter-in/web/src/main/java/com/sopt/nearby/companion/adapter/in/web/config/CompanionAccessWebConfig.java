@@ -1,6 +1,7 @@
 // 동행 화면의 HTTP 진입점에 공통 프로필 접근 검사를 연결한다.
 package com.sopt.nearby.companion.adapter.in.web.config;
 
+import com.sopt.nearby.companion.adapter.in.web.controller.CompanionPostController;
 import com.sopt.nearby.companion.port.in.RequireCompanionProfileUseCase;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,10 +25,11 @@ public class CompanionAccessWebConfig implements WebMvcConfigurer {
             @Override
             public boolean preHandle(final HttpServletRequest request, final HttpServletResponse response,
                                      final Object handler) {
-                if (handler instanceof HandlerMethod) {
+                if (handler instanceof HandlerMethod handlerMethod) {
                     if (request.getUserPrincipal() == null
                             && "GET".equals(request.getMethod())
-                            && (request.getContextPath() + "/api/companion-posts").equals(request.getRequestURI())) {
+                            && CompanionPostController.class.isAssignableFrom(handlerMethod.getBeanType())
+                            && "getPosts".equals(handlerMethod.getMethod().getName())) {
                         return true;
                     }
                     requireProfile.requireProfile(Long.valueOf(request.getUserPrincipal().getName()));

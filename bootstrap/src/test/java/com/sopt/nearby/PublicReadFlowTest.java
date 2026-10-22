@@ -26,6 +26,7 @@ import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
 import com.sopt.nearby.user.domain.model.UserRole;
 import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -118,13 +119,21 @@ class PublicReadFlowTest {
         }
     }
 
-    @Test
-    void keepsCompanionProfileRequirementForAuthenticatedUsers() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"/api/companion-posts", "/api/companion-%70osts"})
+    void keepsCompanionProfileRequirementForAuthenticatedUsers(final String path) throws Exception {
         long userWithoutProfile = user(UserOnboardingStatus.COMPANION_PROFILE_SKIPPED);
-        mvc.perform(get("/api/companion-posts").param("latitude", "48.86").param("longitude", "2.34")
+        mvc.perform(get(URI.create(path)).param("latitude", "48.86").param("longitude", "2.34")
                         .header("Authorization", "Bearer " + token(userWithoutProfile, false)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("COMPANION_PROFILE_REQUIRED"));
+    }
+
+    @Test
+    void guestReadsCompanionPostsThroughEncodedPath() throws Exception {
+        mvc.perform(get(URI.create("/api/companion-%70osts"))
+                        .param("latitude", "48.86").param("longitude", "2.34"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.posts").isArray());
     }
 
     @Test
@@ -180,12 +189,13 @@ class PublicReadFlowTest {
     @ParameterizedTest
     @CsvSource({
             "GET,/api/companion-posts/1", "POST,/api/companion-posts",
+            "GET,/api/companion-%70osts/1", "POST,/api/companion-%70osts",
             "POST,/api/companion-posts/1/companion-requests",
             "PUT,/api/solo-dining/places/1/favorite", "DELETE,/api/solo-dining/places/1/favorite",
             "GET,/api/solo-dining/favorites", "GET,/api/users/me/mypage"
     })
     void keepsMemberOnlyRoutesProtected(final String method, final String path) throws Exception {
-        mvc.perform(request(HttpMethod.valueOf(method), path))
+        mvc.perform(request(HttpMethod.valueOf(method), URI.create(path)))
                 .andExpect(status().isUnauthorized()).andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
 
