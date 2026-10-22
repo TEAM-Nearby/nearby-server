@@ -18,7 +18,7 @@ public record CreateCompanionPostRequest(
         String meetingTimeType,
         LocalDateTime meetingAt,
         @JsonAlias("maxParticipants")
-        @Schema(description = "작성자를 제외하고 모집할 인원", example = "1", minimum = "1", maximum = "6")
+        @Schema(description = "작성자를 제외하고 모집할 인원", example = "1", minimum = "1", maximum = "7")
         int recruitmentCapacity,
         Boolean departEvenIfNotFull,
         List<String> styleKeywords,

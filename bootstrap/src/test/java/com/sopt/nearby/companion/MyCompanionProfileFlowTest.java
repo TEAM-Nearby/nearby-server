@@ -110,6 +110,8 @@ class MyCompanionProfileFlowTest {
                 .andExpect(jsonPath("$.data.profileImageUrl").value("https://example.com/new.png"));
         mvc.perform(get("/api/users/me/mypage").with(jwt().jwt(token -> token.subject(own.userId().toString()))))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.nickname").value(nickname))
+                .andExpect(jsonPath("$.data.profileId").value(own.id()))
+                .andExpect(jsonPath("$.data.intro").value("새로운 소개"))
                 .andExpect(jsonPath("$.data.travelStyleKeywords", containsInAnyOrder("FOODIE", "CAFE_TOUR")));
         mvc.perform(get("/api/companion-profiles/" + own.id())
                         .with(jwt().jwt(token -> token.subject(own.userId().toString()))))
@@ -148,7 +150,23 @@ class MyCompanionProfileFlowTest {
             CompanionProfile saved = profiles.findById(own.id()).orElseThrow();
             assertThat(saved.intro()).isNull();
             assertThat(saved.profileImageUrl()).isNull();
+            mvc.perform(get("/api/users/me/mypage").with(jwt().jwt(token -> token.subject(own.userId().toString()))))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.profileId").value(own.id()))
+                    .andExpect(jsonPath("$.data.intro").value(nullValue()))
+                    .andExpect(jsonPath("$.data.hasCompanionProfile").value(true));
         }
+    }
+
+    @Test
+    void returnsNullMyPageProfileFieldsWhenProfileRegistrationWasSkipped() throws Exception {
+        Long userId = user(UserOnboardingStatus.COMPANION_PROFILE_SKIPPED).id();
+
+        mvc.perform(get("/api/users/me/mypage").with(jwt().jwt(token -> token.subject(userId.toString()))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.hasCompanionProfile").value(false))
+                .andExpect(jsonPath("$.data.profileId").value(nullValue()))
+                .andExpect(jsonPath("$.data.intro").value(nullValue()));
     }
 
     @Test
@@ -311,6 +329,16 @@ class MyCompanionProfileFlowTest {
         CompanionProfile loser = profiles.findById(first.id()).orElseThrow().nickname().equals(nickname) ? second : first;
         assertThat(profiles.findById(loser.id()).orElseThrow()).isEqualTo(loser);
         assertThat(keywords(loser.id())).containsExactlyInAnyOrder(TravelStyleKeyword.EXTROVERTED, TravelStyleKeyword.FOODIE);
+    }
+
+    @Test
+    void documentsNullableMyPageProfileIdAndIntro() throws Exception {
+        mvc.perform(get("/v3/api-docs")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.components.schemas.MyPageResponse.properties.profileId.type",
+                        containsInAnyOrder("integer", "null")))
+                .andExpect(jsonPath("$.components.schemas.MyPageResponse.properties.profileId.format").value("int64"))
+                .andExpect(jsonPath("$.components.schemas.MyPageResponse.properties.intro.type",
+                        containsInAnyOrder("string", "null")));
     }
 
     @Test

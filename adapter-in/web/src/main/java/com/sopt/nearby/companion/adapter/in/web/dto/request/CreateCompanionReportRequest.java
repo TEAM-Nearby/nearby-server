@@ -26,6 +26,10 @@ public record CreateCompanionReportRequest(
 		);
 	}
 
+	public CreateCompanionReportCommand toMatchCommand(final Long matchId, final Long reporterUserId) {
+		return CreateCompanionReportCommand.forMatch(reporterUserId, matchId, reportedUserId, parseReasons(reasons), detail);
+	}
+
 	private List<ReportReason> parseReasons(final List<String> values) {
 		if (values == null) {
 			return null;

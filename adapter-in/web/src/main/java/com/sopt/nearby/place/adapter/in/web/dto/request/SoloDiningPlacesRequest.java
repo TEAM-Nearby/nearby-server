@@ -4,13 +4,18 @@ package com.sopt.nearby.place.adapter.in.web.dto.request;
 import com.sopt.nearby.place.application.ReadSoloDiningPlacesCommand;
 import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlacesRequestException;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import java.math.BigDecimal;
 import java.util.Locale;
 
 public record SoloDiningPlacesRequest(
         String latitude,
         String longitude,
-        String category
+        String category,
+        String southLatitude,
+        String northLatitude,
+        String westLongitude,
+        String eastLongitude
 ) {
 
     public ReadSoloDiningPlacesCommand toCommand(final Long userId) {
@@ -19,11 +24,24 @@ public record SoloDiningPlacesRequest(
                     userId,
                     parseDecimal(latitude),
                     parseDecimal(longitude),
-                    parseCategory(category)
+                    parseCategory(category),
+                    parseBounds()
             );
         } catch (RuntimeException exception) {
             throw new InvalidSoloDiningPlacesRequestException();
         }
+    }
+
+    private SoloDiningMapBounds parseBounds() {
+        if (southLatitude == null && northLatitude == null && westLongitude == null && eastLongitude == null) {
+            return null;
+        }
+        return new SoloDiningMapBounds(
+                parseDecimal(southLatitude),
+                parseDecimal(northLatitude),
+                parseDecimal(westLongitude),
+                parseDecimal(eastLongitude)
+        );
     }
 
     private BigDecimal parseDecimal(final String value) {

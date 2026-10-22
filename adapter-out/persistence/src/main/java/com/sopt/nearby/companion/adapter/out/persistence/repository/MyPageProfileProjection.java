@@ -12,6 +12,8 @@ public interface MyPageProfileProjection {
 
     String getNickname();
 
+    String getIntro();
+
     String getGender();
 
     Integer getBirthYear();

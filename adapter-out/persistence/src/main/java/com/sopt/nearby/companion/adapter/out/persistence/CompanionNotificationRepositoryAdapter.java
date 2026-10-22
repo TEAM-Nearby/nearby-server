@@ -10,6 +10,7 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
 import com.sopt.nearby.shared.adapter.out.persistence.support.SimpleJpaRepositoryAdapter;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -43,6 +44,17 @@ public class CompanionNotificationRepositoryAdapter
                     model.recipientUserId()
             ).orElseThrow(() -> exception);
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CompanionNotification> findAllByIds(final List<Long> notificationIds) {
+        if (notificationIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findAllById(notificationIds).stream()
+                .map(CompanionPersistenceMapper::toDomain)
+                .toList();
     }
 
     @Override

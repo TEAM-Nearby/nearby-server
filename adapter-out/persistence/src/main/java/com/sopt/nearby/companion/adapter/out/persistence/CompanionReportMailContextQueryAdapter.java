@@ -21,12 +21,12 @@ public class CompanionReportMailContextQueryAdapter implements CompanionReportMa
 	}
 
 	@Override
-	public Optional<CompanionReportMailContext> findByMeetingIdAndUserIds(
-			final Long meetingId,
+	public Optional<CompanionReportMailContext> findByMatchIdAndUserIds(
+			final Long matchId,
 			final Long reporterUserId,
 			final Long reportedUserId
 	) {
-		return repository.findByMeetingIdAndUserIds(meetingId, reporterUserId, reportedUserId)
+		return repository.findByMatchIdAndUserIds(matchId, reporterUserId, reportedUserId)
 				.map(this::toContext);
 	}
 

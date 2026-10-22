@@ -154,7 +154,7 @@ jobs:
             --parameters "$parameters" --query Command.CommandId --output text)"
           aws ssm wait command-executed --command-id "$command_id" --instance-id "$EC2_INSTANCE_ID" || {
             aws ssm get-command-invocation --command-id "$command_id" --instance-id "$EC2_INSTANCE_ID" \
-              --query '{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}' --output json
+              --query '{commandId:CommandId,status:Status,statusDetails:StatusDetails,responseCode:ResponseCode,stdout:StandardOutputContent,stderr:StandardErrorContent}' --output json
             exit 1
           }
           aws ssm get-command-invocation --command-id "$command_id" --instance-id "$EC2_INSTANCE_ID" \
@@ -193,10 +193,14 @@ jobs:
             '{commands: [
               "#!/bin/bash",
               "set -euo pipefail",
-              "aws s3 cp \($s3_uri) /tmp/nearby-app.jar",
               "sudo test -d \($app_dir)",
-              "sudo install -o nearby -g nearby -m 0644 /tmp/nearby-app.jar \($app_jar_path)",
-              "tmp_env=$(mktemp); aws ssm get-parameters-by-path --path \($ssm_env_path) --region \($aws_region) --recursive --with-decryption --query \"Parameters[*].[Name,Value]\" --output text | while IFS=$(printf \"\\t\") read -r name value; do key=\"${name##*/}\"; value=\"${value//\\\\/\\\\\\\\}\"; value=\"${value//\\\"/\\\\\\\"}\"; printf \"%s=\\\"%s\\\"\\n\" \"$key\" \"$value\"; done > \"$tmp_env\"; status=$?; if [ $status -eq 0 ]; then sudo install -o nearby -g nearby -m 0600 \"$tmp_env\" \($app_env_path); status=$?; fi; rm -f \"$tmp_env\"; if [ $status -ne 0 ]; then exit $status; fi",
+              "stage_dir=$(mktemp -d \($app_dir | @sh)/.deploy.XXXXXXXX)",
+              "trap '\''rm -rf -- \"$stage_dir\"'\'' EXIT",
+              "stage_fs=$(findmnt -n -o FSTYPE --target \"$stage_dir\")",
+              "case \"$stage_fs\" in tmpfs|ramfs) echo \"Deployment staging must use a disk-backed filesystem\" >&2; exit 1 ;; esac",
+              "aws s3 cp \($s3_uri) \"$stage_dir/app.jar\" --no-progress",
+              "sudo install -o nearby -g nearby -m 0644 \"$stage_dir/app.jar\" \($app_jar_path)",
+              "tmp_env=\"$stage_dir/app.env\"; aws ssm get-parameters-by-path --path \($ssm_env_path) --region \($aws_region) --recursive --with-decryption --query \"Parameters[*].[Name,Value]\" --output text | while IFS=$(printf \"\\t\") read -r name value; do key=\"${name##*/}\"; value=\"${value//\\\\/\\\\\\\\}\"; value=\"${value//\\\"/\\\\\\\"}\"; printf \"%s=\\\"%s\\\"\\n\" \"$key\" \"$value\"; done > \"$tmp_env\"; status=$?; if [ $status -eq 0 ]; then sudo install -o nearby -g nearby -m 0600 \"$tmp_env\" \($app_env_path); status=$?; fi; rm -f \"$tmp_env\"; if [ $status -ne 0 ]; then exit $status; fi",
               "if ! sudo grep -qxF \"EnvironmentFile=\($app_env_path)\" \($service_unit); then sudo sed -i \"/^\\[Service\\]$/a EnvironmentFile=\($app_env_path)\" \($service_unit); fi",
               "sudo systemctl daemon-reload",
               "sudo systemctl enable \($app_service_name)",
@@ -212,6 +216,7 @@ jobs:
             --parameters "$parameters" \
             --query 'Command.CommandId' \
             --output text)"
+          echo "SSM command ID: $command_id"
 
           for _ in {1..60}; do
             status="$(aws ssm get-command-invocation \
@@ -233,7 +238,7 @@ jobs:
                 aws ssm get-command-invocation \
                   --command-id "$command_id" \
                   --instance-id "$EC2_INSTANCE_ID" \
-                  --query '{status:Status,stdout:StandardOutputContent,stderr:StandardErrorContent}' \
+                  --query '{commandId:CommandId,status:Status,statusDetails:StatusDetails,responseCode:ResponseCode,stdout:StandardOutputContent,stderr:StandardErrorContent}' \
                   --output json || true
                 exit 1
                 ;;

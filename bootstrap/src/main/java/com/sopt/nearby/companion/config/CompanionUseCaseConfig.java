@@ -368,6 +368,7 @@ public class CompanionUseCaseConfig {
     )
     ProcessCompanionPushDeliveriesUseCase processCompanionPushDeliveriesUseCase(
             final CompanionPushDeliveryRepository repository,
+            final CompanionNotificationRepository notificationRepository,
             final CompanionPushEndpointRepository endpointRepository,
             final PushSender sender,
             final Clock clock,
@@ -378,6 +379,7 @@ public class CompanionUseCaseConfig {
     ) {
         return new ProcessCompanionPushDeliveriesService(
                 repository,
+                notificationRepository,
                 endpointRepository,
                 sender,
                 clock,
@@ -456,7 +458,7 @@ public class CompanionUseCaseConfig {
             final CompanionMeetingRepository meetingRepository,
             final CompanionMatchParticipantRepository participantRepository,
             final CompanionProfileRepository profileRepository,
-            final MeetingCheckInRepository checkInRepository,
+            final CompanionMatchRepository matchRepository,
             final CompanionReportRepository reportRepository,
             final CompanionReportReasonRepository reportReasonRepository,
             final CompanionReportMailContextQueryPort mailContextQueryPort,
@@ -465,9 +467,9 @@ public class CompanionUseCaseConfig {
     ) {
         return new CreateCompanionReportService(
                 meetingRepository,
+                matchRepository,
                 participantRepository,
                 profileRepository,
-                checkInRepository,
                 reportRepository,
                 reportReasonRepository,
                 mailContextQueryPort,

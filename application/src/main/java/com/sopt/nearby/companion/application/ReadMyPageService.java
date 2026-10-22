@@ -43,15 +43,17 @@ public class ReadMyPageService implements ReadMyPageUseCase {
         requireCompletedOnboardingUseCase.requireCompleted(userId);
         ReadOnboardingStatusUseCase.Status onboarding = readOnboardingStatus.read(userId);
         if (!onboarding.hasCompanionProfile()) {
-            return new ReadMyPageResult(null, null, onboarding.phoneVerified(), null, null, null,
+            return new ReadMyPageResult(null, null, null, null, onboarding.phoneVerified(), null, null, null,
                     List.of(), List.of(), 0, 0, 0, false);
         }
         MyPageProfile profile = queryPort.findByUserId(userId)
                 .orElseThrow(CompanionProfileNotFoundException::new);
 
         return new ReadMyPageResult(
+                profile.profileId(),
                 profile.profileImageUrl(),
                 profile.nickname(),
+                profile.intro(),
                 profile.phoneVerifiedAt() != null,
                 ageGroup(profile.birthYear()),
                 profile.gender(),

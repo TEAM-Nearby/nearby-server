@@ -165,6 +165,13 @@ class CreateCompanionNotificationServiceTest {
         }
 
         @Override
+        public List<CompanionNotification> findAllByIds(final List<Long> notificationIds) {
+            return notifications.values().stream()
+                    .filter(notification -> notificationIds.contains(notification.id()))
+                    .toList();
+        }
+
+        @Override
         public Optional<CompanionNotification> findByUniqueKey(
                 final CompanionNotificationType notificationType,
                 final CompanionNotificationTargetType targetType,

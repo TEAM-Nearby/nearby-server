@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.adapter.in.web.controller;
 import com.sopt.nearby.companion.adapter.in.web.code.CompanionSuccessCode;
 import com.sopt.nearby.companion.adapter.in.web.dto.request.CreateCompanionReportRequest;
 import com.sopt.nearby.companion.adapter.in.web.dto.response.CreateCompanionReportResponse;
+import com.sopt.nearby.companion.adapter.in.web.dto.response.CreateCompanionMatchReportResponse;
 import com.sopt.nearby.companion.application.CreateCompanionReportResult;
 import com.sopt.nearby.companion.port.in.CreateCompanionReportUseCase;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/companion-meetings")
+@RequestMapping("/api")
 public class CompanionReportController implements CompanionReportApi {
 
 	private final CreateCompanionReportUseCase createCompanionReportUseCase;
@@ -27,7 +28,7 @@ public class CompanionReportController implements CompanionReportApi {
 	}
 
 	@Override
-	@PostMapping("/{meetingId}/reports")
+	@PostMapping("/companion-meetings/{meetingId}/reports")
 	@ResponseStatus(HttpStatus.CREATED)
 	public CommonResponse<CreateCompanionReportResponse> createReport(
 			@PathVariable final Long meetingId,
@@ -42,6 +43,24 @@ public class CompanionReportController implements CompanionReportApi {
 		return CommonResponse.created(
 				CompanionSuccessCode.CREATE_COMPANION_REPORT,
 				CreateCompanionReportResponse.from(result)
+		);
+	}
+
+	@Override
+	@PostMapping("/companion-matches/{matchId}/reports")
+	@ResponseStatus(HttpStatus.CREATED)
+	public CommonResponse<CreateCompanionMatchReportResponse> createMatchReport(
+			@PathVariable final Long matchId,
+			@RequestBody(required = false) final CreateCompanionReportRequest request,
+			final Principal principal
+	) {
+		Long userId = Long.valueOf(principal.getName());
+		CreateCompanionReportResult result = createCompanionReportUseCase.create(
+				request == null ? null : request.toMatchCommand(matchId, userId)
+		);
+		return CommonResponse.created(
+				CompanionSuccessCode.CREATE_COMPANION_REPORT,
+				CreateCompanionMatchReportResponse.from(result)
 		);
 	}
 }

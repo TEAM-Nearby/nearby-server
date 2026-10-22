@@ -7,8 +7,28 @@ import java.util.List;
 public record CreateCompanionReportCommand(
 		Long reporterUserId,
 		Long meetingId,
+		Long matchId,
 		Long reportedUserId,
 		List<ReportReason> reasons,
 		String detail
 ) {
+	public CreateCompanionReportCommand(
+			final Long reporterUserId,
+			final Long meetingId,
+			final Long reportedUserId,
+			final List<ReportReason> reasons,
+			final String detail
+	) {
+		this(reporterUserId, meetingId, null, reportedUserId, reasons, detail);
+	}
+
+	public static CreateCompanionReportCommand forMatch(
+			final Long reporterUserId,
+			final Long matchId,
+			final Long reportedUserId,
+			final List<ReportReason> reasons,
+			final String detail
+	) {
+		return new CreateCompanionReportCommand(reporterUserId, null, matchId, reportedUserId, reasons, detail);
+	}
 }

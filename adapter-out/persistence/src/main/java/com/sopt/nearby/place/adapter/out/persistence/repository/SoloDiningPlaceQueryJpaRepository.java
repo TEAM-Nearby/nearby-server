@@ -4,6 +4,7 @@ package com.sopt.nearby.place.adapter.out.persistence.repository;
 import com.sopt.nearby.place.adapter.out.persistence.entity.PlaceCacheEntity;
 import java.math.BigDecimal;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -38,17 +39,24 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
                 place.longitude as longitude,
                 place.business_status as businessStatus
             from place_cache place
+            join solo_dining_place registered on registered.place_id = place.id
             where (:category is null or exists (
                     select 1 from place_category classification
                     where classification.place_id = place.id and classification.category = :category
                 ) or (not exists (
                     select 1 from place_category classification where classification.place_id = place.id
                 ) and upper(place.category) = :category))
-                and 6371000 * acos(least(1.0, greatest(-1.0,
+                and ((:useMapBounds = false and 6371000 * acos(least(1.0, greatest(-1.0,
                     cos(radians(:latitude)) * cos(radians(cast(place.latitude as double precision)))
                     * cos(radians(cast(place.longitude as double precision)) - radians(:longitude))
                     + sin(radians(:latitude)) * sin(radians(cast(place.latitude as double precision)))
-                ))) <= :radiusMeters
+                ))) <= :radiusMeters)
+                or (:useMapBounds = true
+                    and place.latitude between :southLatitude and :northLatitude
+                    and ((:westLongitude <= :eastLongitude
+                            and place.longitude between :westLongitude and :eastLongitude)
+                        or (:westLongitude > :eastLongitude
+                            and (place.longitude >= :westLongitude or place.longitude <= :eastLongitude)))))
             order by distanceMeters asc, place.id desc
             """, nativeQuery = true)
     List<SoloDiningPlaceProjection> findAllNearby(
@@ -56,7 +64,13 @@ public interface SoloDiningPlaceQueryJpaRepository extends Repository<PlaceCache
             @Param("latitude") BigDecimal latitude,
             @Param("longitude") BigDecimal longitude,
             @Param("category") String category,
-            @Param("radiusMeters") int radiusMeters
+            @Param("radiusMeters") int radiusMeters,
+            @Param("useMapBounds") boolean useMapBounds,
+            @Param("southLatitude") BigDecimal southLatitude,
+            @Param("northLatitude") BigDecimal northLatitude,
+            @Param("westLongitude") BigDecimal westLongitude,
+            @Param("eastLongitude") BigDecimal eastLongitude,
+            Pageable pageable
     );
 
     @Query(value = """

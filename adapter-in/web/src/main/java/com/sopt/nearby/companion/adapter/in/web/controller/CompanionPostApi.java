@@ -36,7 +36,7 @@ public interface CompanionPostApi {
     })
     @ApiResponse(
             responseCode = "403",
-            description = "온보딩 과정이 완료되지 않았습니다.",
+            description = "로그인한 사용자의 온보딩 과정이 완료되지 않았습니다. 비회원에는 적용하지 않습니다.",
             content = @Content(
                     mediaType = "application/json",
                     examples = @ExampleObject(
@@ -54,7 +54,7 @@ public interface CompanionPostApi {
     )
     @Operation(
             summary = "동행 모집글 목록 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치와 필터 조건에 맞는 동행 모집글을 조회합니다.",
+            description = "비회원도 현재 위치와 필터 조건에 맞는 동행 모집글을 조회할 수 있습니다. 비회원은 Authorization 헤더를 생략합니다. 토큰을 전달하면 인증 및 온보딩 완료 검사를 적용하며, 잘못되거나 만료된 토큰은 401을 반환합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionPostsResponse> getPosts(
@@ -140,7 +140,8 @@ public interface CompanionPostApi {
     @Operation(
             summary = "동행 모집글 작성",
             description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글을 작성합니다. "
-                    + "recruitmentCapacity는 작성자를 제외한 모집 인원이며, 응답의 maxParticipants는 작성자를 포함한 전체 정원입니다.",
+                    + "recruitmentCapacity는 작성자를 제외한 모집 인원으로 1~7명이며, "
+                    + "응답의 maxParticipants는 작성자를 포함한 전체 정원으로 2~8명입니다.",
             security = @SecurityRequirement(name = "bearerAuth"),
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,

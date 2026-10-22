@@ -92,6 +92,21 @@ class SecurityConfigTest {
     }
 
     @Test
+    void documentsOptionalBearerOnlyForPublicGetOperations() throws Exception {
+        for (String path : java.util.List.of("/api/companion-posts", "/api/solo-dining/places",
+                "/api/solo-dining/places/{placeId}")) {
+            mockMvc.perform(get("/v3/api-docs"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.paths['" + path + "'].get.security[0]").isEmpty())
+                    .andExpect(jsonPath("$.paths['" + path + "'].get.security[1].bearerAuth").isArray());
+        }
+        mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(jsonPath("$.paths['/api/companion-posts'].post.security[0].bearerAuth").isArray())
+                .andExpect(jsonPath("$.paths['/api/solo-dining/places/{placeId}/favorite'].put.security[0].bearerAuth")
+                        .isArray());
+    }
+
+    @Test
     void rejectsOnboardingPhoneVerificationWithoutBearerTokenAsCommonJson() throws Exception {
         mockMvc.perform(post("/api/onboarding/phone-verifications")
                         .contentType(MediaType.APPLICATION_JSON)

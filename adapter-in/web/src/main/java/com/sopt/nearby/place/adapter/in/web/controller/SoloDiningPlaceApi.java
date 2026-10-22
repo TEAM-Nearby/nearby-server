@@ -28,8 +28,18 @@ public interface SoloDiningPlaceApi {
             GooglePlaceApiException.class
     })
     @Operation(
-            summary = "혼밥 맛집 목록 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 현재 위치 주변의 혼밥 맛집 목록을 조회합니다. category는 대표 분류이며 categories는 전체 분류입니다.",
+            summary = "혼밥 맛집 목록 조회 (비회원 허용)",
+            description = """
+                    비회원은 Authorization 헤더 없이 조회할 수 있으며 isFavorite는 항상 false입니다.
+                    로그인한 사용자는 실제 저장 여부를 반환합니다. 잘못되거나 만료된 토큰은 401을 반환합니다.
+                    혼밥 지도에 등록된 장소를 조회합니다. 지도 영역의 남·북·서·동 경계 네 값을 모두 보내면
+                    해당 영역 안에서 사용자와 가까운 순으로 최대 100곳을 조회합니다.
+                    경계를 모두 생략하면 기존처럼 개수 제한 없이 사용자 위치 반경 1km를 조회합니다.
+                    latitude와 longitude는 사용자 위치로, 거리 계산과 가까운 순 정렬에 사용합니다.
+                    거리가 같으면 장소 ID 내림차순으로 정렬하며, 상한은 이미지 조회 전에 DB에서 적용합니다.
+                    지도 경계는 포함되며, 서쪽 경도가 동쪽 경도보다 크면 날짜변경선을 지나는 영역입니다.
+                    동행에서만 등록한 장소는 포함하지 않습니다. category는 대표 분류이며 categories는 전체 분류입니다.
+                    """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponse(
@@ -74,6 +84,14 @@ public interface SoloDiningPlaceApi {
             String longitude,
             @Parameter(description = "음식 카테고리(RESTAURANT, CAFE, PUB, DESSERT). 복수 분류 중 하나라도 일치하면 조회합니다.", example = "CAFE")
             String category,
+            @Parameter(description = "지도 남쪽 위도(-90~90). 경계 네 값을 함께 전달해야 합니다.", example = "48.83")
+            String southLatitude,
+            @Parameter(description = "지도 북쪽 위도(-90~90). 남쪽 위도보다 커야 합니다.", example = "48.89")
+            String northLatitude,
+            @Parameter(description = "지도 서쪽 경도(-180~180). 동쪽 경도와 같을 수 없습니다.", example = "2.30")
+            String westLongitude,
+            @Parameter(description = "지도 동쪽 경도(-180~180). 서쪽 경도보다 작으면 날짜변경선을 지납니다.", example = "2.40")
+            String eastLongitude,
             @Parameter(hidden = true)
             Principal principal
     );
@@ -84,8 +102,8 @@ public interface SoloDiningPlaceApi {
             GooglePlaceApiException.class
     })
     @Operation(
-            summary = "혼밥 맛집 상세 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 혼밥 맛집 상세 정보를 조회합니다. category와 categories는 저장된 분류를 반환합니다.",
+            summary = "혼밥 맛집 상세 조회 (비회원 허용)",
+            description = "비회원도 Authorization 헤더 없이 혼밥 맛집 상세 정보를 조회할 수 있습니다. 비회원의 isFavorite는 항상 false이며, 로그인한 사용자는 실제 저장 여부를 반환합니다. 잘못되거나 만료된 토큰은 401을 반환합니다. category와 categories는 저장된 분류를 반환합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponse(

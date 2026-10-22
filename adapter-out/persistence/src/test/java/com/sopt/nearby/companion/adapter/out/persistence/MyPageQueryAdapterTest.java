@@ -138,6 +138,7 @@ class MyPageQueryAdapterTest {
         assertThat(result.profileId()).isEqualTo(profile.getId());
         assertThat(result.userId()).isEqualTo(user.getId());
         assertThat(result.nickname()).isEqualTo("니어바이");
+        assertThat(result.intro()).isEqualTo("혼자 여행도 같이 여행도 좋아해요");
         assertThat(result.gender()).isEqualTo(UserGender.FEMALE);
         assertThat(result.birthYear()).isEqualTo(2003);
         assertThat(result.profileImageUrl()).isEqualTo("https://cdn.nearby.com/profiles/1.jpg");
@@ -386,6 +387,11 @@ class MyPageQueryAdapterTest {
         @Override
         public String getNickname() {
             return "니어바이";
+        }
+
+        @Override
+        public String getIntro() {
+            return "혼자 여행도 같이 여행도 좋아해요";
         }
 
         @Override

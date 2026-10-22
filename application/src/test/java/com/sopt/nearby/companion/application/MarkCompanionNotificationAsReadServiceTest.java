@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -148,6 +149,13 @@ class MarkCompanionNotificationAsReadServiceTest {
         @Override
         public Optional<CompanionNotification> findById(final Long id) {
             return Optional.ofNullable(notifications.get(id));
+        }
+
+        @Override
+        public List<CompanionNotification> findAllByIds(final List<Long> notificationIds) {
+            return notifications.values().stream()
+                    .filter(notification -> notificationIds.contains(notification.id()))
+                    .toList();
         }
 
         @Override

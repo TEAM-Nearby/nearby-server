@@ -7,6 +7,10 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import java.util.Optional;
 
 public interface CompanionMatchRepository extends DomainRepository<CompanionMatch, Long> {
+    default Optional<CompanionMatch> findByIdForUpdate(final Long matchId) {
+        return findById(matchId);
+    }
+
     Optional<CompanionMatch> findFirstByPostIdAndStatus(Long postId, CompanionMatchStatus status);
 
     boolean confirmScheduleIfMatched(Long matchId);

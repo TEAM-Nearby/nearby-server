@@ -74,7 +74,7 @@ public class CompanionPostController implements CompanionPostApi {
         return CommonResponse.success(
                 CompanionSuccessCode.COMPANION_POSTS_FOUND,
                 CompanionPostsResponse.from(readCompanionPostsUseCase.read(
-                        request.toCommand(Long.valueOf(principal.getName()))
+                        request.toCommand(principal == null ? null : Long.valueOf(principal.getName()))
                 ))
         );
     }

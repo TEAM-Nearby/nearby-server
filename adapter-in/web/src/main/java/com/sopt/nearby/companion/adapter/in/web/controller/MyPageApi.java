@@ -19,8 +19,10 @@ public interface MyPageApi {
     })
     @Operation(
             summary = "마이페이지 조회",
-            description = "인증된 사용자의 마이페이지를 조회합니다. 프로필을 건너뛴 경우 hasCompanionProfile은 false이고, "
-                    + "프로필 정보는 null, 활동 목록은 빈 배열, 집계는 0입니다.",
+            description = "인증된 사용자의 마이페이지를 조회합니다. profileId는 본인의 동행 프로필 ID이고, "
+                    + "intro는 저장된 한 줄 소개이며 소개가 없으면 null입니다. "
+                    + "프로필 등록을 건너뛴 경우 hasCompanionProfile은 false이고, "
+                    + "profileId와 intro를 포함한 프로필 정보는 null, 활동 목록은 빈 배열, 집계는 0입니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<MyPageResponse> getMyPage(

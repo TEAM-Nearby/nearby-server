@@ -20,6 +20,7 @@ import java.util.concurrent.Semaphore;
 public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase {
 
     private static final int SEARCH_RADIUS_METERS = 1000;
+    private static final int MAX_MAP_RESULTS = 100;
     private static final int MAX_IMAGE_RESOLUTION_CONCURRENCY = 10;
     private static final BigDecimal MIN_LATITUDE = new BigDecimal("-90");
     private static final BigDecimal MAX_LATITUDE = new BigDecimal("90");
@@ -46,7 +47,9 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
                 command.latitude(),
                 command.longitude(),
                 command.category(),
-                SEARCH_RADIUS_METERS
+                SEARCH_RADIUS_METERS,
+                command.bounds(),
+                command.bounds() == null ? null : MAX_MAP_RESULTS
         )));
     }
 
@@ -94,7 +97,7 @@ public class ReadSoloDiningPlacesService implements ReadSoloDiningPlacesUseCase 
 
     private void validate(final ReadSoloDiningPlacesCommand command) {
         if (command == null
-                || command.userId() == null
+                || (command.userId() != null && command.userId() <= 0)
                 || command.latitude() == null
                 || command.longitude() == null
                 || command.category() == SoloDiningPlaceCategory.OTHER

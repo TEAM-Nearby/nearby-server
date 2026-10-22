@@ -10,6 +10,7 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -50,6 +51,28 @@ class CompanionNotificationRepositoryAdapterTest {
                 1L,
                 7L
         )).get().isEqualTo(saved);
+    }
+
+    @Test
+    void findsRequestedNotificationsWithOriginalEventTypesInOneBatch() {
+        CompanionNotificationRepositoryAdapter adapter = new CompanionNotificationRepositoryAdapter(jpaRepository);
+        CompanionNotification created = adapter.save(notification(
+                null, 7L, CompanionNotificationType.COMPANION_APPLICATION_CREATED, 11L, null, NOW
+        ));
+        CompanionNotification accepted = adapter.save(notification(
+                null, 8L, CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED, 11L, NOW, NOW
+        ));
+        CompanionNotification rejected = adapter.save(notification(
+                null, 9L, CompanionNotificationType.COMPANION_APPLICATION_REJECTED, 12L, null, NOW
+        ));
+        adapter.save(notification(
+                null, 10L, CompanionNotificationType.COMPANION_APPLICATION_CREATED, 13L, null, NOW
+        ));
+
+        assertThat(adapter.findAllByIds(List.of(rejected.id(), created.id(), accepted.id(), Long.MAX_VALUE)))
+                .containsExactlyInAnyOrder(created, accepted, rejected);
+        assertThat(adapter.findAllByIds(List.of())).isEmpty();
+        assertThat(adapter.findAllByIds(List.of(Long.MAX_VALUE))).isEmpty();
     }
 
     @Test

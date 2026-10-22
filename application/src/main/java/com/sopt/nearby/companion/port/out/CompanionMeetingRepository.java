@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface CompanionMeetingRepository extends DomainRepository<CompanionMeeting, Long> {
 
+	Optional<CompanionMeeting> findByMatchId(Long matchId);
+
 	default Optional<CompanionMeeting> findByIdForUpdate(final Long meetingId) {
 		return findById(meetingId);
 	}

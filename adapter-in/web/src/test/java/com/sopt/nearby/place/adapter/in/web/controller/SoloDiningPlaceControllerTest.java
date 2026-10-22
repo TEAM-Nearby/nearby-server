@@ -28,6 +28,9 @@ import java.security.Principal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -107,6 +110,73 @@ class SoloDiningPlaceControllerTest {
         assertEquals(new BigDecimal("37.56650000"), readUseCase.command.latitude());
         assertEquals(new BigDecimal("126.97800000"), readUseCase.command.longitude());
         assertEquals(SoloDiningPlaceCategory.CAFE, readUseCase.command.category());
+        assertEquals(null, readUseCase.command.bounds());
+    }
+
+    @Test
+    void acceptsMapBoundsWithoutChangingUserLocation() throws Exception {
+        readUseCase.result = new SoloDiningPlacesResult(List.of());
+
+        mockMvc.perform(get("/api/solo-dining/places")
+                        .queryParam("latitude", "48.8566")
+                        .queryParam("longitude", "2.3522")
+                        .queryParam("category", "RESTAURANT")
+                        .queryParam("southLatitude", "48.83")
+                        .queryParam("northLatitude", "48.89")
+                        .queryParam("westLongitude", "2.30")
+                        .queryParam("eastLongitude", "2.40")
+                        .principal(principal("7")))
+                .andExpect(status().isOk());
+
+        assertEquals(new BigDecimal("48.8566"), readUseCase.command.latitude());
+        assertEquals(new BigDecimal("2.3522"), readUseCase.command.longitude());
+        assertEquals(new BigDecimal("48.83"), readUseCase.command.bounds().southLatitude());
+        assertEquals(new BigDecimal("48.89"), readUseCase.command.bounds().northLatitude());
+        assertEquals(new BigDecimal("2.30"), readUseCase.command.bounds().westLongitude());
+        assertEquals(new BigDecimal("2.40"), readUseCase.command.bounds().eastLongitude());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"southLatitude", "northLatitude", "westLongitude", "eastLongitude"})
+    void rejectsIncompleteMapBounds(final String boundary) throws Exception {
+        mockMvc.perform(get("/api/solo-dining/places")
+                        .queryParam("latitude", "48.8566")
+                        .queryParam("longitude", "2.3522")
+                        .queryParam(boundary, "1")
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+        assertEquals(null, readUseCase.command);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "invalid,48.89,2.30,2.40",
+            "'',48.89,2.30,2.40",
+            "-91,48.89,2.30,2.40",
+            "48.83,91,2.30,2.40",
+            "48.89,48.83,2.30,2.40",
+            "48.83,48.83,2.30,2.40",
+            "48.83,48.89,-181,2.40",
+            "48.83,48.89,2.30,181",
+            "48.83,48.89,2.30,2.30"
+    })
+    void rejectsInvalidMapBounds(
+            final String south, final String north, final String west, final String east
+    ) throws Exception {
+        mockMvc.perform(get("/api/solo-dining/places")
+                        .queryParam("latitude", "48.8566")
+                        .queryParam("longitude", "2.3522")
+                        .queryParam("southLatitude", south)
+                        .queryParam("northLatitude", north)
+                        .queryParam("westLongitude", west)
+                        .queryParam("eastLongitude", east)
+                        .principal(principal("7")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+        assertEquals(null, readUseCase.command);
     }
 
     @Test

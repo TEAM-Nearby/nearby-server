@@ -2,6 +2,7 @@ package com.sopt.nearby.security.adapter.out;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,6 +25,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/companion-posts",
+                                "/api/solo-dining/places",
+                                "/api/solo-dining/places/{placeId}"
+                        ).permitAll()
                         .requestMatchers(
                                 "/api/login/kakao",
                                 "/api/login/apple",

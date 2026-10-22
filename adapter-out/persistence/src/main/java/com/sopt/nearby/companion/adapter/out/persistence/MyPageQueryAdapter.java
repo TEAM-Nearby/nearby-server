@@ -60,6 +60,7 @@ public class MyPageQueryAdapter implements MyPageQueryPort {
                 row.getProfileId(),
                 row.getUserId(),
                 row.getNickname(),
+                row.getIntro(),
                 gender.get(),
                 row.getBirthYear(),
                 row.getProfileImageUrl(),

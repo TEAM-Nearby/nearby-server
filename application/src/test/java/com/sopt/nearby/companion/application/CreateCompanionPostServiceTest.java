@@ -68,10 +68,12 @@ class CreateCompanionPostServiceTest {
     }
 
     @Test
-    void allowsRecruitmentCapacityUpToSix() {
-        CreateCompanionPostResult result = service.create(commandWithRecruitmentCapacity(6));
+    void allowsRecruitmentCapacityUpToSeven() {
+        CreateCompanionPostResult result = service.create(commandWithRecruitmentCapacity(7));
 
-        assertEquals(7, result.maxParticipants());
+        assertEquals(8, result.maxParticipants());
+        assertEquals(8, postRepository.savedPost.maxParticipants());
+        assertEquals(1, result.participantCount());
     }
 
     @Test
@@ -230,7 +232,7 @@ class CreateCompanionPostServiceTest {
                 null,
                 true,
                 List.of()
-        ), 7);
+        ), 8);
         assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(tooManyParticipants));
 
         CreateCompanionPostCommand allCategory = withPlaceCategory(command(

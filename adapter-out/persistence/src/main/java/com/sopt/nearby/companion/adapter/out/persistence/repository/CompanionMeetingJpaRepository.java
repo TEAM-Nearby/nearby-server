@@ -15,6 +15,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface CompanionMeetingJpaRepository extends JpaRepository<CompanionMeetingEntity, Long> {
 
+	Optional<CompanionMeetingEntity> findByMatchId(Long matchId);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
 	@Query("select meeting from CompanionMeetingEntity meeting where meeting.id = :meetingId")

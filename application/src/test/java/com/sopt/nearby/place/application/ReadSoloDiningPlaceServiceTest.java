@@ -10,6 +10,7 @@ import com.sopt.nearby.place.domain.exception.InvalidSoloDiningPlaceRequestExcep
 import com.sopt.nearby.place.domain.exception.PlaceNotFoundException;
 import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceCategory;
+import com.sopt.nearby.place.domain.model.SoloDiningMapBounds;
 import com.sopt.nearby.place.domain.model.SoloDiningPlaceSummary;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
@@ -179,7 +180,36 @@ class ReadSoloDiningPlaceServiceTest {
         );
     }
 
+    @Test
+    void readsPlaceAsGuest() {
+        queryPort.result = List.of(summary(false));
+        detailsPort.result = details();
+        ReadSoloDiningPlaceCommand member = validCommand();
+
+        SoloDiningPlaceResult result = service.read(new ReadSoloDiningPlaceCommand(
+                null, member.placeId(), member.latitude(), member.longitude()
+        ));
+
+        assertNull(queryPort.userId);
+        assertEquals(12L, result.placeId());
+        assertEquals(false, result.isFavorite());
+    }
+
+    @Test
+    void rejectsNonPositiveMemberId() {
+        ReadSoloDiningPlaceCommand member = validCommand();
+        for (long userId : new long[] {0, -1}) {
+            assertThrows(InvalidSoloDiningPlaceRequestException.class, () -> service.read(
+                    new ReadSoloDiningPlaceCommand(userId, member.placeId(), member.latitude(), member.longitude())
+            ));
+        }
+    }
+
     private SoloDiningPlaceSummary summary() {
+        return summary(true);
+    }
+
+    private SoloDiningPlaceSummary summary(final boolean favorite) {
         return new SoloDiningPlaceSummary(
                 12L,
                 "google-place-id",
@@ -191,7 +221,7 @@ class ReadSoloDiningPlaceServiceTest {
                 80,
                 new BigDecimal("4.10"),
                 100,
-                true,
+                favorite,
                 new BigDecimal("37.56600000"),
                 new BigDecimal("126.97800000"),
                 PlaceBusinessStatus.UNKNOWN
@@ -258,7 +288,9 @@ class ReadSoloDiningPlaceServiceTest {
                 final BigDecimal latitude,
                 final BigDecimal longitude,
                 final SoloDiningPlaceCategory category,
-                final int radiusMeters
+                final int radiusMeters,
+                final SoloDiningMapBounds bounds,
+                final Integer maxResults
         ) {
             return List.of();
         }
