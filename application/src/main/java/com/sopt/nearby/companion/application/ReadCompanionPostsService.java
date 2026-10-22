@@ -50,7 +50,9 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
     @Transactional(readOnly = true)
     public CompanionPostsResult read(final ReadCompanionPostsCommand command) {
         validate(command);
-        requireCompletedOnboardingUseCase.requireCompleted(command.userId());
+        if (command.userId() != null) {
+            requireCompletedOnboardingUseCase.requireCompleted(command.userId());
+        }
 
         List<CompanionPostSummary> summaries = queryPort.find(command);
         List<CompanionPostsResult.Post> posts = summaries.stream()
@@ -159,7 +161,7 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
 
     private void validate(final ReadCompanionPostsCommand command) {
         if (command == null
-                || command.userId() == null
+                || (command.userId() != null && command.userId() <= 0)
                 || command.latitude() == null
                 || command.longitude() == null
                 || command.radiusMeters() <= 0
