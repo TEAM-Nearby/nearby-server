@@ -28,8 +28,10 @@ public interface SoloDiningPlaceApi {
             GooglePlaceApiException.class
     })
     @Operation(
-            summary = "혼밥 맛집 목록 조회",
+            summary = "혼밥 맛집 목록 조회 (비회원 허용)",
             description = """
+                    비회원은 Authorization 헤더 없이 조회할 수 있으며 isFavorite는 항상 false입니다.
+                    로그인한 사용자는 실제 저장 여부를 반환합니다. 잘못되거나 만료된 토큰은 401을 반환합니다.
                     혼밥 지도에 등록된 장소를 조회합니다. 지도 영역의 남·북·서·동 경계 네 값을 모두 보내면
                     해당 영역 안에서 사용자와 가까운 순으로 최대 100곳을 조회합니다.
                     경계를 모두 생략하면 기존처럼 개수 제한 없이 사용자 위치 반경 1km를 조회합니다.
@@ -100,8 +102,8 @@ public interface SoloDiningPlaceApi {
             GooglePlaceApiException.class
     })
     @Operation(
-            summary = "혼밥 맛집 상세 조회",
-            description = "JWT 액세스 토큰으로 인증된 사용자가 혼밥 맛집 상세 정보를 조회합니다. category와 categories는 저장된 분류를 반환합니다.",
+            summary = "혼밥 맛집 상세 조회 (비회원 허용)",
+            description = "비회원도 Authorization 헤더 없이 혼밥 맛집 상세 정보를 조회할 수 있습니다. 비회원의 isFavorite는 항상 false이며, 로그인한 사용자는 실제 저장 여부를 반환합니다. 잘못되거나 만료된 토큰은 401을 반환합니다. category와 categories는 저장된 분류를 반환합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponse(

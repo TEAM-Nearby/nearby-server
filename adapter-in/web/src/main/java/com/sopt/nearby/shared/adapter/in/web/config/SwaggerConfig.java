@@ -5,6 +5,8 @@ import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import java.util.List;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,5 +33,22 @@ public class SwaggerConfig {
                 .type(SecurityScheme.Type.HTTP)
                 .scheme("bearer")
                 .bearerFormat("JWT");
+    }
+
+    @Bean
+    public OpenApiCustomizer optionalAuthenticationForPublicReads() {
+        return api -> List.of(
+                "/api/companion-posts",
+                "/api/solo-dining/places",
+                "/api/solo-dining/places/{placeId}"
+        ).forEach(path -> {
+            var item = api.getPaths().get(path);
+            if (item != null && item.getGet() != null) {
+                item.getGet().setSecurity(List.of(
+                        new SecurityRequirement(),
+                        new SecurityRequirement().addList(BEARER_AUTH)
+                ));
+            }
+        });
     }
 }
