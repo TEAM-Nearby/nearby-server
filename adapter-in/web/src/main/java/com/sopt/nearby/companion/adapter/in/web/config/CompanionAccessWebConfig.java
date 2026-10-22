@@ -25,6 +25,11 @@ public class CompanionAccessWebConfig implements WebMvcConfigurer {
             public boolean preHandle(final HttpServletRequest request, final HttpServletResponse response,
                                      final Object handler) {
                 if (handler instanceof HandlerMethod) {
+                    if (request.getUserPrincipal() == null
+                            && "GET".equals(request.getMethod())
+                            && (request.getContextPath() + "/api/companion-posts").equals(request.getRequestURI())) {
+                        return true;
+                    }
                     requireProfile.requireProfile(Long.valueOf(request.getUserPrincipal().getName()));
                 }
                 return true;
