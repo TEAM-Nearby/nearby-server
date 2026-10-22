@@ -1,8 +1,10 @@
 // 동행 푸시 발송 작업을 배치로 확보하고 결과를 반영하는 서비스다.
 package com.sopt.nearby.companion.application;
 
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
 import com.sopt.nearby.companion.domain.model.notification.CompanionPushDelivery;
 import com.sopt.nearby.companion.port.in.ProcessCompanionPushDeliveriesUseCase;
+import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
 import com.sopt.nearby.companion.port.out.CompanionPushDeliveryRepository;
 import com.sopt.nearby.companion.port.out.CompanionPushEndpointRepository;
 import com.sopt.nearby.companion.port.out.PushDeliveryResult;
@@ -11,6 +13,7 @@ import com.sopt.nearby.companion.port.out.PushSender;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +23,7 @@ import java.util.function.IntSupplier;
 public class ProcessCompanionPushDeliveriesService implements ProcessCompanionPushDeliveriesUseCase {
 
     private final CompanionPushDeliveryRepository repository;
+    private final CompanionNotificationRepository notificationRepository;
     private final CompanionPushEndpointRepository endpointRepository;
     private final PushSender sender;
     private final Clock clock;
@@ -30,17 +34,19 @@ public class ProcessCompanionPushDeliveriesService implements ProcessCompanionPu
 
     public ProcessCompanionPushDeliveriesService(
             final CompanionPushDeliveryRepository repository,
+            final CompanionNotificationRepository notificationRepository,
             final PushSender sender,
             final Clock clock,
             final int batchSize,
             final int maxAttempts,
             final Duration leaseDuration
     ) {
-        this(repository, null, sender, clock, batchSize, maxAttempts, leaseDuration, () -> 0);
+        this(repository, notificationRepository, null, sender, clock, batchSize, maxAttempts, leaseDuration, () -> 0);
     }
 
     public ProcessCompanionPushDeliveriesService(
             final CompanionPushDeliveryRepository repository,
+            final CompanionNotificationRepository notificationRepository,
             final CompanionPushEndpointRepository endpointRepository,
             final PushSender sender,
             final Clock clock,
@@ -48,11 +54,13 @@ public class ProcessCompanionPushDeliveriesService implements ProcessCompanionPu
             final int maxAttempts,
             final Duration leaseDuration
     ) {
-        this(repository, endpointRepository, sender, clock, batchSize, maxAttempts, leaseDuration, () -> 0);
+        this(repository, notificationRepository, endpointRepository, sender, clock, batchSize, maxAttempts,
+                leaseDuration, () -> 0);
     }
 
     public ProcessCompanionPushDeliveriesService(
             final CompanionPushDeliveryRepository repository,
+            final CompanionNotificationRepository notificationRepository,
             final CompanionPushEndpointRepository endpointRepository,
             final PushSender sender,
             final Clock clock,
@@ -62,6 +70,7 @@ public class ProcessCompanionPushDeliveriesService implements ProcessCompanionPu
             final IntSupplier jitterSecondsSupplier
     ) {
         this.repository = repository;
+        this.notificationRepository = notificationRepository;
         this.endpointRepository = endpointRepository;
         this.sender = sender;
         this.clock = clock;
@@ -91,11 +100,33 @@ public class ProcessCompanionPushDeliveriesService implements ProcessCompanionPu
             return;
         }
 
-        List<PushDeliveryResult> providerResults = sender.send(deliveries.stream()
-                .map(this::toMessage)
-                .toList());
-        Map<Long, PushDeliveryResult> results = index(providerResults == null ? List.of() : providerResults);
+        List<Long> notificationIds = deliveries.stream()
+                .map(CompanionPushDelivery::notificationId)
+                .distinct()
+                .toList();
+        Map<Long, CompanionNotification> notifications = new HashMap<>();
+        for (CompanionNotification notification : notificationRepository.findAllByIds(notificationIds)) {
+            notifications.put(notification.id(), notification);
+        }
+
+        List<CompanionPushDelivery> sendableDeliveries = new ArrayList<>();
+        List<PushMessage> messages = new ArrayList<>();
         for (CompanionPushDelivery delivery : deliveries) {
+            CompanionNotification notification = notifications.get(delivery.notificationId());
+            if (notification == null) {
+                markPermanentFailure(delivery, "NOTIFICATION_NOT_FOUND", claimToken, now);
+                continue;
+            }
+            sendableDeliveries.add(delivery);
+            messages.add(toMessage(delivery, notification));
+        }
+        if (messages.isEmpty()) {
+            return;
+        }
+
+        List<PushDeliveryResult> providerResults = sender.send(messages);
+        Map<Long, PushDeliveryResult> results = index(providerResults == null ? List.of() : providerResults);
+        for (CompanionPushDelivery delivery : sendableDeliveries) {
             PushDeliveryResult result = results.get(delivery.id());
             if (result == null) {
                 retry(delivery, claimToken, "MISSING_PROVIDER_RESULT", null, now);
@@ -105,13 +136,18 @@ public class ProcessCompanionPushDeliveriesService implements ProcessCompanionPu
         }
     }
 
-    private PushMessage toMessage(final CompanionPushDelivery delivery) {
+    private PushMessage toMessage(
+            final CompanionPushDelivery delivery,
+            final CompanionNotification notification
+    ) {
         return new PushMessage(
                 delivery.id(),
                 delivery.token(),
                 delivery.title(),
                 delivery.body(),
                 Map.of(
+                        "type", notification.notificationType().name(),
+                        "applicationId", String.valueOf(delivery.targetId()),
                         "notificationId", String.valueOf(delivery.notificationId()),
                         "targetType", delivery.targetType().name(),
                         "targetId", String.valueOf(delivery.targetId())
