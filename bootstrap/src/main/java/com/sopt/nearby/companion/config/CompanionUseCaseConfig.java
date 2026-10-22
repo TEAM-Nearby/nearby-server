@@ -368,6 +368,7 @@ public class CompanionUseCaseConfig {
     )
     ProcessCompanionPushDeliveriesUseCase processCompanionPushDeliveriesUseCase(
             final CompanionPushDeliveryRepository repository,
+            final CompanionNotificationRepository notificationRepository,
             final CompanionPushEndpointRepository endpointRepository,
             final PushSender sender,
             final Clock clock,
@@ -378,6 +379,7 @@ public class CompanionUseCaseConfig {
     ) {
         return new ProcessCompanionPushDeliveriesService(
                 repository,
+                notificationRepository,
                 endpointRepository,
                 sender,
                 clock,
