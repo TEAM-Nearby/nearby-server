@@ -90,6 +90,28 @@ class SoloDiningPlaceQueryAdapterTest {
     }
 
     @Test
+    void guestQueriesNeverExposeAnotherUsersFavorites() {
+        SoloDiningPlaceQueryAdapter adapter = new SoloDiningPlaceQueryAdapter(queryJpaRepository);
+        PlaceCacheEntity place = registeredPlace("guest-place", "cafe", "37.56652", "126.97802");
+        favoriteJpaRepository.saveAndFlush(favorite(7L, place.getId(), LocalDateTime.now()));
+
+        List<SoloDiningPlaceSummary> nearby = adapter.findAllNearby(
+                null, CURRENT_LATITUDE, CURRENT_LONGITUDE, null, 1000, null, null);
+        List<SoloDiningPlaceSummary> bounded = adapter.findAllNearby(
+                null, CURRENT_LATITUDE, CURRENT_LONGITUDE, null, 1000,
+                bounds("37.56", "37.57", "126.97", "126.99"), 100);
+        List<SoloDiningPlaceSummary> detail = adapter.findAllByPlaceIds(
+                null, CURRENT_LATITUDE, CURRENT_LONGITUDE, List.of(place.getId()));
+
+        for (List<SoloDiningPlaceSummary> result : List.of(nearby, bounded, detail)) {
+            assertThat(result).extracting(SoloDiningPlaceSummary::placeId).containsExactly(place.getId());
+            assertThat(result).noneMatch(SoloDiningPlaceSummary::isFavorite);
+        }
+        assertThat(adapter.findAllByPlaceIds(7L, CURRENT_LATITUDE, CURRENT_LONGITUDE, List.of(place.getId()))
+                .getFirst().isFavorite()).isTrue();
+    }
+
+    @Test
     void includesBothSidesOfAntimeridianOnlyWithinMapBounds() {
         SoloDiningPlaceQueryAdapter adapter = new SoloDiningPlaceQueryAdapter(queryJpaRepository);
         PlaceCacheEntity west = registeredPlace("date-west", "restaurant", "0", "179");

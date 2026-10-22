@@ -88,8 +88,7 @@ public class ReadSoloDiningPlaceService implements ReadSoloDiningPlaceUseCase {
 
     private void validate(final ReadSoloDiningPlaceCommand command) {
         if (command == null
-                || command.userId() == null
-                || command.userId() <= 0
+                || (command.userId() != null && command.userId() <= 0)
                 || command.placeId() == null
                 || command.placeId() <= 0
                 || command.latitude() == null

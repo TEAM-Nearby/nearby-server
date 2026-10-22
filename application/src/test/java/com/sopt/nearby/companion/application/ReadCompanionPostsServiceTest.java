@@ -223,6 +223,32 @@ class ReadCompanionPostsServiceTest {
         assertThrows(OnboardingRequiredException.class, () -> service.read(validCommand()));
     }
 
+    @Test
+    void readsAsGuestWithoutRequiringOnboarding() {
+        onboardingUseCase.exception = new OnboardingRequiredException();
+        ReadCompanionPostsCommand member = validCommand();
+
+        CompanionPostsResult result = service.read(new ReadCompanionPostsCommand(
+                null, member.latitude(), member.longitude(), member.radiusMeters(),
+                member.placeCategory(), member.placeId(), member.sort()
+        ));
+
+        assertEquals(0, result.posts().size());
+        assertEquals(null, queryPort.command.userId());
+        assertEquals(null, onboardingUseCase.userId);
+    }
+
+    @Test
+    void rejectsNonPositiveMemberId() {
+        ReadCompanionPostsCommand member = validCommand();
+        for (long userId : new long[] {0, -1}) {
+            assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(
+                    new ReadCompanionPostsCommand(userId, member.latitude(), member.longitude(),
+                            member.radiusMeters(), member.placeCategory(), member.placeId(), member.sort())
+            ));
+        }
+    }
+
     private ReadCompanionPostsCommand validCommand() {
         return new ReadCompanionPostsCommand(
                 7L,

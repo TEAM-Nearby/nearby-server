@@ -58,7 +58,7 @@ public class SoloDiningPlaceController implements SoloDiningPlaceApi {
         return CommonResponse.success(
                 PlaceSuccessCode.SOLO_DINING_PLACES_FOUND,
                 SoloDiningPlacesResponse.from(readSoloDiningPlacesUseCase.read(
-                        request.toCommand(resolveUserId(principal))
+                        request.toCommand(principal == null ? null : resolveUserId(principal))
                 ))
         );
     }
@@ -76,7 +76,7 @@ public class SoloDiningPlaceController implements SoloDiningPlaceApi {
         return CommonResponse.success(
                 PlaceSuccessCode.SOLO_DINING_PLACE_FOUND,
                 SoloDiningPlaceResponse.from(readSoloDiningPlaceUseCase.read(
-                        request.toCommand(resolveUserId(principal))
+                        request.toCommand(principal == null ? null : resolveUserId(principal))
                 ))
         );
     }
