@@ -12,6 +12,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.port.out.PushDeliveryResult;
 import com.sopt.nearby.companion.port.out.PushMessage;
 import java.time.Instant;
@@ -22,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class FirebasePushSenderTest {
 
@@ -34,12 +37,14 @@ class FirebasePushSenderTest {
         }
     }
 
-    @Test
-    void sendsEventNotificationWithRequiredApnsPayload() throws Exception {
+    @ParameterizedTest
+    @EnumSource(CompanionNotificationType.class)
+    void sendsEventNotificationWithRoutingDataAndRequiredApnsPayload(final CompanionNotificationType type)
+            throws Exception {
         MockHttpTransport transport = transport(200,
                 "{\"name\":\"projects/test-project/messages/test-message\"}");
         FirebasePushSender sender = sender(transport);
-        PushMessage message = message();
+        PushMessage message = message(type);
 
         List<PushDeliveryResult> results = sender.send(List.of(message));
 
@@ -56,8 +61,9 @@ class FirebasePushSenderTest {
         assertEquals(message.title(), payload.getAsJsonObject("notification").get("title").getAsString());
         assertEquals(message.body(), payload.getAsJsonObject("notification").get("body").getAsString());
         assertEquals(JsonParser.parseString("""
-                {"notificationId":"138","targetType":"COMPANION_APPLICATION","targetId":"80"}
-                """), payload.getAsJsonObject("data"));
+                {"type":"%s","applicationId":"80","notificationId":"138",
+                 "targetType":"COMPANION_APPLICATION","targetId":"80"}
+                """.formatted(type.name())), payload.getAsJsonObject("data"));
         JsonObject apns = payload.getAsJsonObject("apns");
         assertEquals(new JsonObject(), apns.getAsJsonObject("payload").getAsJsonObject("aps"));
         assertEquals(String.valueOf(message.expiresAt().toEpochSecond(ZoneOffset.UTC)),
@@ -76,7 +82,9 @@ class FirebasePushSenderTest {
                 "errorCode":"UNREGISTERED"}]}}
                 """));
 
-        List<PushDeliveryResult> results = sender.send(List.of(message()));
+        List<PushDeliveryResult> results = sender.send(List.of(
+                message(CompanionNotificationType.COMPANION_APPLICATION_CREATED)
+        ));
 
         assertEquals(List.of(new PushDeliveryResult(
                 31L, PushDeliveryResult.Outcome.PERMANENT_FAILURE, null, "UNREGISTERED", null
@@ -103,10 +111,11 @@ class FirebasePushSenderTest {
                 .build();
     }
 
-    private PushMessage message() {
+    private PushMessage message(final CompanionNotificationType type) {
         return new PushMessage(
                 31L, "test-device-token", "새로운 동행 신청", "새로운 동행 신청이 도착했어요.",
-                Map.of("notificationId", "138", "targetType", "COMPANION_APPLICATION", "targetId", "80"),
+                Map.of("type", type.name(), "applicationId", "80", "notificationId", "138",
+                        "targetType", "COMPANION_APPLICATION", "targetId", "80"),
                 LocalDateTime.now(ZoneOffset.UTC).plusMinutes(5)
         );
     }
