@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface SoloDiningPlaceQueryPort {
 
+    // userId가 null이면 비회원 조회이며, 모든 장소의 isFavorite는 false를 반환한다.
+
     // 거리 오름차순·동일 거리의 장소 ID 내림차순으로 조회하며, maxResults가 null이면 개수를 제한하지 않는다.
     List<SoloDiningPlaceSummary> findAllNearby(
             Long userId,

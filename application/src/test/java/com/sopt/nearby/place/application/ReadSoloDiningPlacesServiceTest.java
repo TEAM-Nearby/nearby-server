@@ -147,6 +147,31 @@ class ReadSoloDiningPlacesServiceTest {
         )));
     }
 
+    @Test
+    void readsPlacesAsGuest() {
+        queryPort.result = List.of(summary(1L, "guest-place", "비회원 식당", false));
+        ReadSoloDiningPlacesCommand member = validCommand();
+
+        SoloDiningPlacesResult result = service.read(new ReadSoloDiningPlacesCommand(
+                null, member.latitude(), member.longitude(), member.category(), member.bounds()
+        ));
+
+        assertNull(queryPort.userId);
+        assertEquals(1, result.places().size());
+        assertFalse(result.places().getFirst().isFavorite());
+    }
+
+    @Test
+    void rejectsNonPositiveMemberId() {
+        ReadSoloDiningPlacesCommand member = validCommand();
+        for (long userId : new long[] {0, -1}) {
+            assertThrows(InvalidSoloDiningPlacesRequestException.class, () -> service.read(
+                    new ReadSoloDiningPlacesCommand(userId, member.latitude(), member.longitude(),
+                            member.category(), member.bounds())
+            ));
+        }
+    }
+
     private ReadSoloDiningPlacesCommand validCommand() {
         return new ReadSoloDiningPlacesCommand(
                 7L,
