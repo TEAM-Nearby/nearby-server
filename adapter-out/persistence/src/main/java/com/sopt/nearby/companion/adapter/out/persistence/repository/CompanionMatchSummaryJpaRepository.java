@@ -13,7 +13,10 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
     @Query(value = """
             select
                 m.id as matchId,
-                host_profile.nickname as hostNickname,
+                case
+                    when host_profile.status = 'INACTIVE' then '탈퇴한 사용자'
+                    else host_profile.nickname
+                end as hostNickname,
                 host_profile.profile_image_url as hostProfileImageUrl,
                 host_profile.gender as hostGender,
                 place.name as placeName,

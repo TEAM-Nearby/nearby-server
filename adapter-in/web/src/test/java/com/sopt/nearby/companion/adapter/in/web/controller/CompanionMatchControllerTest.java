@@ -112,11 +112,11 @@ class CompanionMatchControllerTest {
     }
 
     @Test
-    void passesAuthenticatedUserIdFromPrincipalToReadMatchesUseCase() throws Exception {
+    void returnsMatchesWithMaskedWithdrawnHostNickname() throws Exception {
         readCompanionMatchesUseCase.result = List.of(new ReadCompanionMatchResult(
                 new CompanionMatchSummary(
                         1L,
-                        "호스트A",
+                        "탈퇴한 사용자",
                         "https://image.example/host-a.png",
                         UserGender.FEMALE,
                         "시우다드콘달",
@@ -138,7 +138,7 @@ class CompanionMatchControllerTest {
                 .andExpect(jsonPath("$.code").value("READ_COMPANION_MATCHES"))
                 .andExpect(jsonPath("$.message").value("매칭된 동행 목록을 조회했어요."))
                 .andExpect(jsonPath("$.data.matches[0].matchId").value(1))
-                .andExpect(jsonPath("$.data.matches[0].hostNickname").value("호스트A"))
+                .andExpect(jsonPath("$.data.matches[0].hostNickname").value("탈퇴한 사용자"))
                 .andExpect(jsonPath("$.data.matches[0].hostProfileImageUrl")
                         .value("https://image.example/host-a.png"))
                 .andExpect(jsonPath("$.data.matches[0].hostGender").value("FEMALE"))
