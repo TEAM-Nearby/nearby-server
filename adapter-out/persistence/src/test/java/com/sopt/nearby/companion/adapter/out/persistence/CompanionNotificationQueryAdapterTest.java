@@ -253,6 +253,67 @@ class CompanionNotificationQueryAdapterTest {
     }
 
     @Test
+    void returnsEveryScheduleUpdateNotificationWithScheduleUpdatedAction() {
+        CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
+
+        CompanionProfileEntity host = profileJpaRepository.saveAndFlush(profile(100L, "호스트", "host.png"));
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place("google-place", "확정 장소"));
+        CompanionPostEntity post = postJpaRepository.saveAndFlush(post(
+                host.getUserId(),
+                place.getId(),
+                NOW.plusDays(1)
+        ));
+        CompanionApplicationEntity application = applicationJpaRepository.saveAndFlush(application(
+                post.getId(),
+                7L,
+                CompanionApplicationStatus.ACCEPTED,
+                NOW
+        ));
+        CompanionMatchEntity match = matchJpaRepository.saveAndFlush(match(post.getId()));
+        scheduleJpaRepository.saveAndFlush(schedule(match.getId(), place.getId(), NOW.plusHours(3)));
+        participantJpaRepository.saveAndFlush(participant(match.getId(), 7L, application.getId()));
+        entityManager.persistAndFlush(notification(
+                7L,
+                CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED,
+                application.getId(),
+                null,
+                NOW.plusMinutes(1)
+        ));
+        CompanionNotificationEntity firstUpdate = entityManager.persistAndFlush(notification(
+                7L,
+                CompanionNotificationType.COMPANION_SCHEDULE_UPDATED,
+                application.getId(),
+                null,
+                NOW.plusMinutes(2)
+        ));
+        CompanionNotificationEntity secondUpdate = entityManager.persistAndFlush(notification(
+                7L,
+                CompanionNotificationType.COMPANION_SCHEDULE_UPDATED,
+                application.getId(),
+                null,
+                NOW.plusMinutes(3)
+        ));
+
+        List<CompanionNotificationSummary> result = adapter.findAllByUserIdAndDirection(
+                7L,
+                CompanionNotificationDirection.SENT
+        );
+
+        assertThat(result)
+                .extracting(CompanionNotificationSummary::notificationId)
+                .startsWith(secondUpdate.getId(), firstUpdate.getId());
+        assertThat(result.subList(0, 2))
+                .extracting(CompanionNotificationSummary::actionType)
+                .containsOnly(CompanionNotificationActionType.SCHEDULE_UPDATED);
+        assertThat(result.subList(0, 2))
+                .extracting(CompanionNotificationSummary::applicationId)
+                .containsOnly(application.getId());
+        assertThat(result.subList(0, 2))
+                .extracting(CompanionNotificationSummary::matchId)
+                .containsOnly(match.getId());
+    }
+
+    @Test
     void findsReceivedNotificationsForHostAndMapsActionTypes() {
         CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
 

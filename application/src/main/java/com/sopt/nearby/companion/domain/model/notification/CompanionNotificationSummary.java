@@ -18,6 +18,7 @@ public record CompanionNotificationSummary(
 
     public static CompanionNotificationSummary of(
             final CompanionNotificationDirection direction,
+            final CompanionNotificationType notificationType,
             final Long notificationId,
             final Long applicationId,
             final CompanionApplicationStatus applicationStatus,
@@ -35,7 +36,32 @@ public record CompanionNotificationSummary(
                 placeName,
                 meetingAt,
                 matchId,
-                CompanionNotificationActionType.from(direction, applicationStatus),
+                CompanionNotificationActionType.from(direction, applicationStatus, notificationType),
+                isRead
+        );
+    }
+
+    public static CompanionNotificationSummary of(
+            final CompanionNotificationDirection direction,
+            final Long notificationId,
+            final Long applicationId,
+            final CompanionApplicationStatus applicationStatus,
+            final CompanionNotificationHostProfile host,
+            final String placeName,
+            final LocalDateTime meetingAt,
+            final Long matchId,
+            final boolean isRead
+    ) {
+        return of(
+                direction,
+                null,
+                notificationId,
+                applicationId,
+                applicationStatus,
+                host,
+                placeName,
+                meetingAt,
+                matchId,
                 isRead
         );
     }

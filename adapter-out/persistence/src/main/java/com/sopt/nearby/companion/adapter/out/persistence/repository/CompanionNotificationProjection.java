@@ -9,6 +9,8 @@ public interface CompanionNotificationProjection {
 
     LocalDateTime getCreatedAt();
 
+    String getNotificationType();
+
     Long getApplicationId();
 
     String getApplicationStatus();

@@ -13,7 +13,12 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
     @Query(value = """
             select
                 notification.id as notificationId,
-                app.created_at as createdAt,
+                case
+                    when notification.notification_type = 'COMPANION_SCHEDULE_UPDATED'
+                        then notification.created_at
+                    else app.created_at
+                end as createdAt,
+                notification.notification_type as notificationType,
                 app.id as applicationId,
                 app.status as applicationStatus,
                 host_profile.user_id as hostUserId,
@@ -37,6 +42,8 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                         and notification.notification_type = 'COMPANION_APPLICATION_ACCEPTED')
                     or (app.status = 'REJECTED'
                         and notification.notification_type = 'COMPANION_APPLICATION_REJECTED')
+                    or (app.status = 'ACCEPTED'
+                        and notification.notification_type = 'COMPANION_SCHEDULE_UPDATED')
                 )
             join companion_post post
                 on post.id = app.post_id
@@ -51,7 +58,14 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 on place.id = coalesce(schedule.place_id, post.place_id)
             where app.applicant_user_id = :userId
                 and (app.status = 'PENDING' or notification.id is not null)
-            order by app.created_at desc, app.id desc
+            order by
+                case
+                    when notification.notification_type = 'COMPANION_SCHEDULE_UPDATED'
+                        then notification.created_at
+                    else app.created_at
+                end desc,
+                app.id desc,
+                notification.id desc
             """, nativeQuery = true)
     List<CompanionNotificationProjection> findSentByUserId(@Param("userId") Long userId);
 
@@ -59,6 +73,7 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
             select
                 notification.id as notificationId,
                 notification.created_at as createdAt,
+                notification.notification_type as notificationType,
                 app.id as applicationId,
                 app.status as applicationStatus,
                 host_profile.user_id as hostUserId,
@@ -97,6 +112,7 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
             select
                 notification.id as notificationId,
                 notification.created_at as createdAt,
+                notification.notification_type as notificationType,
                 app.id as applicationId,
                 app.status as applicationStatus,
                 host_profile.user_id as hostUserId,
@@ -121,7 +137,8 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 and app.applicant_user_id = :userId
                 and notification.notification_type in (
                     'COMPANION_APPLICATION_ACCEPTED',
-                    'COMPANION_APPLICATION_REJECTED'
+                    'COMPANION_APPLICATION_REJECTED',
+                    'COMPANION_SCHEDULE_UPDATED'
                 )
                 and (
                     :cursorCreatedAt is null
@@ -142,6 +159,7 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
             select
                 notification.id as notificationId,
                 notification.created_at as createdAt,
+                notification.notification_type as notificationType,
                 app.id as applicationId,
                 app.status as applicationStatus,
                 host_profile.user_id as hostUserId,
