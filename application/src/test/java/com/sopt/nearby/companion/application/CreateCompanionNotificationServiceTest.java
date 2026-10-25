@@ -79,6 +79,24 @@ class CreateCompanionNotificationServiceTest {
     }
 
     @Test
+    void createsScheduleUpdateNotificationEveryTime() {
+        FakeCompanionNotificationRepository repository = new FakeCompanionNotificationRepository();
+        CreateCompanionNotificationService service = new CreateCompanionNotificationService(repository, CLOCK);
+        CreateCompanionNotificationCommand command = command(
+                7L,
+                CompanionNotificationType.COMPANION_SCHEDULE_UPDATED,
+                1L
+        );
+
+        CompanionNotification first = service.create(command);
+        CompanionNotification second = service.create(command);
+
+        assertEquals(2, repository.saveCount);
+        assertEquals(1L, first.id());
+        assertEquals(2L, second.id());
+    }
+
+    @Test
     void createsDeliveryForEachActiveEndpointWhenNotificationIsNew() {
         FakeCompanionNotificationRepository notificationRepository = new FakeCompanionNotificationRepository();
         FakePushEndpointRepository endpointRepository = new FakePushEndpointRepository(List.of(
@@ -105,6 +123,24 @@ class CreateCompanionNotificationServiceTest {
         assertEquals("새로운 동행 신청이 도착했어요.", deliveryRepository.deliveries.get(0).body());
         assertEquals(11L, deliveryRepository.deliveries.get(0).endpointId());
         assertEquals(12L, deliveryRepository.deliveries.get(1).endpointId());
+    }
+
+    @Test
+    void createsScheduleUpdateDeliveryWithConfirmedTitleAndBody() {
+        FakeCompanionNotificationRepository notificationRepository = new FakeCompanionNotificationRepository();
+        FakePushEndpointRepository endpointRepository = new FakePushEndpointRepository(List.of(endpoint(11L, true)));
+        CapturingPushDeliveryRepository deliveryRepository = new CapturingPushDeliveryRepository();
+        CreateCompanionNotificationService service = new CreateCompanionNotificationService(
+                notificationRepository,
+                endpointRepository,
+                deliveryRepository,
+                CLOCK
+        );
+
+        service.create(command(7L, CompanionNotificationType.COMPANION_SCHEDULE_UPDATED, 1L));
+
+        assertEquals("동행 일정 수정", deliveryRepository.deliveries.get(0).title());
+        assertEquals("동행 일정이 수정되었어요.", deliveryRepository.deliveries.get(0).body());
     }
 
     private CompanionPushEndpoint endpoint(final Long id, final boolean active) {

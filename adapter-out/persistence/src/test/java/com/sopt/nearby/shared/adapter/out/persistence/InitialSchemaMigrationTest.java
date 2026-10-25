@@ -2,6 +2,7 @@
 package com.sopt.nearby.shared.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -806,6 +807,54 @@ class InitialSchemaMigrationTest {
 						""");
 			}
 		}
+
+	@Test
+	void scheduleUpdateNotificationMigrationAllowsRepeatedUpdatesAndKeepsOtherNotificationsUnique()
+			throws SQLException {
+		ClassPathResource initialMigration = new ClassPathResource("db/migration/V1__create_initial_schema.sql");
+		ClassPathResource notificationMigration = new ClassPathResource(
+				"db/migration/V8__create_companion_notification.sql"
+		);
+		ClassPathResource scheduleUpdateMigration = new ClassPathResource(
+				"db/migration/V29__support_repeatable_schedule_update_notifications.sql"
+		);
+
+		try (Connection connection = DriverManager.getConnection(
+				"jdbc:h2:mem:nearby_schedule_update_notification_migration;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+				"sa",
+				""
+		)) {
+			ScriptUtils.executeSqlScript(connection, initialMigration);
+			ScriptUtils.executeSqlScript(connection, notificationMigration);
+			ScriptUtils.executeSqlScript(connection, scheduleUpdateMigration);
+
+			assertThat(columnNames(connection, "companion_notification"))
+					.contains("deduplication_key");
+			try (Statement statement = connection.createStatement()) {
+				statement.executeUpdate(notificationInsert("COMPANION_SCHEDULE_UPDATED", null));
+				statement.executeUpdate(notificationInsert("COMPANION_SCHEDULE_UPDATED", null));
+				statement.executeUpdate(notificationInsert("COMPANION_APPLICATION_ACCEPTED", 0L));
+
+				assertThrows(
+						SQLException.class,
+						() -> statement.executeUpdate(notificationInsert("COMPANION_APPLICATION_ACCEPTED", 0L))
+				);
+			}
+		}
+	}
+
+	private String notificationInsert(final String notificationType, final Long deduplicationKey) {
+		String key = deduplicationKey == null ? "null" : deduplicationKey.toString();
+		return """
+				insert into companion_notification (
+				    recipient_user_id, notification_type, target_type, target_id,
+				    read_at, created_at, deduplication_key
+				) values (
+				    7, '%s', 'COMPANION_APPLICATION', 1,
+				    null, timestamp '2026-10-25 12:00:00', %s
+				)
+				""".formatted(notificationType, key);
+	}
 
 	private static List<String> tableNames(final Connection connection) throws SQLException {
 		List<String> names = new ArrayList<>();

@@ -19,7 +19,13 @@ import java.time.LocalDateTime;
         name = "companion_notification",
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_companion_notification_event_recipient",
-                columnNames = {"notification_type", "target_type", "target_id", "recipient_user_id"}
+                columnNames = {
+                        "notification_type",
+                        "target_type",
+                        "target_id",
+                        "recipient_user_id",
+                        "deduplication_key"
+                }
         )
 )
 public class CompanionNotificationEntity {
@@ -48,6 +54,9 @@ public class CompanionNotificationEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "deduplication_key")
+    private Long deduplicationKey;
+
     protected CompanionNotificationEntity() {
     }
 
@@ -67,6 +76,9 @@ public class CompanionNotificationEntity {
         this.targetId = targetId;
         this.readAt = readAt;
         this.createdAt = createdAt;
+        this.deduplicationKey = notificationType == CompanionNotificationType.COMPANION_SCHEDULE_UPDATED
+                ? null
+                : 0L;
     }
 
     public Long getId() {

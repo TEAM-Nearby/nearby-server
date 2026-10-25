@@ -6,13 +6,19 @@ import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundExceptio
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.port.in.ConfirmCompanionScheduleUseCase;
+import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
@@ -24,17 +30,23 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
     private final CompanionPostRepository postRepository;
     private final CompanionScheduleRepository scheduleRepository;
     private final CompanionMeetingRepository meetingRepository;
+    private final CompanionMatchParticipantRepository participantRepository;
+    private final CreateCompanionNotificationUseCase notificationUseCase;
 
     public ConfirmCompanionScheduleService(
             final CompanionMatchRepository matchRepository,
             final CompanionPostRepository postRepository,
             final CompanionScheduleRepository scheduleRepository,
-            final CompanionMeetingRepository meetingRepository
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final CreateCompanionNotificationUseCase notificationUseCase
     ) {
         this.matchRepository = matchRepository;
         this.postRepository = postRepository;
         this.scheduleRepository = scheduleRepository;
         this.meetingRepository = meetingRepository;
+        this.participantRepository = participantRepository;
+        this.notificationUseCase = notificationUseCase;
     }
 
     @Override
@@ -87,8 +99,27 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
                 currentSchedule.estimatedDurationMinutes(),
                 currentSchedule.confirmed()
         ));
+        if (!currentSchedule.scheduledAt().equals(schedule.scheduledAt())) {
+            notifyParticipants(match.id());
+        }
 
         return result(match.id(), schedule.id());
+    }
+
+    private void notifyParticipants(final Long matchId) {
+        participantRepository.findAllByMatchId(matchId).stream()
+                .filter(participant -> participant.role() == MatchParticipantRole.GUEST)
+                .filter(participant -> participant.acceptedApplicationId() != null)
+                .forEach(this::notifyParticipant);
+    }
+
+    private void notifyParticipant(final CompanionMatchParticipant participant) {
+        notificationUseCase.create(new CreateCompanionNotificationCommand(
+                participant.userId(),
+                CompanionNotificationType.COMPANION_SCHEDULE_UPDATED,
+                CompanionNotificationTargetType.COMPANION_APPLICATION,
+                participant.acceptedApplicationId()
+        ));
     }
 
     private void validateStatus(final CompanionMatchStatus status) {
