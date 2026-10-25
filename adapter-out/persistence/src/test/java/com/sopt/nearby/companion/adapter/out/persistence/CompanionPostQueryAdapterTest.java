@@ -4,14 +4,19 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplicationEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApplicationJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostQueryJpaRepository;
 import com.sopt.nearby.companion.application.ReadCompanionPostsCommand;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSort;
@@ -49,6 +54,12 @@ class CompanionPostQueryAdapterTest {
 
     @Autowired
     private CompanionApplicationJpaRepository companionApplicationJpaRepository;
+
+    @Autowired
+    private CompanionMatchJpaRepository companionMatchJpaRepository;
+
+    @Autowired
+    private CompanionScheduleJpaRepository companionScheduleJpaRepository;
 
     @Autowired
     private PlaceCacheJpaRepository placeCacheJpaRepository;
@@ -147,6 +158,53 @@ class CompanionPostQueryAdapterTest {
         assertThat(result.get(1).placeCategory()).isEqualTo(CompanionPostPlaceCategory.RESTAURANT);
         assertThat(result.get(1).participantCount()).isEqualTo(1);
         assertThat(result.get(1).photoReference()).isEqualTo("https://lh3.googleusercontent.com/place.jpg");
+    }
+
+    @Test
+    void usesConfirmedScheduleMeetingAtInsteadOfOriginalPostMeetingAt() {
+        CompanionPostQueryAdapter adapter = new CompanionPostQueryAdapter(queryJpaRepository);
+
+        companionProfileJpaRepository.saveAndFlush(profile(100L, "호스트", UserGender.FEMALE));
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place(
+                "schedule-place",
+                "일정 수정 식당",
+                "restaurant",
+                "37.56660000",
+                "126.97810000",
+                null
+        ));
+        CompanionPostEntity post = companionPostJpaRepository.saveAndFlush(post(
+                100L,
+                place.getId(),
+                CompanionPostStatus.RECRUITING,
+                FUTURE,
+                NOW,
+                "일정이 수정된 모집글"
+        ));
+        CompanionMatchEntity match = companionMatchJpaRepository.saveAndFlush(new CompanionMatchEntity(
+                null,
+                post.getId(),
+                CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                NOW
+        ));
+        LocalDateTime updatedMeetingAt = FUTURE.plusDays(1).withNano(0);
+        companionScheduleJpaRepository.saveAndFlush(new CompanionScheduleEntity(
+                null,
+                match.getId(),
+                place.getId(),
+                updatedMeetingAt,
+                null,
+                true
+        ));
+
+        List<CompanionPostSummary> result = adapter.find(command(
+                1000,
+                CompanionPostPlaceCategory.ALL,
+                CompanionPostSort.LATEST
+        ));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).meetingAt()).isEqualTo(updatedMeetingAt);
     }
 
     @Test
@@ -612,15 +670,19 @@ class CompanionPostQueryAdapterTest {
     @EnableAutoConfiguration
     @EntityScan(basePackageClasses = {
             CompanionApplicationEntity.class,
+            CompanionMatchEntity.class,
             CompanionPostEntity.class,
             CompanionProfileEntity.class,
+            CompanionScheduleEntity.class,
             PlaceCacheEntity.class
     })
     @EnableJpaRepositories(basePackageClasses = {
             CompanionApplicationJpaRepository.class,
+            CompanionMatchJpaRepository.class,
             CompanionPostJpaRepository.class,
             CompanionProfileJpaRepository.class,
             CompanionPostQueryJpaRepository.class,
+            CompanionScheduleJpaRepository.class,
             PlaceCacheJpaRepository.class
     })
     static class TestApplication {
