@@ -7,6 +7,8 @@ import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsE
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
@@ -14,7 +16,9 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
+import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -24,6 +28,8 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
 
     private final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase;
     private final CompanionPostRepository postRepository;
+    private final CompanionMatchRepository matchRepository;
+    private final CompanionScheduleRepository scheduleRepository;
     private final CompanionApplicationRepository applicationRepository;
     private final CreateCompanionNotificationUseCase createCompanionNotificationUseCase;
     private final Clock clock;
@@ -31,12 +37,16 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
     public CreateCompanionRequestService(
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final CompanionPostRepository postRepository,
+            final CompanionMatchRepository matchRepository,
+            final CompanionScheduleRepository scheduleRepository,
             final CompanionApplicationRepository applicationRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
             final Clock clock
     ) {
         this.requireCompletedOnboardingUseCase = requireCompletedOnboardingUseCase;
         this.postRepository = postRepository;
+        this.matchRepository = matchRepository;
+        this.scheduleRepository = scheduleRepository;
         this.applicationRepository = applicationRepository;
         this.createCompanionNotificationUseCase = createCompanionNotificationUseCase;
         this.clock = clock;
@@ -102,7 +112,16 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
         LocalDateTime now = LocalDateTime.now(clock);
         return switch (post.meetingTimeType()) {
             case NOW -> post.exposureExpiresAt() == null || !post.exposureExpiresAt().isAfter(now);
-            case SCHEDULED -> post.meetingAt() == null || !post.meetingAt().isAfter(now);
+            case SCHEDULED -> {
+                LocalDateTime meetingAt = matchRepository.findFirstByPostIdAndStatus(
+                                post.id(),
+                                CompanionMatchStatus.SCHEDULE_CONFIRMED
+                        )
+                        .flatMap(match -> scheduleRepository.findConfirmedByMatchId(match.id()))
+                        .map(CompanionSchedule::scheduledAt)
+                        .orElse(post.meetingAt());
+                yield meetingAt == null || !meetingAt.isAfter(now);
+            }
             case UNDECIDED -> false;
         };
     }

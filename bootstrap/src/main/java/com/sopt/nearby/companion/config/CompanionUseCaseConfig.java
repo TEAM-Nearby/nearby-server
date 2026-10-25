@@ -133,6 +133,8 @@ public class CompanionUseCaseConfig {
     CreateCompanionRequestUseCase createCompanionRequestUseCase(
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final CompanionPostRepository companionPostRepository,
+            final CompanionMatchRepository companionMatchRepository,
+            final CompanionScheduleRepository companionScheduleRepository,
             final CompanionApplicationRepository companionApplicationRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
             final Clock clock
@@ -140,6 +142,8 @@ public class CompanionUseCaseConfig {
         return new CreateCompanionRequestService(
                 requireCompletedOnboardingUseCase,
                 companionPostRepository,
+                companionMatchRepository,
+                companionScheduleRepository,
                 companionApplicationRepository,
                 createCompanionNotificationUseCase,
                 clock

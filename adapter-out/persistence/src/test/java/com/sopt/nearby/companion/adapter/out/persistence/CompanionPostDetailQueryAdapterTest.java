@@ -243,7 +243,7 @@ class CompanionPostDetailQueryAdapterTest {
     }
 
     @Test
-    void usesConfirmedSchedulePlaceFromLatestNonCanceledMatch() {
+    void usesConfirmedSchedulePlaceAndMeetingAtFromLatestNonCanceledMatch() {
         CompanionPostDetailQueryAdapter adapter = new CompanionPostDetailQueryAdapter(
                 queryJpaRepository,
                 postQueryJpaRepository
@@ -265,7 +265,7 @@ class CompanionPostDetailQueryAdapterTest {
                 hostUser.getId(),
                 originalPlace.getId(),
                 CompanionPostMeetingTimeType.SCHEDULED,
-                NOW.plusHours(2),
+                NOW.minusHours(1),
                 null
         ));
         CompanionMatchEntity match = entityManager.persistAndFlush(new CompanionMatchEntity(
@@ -274,11 +274,12 @@ class CompanionPostDetailQueryAdapterTest {
                 CompanionMatchStatus.SCHEDULE_CONFIRMED,
                 NOW
         ));
+        LocalDateTime updatedMeetingAt = NOW.plusHours(2);
         entityManager.persistAndFlush(new CompanionScheduleEntity(
                 null,
                 match.getId(),
                 confirmedPlace.getId(),
-                NOW.plusHours(2),
+                updatedMeetingAt,
                 null,
                 true
         ));
@@ -287,6 +288,7 @@ class CompanionPostDetailQueryAdapterTest {
 
         assertThat(result.place().googlePlaceId()).isEqualTo("london-place-id");
         assertThat(result.place().address()).isEqualTo("10 London Street, London, UK");
+        assertThat(result.meetingAt()).isEqualTo(updatedMeetingAt);
     }
 
     @Test

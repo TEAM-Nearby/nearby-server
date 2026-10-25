@@ -29,7 +29,7 @@ public interface CompanionPostDetailQueryJpaRepository extends Repository<Compan
                 place.latitude as latitude,
                 place.longitude as longitude,
                 upper(coalesce(place.category, 'OTHER')) as placeCategory,
-                post.meeting_at as meetingAt,
+                coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 post.max_participants as maxParticipants,
                 post.content as content,
                 post.open_chat_url as openChatUrl,
