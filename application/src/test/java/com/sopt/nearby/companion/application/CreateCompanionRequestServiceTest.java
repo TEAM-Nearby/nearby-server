@@ -11,6 +11,9 @@ import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsE
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
@@ -19,7 +22,9 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
+import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.time.Clock;
 import java.time.Instant;
@@ -36,6 +41,8 @@ class CreateCompanionRequestServiceTest {
 
     private FakeRequireCompletedOnboardingUseCase onboardingUseCase;
     private FakeCompanionPostRepository postRepository;
+    private FakeCompanionMatchRepository matchRepository;
+    private FakeCompanionScheduleRepository scheduleRepository;
     private FakeCompanionApplicationRepository applicationRepository;
     private FakeCreateCompanionNotificationUseCase notificationUseCase;
     private CreateCompanionRequestService service;
@@ -44,11 +51,15 @@ class CreateCompanionRequestServiceTest {
     void setUp() {
         onboardingUseCase = new FakeRequireCompletedOnboardingUseCase();
         postRepository = new FakeCompanionPostRepository();
+        matchRepository = new FakeCompanionMatchRepository();
+        scheduleRepository = new FakeCompanionScheduleRepository();
         applicationRepository = new FakeCompanionApplicationRepository();
         notificationUseCase = new FakeCreateCompanionNotificationUseCase();
         service = new CreateCompanionRequestService(
                 onboardingUseCase,
                 postRepository,
+                matchRepository,
+                scheduleRepository,
                 applicationRepository,
                 notificationUseCase,
                 CLOCK
@@ -178,6 +189,35 @@ class CreateCompanionRequestServiceTest {
         );
     }
 
+    @Test
+    void allowsRequestWhenConfirmedScheduleMovesPastPostTimeIntoFuture() {
+        postRepository.post = Optional.of(post(
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.SCHEDULED,
+                NOW.minusHours(1),
+                null
+        ));
+        matchRepository.match = Optional.of(new CompanionMatch(
+                20L,
+                10L,
+                CompanionMatchStatus.SCHEDULE_CONFIRMED,
+                NOW.minusDays(1)
+        ));
+        scheduleRepository.schedule = Optional.of(new CompanionSchedule(
+                30L,
+                20L,
+                20L,
+                NOW.plusHours(2),
+                null,
+                true
+        ));
+
+        CreateCompanionRequestResult result = service.create(new CreateCompanionRequestCommand(7L, 10L));
+
+        assertEquals(1L, result.applicationId());
+        assertEquals(CompanionApplicationStatus.PENDING, result.applicationStatus());
+    }
+
     private CompanionPost post(
             final CompanionPostStatus status,
             final CompanionPostMeetingTimeType meetingTimeType,
@@ -271,6 +311,54 @@ class CreateCompanionRequestServiceTest {
                 final String rejectionReason
         ) {
             return false;
+        }
+    }
+
+    private static final class FakeCompanionMatchRepository implements CompanionMatchRepository {
+
+        private Optional<CompanionMatch> match = Optional.empty();
+
+        @Override
+        public CompanionMatch save(final CompanionMatch model) {
+            throw new UnsupportedOperationException("동행 신청 생성 테스트에서는 매칭 저장을 사용하지 않습니다.");
+        }
+
+        @Override
+        public Optional<CompanionMatch> findById(final Long id) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<CompanionMatch> findFirstByPostIdAndStatus(
+                final Long postId,
+                final CompanionMatchStatus status
+        ) {
+            return match.filter(found -> found.postId().equals(postId) && found.status() == status);
+        }
+
+        @Override
+        public boolean confirmScheduleIfMatched(final Long matchId) {
+            return false;
+        }
+    }
+
+    private static final class FakeCompanionScheduleRepository implements CompanionScheduleRepository {
+
+        private Optional<CompanionSchedule> schedule = Optional.empty();
+
+        @Override
+        public CompanionSchedule save(final CompanionSchedule model) {
+            throw new UnsupportedOperationException("동행 신청 생성 테스트에서는 일정 저장을 사용하지 않습니다.");
+        }
+
+        @Override
+        public Optional<CompanionSchedule> findById(final Long id) {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<CompanionSchedule> findConfirmedByMatchId(final Long matchId) {
+            return schedule.filter(found -> found.matchId().equals(matchId) && found.confirmed());
         }
     }
 

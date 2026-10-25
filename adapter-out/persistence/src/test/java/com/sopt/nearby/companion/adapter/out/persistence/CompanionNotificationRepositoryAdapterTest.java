@@ -197,6 +197,33 @@ class CompanionNotificationRepositoryAdapterTest {
         ))).isInstanceOf(DataIntegrityViolationException.class);
     }
 
+    @Test
+    void allowsRepeatedScheduleUpdateNotificationsForSameApplicationAndRecipient() {
+        CompanionNotificationRepositoryAdapter adapter = new CompanionNotificationRepositoryAdapter(jpaRepository);
+
+        CompanionNotification first = adapter.save(notification(
+                null,
+                7L,
+                CompanionNotificationType.COMPANION_SCHEDULE_UPDATED,
+                1L,
+                null,
+                NOW
+        ));
+        CompanionNotification second = adapter.save(notification(
+                null,
+                7L,
+                CompanionNotificationType.COMPANION_SCHEDULE_UPDATED,
+                1L,
+                null,
+                NOW.plusMinutes(1)
+        ));
+
+        assertThat(first.id()).isNotEqualTo(second.id());
+        assertThat(jpaRepository.findAll()).filteredOn(
+                entity -> entity.getNotificationType() == CompanionNotificationType.COMPANION_SCHEDULE_UPDATED
+        ).hasSize(2);
+    }
+
     private CompanionNotification notification(
             final Long id,
             final Long recipientUserId,

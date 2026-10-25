@@ -17,6 +17,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationHostProfile;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.in.ReadCompanionNotificationsUseCase;
 import com.sopt.nearby.shared.adapter.in.web.exception.GlobalExceptionHandler;
@@ -118,6 +119,30 @@ class CompanionNotificationControllerTest {
                 .andExpect(jsonPath("$.data.requests[0].matchId").value(nullValue()))
                 .andExpect(jsonPath("$.data.requests[0].actionType").value("NONE"))
                 .andExpect(jsonPath("$.data.requests[0].isRead").value(true));
+    }
+
+    @Test
+    void returnsScheduleUpdatedActionWithApplicationIdAndMatchId() throws Exception {
+        useCase.result = List.of(CompanionNotificationSummary.of(
+                CompanionNotificationDirection.SENT,
+                CompanionNotificationType.COMPANION_SCHEDULE_UPDATED,
+                101L,
+                123L,
+                CompanionApplicationStatus.ACCEPTED,
+                new CompanionNotificationHostProfile(100L, null, "호스트"),
+                "오노테라",
+                LocalDateTime.of(2026, 6, 18, 20, 0),
+                10L,
+                false
+        ));
+
+        mockMvc.perform(get("/api/users/me/companion-requests")
+                        .queryParam("direction", "SENT")
+                        .principal(principal("7")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.requests[0].actionType").value("SCHEDULE_UPDATED"))
+                .andExpect(jsonPath("$.data.requests[0].applicationId").value(123))
+                .andExpect(jsonPath("$.data.requests[0].matchId").value(10));
     }
 
     @Test

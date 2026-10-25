@@ -31,7 +31,7 @@ public interface CompanionPostQueryJpaRepository extends Repository<CompanionPos
                     place.photo_reference as photoReference,
                     post.content as content,
                     post.meeting_time_type as meetingTimeType,
-                    post.meeting_at as meetingAt,
+                    coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                     post.exposure_expires_at as exposureExpiresAt,
                     cast(1 + coalesce(accepted.accepted_count, 0) as integer) as participantCount,
                     post.max_participants as maxParticipants,
@@ -41,6 +41,12 @@ public interface CompanionPostQueryJpaRepository extends Repository<CompanionPos
                     on host_profile.user_id = post.host_user_id
                 join place_cache place
                     on place.id = post.place_id
+                left join companion_match active_match
+                    on active_match.post_id = post.id
+                    and active_match.status = 'SCHEDULE_CONFIRMED'
+                left join companion_schedule schedule
+                    on schedule.match_id = active_match.id
+                    and schedule.confirmed = true
                 left join (
                     select app.post_id, count(*) as accepted_count
                     from companion_application app
@@ -51,7 +57,8 @@ public interface CompanionPostQueryJpaRepository extends Repository<CompanionPos
                 where post.status = 'RECRUITING'
                     and (
                         (post.meeting_time_type = 'NOW' and post.exposure_expires_at > current_timestamp)
-                        or (post.meeting_time_type = 'SCHEDULED' and post.meeting_at > current_timestamp)
+                        or (post.meeting_time_type = 'SCHEDULED'
+                            and coalesce(schedule.scheduled_at, post.meeting_at) > current_timestamp)
                         or post.meeting_time_type = 'UNDECIDED'
                     )
             )

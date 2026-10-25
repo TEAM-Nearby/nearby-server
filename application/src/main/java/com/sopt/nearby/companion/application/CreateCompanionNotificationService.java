@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionPushDelivery;
 import com.sopt.nearby.companion.domain.model.notification.CompanionPushEndpoint;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
@@ -42,14 +43,16 @@ public class CreateCompanionNotificationService implements CreateCompanionNotifi
     @Override
     @Transactional
     public CompanionNotification create(final CreateCompanionNotificationCommand command) {
-        Optional<CompanionNotification> existingNotification = repository.findByUniqueKey(
-                        command.notificationType(),
-                        command.targetType(),
-                        command.targetId(),
-                        command.recipientUserId()
-                );
-        if (existingNotification.isPresent()) {
-            return existingNotification.get();
+        if (command.notificationType() != CompanionNotificationType.COMPANION_SCHEDULE_UPDATED) {
+            Optional<CompanionNotification> existingNotification = repository.findByUniqueKey(
+                            command.notificationType(),
+                            command.targetType(),
+                            command.targetId(),
+                            command.recipientUserId()
+                    );
+            if (existingNotification.isPresent()) {
+                return existingNotification.get();
+            }
         }
 
         CompanionNotification notification = repository.save(new CompanionNotification(
@@ -95,6 +98,7 @@ public class CreateCompanionNotificationService implements CreateCompanionNotifi
             case COMPANION_APPLICATION_CREATED -> "새로운 동행 신청이 도착했어요.";
             case COMPANION_APPLICATION_ACCEPTED -> "동행 신청이 수락됐어요.";
             case COMPANION_APPLICATION_REJECTED -> "동행 신청 결과를 확인해 주세요.";
+            case COMPANION_SCHEDULE_UPDATED -> "동행 일정이 수정되었어요.";
         };
     }
 
@@ -102,6 +106,7 @@ public class CreateCompanionNotificationService implements CreateCompanionNotifi
         return switch (notification.notificationType()) {
             case COMPANION_APPLICATION_CREATED -> "새로운 동행 신청";
             case COMPANION_APPLICATION_ACCEPTED, COMPANION_APPLICATION_REJECTED -> "동행 신청 결과";
+            case COMPANION_SCHEDULE_UPDATED -> "동행 일정 수정";
         };
     }
 }

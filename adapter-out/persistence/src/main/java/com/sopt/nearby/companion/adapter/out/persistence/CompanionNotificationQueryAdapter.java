@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationHostProfile;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationPageCursor;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.port.out.CompanionNotificationPageRow;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import java.time.LocalDateTime;
@@ -67,6 +68,9 @@ public class CompanionNotificationQueryAdapter implements CompanionNotificationQ
     ) {
         return CompanionNotificationSummary.of(
                 direction,
+                row.getNotificationType() == null
+                        ? null
+                        : CompanionNotificationType.valueOf(row.getNotificationType()),
                 row.getNotificationId(),
                 row.getApplicationId(),
                 CompanionApplicationStatus.valueOf(row.getApplicationStatus()),
