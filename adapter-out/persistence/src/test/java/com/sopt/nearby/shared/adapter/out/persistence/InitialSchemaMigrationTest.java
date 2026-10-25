@@ -816,7 +816,7 @@ class InitialSchemaMigrationTest {
 				"db/migration/V8__create_companion_notification.sql"
 		);
 		ClassPathResource scheduleUpdateMigration = new ClassPathResource(
-				"db/migration/V29__support_repeatable_schedule_update_notifications.sql"
+				"db/migration/V31__support_repeatable_schedule_update_notifications.sql"
 		);
 
 		try (Connection connection = DriverManager.getConnection(
