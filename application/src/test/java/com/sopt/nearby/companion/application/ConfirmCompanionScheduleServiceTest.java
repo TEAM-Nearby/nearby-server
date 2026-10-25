@@ -109,6 +109,7 @@ class ConfirmCompanionScheduleServiceTest {
         assertEquals(1L, result.matchId());
         assertEquals(1L, result.scheduleId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+        assertEquals(1, matchRepository.findByIdForUpdateCalls);
         assertEquals(1, notificationUseCase.commands.size());
         assertEquals(8L, notificationUseCase.commands.get(0).recipientUserId());
         assertEquals(3L, notificationUseCase.commands.get(0).targetId());
@@ -202,6 +203,7 @@ class ConfirmCompanionScheduleServiceTest {
     private static final class FakeCompanionMatchRepository implements CompanionMatchRepository {
 
         private final Map<Long, CompanionMatch> matches = new HashMap<>();
+        private int findByIdForUpdateCalls;
 
         @Override
         public CompanionMatch save(final CompanionMatch model) {
@@ -212,6 +214,12 @@ class ConfirmCompanionScheduleServiceTest {
         @Override
         public Optional<CompanionMatch> findById(final Long id) {
             return Optional.ofNullable(matches.get(id));
+        }
+
+        @Override
+        public Optional<CompanionMatch> findByIdForUpdate(final Long id) {
+            findByIdForUpdateCalls++;
+            return findById(id);
         }
 
         @Override

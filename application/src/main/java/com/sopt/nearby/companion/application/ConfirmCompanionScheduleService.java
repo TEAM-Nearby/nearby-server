@@ -54,7 +54,7 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
     public ConfirmCompanionScheduleResult update(final ConfirmCompanionScheduleCommand command) {
         validate(command);
 
-        CompanionMatch match = matchRepository.findById(command.matchId())
+        CompanionMatch match = matchRepository.findByIdForUpdate(command.matchId())
                 .orElseThrow(CompanionMatchNotFoundException::new);
 
         CompanionPost post = postRepository.findById(match.postId())
