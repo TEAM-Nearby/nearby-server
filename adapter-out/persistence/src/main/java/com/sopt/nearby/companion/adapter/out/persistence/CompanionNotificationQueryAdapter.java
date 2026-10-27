@@ -10,17 +10,29 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationPageCursor;
 import com.sopt.nearby.companion.port.out.CompanionNotificationPageRow;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionPushContentQueryPort;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class CompanionNotificationQueryAdapter implements CompanionNotificationQueryPort {
+public class CompanionNotificationQueryAdapter implements CompanionNotificationQueryPort, CompanionPushContentQueryPort {
 
     private final CompanionNotificationQueryJpaRepository repository;
 
     public CompanionNotificationQueryAdapter(final CompanionNotificationQueryJpaRepository repository) {
         this.repository = repository;
+    }
+
+    @Override
+    public Optional<String> findRecipientNickname(final Long recipientUserId) {
+        return repository.findRecipientNickname(recipientUserId);
+    }
+
+    @Override
+    public Optional<String> findPlaceNameByApplicationId(final Long applicationId) {
+        return repository.findPlaceNameByApplicationId(applicationId);
     }
 
     @Override
