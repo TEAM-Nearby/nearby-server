@@ -33,7 +33,7 @@ public class ResolvePlaceCacheService implements ResolvePlaceCacheUseCase {
                 place.id(),
                 place.googlePlaceId(),
                 command.name(),
-                command.address(),
+                place.address(),
                 command.latitude(),
                 command.longitude(),
                 command.category(),
