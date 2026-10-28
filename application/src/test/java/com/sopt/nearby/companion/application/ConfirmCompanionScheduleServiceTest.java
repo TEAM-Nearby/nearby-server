@@ -26,6 +26,8 @@ import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
+import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
+import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import java.time.LocalDateTime;
 import java.time.Clock;
@@ -51,6 +53,7 @@ class ConfirmCompanionScheduleServiceTest {
     private CapturingNotificationUseCase notificationUseCase;
     private ConfirmCompanionScheduleService service;
     private String placeAddress;
+    private long checkedInCount;
 
     @BeforeEach
     void setUp() {
@@ -71,6 +74,14 @@ class ConfirmCompanionScheduleServiceTest {
                     public List<CompanionMatchSummary> findAllByParticipantUserId(Long userId) { return List.of(); }
                     public Optional<String> findPlaceNameByPlaceId(Long placeId) { return Optional.empty(); }
                     public Optional<String> findPlaceAddressByPlaceId(Long placeId) { return Optional.ofNullable(placeAddress); }
+                },
+                new MeetingCheckInRepository() {
+                    public Optional<MeetingCheckIn> findById(Long id) { return Optional.empty(); }
+                    public MeetingCheckIn save(MeetingCheckIn value) { return value; }
+                    public Optional<MeetingCheckIn> findByMeetingIdAndUserId(Long meetingId, Long userId) { return Optional.empty(); }
+                    public long countByMeetingId(Long meetingId) { return checkedInCount; }
+                    public long countCompletedByMeetingId(Long meetingId) { return 0; }
+                    public MeetingCheckIn saveIfAbsent(MeetingCheckIn value) { return value; }
                 },
                 Clock.fixed(Instant.parse("2026-07-01T00:00:00Z"), ZoneOffset.UTC)
         );
@@ -106,6 +117,14 @@ class ConfirmCompanionScheduleServiceTest {
                 3L,
                 MatchParticipantRole.GUEST
         ));
+    }
+
+    @Test
+    void rejectsChangesAfterCheckIn() {
+        meetingRepository.save(new CompanionMeeting(5L, 1L, CompanionMeetingStatus.ONGOING, ORIGINAL_TIME, null));
+        checkedInCount = 1;
+        assertThrows(InvalidCompanionScheduleRequestException.class, () -> service.update(command(7L, UPDATED_TIME)));
+        assertEquals(0, scheduleRepository.saveCount);
     }
 
     @Test

@@ -252,6 +252,7 @@ public class CompanionUseCaseConfig {
             final CompanionMatchParticipantRepository companionMatchParticipantRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
             final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
+            final MeetingCheckInRepository checkInRepository,
             final Clock clock
     ) {
         return new ConfirmCompanionScheduleService(
@@ -262,6 +263,7 @@ public class CompanionUseCaseConfig {
                 companionMatchParticipantRepository,
                 createCompanionNotificationUseCase,
                 companionMatchSummaryQueryPort,
+                checkInRepository,
                 clock
         );
     }
@@ -442,12 +444,14 @@ public class CompanionUseCaseConfig {
             final CompanionMeetingCheckInQueryPort queryPort,
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
+            final CompanionMatchRepository matchRepository,
             final Clock clock
     ) {
         return new CheckInCompanionMeetingService(
                 queryPort,
                 participantRepository,
                 checkInRepository,
+                matchRepository,
                 clock
         );
     }

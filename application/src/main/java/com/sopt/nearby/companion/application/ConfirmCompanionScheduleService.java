@@ -24,6 +24,7 @@ import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
+import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -39,6 +40,7 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
     private final CreateCompanionNotificationUseCase notificationUseCase;
     private final CompanionMatchSummaryQueryPort placeQueryPort;
     private final Clock clock;
+    private final MeetingCheckInRepository checkInRepository;
 
     public ConfirmCompanionScheduleService(
             final CompanionMatchRepository matchRepository,
@@ -48,6 +50,7 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
             final CompanionMatchParticipantRepository participantRepository,
             final CreateCompanionNotificationUseCase notificationUseCase,
             final CompanionMatchSummaryQueryPort placeQueryPort,
+            final MeetingCheckInRepository checkInRepository,
             final Clock clock
     ) {
         this.matchRepository = matchRepository;
@@ -57,6 +60,7 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
         this.participantRepository = participantRepository;
         this.notificationUseCase = notificationUseCase;
         this.placeQueryPort = placeQueryPort;
+        this.checkInRepository = checkInRepository;
         this.clock = clock;
     }
 
@@ -107,6 +111,11 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
             return result(match.id(), schedule.id());
         }
         if (currentSchedule == null) {
+            throw new InvalidCompanionScheduleRequestException();
+        }
+        if (!currentSchedule.scheduledAt().equals(utcTime)
+                && meetingRepository.findByMatchId(match.id())
+                .map(meeting -> checkInRepository.countByMeetingId(meeting.id()) > 0).orElse(false)) {
             throw new InvalidCompanionScheduleRequestException();
         }
         CompanionSchedule schedule = scheduleRepository.save(new CompanionSchedule(
