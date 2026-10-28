@@ -187,11 +187,13 @@ class CompanionPostQueryAdapterTest {
                 CompanionMatchStatus.SCHEDULE_CONFIRMED,
                 NOW
         ));
+        PlaceCacheEntity confirmedPlace = placeCacheJpaRepository.saveAndFlush(place(
+                "confirmed-place", "변경 장소", "restaurant", "37.56670000", "126.97810000", null));
         LocalDateTime updatedMeetingAt = FUTURE.plusDays(1).withNano(0);
         companionScheduleJpaRepository.saveAndFlush(new CompanionScheduleEntity(
                 null,
                 match.getId(),
-                place.getId(),
+                confirmedPlace.getId(),
                 updatedMeetingAt,
                 null,
                 true
@@ -205,6 +207,8 @@ class CompanionPostQueryAdapterTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).meetingAt()).isEqualTo(updatedMeetingAt);
+        assertThat(result.get(0).placeId()).isEqualTo(confirmedPlace.getId());
+        assertThat(result.get(0).placeName()).isEqualTo("변경 장소");
     }
 
     @Test

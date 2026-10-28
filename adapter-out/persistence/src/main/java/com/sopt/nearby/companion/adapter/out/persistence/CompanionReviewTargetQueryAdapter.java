@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.review.CompanionReviewTarget;
 import com.sopt.nearby.companion.port.out.CompanionReviewTargetQueryPort;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 
@@ -41,7 +42,9 @@ public class CompanionReviewTargetQueryAdapter implements CompanionReviewTargetQ
 				row.getProfileImageUrl(),
 				row.getNickname(),
 				CompanionPlaceCityNameResolver.resolve(row.getPlaceAddress()),
-				row.getMeetingAt().toLocalDate(),
+				row.getMeetingAt().atOffset(ZoneOffset.UTC).atZoneSameInstant(
+						CompanionPlaceCityNameResolver.resolveSupportedCity(row.getPlaceAddress())
+								.map(city -> city.zoneId()).orElse(ZoneOffset.UTC)).toLocalDate(),
 				Boolean.TRUE.equals(row.getCheckedIn()),
 				Boolean.TRUE.equals(row.getHasWrittenReview())
 		);

@@ -53,7 +53,7 @@ public record MyCompanionPostsResponse(
 					post.postId(),
 					post.cityNameKor(),
 					post.city(),
-					post.city() == null ? null : post.city().zoneId().getId(),
+					post.city() == null ? "UTC" : post.city().zoneId().getId(),
 					post.currentLocalTime() == null ? null : post.currentLocalTime().toOffsetDateTime(),
 					post.scheduledAt(),
 					PlaceResponse.from(post.place()),

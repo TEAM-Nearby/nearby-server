@@ -127,7 +127,8 @@ class CompleteCompanionMeetingConcurrencyAdapterTest {
 				new CompanionMatchRepositoryAdapter(matchJpaRepository),
 				new CompanionMatchParticipantRepositoryAdapter(participantJpaRepository),
 				new MeetingCheckInRepositoryAdapter(checkInJpaRepository, dataSource),
-				CLOCK
+				CLOCK,
+				meetingId -> java.util.Optional.empty()
 		);
 	}
 

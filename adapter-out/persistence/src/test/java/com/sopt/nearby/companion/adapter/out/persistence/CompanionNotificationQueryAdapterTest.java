@@ -14,6 +14,7 @@ import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApp
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchParticipantJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionNotificationQueryJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionNotificationStoreJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
@@ -65,6 +66,9 @@ class CompanionNotificationQueryAdapterTest {
 
     @Autowired
     private CompanionNotificationQueryJpaRepository notificationJpaRepository;
+
+    @Autowired
+    private CompanionNotificationStoreJpaRepository notificationStoreJpaRepository;
 
     @Autowired
     private CompanionPostJpaRepository postJpaRepository;
@@ -210,6 +214,9 @@ class CompanionNotificationQueryAdapterTest {
         assertThat(second.host().profileImageUrl()).isEqualTo("host-a.png");
         assertThat(second.host().nickname()).isEqualTo("호스트A");
         assertThat(second.placeName()).isEqualTo("확정 장소");
+        assertThat(second.placeAddress()).isEqualTo("서울시 어딘가");
+        assertThat(notificationStoreJpaRepository.findPlaceAddressByNotificationId(recentNotification.getId()))
+                .contains("서울시 어딘가");
         assertThat(second.meetingAt()).isEqualTo(scheduledAt);
         assertThat(second.matchId()).isEqualTo(match.getId());
         assertThat(second.actionType()).isEqualTo(CompanionNotificationActionType.VIEW_RESULT);

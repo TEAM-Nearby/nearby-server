@@ -23,6 +23,8 @@ public interface CompanionNotificationProjection {
 
     String getPlaceName();
 
+    String getPlaceAddress();
+
     LocalDateTime getMeetingAt();
 
     Long getMatchId();

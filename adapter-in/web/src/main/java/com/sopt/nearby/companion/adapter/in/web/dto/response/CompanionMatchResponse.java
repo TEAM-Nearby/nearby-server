@@ -35,7 +35,7 @@ public record CompanionMatchResponse(
         final ZonedDateTime zonedDateTime = result.currentLocalTime();
 
         final String timeZoneId =
-                city == null ? null : city.zoneId().getId();
+                city == null ? "UTC" : city.zoneId().getId();
 
         final OffsetDateTime currentLocalTime =
                 zonedDateTime == null
@@ -51,9 +51,9 @@ public record CompanionMatchResponse(
                 city,
                 timeZoneId,
                 currentLocalTime,
-                match.meetingAt(),
+                result.meetingAt(),
                 match.meetingTimeType(),
-                match.createdAt(),
+                result.localCreatedAt(),
                 match.content(),
                 match.matchStatus()
         );

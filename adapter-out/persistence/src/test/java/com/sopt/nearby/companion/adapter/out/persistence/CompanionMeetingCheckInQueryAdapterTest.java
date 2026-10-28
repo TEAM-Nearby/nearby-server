@@ -74,6 +74,7 @@ class CompanionMeetingCheckInQueryAdapterTest {
         assertThat(context.scheduledAt()).isEqualTo(NOW);
         assertThat(context.placeLatitude()).isEqualByComparingTo("41.39020500");
         assertThat(context.placeLongitude()).isEqualByComparingTo("2.16354800");
+        assertThat(context.placeAddress()).isEqualTo("Rambla de Catalunya, 16");
         assertThat(context.hasConfirmedSchedulePlace()).isTrue();
     }
 

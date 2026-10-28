@@ -18,7 +18,8 @@ public interface CompanionMeetingCheckInQueryJpaRepository extends JpaRepository
                    schedule.place_id as placeId,
                    schedule.scheduled_at as scheduledAt,
                    place.latitude as placeLatitude,
-                   place.longitude as placeLongitude
+                   place.longitude as placeLongitude,
+                   place.address as placeAddress
             from companion_meeting meeting
             left join companion_schedule schedule
                    on schedule.match_id = meeting.match_id

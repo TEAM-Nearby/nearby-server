@@ -20,6 +20,8 @@ public interface CompanionPostProjection {
 
     String getPlaceName();
 
+    String getPlaceAddress();
+
     String getPlaceCategory();
 
     BigDecimal getLatitude();

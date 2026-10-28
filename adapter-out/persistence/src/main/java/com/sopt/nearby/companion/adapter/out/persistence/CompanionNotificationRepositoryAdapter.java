@@ -76,6 +76,11 @@ public class CompanionNotificationRepositoryAdapter
     }
 
     @Override
+    public Optional<String> findPlaceAddressByNotificationId(final Long notificationId) {
+        return jpaRepository.findPlaceAddressByNotificationId(notificationId);
+    }
+
+    @Override
     @Transactional
     public boolean markAsReadIfUnread(
             final Long notificationId,
