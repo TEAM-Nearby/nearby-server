@@ -15,7 +15,6 @@ import java.util.Locale;
 public final class CompanionReportMailFormatter {
 
 	private static final int SUBJECT_CONTENT_LENGTH = 20;
-	private static final ZoneId KOREA_ZONE = ZoneId.of("Asia/Seoul");
 	private static final DateTimeFormatter DATE_TIME_FORMATTER =
 			DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z", Locale.KOREA);
 	private static final DateTimeFormatter CITY_DATE_TIME_FORMATTER =
@@ -39,6 +38,7 @@ public final class CompanionReportMailFormatter {
 
 	public static String body(final CompanionReportMail mail) {
 		String placeTime = formatPlaceDateTime(mail.scheduledAt(), mail.meetingTimeType(), mail.placeAddress());
+		ZoneId placeZone = placeZone(mail.placeAddress());
 		String reasons = mail.reasons().stream()
 				.map(CompanionReportMailFormatter::reasonLabel)
 				.reduce((left, right) -> left + ", " + right)
@@ -46,7 +46,7 @@ public final class CompanionReportMailFormatter {
 
 		return "신고 정보\n"
 				+ "- 신고 ID: " + mail.report().id() + "\n"
-				+ "- 신고 시간: " + formatUtcLocalDateTime(mail.report().createdAt(), KOREA_ZONE) + "\n\n"
+				+ "- 신고 시간: " + formatUtcLocalDateTime(mail.report().createdAt(), placeZone) + "\n\n"
 				+ "신고한 사용자\n"
 				+ "- 유저 ID: " + mail.report().reporterUserId() + "\n"
 				+ "- 닉네임: " + valueOrUnregistered(mail.reporterNickname()) + "\n"
@@ -66,6 +66,7 @@ public final class CompanionReportMailFormatter {
 
 	public static String htmlBody(final CompanionReportMail mail) {
 		String placeTime = formatPlaceDateTime(mail.scheduledAt(), mail.meetingTimeType(), mail.placeAddress());
+		ZoneId placeZone = placeZone(mail.placeAddress());
 		String reasons = mail.reasons().stream()
 				.map(CompanionReportMailFormatter::reasonLabel)
 				.reduce((left, right) -> left + ", " + right)
@@ -98,7 +99,7 @@ public final class CompanionReportMailFormatter {
 				</div>
 				""".formatted(
 				escapeHtml(mail.report().id()),
-				escapeHtml(formatUtcLocalDateTime(mail.report().createdAt(), KOREA_ZONE)),
+				escapeHtml(formatUtcLocalDateTime(mail.report().createdAt(), placeZone)),
 				escapeHtml(mail.report().reporterUserId()),
 				escapeHtml(valueOrUnregistered(mail.reporterNickname())),
 				escapeHtml(valueOrUnregistered(mail.reporterPhoneNumber())),
@@ -129,28 +130,19 @@ public final class CompanionReportMailFormatter {
 			final CompanionPostMeetingTimeType meetingTimeType,
 			final String placeAddress
 	) {
-		ZoneId placeZone = CompanionPlaceCityNameResolver.resolveSupportedCity(placeAddress)
-				.map(CompanionCity::zoneId)
-				.orElse(ZoneOffset.UTC);
+		ZoneId placeZone = placeZone(placeAddress);
 		String cityName = CompanionPlaceCityNameResolver.resolveSupportedCity(placeAddress)
 				.map(CompanionCity::displayName)
 				.orElse("도시 미정");
 		String formattedDateTime = value == null ? "일정 미확정"
-				: CompanionPostMeetingTimeType.NOW.equals(meetingTimeType)
-				? formatUtcLocalDateTime(value, placeZone, CITY_DATE_TIME_FORMATTER)
-				: formatLocalDateTime(value, CITY_DATE_TIME_FORMATTER);
+				: formatUtcLocalDateTime(value, placeZone, CITY_DATE_TIME_FORMATTER);
 		return formattedDateTime
 				+ " (" + cityName + ")";
 	}
 
-	private static String formatLocalDateTime(
-			final java.time.LocalDateTime value,
-			final DateTimeFormatter formatter
-	) {
-		if (value == null) {
-			return "미등록";
-		}
-		return value.format(formatter);
+	private static ZoneId placeZone(final String address) {
+		return CompanionPlaceCityNameResolver.resolveSupportedCity(address)
+				.map(CompanionCity::zoneId).orElse(ZoneOffset.UTC);
 	}
 
 	private static String formatUtcLocalDateTime(

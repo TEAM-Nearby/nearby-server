@@ -8,7 +8,6 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.place.CompanionCity;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 public record ReadCompanionMeetingDetailResult(
@@ -45,27 +44,15 @@ public record ReadCompanionMeetingDetailResult(
                 detail.placeName(),
                 city,
                 currentLocalTime,
-                meetingAtForResponse(detail, city),
+                CompanionMeetingTimeConverter.toPlaceLocalTime(
+                        detail.meetingAt(),
+                        city
+                ),
                 detail.meetingTimeType(),
                 detail.meetingStatus(),
                 detail.currentUserCheckedIn(),
                 detail.meetingStatus() == CompanionMeetingStatus.ONGOING
         );
-    }
-
-    private static LocalDateTime meetingAtForResponse(
-            final CompanionMeetingDetail detail,
-            final CompanionCity city
-    ) {
-        if (detail.meetingTimeType() != CompanionPostMeetingTimeType.NOW
-                || detail.meetingAt() == null
-                || city == null) {
-            return detail.meetingAt();
-        }
-        return detail.meetingAt()
-                .atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(city.zoneId())
-                .toLocalDateTime();
     }
 
     public ReadCompanionMeetingDetailResult(

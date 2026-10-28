@@ -35,7 +35,32 @@ class ReadCompanionMatchesServiceTest {
         assertEquals(CompanionCity.MADRID, results.get(0).city());
         assertEquals("2026-07-01T14:00+02:00", results.get(0).currentLocalTime().toOffsetDateTime().toString());
         assertNull(results.get(1).city());
-        assertNull(results.get(1).currentLocalTime());
+        assertEquals("2026-07-01T12:00Z", results.get(1).currentLocalTime().toOffsetDateTime().toString());
+    }
+
+    @Test
+    void returnsNowMeetingAtInPlaceLocalTime() {
+        CompanionMatchSummaryQueryPort queryPort = new StubQueryPort(List.of(new CompanionMatchSummary(
+                1L,
+                "호스트",
+                null,
+                UserGender.FEMALE,
+                "식당",
+                "116 Rue de Rivoli, 75001 Paris, France",
+                LocalDateTime.of(2026, 10, 28, 15, 5),
+                CompanionPostMeetingTimeType.NOW,
+                LocalDateTime.of(2026, 10, 28, 15, 0),
+                "동행을 구해요",
+                CompanionMatchStatus.SCHEDULE_CONFIRMED
+        )));
+        ReadCompanionMatchesService service = new ReadCompanionMatchesService(
+                queryPort,
+                Clock.fixed(Instant.parse("2026-10-28T15:00:00Z"), ZoneOffset.UTC)
+        );
+
+        ReadCompanionMatchResult result = service.getMatches(7L).getFirst();
+
+        assertEquals(LocalDateTime.of(2026, 10, 28, 16, 5), result.meetingAt());
     }
 
     private CompanionMatchSummary summary(final Long matchId, final String placeAddress) {

@@ -56,7 +56,7 @@ class ReadCompanionScheduleServiceTest {
         assertEquals("Madrid, Rambla de Catalunya, 16", result.schedule().place().address());
         assertEquals(new BigDecimal("41.39020500"), result.schedule().place().latitude());
         assertEquals(new BigDecimal("2.16354800"), result.schedule().place().longitude());
-        assertEquals(SCHEDULED_AT, result.schedule().scheduledAt());
+        assertEquals(SCHEDULED_AT.plusHours(2), result.schedule().scheduledAt());
         assertEquals("https://open.kakao.com/o/confirmed", result.openChatUrl());
         assertEquals("루피", result.userNickname());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.meetingTimeType());
@@ -74,7 +74,7 @@ class ReadCompanionScheduleServiceTest {
                         new CompanionScheduleDetail.Place(
                                 "google-place-id",
                                 "Siutat condal",
-                                "Rambla de Catalunya, 16",
+                                "116 Rue de Rivoli, 75001 Paris, France",
                                 new BigDecimal("41.39020500"),
                                 new BigDecimal("2.16354800")
                         ),
@@ -91,7 +91,7 @@ class ReadCompanionScheduleServiceTest {
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
         assertEquals("google-place-id", result.schedule().place().googlePlaceId());
         assertEquals("Siutat condal", result.schedule().place().name());
-        assertEquals(EXPOSURE_EXPIRES_AT, result.schedule().scheduledAt());
+        assertEquals(EXPOSURE_EXPIRES_AT.plusHours(2), result.schedule().scheduledAt());
         assertEquals("https://open.kakao.com/o/not-yet", result.openChatUrl());
         assertEquals("루피", result.userNickname());
         assertEquals(CompanionPostMeetingTimeType.NOW, result.meetingTimeType());

@@ -60,6 +60,19 @@ class CheckInCompanionMeetingServiceTest {
     }
 
     @Test
+    void checksUtcScheduleAndReturnsParisLocalCheckInTimes() {
+        queryPort.put(new CompanionMeetingCheckInContext(
+                MEETING_ID, MATCH_ID, CompanionMeetingStatus.ONGOING, 20L, 30L, NOW.minusMinutes(5),
+                new BigDecimal("41.39020500"), new BigDecimal("2.16354800"), "Paris, France"));
+
+        CheckInCompanionMeetingResult result = service.checkIn(command("41.39020500", "2.16354800"));
+
+        assertEquals(NOW.plusHours(2), result.checkedInAt());
+        assertEquals(NOW.minusMinutes(5).plusHours(1), result.checkInAvailableFrom());
+        assertEquals(NOW.minusMinutes(5).plusHours(3), result.checkInAvailableUntil());
+    }
+
+    @Test
     void checksInWithinAllowedTimeAndRadius() {
         CheckInCompanionMeetingResult result = service.checkIn(command("41.39020500", "2.16354800"));
 

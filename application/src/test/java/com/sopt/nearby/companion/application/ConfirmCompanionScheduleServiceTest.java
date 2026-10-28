@@ -20,12 +20,17 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
@@ -45,6 +50,7 @@ class ConfirmCompanionScheduleServiceTest {
     private FakeCompanionMatchParticipantRepository participantRepository;
     private CapturingNotificationUseCase notificationUseCase;
     private ConfirmCompanionScheduleService service;
+    private String placeAddress;
 
     @BeforeEach
     void setUp() {
@@ -60,7 +66,13 @@ class ConfirmCompanionScheduleServiceTest {
                 scheduleRepository,
                 meetingRepository,
                 participantRepository,
-                notificationUseCase
+                notificationUseCase,
+                new CompanionMatchSummaryQueryPort() {
+                    public List<CompanionMatchSummary> findAllByParticipantUserId(Long userId) { return List.of(); }
+                    public Optional<String> findPlaceNameByPlaceId(Long placeId) { return Optional.empty(); }
+                    public Optional<String> findPlaceAddressByPlaceId(Long placeId) { return Optional.ofNullable(placeAddress); }
+                },
+                Clock.fixed(Instant.parse("2026-07-01T00:00:00Z"), ZoneOffset.UTC)
         );
 
         matchRepository.save(match(CompanionMatchStatus.SCHEDULE_CONFIRMED));
@@ -94,6 +106,25 @@ class ConfirmCompanionScheduleServiceTest {
                 3L,
                 MatchParticipantRole.GUEST
         ));
+    }
+
+    @Test
+    void savesParisScheduleInUtc() {
+        placeAddress = "Paris, France";
+        service.update(command(7L, UPDATED_TIME));
+        assertEquals(UPDATED_TIME.minusHours(2), scheduleRepository.schedules.get(1L).scheduledAt());
+        assertEquals(UPDATED_TIME, CompanionMeetingTimeConverter.utcToLocal(
+                scheduleRepository.schedules.get(1L).scheduledAt(), java.time.ZoneId.of("Europe/Paris")));
+    }
+
+    @Test
+    void rejectsPastScheduleAndAmbiguousLocalTime() {
+        placeAddress = "Paris, France";
+        assertThrows(InvalidCompanionScheduleRequestException.class,
+                () -> service.update(command(7L, LocalDateTime.of(2026, 6, 30, 12, 0))));
+        assertThrows(InvalidCompanionScheduleRequestException.class,
+                () -> service.update(command(7L, LocalDateTime.of(2026, 10, 25, 2, 30))));
+        assertEquals(0, scheduleRepository.saveCount);
     }
 
     @Test

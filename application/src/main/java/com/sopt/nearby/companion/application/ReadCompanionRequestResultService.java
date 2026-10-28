@@ -9,9 +9,11 @@ import com.sopt.nearby.companion.domain.model.match.AcceptedCompanionRequestDeta
 import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestResultUseCase;
 import com.sopt.nearby.companion.port.out.AcceptedCompanionRequestDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
+import java.time.ZoneOffset;
 import org.springframework.transaction.annotation.Transactional;
 
 public class ReadCompanionRequestResultService implements ReadCompanionRequestResultUseCase {
@@ -50,7 +52,13 @@ public class ReadCompanionRequestResultService implements ReadCompanionRequestRe
                 .orElseThrow(CompanionMatchNotFoundException::new);
         validateMatchStatus(detail.matchStatus());
 
-        return new CompanionRequestResult(application.id(), application.status(), detail);
+        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(detail.place().address())
+                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        var localized = new AcceptedCompanionRequestDetail(
+                detail.matchId(), detail.matchStatus(), detail.postId(), detail.host(), detail.place(),
+                detail.meetingTimeType(), CompanionMeetingTimeConverter.utcToLocal(detail.meetingAt(), zone),
+                detail.participantCount(), detail.maxParticipants(), detail.openChatUrl());
+        return new CompanionRequestResult(application.id(), application.status(), localized);
     }
 
     private void validate(final ReadCompanionRequestResultCommand command) {

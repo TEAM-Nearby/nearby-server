@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationDirection;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationHostProfile;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationActionType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationPageCursor;
 import com.sopt.nearby.companion.port.out.CompanionNotificationPageRow;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
@@ -15,6 +16,18 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class ReadCompanionNotificationsServiceTest {
+
+    @Test
+    void returnsMeetingTimeInPlaceTimeZone() {
+        FakeCompanionNotificationQueryPort queryPort = new FakeCompanionNotificationQueryPort();
+        queryPort.result = List.of(new CompanionNotificationSummary(99L, 1L,
+                CompanionApplicationStatus.ACCEPTED, new CompanionNotificationHostProfile(100L, null, "호스트"),
+                "식당", LocalDateTime.of(2026, 10, 28, 7, 55), 10L,
+                CompanionNotificationActionType.VIEW_RESULT, false, "Paris, France"));
+        var result = new ReadCompanionNotificationsService(queryPort)
+                .getNotifications(7L, CompanionNotificationDirection.SENT);
+        assertEquals(LocalDateTime.of(2026, 10, 28, 8, 55), result.getFirst().meetingAt());
+    }
 
     @Test
     void delegatesUserIdAndDirectionToQueryPort() {

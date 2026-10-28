@@ -95,7 +95,7 @@ class ReadCompanionMatchPreviewServiceTest {
         assertEquals(CompanionCity.MADRID, preview.companionPost().city());
         assertEquals("2026-07-01T14:00+02:00", preview.companionPost().currentLocalTime().toOffsetDateTime().toString());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
-        assertEquals(NOW.plusDays(1), preview.companionPost().meetingAt());
+        assertEquals(NOW.plusDays(1).plusHours(2), preview.companionPost().meetingAt());
     }
 
     @Test
@@ -119,7 +119,7 @@ class ReadCompanionMatchPreviewServiceTest {
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, preview.companionPost().meetingTimeType());
         assertEquals("확정 장소", preview.companionPost().placeName());
         assertEquals(CompanionCity.LONDON, preview.companionPost().city());
-        assertEquals(confirmedScheduleAt, preview.companionPost().meetingAt());
+        assertEquals(confirmedScheduleAt.plusHours(1), preview.companionPost().meetingAt());
         assertEquals(1, companionScheduleRepository.findConfirmedCallCount);
     }
 
@@ -145,7 +145,7 @@ class ReadCompanionMatchPreviewServiceTest {
         CompanionMatchPreview preview = service.getPreview(10L, 7L);
 
         assertEquals(CompanionPostMeetingTimeType.NOW, preview.companionPost().meetingTimeType());
-        assertEquals(exposureExpiresAt, preview.companionPost().meetingAt());
+        assertEquals(exposureExpiresAt.plusHours(2), preview.companionPost().meetingAt());
     }
 
     @Test

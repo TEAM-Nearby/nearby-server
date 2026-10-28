@@ -7,6 +7,7 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 public record CompanionRequestReviewResult(
         Long applicationId,
@@ -22,7 +23,8 @@ public record CompanionRequestReviewResult(
 
     public static CompanionRequestReviewResult from(
             final CompanionRequestReview review,
-            final LocalDateTime meetingAt
+            final LocalDateTime meetingAt,
+            final ZoneId zone
     ) {
         return new CompanionRequestReviewResult(
                 review.applicationId(),
@@ -40,7 +42,8 @@ public record CompanionRequestReviewResult(
                         review.applicantProfile().birthYear(),
                         review.applicantProfile().mannerScore()
                 ),
-                new ApplicantAccount(review.applicantAccount().phoneVerifiedAt())
+                new ApplicantAccount(CompanionMeetingTimeConverter.utcToLocal(
+                        review.applicantAccount().phoneVerifiedAt(), zone))
         );
     }
 

@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.domain.model.place;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
@@ -80,7 +81,7 @@ public final class CompanionPlaceCityNameResolver {
 		Objects.requireNonNull(instant);
 		return resolveSupportedCity(address)
 				.map(city -> new ResolvedCityTime(city, instant.atZone(city.zoneId())))
-				.orElseGet(() -> new ResolvedCityTime(null, null));
+				.orElseGet(() -> new ResolvedCityTime(null, instant.atZone(ZoneOffset.UTC)));
 	}
 
 	public record ResolvedCityTime(

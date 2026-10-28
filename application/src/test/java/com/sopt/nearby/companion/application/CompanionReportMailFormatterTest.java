@@ -32,17 +32,17 @@ class CompanionReportMailFormatterTest {
 	}
 
 	@Test
-	void formatsReportTimeInKoreaTime() {
+	void formatsReportTimeInPlaceTime() {
 		CompanionReportMail mail = mail("동행 본문");
 
-		assertTrue(CompanionReportMailFormatter.body(mail).contains("2026-10-02 09:00:00 KST"));
+		assertTrue(CompanionReportMailFormatter.body(mail).contains("2026-10-02 02:00:00"));
 	}
 
 	@Test
-	void formatsScheduledTimeDirectlyWithCityName() {
+	void convertsScheduledUtcTimeToPlaceTimezone() {
 		CompanionReportMail mail = mail("동행 본문", "Paris, France", CompanionPostMeetingTimeType.SCHEDULED);
 
-		assertTrue(CompanionReportMailFormatter.body(mail).contains("2026-10-02 00:00:00 (Paris)"));
+		assertTrue(CompanionReportMailFormatter.body(mail).contains("2026-10-02 02:00:00 (Paris)"));
 	}
 
 	@Test

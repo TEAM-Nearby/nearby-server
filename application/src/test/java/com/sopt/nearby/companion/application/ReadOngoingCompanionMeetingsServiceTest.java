@@ -34,7 +34,7 @@ class ReadOngoingCompanionMeetingsServiceTest {
         assertEquals(UserGender.FEMALE, result.getFirst().companion().gender());
         assertEquals(CompanionCity.MADRID, result.getFirst().city());
         assertEquals("2026-07-01T14:00+02:00", result.getFirst().currentLocalTime().toOffsetDateTime().toString());
-        assertEquals(LocalDateTime.of(2026, 7, 1, 14, 0), result.getFirst().meetingAt());
+        assertEquals(LocalDateTime.of(2026, 7, 1, 16, 0), result.getFirst().meetingAt());
     }
 
     @Test
@@ -49,9 +49,9 @@ class ReadOngoingCompanionMeetingsServiceTest {
     }
 
     @Test
-    void keepsUnverifiedScheduledMeetingAtLocalCheckInDeadline() {
+    void keepsUnverifiedScheduledMeetingAtCheckInDeadline() {
         FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
-        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 13, 0), false));
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 11, 0), false));
         ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
 
         List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
@@ -108,9 +108,9 @@ class ReadOngoingCompanionMeetingsServiceTest {
     }
 
     @Test
-    void excludesScheduledMeetingUsingPlaceLocalTime() {
+    void excludesScheduledMeetingUsingUtcTime() {
         FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
-        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 12, 0), false));
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 10, 59), false));
         ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
 
         List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);

@@ -30,6 +30,18 @@ class MarkCompanionNotificationAsReadServiceTest {
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 6, 17, 0);
 
     @Test
+    void savesUtcReadTimeAndReturnsPlaceLocalTime() {
+        FakeCompanionNotificationRepository repository = new FakeCompanionNotificationRepository();
+        repository.placeAddress = "Paris, France";
+        repository.put(notification(1L, 7L, null));
+
+        var result = new MarkCompanionNotificationAsReadService(repository, CLOCK).markAsRead(7L, 1L);
+
+        assertEquals(NOW, repository.findById(1L).orElseThrow().readAt());
+        assertEquals(NOW.plusHours(2), result.readAt());
+    }
+
+    @Test
     void marksUnreadNotificationAsRead() {
         FakeCompanionNotificationRepository repository = new FakeCompanionNotificationRepository();
         repository.put(notification(1L, 7L, null));
@@ -139,6 +151,12 @@ class MarkCompanionNotificationAsReadServiceTest {
         private final Map<Long, CompanionNotification> notifications = new HashMap<>();
         private LocalDateTime concurrentReadAt;
         private int markAsReadIfUnreadCount = 0;
+        private String placeAddress;
+
+        @Override
+        public Optional<String> findPlaceAddressByNotificationId(Long notificationId) {
+            return Optional.ofNullable(placeAddress);
+        }
 
         @Override
         public CompanionNotification save(final CompanionNotification model) {

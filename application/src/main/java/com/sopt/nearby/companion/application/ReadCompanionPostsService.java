@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostSearchRequestException;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostPlaceCategory;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSummary;
 import com.sopt.nearby.companion.port.in.ReadCompanionPostsUseCase;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
@@ -73,6 +75,9 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
 
     private CompanionPostsResult.Post toPost(final CompanionPostSummary summary) {
         String contentPreview = contentPreview(summary.content());
+        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(summary.placeAddress())
+                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        var meetingAt = CompanionMeetingTimeConverter.utcToLocal(summary.meetingAt(), zone);
         ResolvedPlaceImage image = resolvePlaceImageUseCase.resolve(new ResolvePlaceImageCommand(
                 summary.googlePlaceId(),
                 summary.photoReference()
@@ -106,8 +111,8 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
                 contentPreview,
                 summary.content() != null && summary.content().length() > CONTENT_PREVIEW_LENGTH,
                 summary.meetingTimeType(),
-                summary.meetingAt(),
-                meetingAtText(summary.meetingAt()),
+                meetingAt,
+                meetingAtText(meetingAt),
                 summary.participantCount(),
                 summary.maxParticipants(),
                 summary.participants().stream()
@@ -117,9 +122,9 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
                         ))
                         .toList(),
                 summary.participantCount() + "/" + summary.maxParticipants() + " 모집 중",
-                summary.createdAt(),
-                createdAgoText(summary.createdAt()),
-                mapMarkerText(summary.meetingAt(), summary.placeName())
+                CompanionMeetingTimeConverter.utcToLocal(summary.createdAt(), zone),
+                createdAgoText(summary.createdAt(), zone),
+                mapMarkerText(meetingAt, summary.placeName())
         );
     }
 
@@ -134,7 +139,7 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
         return content.substring(0, CONTENT_PREVIEW_LENGTH);
     }
 
-    private String createdAgoText(final LocalDateTime createdAt) {
+    private String createdAgoText(final LocalDateTime createdAt, final java.time.ZoneId zone) {
         long minutes = Duration.between(createdAt, LocalDateTime.now(clock)).toMinutes();
         if (minutes < 1) {
             return "방금 전";
@@ -146,7 +151,7 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
         if (hours < 24) {
             return hours + "시간 전";
         }
-        return DATE_TEXT_FORMATTER.format(createdAt);
+        return DATE_TEXT_FORMATTER.format(CompanionMeetingTimeConverter.utcToLocal(createdAt, zone));
     }
 
     private String mapMarkerText(final LocalDateTime meetingAt, final String placeName) {
