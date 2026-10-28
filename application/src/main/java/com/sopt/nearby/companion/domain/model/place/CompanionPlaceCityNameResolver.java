@@ -57,9 +57,15 @@ public final class CompanionPlaceCityNameResolver {
 		int lastIndex = addressParts.length - 1;
 		int firstIndex = 0;
 		// 실제 국가명으로 끝나는 주소만 도시 위치로 제한해 도로명으로 되돌아가지 않는다.
-		if (addressParts.length >= 3 && isCountry(addressParts[lastIndex].trim())) {
+		if (addressParts.length >= 2 && isCountry(addressParts[lastIndex].trim())) {
+			String country = addressParts[lastIndex].trim();
 			lastIndex--;
 			firstIndex = lastIndex;
+			String cityPart = addressParts[lastIndex];
+			return Arrays.stream(CompanionCity.values())
+					.filter(candidate -> candidate.matches(cityPart))
+					.filter(candidate -> matchesCountry(candidate, country))
+					.findFirst();
 		}
 		for (int index = lastIndex; index >= firstIndex; index--) {
 			String addressPart = addressParts[index];
@@ -75,6 +81,14 @@ public final class CompanionPlaceCityNameResolver {
 
 	private static boolean isCountry(final String addressPart) {
 		return COUNTRY_NAMES.contains(addressPart) || "UK".equals(addressPart);
+	}
+
+	private static boolean matchesCountry(final CompanionCity city, final String country) {
+		return switch (city) {
+			case PARIS -> Set.of("FRANCE", "FR", "FRA", "프랑스").contains(country);
+			case LONDON -> Set.of("UNITED KINGDOM", "UK", "GB", "GBR", "영국").contains(country);
+			case MADRID, BARCELONA -> Set.of("SPAIN", "ES", "ESP", "스페인").contains(country);
+		};
 	}
 
 	public static ResolvedCityTime resolveCurrentTime(final String address, final Instant instant) {
