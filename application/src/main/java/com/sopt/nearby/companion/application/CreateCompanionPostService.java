@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
@@ -19,6 +20,7 @@ import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -64,9 +66,6 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
 
         LocalDateTime createdAt = LocalDateTime.now(clock);
         List<CompanionPostKeyword> styleKeywords = distinct(command.styleKeywords());
-        LocalDateTime meetingAt = command.meetingTimeType() == CompanionPostMeetingTimeType.SCHEDULED
-                ? command.meetingAt()
-                : null;
         LocalDateTime exposureExpiresAt = command.meetingTimeType() == CompanionPostMeetingTimeType.NOW
                 ? createdAt.plusHours(1)
                 : null;
@@ -80,6 +79,14 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 command.place().longitude(),
                 command.place().category() == null ? null : command.place().category().name()
         ));
+
+        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(place.address())
+                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        LocalDateTime meetingAt = command.meetingTimeType() == CompanionPostMeetingTimeType.SCHEDULED
+                ? CompanionMeetingTimeConverter.toUtc(command.meetingAt(), zone)
+                        .filter(value -> value.isAfter(createdAt))
+                        .orElseThrow(InvalidCompanionPostCreateRequestException::new)
+                : null;
 
         CompanionPost post = postRepository.save(new CompanionPost(
                 null,
@@ -112,15 +119,15 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                         effectiveCategory(place.category())
                 ),
                 post.meetingTimeType(),
-                post.meetingAt(),
-                post.exposureExpiresAt(),
+                CompanionMeetingTimeConverter.utcToLocal(post.meetingAt(), zone),
+                CompanionMeetingTimeConverter.utcToLocal(post.exposureExpiresAt(), zone),
                 post.maxParticipants(),
                 1,
                 post.departEvenIfNotFull(),
                 styleKeywords,
                 post.content(),
                 post.openChatUrl(),
-                post.createdAt()
+                CompanionMeetingTimeConverter.utcToLocal(post.createdAt(), zone)
         );
     }
 
@@ -148,7 +155,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
 
     private boolean isInvalidMeetingTime(final CreateCompanionPostCommand command) {
         return switch (command.meetingTimeType()) {
-            case SCHEDULED -> command.meetingAt() == null || !command.meetingAt().isAfter(LocalDateTime.now(clock));
+            case SCHEDULED -> command.meetingAt() == null;
             case NOW, UNDECIDED -> command.meetingAt() != null;
         };
     }

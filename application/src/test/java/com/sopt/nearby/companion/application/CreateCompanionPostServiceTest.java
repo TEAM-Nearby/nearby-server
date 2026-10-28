@@ -77,6 +77,46 @@ class CreateCompanionPostServiceTest {
     }
 
     @Test
+    void rejectsPastScheduledMeetingInPlaceLocalTime() {
+        CreateCompanionPostCommand base = command(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 2, 6, 30),
+                true,
+                List.of()
+        );
+        CreateCompanionPostCommand paris = new CreateCompanionPostCommand(
+                base.hostUserId(),
+                new CreateCompanionPostCommand.Place("place", "restaurant", "Paris, France",
+                        base.place().latitude(), base.place().longitude(), base.place().category()),
+                base.meetingTimeType(), base.meetingAt(), base.recruitmentCapacity(),
+                base.departEvenIfNotFull(), base.styleKeywords(), base.content(), base.openChatUrl()
+        );
+
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(paris));
+    }
+
+    @Test
+    void storesParisScheduledTimeInUtcAndReturnsPlaceLocalTime() {
+        CreateCompanionPostCommand base = command(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 2, 8, 55), true, List.of()
+        );
+        CreateCompanionPostCommand paris = new CreateCompanionPostCommand(
+                base.hostUserId(),
+                new CreateCompanionPostCommand.Place("place", "restaurant", "Paris, France",
+                        base.place().latitude(), base.place().longitude(), base.place().category()),
+                base.meetingTimeType(), base.meetingAt(), base.recruitmentCapacity(),
+                base.departEvenIfNotFull(), base.styleKeywords(), base.content(), base.openChatUrl()
+        );
+
+        CreateCompanionPostResult result = service.create(paris);
+
+        assertEquals(LocalDateTime.of(2026, 7, 2, 6, 55), postRepository.savedPost.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 7, 2, 8, 55), result.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 7, 2, 7, 0), result.createdAt());
+    }
+
+    @Test
     void createsScheduledPostWithPlaceAndStyles() {
         CreateCompanionPostResult result = service.create(command(
                 CompanionPostMeetingTimeType.SCHEDULED,
