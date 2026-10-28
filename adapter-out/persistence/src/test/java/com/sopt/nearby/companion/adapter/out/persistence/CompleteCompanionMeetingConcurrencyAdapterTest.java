@@ -2,6 +2,20 @@
 package com.sopt.nearby.companion.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
+import com.sopt.nearby.companion.application.CheckInCompanionMeetingService;
+import com.sopt.nearby.companion.application.CheckInCompanionMeetingCommand;
+import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
+import com.sopt.nearby.companion.application.ConfirmCompanionScheduleCommand;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingCheckInContext;
+import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
+import com.sopt.nearby.companion.domain.exception.CheckInTimeNotAllowedException;
+import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
+import java.util.Optional;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchParticipantEntity;
@@ -67,6 +81,9 @@ class CompleteCompanionMeetingConcurrencyAdapterTest {
 	private MeetingCheckInJpaRepository checkInJpaRepository;
 
 	@Autowired
+	private CompanionScheduleJpaRepository scheduleJpaRepository;
+
+	@Autowired
 	private PlatformTransactionManager transactionManager;
 
 	@Autowired
@@ -108,6 +125,91 @@ class CompleteCompanionMeetingConcurrencyAdapterTest {
 			});
 		} finally {
 			executor.shutdownNow();
+		}
+	}
+
+	@Test
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	void checkInFirstRejectsConcurrentScheduleUpdate() throws Exception {
+		checkConcurrentScheduleAndCheckIn(true);
+	}
+
+	@Test
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	void scheduleUpdateFirstMakesCheckInUseNewTime() throws Exception {
+		checkConcurrentScheduleAndCheckIn(false);
+	}
+
+	private void checkConcurrentScheduleAndCheckIn(boolean checkInFirst) throws Exception {
+		Ids ids = transaction().execute(status -> {
+			Ids saved = saveMeeting();
+			checkInJpaRepository.deleteAll();
+			scheduleJpaRepository.saveAndFlush(new CompanionScheduleEntity(null, saved.matchId(), 30L,
+					NOW.plusMinutes(10), null, true));
+			return saved;
+		});
+		var matches = new CompanionMatchRepositoryAdapter(matchJpaRepository);
+		var schedules = new CompanionScheduleRepositoryAdapter(scheduleJpaRepository);
+		var participants = new CompanionMatchParticipantRepositoryAdapter(participantJpaRepository);
+		var checkIns = new MeetingCheckInRepositoryAdapter(checkInJpaRepository, dataSource);
+		var jdbc = new org.springframework.jdbc.core.JdbcTemplate(dataSource);
+		var checkInService = new CheckInCompanionMeetingService(meetingId -> jdbc.query(
+				"select id, place_id, scheduled_at from companion_schedule where match_id = ? and confirmed = true",
+				(rs, row) -> new CompanionMeetingCheckInContext(meetingId, ids.matchId(), CompanionMeetingStatus.ONGOING,
+						rs.getLong(1), rs.getLong(2), rs.getTimestamp(3).toLocalDateTime(), BigDecimal.ZERO, BigDecimal.ZERO),
+				ids.matchId()).stream().findFirst(),
+				participants, checkIns, matches, CLOCK);
+		var place = new CompanionMatchSummaryQueryPort() {
+			public List<CompanionMatchSummary> findAllByParticipantUserId(Long userId) { return List.of(); }
+			public Optional<String> findPlaceNameByPlaceId(Long placeId) { return Optional.empty(); }
+			public Optional<String> findPlaceAddressByPlaceId(Long placeId) { return Optional.empty(); }
+		};
+		var scheduleService = new ConfirmCompanionScheduleService(matches, new CompanionPostRepositoryAdapter(postJpaRepository),
+				schedules, new CompanionMeetingRepositoryAdapter(meetingJpaRepository), participants, command -> null,
+				place, checkIns, CLOCK);
+		var checkCommand = new CheckInCompanionMeetingCommand(HOST_ID, ids.meetingId(), BigDecimal.ZERO, BigDecimal.ZERO);
+		var scheduleCommand = new ConfirmCompanionScheduleCommand(ids.matchId(), HOST_ID, NOW.plusHours(3));
+		CountDownLatch firstFinished = new CountDownLatch(1);
+		CountDownLatch releaseFirst = new CountDownLatch(1);
+		CountDownLatch secondStarted = new CountDownLatch(1);
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		try {
+			Future<?> first = executor.submit(() -> transaction().execute(status -> {
+				if (checkInFirst) checkInService.checkIn(checkCommand); else scheduleService.update(scheduleCommand);
+				firstFinished.countDown();
+				await(releaseFirst);
+				return null;
+			}));
+			assertThat(firstFinished.await(5, TimeUnit.SECONDS)).isTrue();
+			Future<?> second = executor.submit(() -> transaction().execute(status -> {
+				secondStarted.countDown();
+				if (checkInFirst) scheduleService.update(scheduleCommand); else checkInService.checkIn(checkCommand);
+				return null;
+			}));
+			assertThat(secondStarted.await(5, TimeUnit.SECONDS)).isTrue();
+			assertThatThrownBy(() -> second.get(200, TimeUnit.MILLISECONDS))
+					.isInstanceOf(java.util.concurrent.TimeoutException.class);
+			releaseFirst.countDown();
+			first.get(5, TimeUnit.SECONDS);
+			assertThatThrownBy(() -> second.get(5, TimeUnit.SECONDS))
+					.hasCauseInstanceOf(checkInFirst ? InvalidCompanionScheduleRequestException.class : CheckInTimeNotAllowedException.class);
+			transaction().executeWithoutResult(status -> {
+				assertThat(schedules.findConfirmedByMatchId(ids.matchId()).orElseThrow().scheduledAt())
+						.isEqualTo(checkInFirst ? NOW.plusMinutes(10) : NOW.plusHours(3));
+				assertThat(checkIns.countByMeetingId(ids.meetingId())).isEqualTo(checkInFirst ? 1 : 0);
+			});
+		} finally {
+			releaseFirst.countDown();
+			executor.shutdownNow();
+		}
+	}
+
+	private void await(CountDownLatch latch) {
+		try {
+			if (!latch.await(5, TimeUnit.SECONDS)) throw new AssertionError("transaction wait timed out");
+		} catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+			throw new AssertionError(exception);
 		}
 	}
 
@@ -194,6 +296,7 @@ class CompleteCompanionMeetingConcurrencyAdapterTest {
 			CompanionMatchEntity.class,
 			CompanionMatchParticipantEntity.class,
 			CompanionMeetingEntity.class,
+			CompanionScheduleEntity.class,
 			MeetingCheckInEntity.class
 	})
 	@EnableJpaRepositories(basePackageClasses = {
@@ -201,6 +304,7 @@ class CompleteCompanionMeetingConcurrencyAdapterTest {
 			CompanionMatchJpaRepository.class,
 			CompanionMatchParticipantJpaRepository.class,
 			CompanionMeetingJpaRepository.class,
+			CompanionScheduleJpaRepository.class,
 			MeetingCheckInJpaRepository.class
 	})
 	static class TestApplication {

@@ -30,6 +30,20 @@ class ReadCompanionRequestReviewServiceTest {
     }
 
     @Test
+    void convertsParisMeetingAndVerificationTime() {
+        var original = review(100L, CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 1, 22, 30), null);
+        queryPort.result = Optional.of(new CompanionRequestReview(
+                original.applicationId(), original.postId(), original.applicationStatus(), original.hostUserId(),
+                original.placeName(), original.meetingTimeType(), original.meetingAt(), original.exposureExpiresAt(),
+                original.openChatUrl(), original.applicantProfile(), original.applicantAccount(), "Paris, France"));
+
+        var result = service.read(new ReadCompanionRequestReviewCommand(100L, 3L));
+        assertEquals(LocalDateTime.of(2026, 7, 2, 0, 30), result.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 7, 1, 11, 0), result.applicantAccount().phoneVerifiedAt());
+    }
+
+    @Test
     void returnsReviewForHost() {
         queryPort.result = Optional.of(review(
                 100L,
