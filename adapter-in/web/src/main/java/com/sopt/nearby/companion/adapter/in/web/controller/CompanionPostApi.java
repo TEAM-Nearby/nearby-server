@@ -104,7 +104,8 @@ public interface CompanionPostApi {
                     장소 주소에서 BARCELONA, MADRID, LONDON, PARIS를 판별해 city, timeZoneId, currentLocalTime을 반환합니다.
                     확정 일정이 있으면 최신 비취소 매칭의 확정 장소를 모집글의 원본 장소보다 우선 사용합니다.
                     도시를 판별할 수 없으면 city는 null이며, 시간은 UTC로 반환합니다.
-                    meetingAt, createdAt, expiresAt은 오프셋 없는 장소 현지 시각입니다.
+                    meetingAt, createdAt은 오프셋 없는 장소 현지 시각입니다.
+                    expiresAt은 도시와 관계없이 오프셋 없는 UTC 시각입니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
@@ -144,6 +145,7 @@ public interface CompanionPostApi {
                     + "recruitmentCapacity는 작성자를 제외한 모집 인원으로 1~7명이며, "
                     + "응답의 maxParticipants는 작성자를 포함한 전체 정원으로 2~8명입니다. "
                     + "SCHEDULED의 meetingAt은 오프셋 없는 장소 현지 시각이며 도시를 알 수 없으면 UTC입니다. "
+                    + "응답의 exposureExpiresAt은 도시와 관계없이 오프셋 없는 UTC 시각입니다. "
                     + "존재하지 않거나 두 번 존재하는 서머타임 전환 시각은 허용하지 않습니다.",
             security = @SecurityRequirement(name = "bearerAuth"),
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
