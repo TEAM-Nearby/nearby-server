@@ -143,7 +143,7 @@ class CompanionRequestReviewQueryAdapterTest {
     }
 
     @Test
-    void readsExposureExpiresAtForNowPost() {
+    void usesApplicationTimeInsteadOfExposureExpiryForNowPost() {
         CompanionRequestReviewQueryAdapter adapter = new CompanionRequestReviewQueryAdapter(queryJpaRepository);
 
         UserAccountEntity hostUser = userAccountJpaRepository.saveAndFlush(user(null));
@@ -166,7 +166,7 @@ class CompanionRequestReviewQueryAdapterTest {
 
         CompanionRequestReview result = adapter.findByApplicationId(application.getId()).orElseThrow();
 
-        assertThat(result.meetingAt()).isNull();
+        assertThat(result.meetingAt()).isEqualTo(NOW.minusMinutes(30));
         assertThat(result.exposureExpiresAt()).isEqualTo(LocalDateTime.of(2026, 6, 18, 17, 30));
     }
 
