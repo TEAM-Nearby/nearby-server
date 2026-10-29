@@ -137,7 +137,8 @@ public class CompanionUseCaseConfig {
             final CompanionScheduleRepository companionScheduleRepository,
             final CompanionApplicationRepository companionApplicationRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
-            final Clock clock
+            final Clock clock,
+            final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort
     ) {
         return new CreateCompanionRequestService(
                 requireCompletedOnboardingUseCase,
@@ -146,7 +147,8 @@ public class CompanionUseCaseConfig {
                 companionScheduleRepository,
                 companionApplicationRepository,
                 createCompanionNotificationUseCase,
-                clock
+                clock,
+                companionMatchSummaryQueryPort
         );
     }
 
@@ -248,7 +250,10 @@ public class CompanionUseCaseConfig {
             final CompanionScheduleRepository companionScheduleRepository,
             final CompanionMeetingRepository companionMeetingRepository,
             final CompanionMatchParticipantRepository companionMatchParticipantRepository,
-            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase
+            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
+            final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
+            final MeetingCheckInRepository checkInRepository,
+            final Clock clock
     ) {
         return new ConfirmCompanionScheduleService(
                 companionMatchRepository,
@@ -256,7 +261,10 @@ public class CompanionUseCaseConfig {
                 companionScheduleRepository,
                 companionMeetingRepository,
                 companionMatchParticipantRepository,
-                createCompanionNotificationUseCase
+                createCompanionNotificationUseCase,
+                companionMatchSummaryQueryPort,
+                checkInRepository,
+                clock
         );
     }
 
@@ -328,7 +336,8 @@ public class CompanionUseCaseConfig {
             final CompanionScheduleRepository companionScheduleRepository,
             final CompanionMeetingRepository companionMeetingRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
-            final Clock clock
+            final Clock clock,
+            final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort
     ) {
         return new ProcessCompanionRequestService(
                 applicationRepository,
@@ -338,7 +347,8 @@ public class CompanionUseCaseConfig {
                 companionScheduleRepository,
                 companionMeetingRepository,
                 createCompanionNotificationUseCase,
-                clock
+                clock,
+                companionMatchSummaryQueryPort
         );
     }
 
@@ -434,12 +444,14 @@ public class CompanionUseCaseConfig {
             final CompanionMeetingCheckInQueryPort queryPort,
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
+            final CompanionMatchRepository matchRepository,
             final Clock clock
     ) {
         return new CheckInCompanionMeetingService(
                 queryPort,
                 participantRepository,
                 checkInRepository,
+                matchRepository,
                 clock
         );
     }
@@ -450,14 +462,16 @@ public class CompanionUseCaseConfig {
             final CompanionMatchRepository matchRepository,
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
-            final Clock clock
+            final Clock clock,
+            final CompanionMeetingCheckInQueryPort meetingContextQueryPort
     ) {
         return new CompleteCompanionMeetingService(
                 meetingRepository,
                 matchRepository,
                 participantRepository,
                 checkInRepository,
-                clock
+                clock,
+                meetingContextQueryPort
         );
     }
 

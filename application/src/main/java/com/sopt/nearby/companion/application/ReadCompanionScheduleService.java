@@ -53,11 +53,27 @@ public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCas
                 scheduleDetail.matchStatus(),
                 cityTime.city(),
                 cityTime.currentLocalTime(),
-                scheduleDetail.schedule(),
+                scheduleForResponse(scheduleDetail, cityTime),
                 scheduleDetail.openChatUrl(),
                 scheduleDetail.userNickname(),
                 scheduleDetail.meetingTimeType(),
                 scheduleDetail.currentUserRole()
+        );
+    }
+
+    private CompanionScheduleDetail.Schedule scheduleForResponse(
+            final CompanionScheduleDetail detail,
+            final ResolvedCityTime cityTime
+    ) {
+        if (detail.schedule() == null) {
+            return null;
+        }
+        return new CompanionScheduleDetail.Schedule(
+                detail.schedule().place(),
+                CompanionMeetingTimeConverter.toPlaceLocalTime(
+                        detail.schedule().scheduledAt(),
+                        cityTime.city()
+                )
         );
     }
 }

@@ -4,11 +4,26 @@ package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.domain.model.place.CompanionCity;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 
 public record ReadCompanionMatchResult(
         CompanionMatchSummary match,
         CompanionCity city,
-        ZonedDateTime currentLocalTime
+        ZonedDateTime currentLocalTime,
+        LocalDateTime meetingAt
 ) {
+
+    public LocalDateTime localCreatedAt() {
+        return CompanionMeetingTimeConverter.utcToLocal(match.createdAt(),
+                city == null ? java.time.ZoneOffset.UTC : city.zoneId());
+    }
+
+    public ReadCompanionMatchResult(
+            final CompanionMatchSummary match,
+            final CompanionCity city,
+            final ZonedDateTime currentLocalTime
+    ) {
+        this(match, city, currentLocalTime, match.meetingAt());
+    }
 }

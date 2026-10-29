@@ -14,13 +14,17 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingCheckInContext;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.port.in.CompleteCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
+import com.sopt.nearby.companion.port.out.CompanionMeetingCheckInQueryPort;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,19 +35,22 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 	private final CompanionMatchParticipantRepository participantRepository;
 	private final MeetingCheckInRepository checkInRepository;
 	private final Clock clock;
+	private final CompanionMeetingCheckInQueryPort meetingContextQueryPort;
 
 	public CompleteCompanionMeetingService(
 			final CompanionMeetingRepository meetingRepository,
 			final CompanionMatchRepository matchRepository,
 			final CompanionMatchParticipantRepository participantRepository,
 			final MeetingCheckInRepository checkInRepository,
-			final Clock clock
+			final Clock clock,
+			final CompanionMeetingCheckInQueryPort meetingContextQueryPort
 	) {
 		this.meetingRepository = meetingRepository;
 		this.matchRepository = matchRepository;
 		this.participantRepository = participantRepository;
 		this.checkInRepository = checkInRepository;
 		this.clock = clock;
+		this.meetingContextQueryPort = meetingContextQueryPort;
 	}
 
 	@Override
@@ -80,13 +87,17 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 			meetingStatus = CompanionMeetingStatus.COMPLETED;
 		}
 
+		var zone = meetingContextQueryPort.findByMeetingId(meetingId)
+				.map(CompanionMeetingCheckInContext::placeAddress)
+				.flatMap(CompanionPlaceCityNameResolver::resolveSupportedCity)
+				.map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
 		return new CompleteCompanionMeetingResult(
 				meeting.id(),
 				meeting.matchId(),
 				true,
-				currentUserCompletedAt,
+				CompanionMeetingTimeConverter.utcToLocal(currentUserCompletedAt, zone),
 				meetingStatus,
-				meetingCompletedAt
+				CompanionMeetingTimeConverter.utcToLocal(meetingCompletedAt, zone)
 		);
 	}
 

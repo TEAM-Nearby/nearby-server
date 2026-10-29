@@ -149,7 +149,7 @@ class CompanionMatchControllerTest {
                         .value("2026-06-29T18:00:00+02:00"))
                 .andExpect(jsonPath("$.data.matches[0].meetingAt").value("2026-06-29T18:30:00"))
                 .andExpect(jsonPath("$.data.matches[0].meetingTimeType").value("SCHEDULED"))
-                .andExpect(jsonPath("$.data.matches[0].createdAt").value("2026-06-29T18:15:00"))
+                .andExpect(jsonPath("$.data.matches[0].createdAt").value("2026-06-29T20:15:00"))
                 .andExpect(jsonPath("$.data.matches[0].content")
                         .value("오늘 저녁 바르셀로나에서 같이 타파스 드실 분 구해요"))
                 .andExpect(jsonPath("$.data.matches[0].matchStatus").value("MATCHED"));

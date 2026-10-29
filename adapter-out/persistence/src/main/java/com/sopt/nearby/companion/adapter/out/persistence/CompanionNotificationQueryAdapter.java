@@ -66,7 +66,7 @@ public class CompanionNotificationQueryAdapter implements CompanionNotificationQ
             final CompanionNotificationDirection direction,
             final CompanionNotificationProjection row
     ) {
-        return CompanionNotificationSummary.of(
+        var summary = CompanionNotificationSummary.of(
                 direction,
                 row.getNotificationType() == null
                         ? null
@@ -84,5 +84,8 @@ public class CompanionNotificationQueryAdapter implements CompanionNotificationQ
                 row.getMatchId(),
                 Boolean.TRUE.equals(row.getReadStatus())
         );
+        return new CompanionNotificationSummary(summary.notificationId(), summary.applicationId(),
+                summary.applicationStatus(), summary.host(), summary.placeName(), summary.meetingAt(),
+                summary.matchId(), summary.actionType(), summary.isRead(), row.getPlaceAddress());
     }
 }

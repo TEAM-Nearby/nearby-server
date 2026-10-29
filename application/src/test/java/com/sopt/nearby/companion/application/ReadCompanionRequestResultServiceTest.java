@@ -41,6 +41,21 @@ class ReadCompanionRequestResultServiceTest {
     }
 
     @Test
+    void convertsParisMeetingAcrossDateBoundary() {
+        applicationRepository.save(application(CompanionApplicationStatus.ACCEPTED, null));
+        var original = detail(CompanionMatchStatus.SCHEDULE_CONFIRMED);
+        detailQueryPort.result = Optional.of(new AcceptedCompanionRequestDetail(
+                original.matchId(), original.matchStatus(), original.postId(), original.host(),
+                new AcceptedCompanionRequestDetail.Place("paris", "Paris", "Paris, France",
+                        BigDecimal.ZERO, BigDecimal.ZERO),
+                original.meetingTimeType(), LocalDateTime.of(2026, 7, 1, 22, 30),
+                original.participantCount(), original.maxParticipants(), original.openChatUrl()));
+
+        var result = service.read(new ReadCompanionRequestResultCommand(REQUESTER_USER_ID, APPLICATION_ID));
+        assertEquals(LocalDateTime.of(2026, 7, 2, 0, 30), result.acceptedDetail().meetingAt());
+    }
+
+    @Test
     void returnsAcceptedDetailForMatchedApplication() {
         applicationRepository.save(application(CompanionApplicationStatus.ACCEPTED, null));
         detailQueryPort.result = Optional.of(detail(CompanionMatchStatus.MATCHED));

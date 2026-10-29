@@ -16,6 +16,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
 import com.sopt.nearby.companion.domain.model.report.CompanionReport;
 import com.sopt.nearby.companion.domain.model.report.CompanionReportReason;
@@ -33,6 +34,7 @@ import com.sopt.nearby.companion.port.out.CompanionReportReasonRepository;
 import com.sopt.nearby.companion.port.out.CompanionReportRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.LinkedHashSet;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
@@ -131,7 +133,10 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 		);
 		sendMailAfterCommit(mail);
 
-		return new CreateCompanionReportResult(meetingId, matchId, savedReport.id(), savedReport.createdAt());
+		var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(mailContext.placeAddress())
+				.map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+		return new CreateCompanionReportResult(meetingId, matchId, savedReport.id(),
+				CompanionMeetingTimeConverter.utcToLocal(savedReport.createdAt(), zone));
 	}
 
 	private void sendMailAfterCommit(final CompanionReportMail mail) {

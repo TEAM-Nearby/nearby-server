@@ -83,7 +83,8 @@ public class CompanionPostQueryAdapter implements CompanionPostQueryPort {
                 row.getParticipantCount().intValue(),
                 row.getMaxParticipants().intValue(),
                 row.getCreatedAt(),
-                participants
+                participants,
+                row.getPlaceAddress()
         );
     }
 

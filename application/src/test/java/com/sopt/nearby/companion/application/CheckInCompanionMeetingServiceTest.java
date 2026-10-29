@@ -19,6 +19,9 @@ import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingCheckInQueryPort;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -50,13 +53,32 @@ class CheckInCompanionMeetingServiceTest {
         queryPort = new FakeCompanionMeetingCheckInQueryPort();
         participantRepository = new FakeCompanionMatchParticipantRepository();
         checkInRepository = new FakeMeetingCheckInRepository();
-        service = new CheckInCompanionMeetingService(queryPort, participantRepository, checkInRepository, CLOCK);
+        CompanionMatchRepository matches = new CompanionMatchRepository() {
+            public Optional<CompanionMatch> findById(Long id) { return Optional.of(new CompanionMatch(id, 1L, CompanionMatchStatus.SCHEDULE_CONFIRMED, NOW)); }
+            public CompanionMatch save(CompanionMatch value) { return value; }
+            public Optional<CompanionMatch> findFirstByPostIdAndStatus(Long id, CompanionMatchStatus status) { return Optional.empty(); }
+            public boolean confirmScheduleIfMatched(Long id) { return false; }
+        };
+        service = new CheckInCompanionMeetingService(queryPort, participantRepository, checkInRepository, matches, CLOCK);
 
         queryPort.put(context(CompanionMeetingStatus.ONGOING, NOW.minusMinutes(5)));
         participantRepository.put(MATCH_ID, List.of(
                 participant(USER_ID, MatchParticipantRole.GUEST),
                 participant(8L, MatchParticipantRole.HOST)
         ));
+    }
+
+    @Test
+    void checksUtcScheduleAndReturnsParisLocalCheckInTimes() {
+        queryPort.put(new CompanionMeetingCheckInContext(
+                MEETING_ID, MATCH_ID, CompanionMeetingStatus.ONGOING, 20L, 30L, NOW.minusMinutes(5),
+                new BigDecimal("41.39020500"), new BigDecimal("2.16354800"), "Paris, France"));
+
+        CheckInCompanionMeetingResult result = service.checkIn(command("41.39020500", "2.16354800"));
+
+        assertEquals(NOW.plusHours(2), result.checkedInAt());
+        assertEquals(NOW.minusMinutes(5).plusHours(1), result.checkInAvailableFrom());
+        assertEquals(NOW.minusMinutes(5).plusHours(3), result.checkInAvailableUntil());
     }
 
     @Test

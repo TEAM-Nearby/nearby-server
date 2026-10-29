@@ -9,6 +9,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
@@ -17,11 +18,13 @@ import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.in.CreateCompanionRequestUseCase;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.springframework.transaction.annotation.Transactional;
 
 public class CreateCompanionRequestService implements CreateCompanionRequestUseCase {
@@ -33,6 +36,7 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
     private final CompanionApplicationRepository applicationRepository;
     private final CreateCompanionNotificationUseCase createCompanionNotificationUseCase;
     private final Clock clock;
+    private final CompanionMatchSummaryQueryPort placeQueryPort;
 
     public CreateCompanionRequestService(
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
@@ -41,7 +45,8 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
             final CompanionScheduleRepository scheduleRepository,
             final CompanionApplicationRepository applicationRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
-            final Clock clock
+            final Clock clock,
+            final CompanionMatchSummaryQueryPort placeQueryPort
     ) {
         this.requireCompletedOnboardingUseCase = requireCompletedOnboardingUseCase;
         this.postRepository = postRepository;
@@ -50,6 +55,7 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
         this.applicationRepository = applicationRepository;
         this.createCompanionNotificationUseCase = createCompanionNotificationUseCase;
         this.clock = clock;
+        this.placeQueryPort = placeQueryPort;
     }
 
     @Override
@@ -88,7 +94,10 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
                 application.id(),
                 application.postId(),
                 application.status(),
-                application.createdAt()
+                CompanionMeetingTimeConverter.utcToLocal(application.createdAt(),
+                        placeQueryPort.findPlaceAddressByPlaceId(post.placeId())
+                                .flatMap(CompanionPlaceCityNameResolver::resolveSupportedCity)
+                                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC))
         );
     }
 
@@ -110,16 +119,20 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
 
     private boolean isExpired(final CompanionPost post) {
         LocalDateTime now = LocalDateTime.now(clock);
+        if (post.meetingTimeType() == com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType.NOW) {
+            return post.exposureExpiresAt() == null || !post.exposureExpiresAt().isAfter(now);
+        }
+        var confirmedTime = matchRepository.findFirstByPostIdAndStatus(
+                        post.id(), CompanionMatchStatus.SCHEDULE_CONFIRMED)
+                .flatMap(match -> scheduleRepository.findConfirmedByMatchId(match.id()))
+                .map(CompanionSchedule::scheduledAt);
+        if (confirmedTime.isPresent() && !confirmedTime.get().isAfter(now)) {
+            return true;
+        }
         return switch (post.meetingTimeType()) {
             case NOW -> post.exposureExpiresAt() == null || !post.exposureExpiresAt().isAfter(now);
             case SCHEDULED -> {
-                LocalDateTime meetingAt = matchRepository.findFirstByPostIdAndStatus(
-                                post.id(),
-                                CompanionMatchStatus.SCHEDULE_CONFIRMED
-                        )
-                        .flatMap(match -> scheduleRepository.findConfirmedByMatchId(match.id()))
-                        .map(CompanionSchedule::scheduledAt)
-                        .orElse(post.meetingAt());
+                LocalDateTime meetingAt = confirmedTime.orElse(post.meetingAt());
                 yield meetingAt == null || !meetingAt.isAfter(now);
             }
             case UNDECIDED -> false;

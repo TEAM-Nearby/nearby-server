@@ -16,8 +16,13 @@ public interface CompanionRequestReviewQueryJpaRepository extends Repository<Com
                 app.status as applicationStatus,
                 post.host_user_id as hostUserId,
                 place.name as placeName,
+                place.address as placeAddress,
                 post.meeting_time_type as meetingTimeType,
-                post.meeting_at as meetingAt,
+                coalesce((select schedule.scheduled_at
+                    from companion_match match_row
+                    join companion_schedule schedule on schedule.match_id = match_row.id and schedule.confirmed = true
+                    where match_row.post_id = post.id and match_row.status = 'SCHEDULE_CONFIRMED'
+                    order by match_row.created_at desc, match_row.id desc limit 1), post.meeting_at) as meetingAt,
                 post.exposure_expires_at as exposureExpiresAt,
                 post.open_chat_url as openChatUrl,
                 applicant_profile.id as applicantProfileId,
@@ -31,7 +36,11 @@ public interface CompanionRequestReviewQueryJpaRepository extends Repository<Com
             join companion_post post
                 on post.id = app.post_id
             join place_cache place
-                on place.id = post.place_id
+                on place.id = coalesce((select schedule.place_id
+                    from companion_match match_row
+                    join companion_schedule schedule on schedule.match_id = match_row.id and schedule.confirmed = true
+                    where match_row.post_id = post.id and match_row.status = 'SCHEDULE_CONFIRMED'
+                    order by match_row.created_at desc, match_row.id desc limit 1), post.place_id)
             join companion_profile applicant_profile
                 on applicant_profile.user_id = app.applicant_user_id
             join user_account applicant_user

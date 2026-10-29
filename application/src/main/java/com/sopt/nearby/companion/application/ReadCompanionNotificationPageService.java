@@ -52,7 +52,7 @@ public class ReadCompanionNotificationPageService implements ReadCompanionNotifi
         boolean hasNext = rows.size() > pageSize;
         List<CompanionNotificationPageRow> pageRows = hasNext ? rows.subList(0, pageSize) : rows;
         List<CompanionNotificationSummary> requests = pageRows.stream()
-                .map(CompanionNotificationPageRow::summary)
+                .map(row -> CompanionNotificationTime.localize(row.summary()))
                 .toList();
         String nextCursor = hasNext
                 ? CompanionNotificationPageCursor.of(

@@ -14,6 +14,7 @@ import com.sopt.nearby.companion.port.out.CompanionPostDetailQueryPort;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.springframework.transaction.annotation.Transactional;
 
 public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUseCase {
@@ -66,14 +67,19 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
                 detail.place().googlePlaceId(),
                 cityTime.city(),
                 cityTime.currentLocalTime(),
-                detail.meetingAt(),
+                CompanionMeetingTimeConverter.toPlaceLocalTime(
+                        detail.meetingAt(),
+                        cityTime.city()
+                ),
                 detail.maxParticipants(),
                 detail.content(),
                 openChatUrl,
                 detail.status(),
-                detail.createdAt(),
+                CompanionMeetingTimeConverter.utcToLocal(detail.createdAt(),
+                        cityTime.city() == null ? ZoneOffset.UTC : cityTime.city().zoneId()),
                 detail.meetingTimeType(),
-                detail.expiresAt(),
+                CompanionMeetingTimeConverter.utcToLocal(detail.expiresAt(),
+                        cityTime.city() == null ? ZoneOffset.UTC : cityTime.city().zoneId()),
                 detail.participantCount(),
                 detail.participants().stream()
                         .map(participant -> new CompanionPostDetailResult.Participant(
@@ -99,7 +105,8 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
                         detail.hostProfileSummary().profileImageUrl(),
                         detail.hostProfileSummary().mannerScore(),
                         detail.hostProfileSummary().mannerKeywords(),
-                        detail.hostProfileSummary().phoneVerifiedAt(),
+                        CompanionMeetingTimeConverter.utcToLocal(detail.hostProfileSummary().phoneVerifiedAt(),
+                                cityTime.city() == null ? ZoneOffset.UTC : cityTime.city().zoneId()),
                         detail.hostProfileSummary().keywords()
                 )
         );
@@ -109,7 +116,7 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
         return switch (detail.meetingTimeType()) {
             case NOW -> isPastOrNow(detail.expiresAt());
             case SCHEDULED -> isPastOrNow(detail.meetingAt());
-            case UNDECIDED -> false;
+            case UNDECIDED -> isPastOrNow(detail.meetingAt());
         };
     }
 

@@ -20,7 +20,9 @@ public class ReadCompanionNotificationsService implements ReadCompanionNotificat
             final Long userId,
             final CompanionNotificationDirection direction
     ) {
-        return queryPort.findAllByUserIdAndDirection(userId, direction);
+        return queryPort.findAllByUserIdAndDirection(userId, direction).stream()
+                .map(CompanionNotificationTime::localize)
+                .toList();
     }
 }
 

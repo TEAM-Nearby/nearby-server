@@ -122,7 +122,10 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
                 cityTime.city(),
                 cityTime.currentLocalTime(),
                 post.meetingTimeType(),
-                meetingAt
+                CompanionMeetingTimeConverter.toPlaceLocalTime(
+                        meetingAt,
+                        cityTime.city()
+                )
         );
 
         return new CompanionMatchPreview(match.id(), host, members, previewPost);

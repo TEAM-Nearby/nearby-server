@@ -20,6 +20,7 @@ public interface CompanionPostQueryJpaRepository extends Repository<CompanionPos
                     place.id as placeId,
                     place.google_place_id as googlePlaceId,
                     place.name as placeName,
+                    place.address as placeAddress,
                     upper(coalesce(place.category, 'OTHER')) as placeCategory,
                     place.latitude as latitude,
                     place.longitude as longitude,
@@ -39,14 +40,14 @@ public interface CompanionPostQueryJpaRepository extends Repository<CompanionPos
                 from companion_post post
                 join companion_profile host_profile
                     on host_profile.user_id = post.host_user_id
-                join place_cache place
-                    on place.id = post.place_id
                 left join companion_match active_match
                     on active_match.post_id = post.id
                     and active_match.status = 'SCHEDULE_CONFIRMED'
                 left join companion_schedule schedule
                     on schedule.match_id = active_match.id
                     and schedule.confirmed = true
+                join place_cache place
+                    on place.id = coalesce(schedule.place_id, post.place_id)
                 left join (
                     select app.post_id, count(*) as accepted_count
                     from companion_application app
@@ -59,7 +60,8 @@ public interface CompanionPostQueryJpaRepository extends Repository<CompanionPos
                         (post.meeting_time_type = 'NOW' and post.exposure_expires_at > current_timestamp)
                         or (post.meeting_time_type = 'SCHEDULED'
                             and coalesce(schedule.scheduled_at, post.meeting_at) > current_timestamp)
-                        or post.meeting_time_type = 'UNDECIDED'
+                        or (post.meeting_time_type = 'UNDECIDED'
+                            and (schedule.scheduled_at is null or schedule.scheduled_at > current_timestamp))
                     )
             )
             select
@@ -70,6 +72,7 @@ public interface CompanionPostQueryJpaRepository extends Repository<CompanionPos
                 placeId,
                 googlePlaceId,
                 placeName,
+                placeAddress,
                 placeCategory,
                 latitude,
                 longitude,

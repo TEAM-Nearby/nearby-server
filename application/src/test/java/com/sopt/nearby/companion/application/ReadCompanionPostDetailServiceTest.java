@@ -63,7 +63,7 @@ class ReadCompanionPostDetailServiceTest {
         assertEquals("google-place-id", result.googlePlaceId());
         assertEquals(CompanionCity.MADRID, result.city());
         assertEquals("2026-07-02T07:00+02:00", result.currentLocalTime().toOffsetDateTime().toString());
-        assertEquals(NOW.plusHours(2), result.meetingAt());
+        assertEquals(NOW.plusHours(4), result.meetingAt());
         assertNull(result.expiresAt());
         assertNull(result.openChatUrl());
         assertEquals(CompanionPostApplyStatus.NOT_APPLIED, result.applyStatus());
@@ -88,9 +88,32 @@ class ReadCompanionPostDetailServiceTest {
         CompanionPostDetailResult result = service.read(new ReadCompanionPostDetailCommand(7L, 101L));
 
         assertNull(result.meetingAt());
-        assertEquals(NOW.plusMinutes(30), result.expiresAt());
+        assertEquals(NOW.plusMinutes(30).plusHours(2), result.expiresAt());
         assertEquals("https://open.kakao.com/o/nearby123", result.openChatUrl());
         assertEquals(CompanionPostApplyStatus.ACCEPTED, result.applyStatus());
+    }
+
+    @Test
+    void returnsMatchedNowPostMeetingAtInPlaceLocalTime() {
+        queryPort.result = Optional.of(detail(
+                CompanionPostMeetingTimeType.NOW,
+                NOW,
+                NOW.plusMinutes(30),
+                CompanionApplicationStatus.ACCEPTED
+        ));
+
+        CompanionPostDetailResult result = service.read(new ReadCompanionPostDetailCommand(7L, 101L));
+
+        assertEquals(NOW.plusHours(2), result.meetingAt());
+    }
+
+    @Test
+    void rejectsUndecidedPostWhenConfirmedScheduleHasPassed() {
+        queryPort.result = Optional.of(detail(
+                CompanionPostMeetingTimeType.UNDECIDED, NOW.minusMinutes(1), null, null));
+
+        assertThrows(CompanionPostExpiredException.class,
+                () -> service.read(new ReadCompanionPostDetailCommand(7L, 101L)));
     }
 
     @Test

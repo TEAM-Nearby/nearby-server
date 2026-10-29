@@ -49,7 +49,7 @@ class ReadMyCompanionPostsServiceTest {
 		assertEquals("마드리드", post.cityNameKor());
 		assertEquals(CompanionCity.MADRID, post.city());
 		assertEquals("2026-07-01T14:00+02:00", post.currentLocalTime().toOffsetDateTime().toString());
-		assertEquals(LocalDateTime.of(2026, 6, 29, 19, 0), post.scheduledAt());
+		assertEquals(LocalDateTime.of(2026, 6, 29, 21, 0), post.scheduledAt());
 		assertEquals("google-place-id", post.place().googlePlaceId());
 		assertEquals("시우다드 콘달", post.place().name());
 		assertEquals(new BigDecimal("41.39020500"), post.place().latitude());
@@ -101,7 +101,8 @@ class ReadMyCompanionPostsServiceTest {
 
 		assertNull(result.posts().get(0).cityNameKor());
 		assertNull(result.posts().get(0).city());
-		assertNull(result.posts().get(0).currentLocalTime());
+		assertEquals(CLOCK.instant(), result.posts().get(0).currentLocalTime().toInstant());
+		assertEquals(java.time.ZoneOffset.UTC, result.posts().get(0).currentLocalTime().getOffset());
 	}
 
 	private MyCompanionPostSummary post(

@@ -58,7 +58,12 @@ class CompanionPlaceCityNameResolverTest {
 			"Barcelona 12, Rome, IT",
 			"Barcelona 12, Rome, ITA",
 			"Barcelona 12, Oxford, UK",
-			"Barcelona 12, New York, United States"
+			"Barcelona 12, New York, United States",
+			"1 Main St, Paris TX 75460, United States",
+			"1 Main St, London ON, Canada",
+			"Calle de Madrid, Santa Cruz de Tenerife, Spain",
+			"London Road, Oxford, UK",
+			"Rue de Paris, Lyon, France"
 	})
 	void doesNotResolveStreetNameWhenCityIsUnsupported(String address) {
 		ResolvedCityTime result = CompanionPlaceCityNameResolver.resolveCurrentTime(
@@ -67,7 +72,7 @@ class CompanionPlaceCityNameResolverTest {
 		);
 
 		assertNull(result.city());
-		assertNull(result.currentLocalTime());
+		assertEquals("2026-07-01T12:00Z", result.currentLocalTime().toOffsetDateTime().toString());
 	}
 
 	@ParameterizedTest
@@ -80,6 +85,7 @@ class CompanionPlaceCityNameResolverTest {
 			"'Madrid, Rambla de Catalunya, 16', MADRID",
 			"'London, United Kingdom', LONDON",
 			"'10 Downing Street, London SW1A 2AA, UK', LONDON",
+			"'Paris, \u00cele-de-France, France', PARIS",
 			"'Paris, France', PARIS"
 	})
 	void preservesSupportedCityComponents(String address, CompanionCity expectedCity) {
@@ -94,6 +100,6 @@ class CompanionPlaceCityNameResolverTest {
 		);
 
 		assertNull(result.city());
-		assertNull(result.currentLocalTime());
+		assertEquals("2026-07-01T12:00Z", result.currentLocalTime().toOffsetDateTime().toString());
 	}
 }

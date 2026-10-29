@@ -16,6 +16,8 @@ public interface CompanionRequestReviewProjection {
 
     String getPlaceName();
 
+    String getPlaceAddress();
+
     String getMeetingTimeType();
 
     LocalDateTime getMeetingAt();

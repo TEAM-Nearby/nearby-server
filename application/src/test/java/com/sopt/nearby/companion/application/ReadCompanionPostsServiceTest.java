@@ -49,6 +49,23 @@ class ReadCompanionPostsServiceTest {
     }
 
     @Test
+    void displaysUtcMeetingAndCreatedTimeInPlaceTime() {
+        queryPort.result = List.of(new CompanionPostSummary(101L, CompanionPostStatus.RECRUITING,
+                "호스트", UserGender.FEMALE, 20L, "place", "파리 식당",
+                CompanionPostPlaceCategory.RESTAURANT, new BigDecimal("48.85"), new BigDecimal("2.35"),
+                10, null, "동행", CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 3, 14, 0), 1, 4,
+                LocalDateTime.of(2026, 7, 2, 3, 30), List.of(), "Paris, France"));
+
+        var post = service.read(validCommand()).posts().getFirst();
+
+        assertEquals(LocalDateTime.of(2026, 7, 3, 16, 0), post.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 7, 2, 5, 30), post.createdAt());
+        assertEquals("7월 3일 16:00", post.meetingAtText());
+        assertEquals("30분 전", post.createdAgoText());
+    }
+
+    @Test
     void returnsCompanionPostsWithDisplayText() {
         queryPort.result = List.of(new CompanionPostSummary(
                 101L,

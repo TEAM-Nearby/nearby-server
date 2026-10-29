@@ -56,7 +56,7 @@ class ReadCompanionMeetingDetailServiceTest {
         assertEquals("시우다드 콘달", result.placeName());
         assertEquals(CompanionCity.MADRID, result.city());
         assertEquals("2026-07-01T14:00+02:00", result.currentLocalTime().toOffsetDateTime().toString());
-        assertEquals(LocalDateTime.of(2026, 6, 29, 18, 30), result.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 6, 29, 20, 30), result.meetingAt());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.meetingTimeType());
         assertEquals(CompanionMeetingStatus.ONGOING, result.meetingStatus());
         assertEquals(false, result.currentUserCheckedIn());

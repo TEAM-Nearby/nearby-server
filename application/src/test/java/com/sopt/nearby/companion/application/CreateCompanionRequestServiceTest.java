@@ -23,6 +23,8 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
@@ -30,6 +32,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +65,12 @@ class CreateCompanionRequestServiceTest {
                 scheduleRepository,
                 applicationRepository,
                 notificationUseCase,
-                CLOCK
+                CLOCK,
+                new CompanionMatchSummaryQueryPort() {
+                    public List<CompanionMatchSummary> findAllByParticipantUserId(Long userId) { return List.of(); }
+                    public Optional<String> findPlaceNameByPlaceId(Long placeId) { return Optional.empty(); }
+                    public Optional<String> findPlaceAddressByPlaceId(Long placeId) { return Optional.empty(); }
+                }
         );
     }
 
@@ -175,6 +183,20 @@ class CreateCompanionRequestServiceTest {
     }
 
     @Test
+    void doesNotLookUpConfirmedScheduleForNowPost() {
+        postRepository.post = Optional.of(post(
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                NOW.plusHours(1)
+        ));
+
+        service.create(new CreateCompanionRequestCommand(7L, 10L));
+
+        assertEquals(0, matchRepository.findFirstByPostIdAndStatusCalls);
+    }
+
+    @Test
     void rejectsPastScheduledPost() {
         postRepository.post = Optional.of(post(
                 CompanionPostStatus.RECRUITING,
@@ -187,6 +209,19 @@ class CreateCompanionRequestServiceTest {
                 CompanionPostNotRecruitingException.class,
                 () -> service.create(new CreateCompanionRequestCommand(7L, 10L))
         );
+    }
+
+    @Test
+    void rejectsExpiredConfirmedScheduleForUndecidedPost() {
+        postRepository.post = Optional.of(post(CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.UNDECIDED, null, null));
+        matchRepository.match = Optional.of(new CompanionMatch(20L, 10L,
+                CompanionMatchStatus.SCHEDULE_CONFIRMED, NOW.minusDays(1)));
+        scheduleRepository.schedule = Optional.of(new CompanionSchedule(30L, 20L, 20L,
+                NOW.minusMinutes(1), null, true));
+
+        assertThrows(CompanionPostNotRecruitingException.class,
+                () -> service.create(new CreateCompanionRequestCommand(7L, 10L)));
     }
 
     @Test
@@ -317,6 +352,7 @@ class CreateCompanionRequestServiceTest {
     private static final class FakeCompanionMatchRepository implements CompanionMatchRepository {
 
         private Optional<CompanionMatch> match = Optional.empty();
+        private int findFirstByPostIdAndStatusCalls;
 
         @Override
         public CompanionMatch save(final CompanionMatch model) {
@@ -333,6 +369,7 @@ class CreateCompanionRequestServiceTest {
                 final Long postId,
                 final CompanionMatchStatus status
         ) {
+            findFirstByPostIdAndStatusCalls++;
             return match.filter(found -> found.postId().equals(postId) && found.status() == status);
         }
 

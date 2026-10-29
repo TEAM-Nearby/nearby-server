@@ -13,13 +13,17 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingCheckInContext;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.port.in.CheckInCompanionMeetingUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingCheckInQueryPort;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 public class CheckInCompanionMeetingService implements CheckInCompanionMeetingUseCase {
@@ -35,23 +39,31 @@ public class CheckInCompanionMeetingService implements CheckInCompanionMeetingUs
     private final CompanionMatchParticipantRepository participantRepository;
     private final MeetingCheckInRepository checkInRepository;
     private final Clock clock;
+    private final CompanionMatchRepository matchRepository;
 
     public CheckInCompanionMeetingService(
             final CompanionMeetingCheckInQueryPort queryPort,
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
+            final CompanionMatchRepository matchRepository,
             final Clock clock
     ) {
         this.queryPort = queryPort;
         this.participantRepository = participantRepository;
         this.checkInRepository = checkInRepository;
+        this.matchRepository = matchRepository;
         this.clock = clock;
     }
 
     @Override
+    @Transactional
     public CheckInCompanionMeetingResult checkIn(final CheckInCompanionMeetingCommand command) {
         validateCommand(command);
 
+        CompanionMeetingCheckInContext initialContext = queryPort.findByMeetingId(command.meetingId())
+                .orElseThrow(CompanionMeetingNotFoundException::new);
+        matchRepository.findByIdForUpdate(initialContext.matchId())
+                .orElseThrow(CompanionMeetingNotFoundException::new);
         CompanionMeetingCheckInContext context = queryPort.findByMeetingId(command.meetingId())
                 .orElseThrow(CompanionMeetingNotFoundException::new);
         List<CompanionMatchParticipant> participants = participantRepository.findAllByMatchId(context.matchId());
@@ -166,6 +178,8 @@ public class CheckInCompanionMeetingService implements CheckInCompanionMeetingUs
     ) {
         long checkedInCount = checkInRepository.countByMeetingId(context.meetingId());
         boolean allParticipantsCheckedIn = checkedInCount >= totalParticipantCount;
+        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(context.placeAddress())
+                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
 
         return new CheckInCompanionMeetingResult(
                 context.meetingId(),
@@ -175,11 +189,11 @@ public class CheckInCompanionMeetingService implements CheckInCompanionMeetingUs
                 totalParticipantCount,
                 allParticipantsCheckedIn,
                 allParticipantsCheckedIn,
-                checkIn.checkedInAt(),
+                CompanionMeetingTimeConverter.utcToLocal(checkIn.checkedInAt(), zone),
                 roundToOneDecimal(distanceMeters),
                 ALLOWED_RADIUS_METERS,
-                availableFrom,
-                availableUntil,
+                CompanionMeetingTimeConverter.utcToLocal(availableFrom, zone),
+                CompanionMeetingTimeConverter.utcToLocal(availableUntil, zone),
                 alreadyCompleted
         );
     }

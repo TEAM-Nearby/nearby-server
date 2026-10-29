@@ -13,8 +13,17 @@ public record CompanionNotificationSummary(
         LocalDateTime meetingAt,
         Long matchId,
         CompanionNotificationActionType actionType,
-        boolean isRead
+        boolean isRead,
+        String placeAddress
 ) {
+
+    public CompanionNotificationSummary(Long notificationId, Long applicationId,
+            CompanionApplicationStatus applicationStatus, CompanionNotificationHostProfile host,
+            String placeName, LocalDateTime meetingAt, Long matchId,
+            CompanionNotificationActionType actionType, boolean isRead) {
+        this(notificationId, applicationId, applicationStatus, host, placeName, meetingAt, matchId,
+                actionType, isRead, null);
+    }
 
     public static CompanionNotificationSummary of(
             final CompanionNotificationDirection direction,
