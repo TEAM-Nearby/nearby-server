@@ -56,7 +56,7 @@ class ReadCompanionMeetingDetailServiceTest {
         assertEquals("시우다드 콘달", result.placeName());
         assertEquals(CompanionCity.MADRID, result.city());
         assertEquals("2026-07-01T14:00+02:00", result.currentLocalTime().toOffsetDateTime().toString());
-        assertEquals(LocalDateTime.of(2026, 6, 29, 18, 30), result.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 6, 29, 20, 30), result.meetingAt());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.meetingTimeType());
         assertEquals(CompanionMeetingStatus.ONGOING, result.meetingStatus());
         assertEquals(false, result.currentUserCheckedIn());
@@ -72,6 +72,52 @@ class ReadCompanionMeetingDetailServiceTest {
         assertEquals(MatchParticipantRole.HOST, result.currentUserRole());
         assertEquals(1L, result.hostId());
         assertEquals(UserGender.FEMALE, result.hostGender());
+    }
+
+    @Test
+    void returnsNowMeetingAtInPlaceLocalTime() {
+        queryPort.put(new CompanionMeetingDetail(
+                MEETING_ID,
+                MatchParticipantRole.HOST,
+                1L,
+                UserGender.FEMALE,
+                "https://image.url/profile.png",
+                "윤짱이",
+                false,
+                "McDonald's",
+                "116 Rue de Rivoli, 75001 Paris, France",
+                LocalDateTime.of(2026, 10, 16, 15, 41),
+                CompanionPostMeetingTimeType.NOW,
+                CompanionMeetingStatus.ONGOING,
+                false
+        ));
+
+        ReadCompanionMeetingDetailResult result = service.getDetail(MEETING_ID, USER_ID);
+
+        assertEquals(LocalDateTime.of(2026, 10, 16, 17, 41), result.meetingAt());
+    }
+
+    @Test
+    void returnsNowMeetingAtInPlaceLocalTimeDuringWinter() {
+        queryPort.put(new CompanionMeetingDetail(
+                MEETING_ID,
+                MatchParticipantRole.HOST,
+                1L,
+                UserGender.FEMALE,
+                "https://image.url/profile.png",
+                "윤짱이",
+                false,
+                "McDonald's",
+                "116 Rue de Rivoli, 75001 Paris, France",
+                LocalDateTime.of(2026, 12, 16, 15, 41),
+                CompanionPostMeetingTimeType.NOW,
+                CompanionMeetingStatus.ONGOING,
+                false
+        ));
+
+        ReadCompanionMeetingDetailResult result = service.getDetail(MEETING_ID, USER_ID);
+
+        assertEquals(LocalDateTime.of(2026, 12, 16, 16, 41), result.meetingAt());
     }
 
     @Test

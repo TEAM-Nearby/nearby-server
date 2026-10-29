@@ -4,9 +4,11 @@ package com.sopt.nearby.companion.application;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestNotFoundException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestHostOnlyException;
 import com.sopt.nearby.companion.domain.model.match.CompanionRequestReview;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
 import com.sopt.nearby.companion.port.out.CompanionRequestReviewQueryPort;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import org.springframework.transaction.annotation.Transactional;
 
 public class ReadCompanionRequestReviewService implements ReadCompanionRequestReviewUseCase {
@@ -28,7 +30,10 @@ public class ReadCompanionRequestReviewService implements ReadCompanionRequestRe
             throw new ForbiddenCompanionRequestHostOnlyException();
         }
 
-        return CompanionRequestReviewResult.from(review, effectiveMeetingAt(review));
+        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(review.placeAddress())
+                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        return CompanionRequestReviewResult.from(review,
+                CompanionMeetingTimeConverter.utcToLocal(effectiveMeetingAt(review), zone), zone);
     }
 
     private void validate(final ReadCompanionRequestReviewCommand command) {

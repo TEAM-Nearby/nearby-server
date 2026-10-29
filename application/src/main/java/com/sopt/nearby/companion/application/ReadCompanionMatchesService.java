@@ -25,8 +25,16 @@ public class ReadCompanionMatchesService implements ReadCompanionMatchesUseCase 
         return queryPort.findAllByParticipantUserId(userId)
                 .stream()
                 .map(match -> CompanionPlaceCityNameResolver.resolveSupportedCity(match.placeAddress())
-                        .map(city -> new ReadCompanionMatchResult(match, city, now.atZone(city.zoneId())))
-                        .orElseGet(() -> new ReadCompanionMatchResult(match, null, null)))
+                        .map(city -> new ReadCompanionMatchResult(
+                                match,
+                                city,
+                                now.atZone(city.zoneId()),
+                                CompanionMeetingTimeConverter.toPlaceLocalTime(
+                                        match.meetingAt(),
+                                        city
+                                )
+                        ))
+                        .orElseGet(() -> new ReadCompanionMatchResult(match, null, now.atZone(java.time.ZoneOffset.UTC))))
                 .toList();
     }
 }

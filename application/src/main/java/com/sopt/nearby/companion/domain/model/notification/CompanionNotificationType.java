@@ -4,5 +4,6 @@ package com.sopt.nearby.companion.domain.model.notification;
 public enum CompanionNotificationType {
     COMPANION_APPLICATION_CREATED,
     COMPANION_APPLICATION_ACCEPTED,
-    COMPANION_APPLICATION_REJECTED
+    COMPANION_APPLICATION_REJECTED,
+    COMPANION_SCHEDULE_UPDATED
 }

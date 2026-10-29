@@ -22,4 +22,8 @@ public interface CompanionNotificationRepository extends DomainRepository<Compan
     );
 
     boolean markAsReadIfUnread(Long notificationId, Long recipientUserId, LocalDateTime readAt);
+
+    default Optional<String> findPlaceAddressByNotificationId(Long notificationId) {
+        return Optional.empty();
+    }
 }

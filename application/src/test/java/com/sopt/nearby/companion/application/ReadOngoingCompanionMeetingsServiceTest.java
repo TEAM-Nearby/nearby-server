@@ -34,6 +34,7 @@ class ReadOngoingCompanionMeetingsServiceTest {
         assertEquals(UserGender.FEMALE, result.getFirst().companion().gender());
         assertEquals(CompanionCity.MADRID, result.getFirst().city());
         assertEquals("2026-07-01T14:00+02:00", result.getFirst().currentLocalTime().toOffsetDateTime().toString());
+        assertEquals(LocalDateTime.of(2026, 7, 1, 16, 0), result.getFirst().meetingAt());
     }
 
     @Test
@@ -48,9 +49,9 @@ class ReadOngoingCompanionMeetingsServiceTest {
     }
 
     @Test
-    void keepsUnverifiedScheduledMeetingAtLocalCheckInDeadline() {
+    void keepsUnverifiedScheduledMeetingAtCheckInDeadline() {
         FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
-        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 13, 0), false));
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 11, 0), false));
         ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
 
         List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
@@ -107,9 +108,9 @@ class ReadOngoingCompanionMeetingsServiceTest {
     }
 
     @Test
-    void excludesScheduledMeetingUsingPlaceLocalTime() {
+    void excludesScheduledMeetingUsingUtcTime() {
         FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
-        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 12, 0), false));
+        queryPort.result = List.of(summary(LocalDateTime.of(2026, 7, 1, 10, 59), false));
         ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
 
         List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
@@ -131,6 +132,54 @@ class ReadOngoingCompanionMeetingsServiceTest {
         List<OngoingCompanionMeetingSummary> result = service.getOngoingMeetings(7L);
 
         assertEquals(1, result.size());
+    }
+
+    @Test
+    void returnsNowMeetingAtInPlaceLocalTime() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(new OngoingCompanionMeetingSummary(
+                1L,
+                10L,
+                new OngoingCompanionMeetingHostProfile(7L, "https://image.url/profile.png", "윤짱이", UserGender.FEMALE),
+                "McDonald's",
+                "116 Rue de Rivoli, 75001 Paris, France",
+                null,
+                null,
+                LocalDateTime.of(2026, 7, 1, 11, 41),
+                CompanionPostMeetingTimeType.NOW,
+                true,
+                CompanionMeetingStatus.ONGOING,
+                CompanionMeetingProgressStatus.ONGOING
+        ));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        OngoingCompanionMeetingSummary result = service.getOngoingMeetings(7L).getFirst();
+
+        assertEquals(LocalDateTime.of(2026, 7, 1, 13, 41), result.meetingAt());
+    }
+
+    @Test
+    void returnsNowMeetingAtInPlaceLocalTimeDuringWinter() {
+        FakeOngoingCompanionMeetingQueryPort queryPort = new FakeOngoingCompanionMeetingQueryPort();
+        queryPort.result = List.of(new OngoingCompanionMeetingSummary(
+                1L,
+                10L,
+                new OngoingCompanionMeetingHostProfile(7L, "https://image.url/profile.png", "윤짱이", UserGender.FEMALE),
+                "McDonald's",
+                "116 Rue de Rivoli, 75001 Paris, France",
+                null,
+                null,
+                LocalDateTime.of(2026, 12, 16, 15, 41),
+                CompanionPostMeetingTimeType.NOW,
+                true,
+                CompanionMeetingStatus.ONGOING,
+                CompanionMeetingProgressStatus.ONGOING
+        ));
+        ReadOngoingCompanionMeetingsService service = new ReadOngoingCompanionMeetingsService(queryPort, CLOCK);
+
+        OngoingCompanionMeetingSummary result = service.getOngoingMeetings(7L).getFirst();
+
+        assertEquals(LocalDateTime.of(2026, 12, 16, 16, 41), result.meetingAt());
     }
 
     private OngoingCompanionMeetingSummary summary(

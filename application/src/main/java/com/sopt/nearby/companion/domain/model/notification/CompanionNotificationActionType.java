@@ -7,12 +7,17 @@ public enum CompanionNotificationActionType {
     CONFIRM_SCHEDULE,
     VIEW_RESULT,
     ACCEPT_REQUEST,
+    SCHEDULE_UPDATED,
     NONE;
 
     public static CompanionNotificationActionType from(
             final CompanionNotificationDirection direction,
-            final CompanionApplicationStatus status
+            final CompanionApplicationStatus status,
+            final CompanionNotificationType notificationType
     ) {
+        if (notificationType == CompanionNotificationType.COMPANION_SCHEDULE_UPDATED) {
+            return SCHEDULE_UPDATED;
+        }
         if (direction == null || status == null) {
             return NONE;
         }
@@ -29,4 +34,5 @@ public enum CompanionNotificationActionType {
             };
         };
     }
+
 }

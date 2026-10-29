@@ -33,7 +33,8 @@ public class CompanionMeetingCheckInQueryAdapter implements CompanionMeetingChec
                 row.getPlaceId(),
                 row.getScheduledAt(),
                 row.getPlaceLatitude(),
-                row.getPlaceLongitude()
+                row.getPlaceLongitude(),
+                row.getPlaceAddress()
         );
     }
 }

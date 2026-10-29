@@ -37,6 +37,9 @@ public class CompanionNotificationRepositoryAdapter
                     jpaRepository.saveAndFlush(CompanionPersistenceMapper.toEntity(model))
             );
         } catch (DataIntegrityViolationException exception) {
+            if (model.notificationType() == CompanionNotificationType.COMPANION_SCHEDULE_UPDATED) {
+                throw exception;
+            }
             return findByUniqueKey(
                     model.notificationType(),
                     model.targetType(),
@@ -70,6 +73,11 @@ public class CompanionNotificationRepositoryAdapter
                 targetId,
                 recipientUserId
         ).map(CompanionPersistenceMapper::toDomain);
+    }
+
+    @Override
+    public Optional<String> findPlaceAddressByNotificationId(final Long notificationId) {
+        return jpaRepository.findPlaceAddressByNotificationId(notificationId);
     }
 
     @Override

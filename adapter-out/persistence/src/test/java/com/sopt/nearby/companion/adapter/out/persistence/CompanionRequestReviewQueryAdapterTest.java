@@ -4,13 +4,18 @@ package com.sopt.nearby.companion.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionApplicationEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionMatchEntity;
+import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionScheduleEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionPostEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionProfileEntity;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionApplicationJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionMatchJpaRepository;
+import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionScheduleJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionPostJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionProfileJpaRepository;
 import com.sopt.nearby.companion.adapter.out.persistence.repository.CompanionRequestReviewQueryJpaRepository;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionRequestReview;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
@@ -56,6 +61,34 @@ class CompanionRequestReviewQueryAdapterTest {
 
     @Autowired
     private UserAccountJpaRepository userAccountJpaRepository;
+
+    @Autowired
+    private CompanionMatchJpaRepository matchJpaRepository;
+
+    @Autowired
+    private CompanionScheduleJpaRepository scheduleJpaRepository;
+
+    @Test
+    void returnsConfirmedScheduleTimeForRequestReview() {
+        UserAccountEntity host = userAccountJpaRepository.saveAndFlush(user(null));
+        UserAccountEntity applicant = userAccountJpaRepository.saveAndFlush(user(null));
+        profileJpaRepository.saveAndFlush(profile(applicant.getId(), "신청자", UserGender.FEMALE, null));
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place());
+        CompanionPostEntity post = postJpaRepository.saveAndFlush(post(host.getId(), place.getId(),
+                CompanionPostMeetingTimeType.SCHEDULED, NOW.plusDays(1), null));
+        CompanionApplicationEntity application = applicationJpaRepository.saveAndFlush(
+                application(post.getId(), applicant.getId(), CompanionApplicationStatus.PENDING));
+        CompanionMatchEntity match = matchJpaRepository.saveAndFlush(new CompanionMatchEntity(
+                null, post.getId(), CompanionMatchStatus.SCHEDULE_CONFIRMED, NOW));
+        LocalDateTime updated = NOW.plusDays(2);
+        scheduleJpaRepository.saveAndFlush(new CompanionScheduleEntity(null, match.getId(),
+                place.getId(), updated, null, true));
+
+        var result = new CompanionRequestReviewQueryAdapter(queryJpaRepository)
+                .findByApplicationId(application.getId()).orElseThrow();
+
+        assertThat(result.meetingAt()).isEqualTo(updated);
+    }
 
     @Test
     void findsCompanionRequestReviewWithApplicantProfileAndAccount() {

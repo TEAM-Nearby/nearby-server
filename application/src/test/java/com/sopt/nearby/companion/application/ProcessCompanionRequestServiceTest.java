@@ -31,6 +31,8 @@ import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
@@ -77,7 +79,12 @@ class ProcessCompanionRequestServiceTest {
                 scheduleRepository,
                 meetingRepository,
                 notificationUseCase,
-                CLOCK
+                CLOCK,
+                new CompanionMatchSummaryQueryPort() {
+                    public List<CompanionMatchSummary> findAllByParticipantUserId(Long userId) { return List.of(); }
+                    public Optional<String> findPlaceNameByPlaceId(Long placeId) { return Optional.empty(); }
+                    public Optional<String> findPlaceAddressByPlaceId(Long placeId) { return Optional.empty(); }
+                }
         );
     }
 
@@ -150,6 +157,20 @@ class ProcessCompanionRequestServiceTest {
         assertEquals(result.matchId(), meeting.matchId());
         assertEquals(CompanionMeetingStatus.ONGOING, meeting.status());
         assertEquals(applicationCreatedAt, meeting.startedAt());
+    }
+
+    @Test
+    void rejectsExpiredScheduledRequestBeforeAcceptingApplication() {
+        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        var original = post(10L, 100L);
+        postRepository.save(new CompanionPost(original.id(), original.hostUserId(), original.placeId(),
+                original.meetingTimeType(), NOW.minusMinutes(1), original.exposureExpiresAt(),
+                original.maxParticipants(), original.departEvenIfNotFull(), original.content(),
+                original.openChatUrl(), original.status(), original.createdAt()));
+
+        assertThrows(CompanionPostNotRecruitingException.class,
+                () -> service.accept(new AcceptCompanionRequestCommand(100L, 3L)));
+        assertEquals(CompanionApplicationStatus.PENDING, applicationRepository.findById(3L).orElseThrow().status());
     }
 
     @Test

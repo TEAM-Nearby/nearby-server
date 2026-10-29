@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.port.in.ReadMyCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.out.MyCompanionPostQueryPort;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +43,8 @@ public class ReadMyCompanionPostsService implements ReadMyCompanionPostsUseCase 
 				cityTime.city() == null ? null : cityTime.city().koreanName(),
 				cityTime.city(),
 				cityTime.currentLocalTime(),
-				summary.scheduledAt(),
+				CompanionMeetingTimeConverter.utcToLocal(summary.scheduledAt(),
+						cityTime.city() == null ? ZoneOffset.UTC : cityTime.city().zoneId()),
 				new ReadMyCompanionPostsResult.Place(
 						summary.place().googlePlaceId(),
 						summary.place().name(),

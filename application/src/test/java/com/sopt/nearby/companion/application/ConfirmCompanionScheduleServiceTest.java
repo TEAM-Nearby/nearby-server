@@ -8,18 +8,33 @@ import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledE
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
+import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.port.out.CompanionMatchRepository;
+import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
+import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
+import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
+import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
+import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
+import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
 import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -34,7 +49,11 @@ class ConfirmCompanionScheduleServiceTest {
     private FakeCompanionMatchRepository matchRepository;
     private FakeCompanionScheduleRepository scheduleRepository;
     private FakeCompanionMeetingRepository meetingRepository;
+    private FakeCompanionMatchParticipantRepository participantRepository;
+    private CapturingNotificationUseCase notificationUseCase;
     private ConfirmCompanionScheduleService service;
+    private String placeAddress;
+    private long checkedInCount;
 
     @BeforeEach
     void setUp() {
@@ -42,11 +61,29 @@ class ConfirmCompanionScheduleServiceTest {
         FakeCompanionPostRepository postRepository = new FakeCompanionPostRepository();
         scheduleRepository = new FakeCompanionScheduleRepository();
         meetingRepository = new FakeCompanionMeetingRepository();
+        participantRepository = new FakeCompanionMatchParticipantRepository();
+        notificationUseCase = new CapturingNotificationUseCase();
         service = new ConfirmCompanionScheduleService(
                 matchRepository,
                 postRepository,
                 scheduleRepository,
-                meetingRepository
+                meetingRepository,
+                participantRepository,
+                notificationUseCase,
+                new CompanionMatchSummaryQueryPort() {
+                    public List<CompanionMatchSummary> findAllByParticipantUserId(Long userId) { return List.of(); }
+                    public Optional<String> findPlaceNameByPlaceId(Long placeId) { return Optional.empty(); }
+                    public Optional<String> findPlaceAddressByPlaceId(Long placeId) { return Optional.ofNullable(placeAddress); }
+                },
+                new MeetingCheckInRepository() {
+                    public Optional<MeetingCheckIn> findById(Long id) { return Optional.empty(); }
+                    public MeetingCheckIn save(MeetingCheckIn value) { return value; }
+                    public Optional<MeetingCheckIn> findByMeetingIdAndUserId(Long meetingId, Long userId) { return Optional.empty(); }
+                    public long countByMeetingId(Long meetingId) { return checkedInCount; }
+                    public long countCompletedByMeetingId(Long meetingId) { return 0; }
+                    public MeetingCheckIn saveIfAbsent(MeetingCheckIn value) { return value; }
+                },
+                Clock.fixed(Instant.parse("2026-07-01T00:00:00Z"), ZoneOffset.UTC)
         );
 
         matchRepository.save(match(CompanionMatchStatus.SCHEDULE_CONFIRMED));
@@ -66,6 +103,47 @@ class ConfirmCompanionScheduleServiceTest {
         ));
         scheduleRepository.save(new CompanionSchedule(1L, 1L, 100L, ORIGINAL_TIME, 60, true));
         scheduleRepository.saveCount = 0;
+        participantRepository.save(new CompanionMatchParticipant(
+                1L,
+                1L,
+                7L,
+                null,
+                MatchParticipantRole.HOST
+        ));
+        participantRepository.save(new CompanionMatchParticipant(
+                2L,
+                1L,
+                8L,
+                3L,
+                MatchParticipantRole.GUEST
+        ));
+    }
+
+    @Test
+    void rejectsChangesAfterCheckIn() {
+        meetingRepository.save(new CompanionMeeting(5L, 1L, CompanionMeetingStatus.ONGOING, ORIGINAL_TIME, null));
+        checkedInCount = 1;
+        assertThrows(InvalidCompanionScheduleRequestException.class, () -> service.update(command(7L, UPDATED_TIME)));
+        assertEquals(0, scheduleRepository.saveCount);
+    }
+
+    @Test
+    void savesParisScheduleInUtc() {
+        placeAddress = "Paris, France";
+        service.update(command(7L, UPDATED_TIME));
+        assertEquals(UPDATED_TIME.minusHours(2), scheduleRepository.schedules.get(1L).scheduledAt());
+        assertEquals(UPDATED_TIME, CompanionMeetingTimeConverter.utcToLocal(
+                scheduleRepository.schedules.get(1L).scheduledAt(), java.time.ZoneId.of("Europe/Paris")));
+    }
+
+    @Test
+    void rejectsPastScheduleAndAmbiguousLocalTime() {
+        placeAddress = "Paris, France";
+        assertThrows(InvalidCompanionScheduleRequestException.class,
+                () -> service.update(command(7L, LocalDateTime.of(2026, 6, 30, 12, 0))));
+        assertThrows(InvalidCompanionScheduleRequestException.class,
+                () -> service.update(command(7L, LocalDateTime.of(2026, 10, 25, 2, 30))));
+        assertEquals(0, scheduleRepository.saveCount);
     }
 
     @Test
@@ -81,6 +159,29 @@ class ConfirmCompanionScheduleServiceTest {
         assertEquals(1L, result.matchId());
         assertEquals(1L, result.scheduleId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+        assertEquals(1, matchRepository.findByIdForUpdateCalls);
+        assertEquals(1, notificationUseCase.commands.size());
+        assertEquals(8L, notificationUseCase.commands.get(0).recipientUserId());
+        assertEquals(3L, notificationUseCase.commands.get(0).targetId());
+        assertEquals(
+                CompanionNotificationType.COMPANION_SCHEDULE_UPDATED,
+                notificationUseCase.commands.get(0).notificationType()
+        );
+    }
+
+    @Test
+    void createsNewNotificationWheneverScheduleChangesAgain() {
+        service.update(command(7L, UPDATED_TIME));
+        service.update(command(7L, UPDATED_TIME.plusHours(1)));
+
+        assertEquals(2, notificationUseCase.commands.size());
+    }
+
+    @Test
+    void doesNotNotifyWhenScheduledAtIsUnchanged() {
+        service.update(command(7L, ORIGINAL_TIME));
+
+        assertEquals(0, notificationUseCase.commands.size());
     }
 
     @Test
@@ -99,6 +200,7 @@ class ConfirmCompanionScheduleServiceTest {
         assertEquals(UPDATED_TIME, meeting.startedAt());
         assertEquals(schedule.id(), result.scheduleId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
+        assertEquals(0, notificationUseCase.commands.size());
     }
 
     @Test
@@ -151,6 +253,7 @@ class ConfirmCompanionScheduleServiceTest {
     private static final class FakeCompanionMatchRepository implements CompanionMatchRepository {
 
         private final Map<Long, CompanionMatch> matches = new HashMap<>();
+        private int findByIdForUpdateCalls;
 
         @Override
         public CompanionMatch save(final CompanionMatch model) {
@@ -161,6 +264,12 @@ class ConfirmCompanionScheduleServiceTest {
         @Override
         public Optional<CompanionMatch> findById(final Long id) {
             return Optional.ofNullable(matches.get(id));
+        }
+
+        @Override
+        public Optional<CompanionMatch> findByIdForUpdate(final Long id) {
+            findByIdForUpdateCalls++;
+            return findById(id);
         }
 
         @Override
@@ -273,6 +382,56 @@ class ConfirmCompanionScheduleServiceTest {
         @Override
         public boolean completeIfOngoing(final Long meetingId, final LocalDateTime completedAt) {
             return false;
+        }
+    }
+
+    private static final class FakeCompanionMatchParticipantRepository
+            implements CompanionMatchParticipantRepository {
+
+        private final Map<Long, CompanionMatchParticipant> participants = new HashMap<>();
+
+        @Override
+        public CompanionMatchParticipant save(final CompanionMatchParticipant model) {
+            participants.put(model.id(), model);
+            return model;
+        }
+
+        @Override
+        public Optional<CompanionMatchParticipant> findById(final Long id) {
+            return Optional.ofNullable(participants.get(id));
+        }
+
+        @Override
+        public List<CompanionMatchParticipant> findAllByMatchId(final Long matchId) {
+            return participants.values().stream()
+                    .filter(participant -> participant.matchId().equals(matchId))
+                    .toList();
+        }
+
+        @Override
+        public boolean existsByMatchIdAndUserId(final Long matchId, final Long userId) {
+            return participants.values().stream()
+                    .anyMatch(participant -> participant.matchId().equals(matchId)
+                            && participant.userId().equals(userId));
+        }
+    }
+
+    private static final class CapturingNotificationUseCase implements CreateCompanionNotificationUseCase {
+
+        private final List<CreateCompanionNotificationCommand> commands = new ArrayList<>();
+
+        @Override
+        public CompanionNotification create(final CreateCompanionNotificationCommand command) {
+            commands.add(command);
+            return new CompanionNotification(
+                    (long) commands.size(),
+                    command.recipientUserId(),
+                    command.notificationType(),
+                    command.targetType(),
+                    command.targetId(),
+                    null,
+                    ORIGINAL_TIME
+            );
         }
     }
 }

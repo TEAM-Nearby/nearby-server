@@ -48,7 +48,7 @@ public record CompanionScheduleDetailResponse(
                 detail.matchId(),
                 detail.matchStatus(),
                 detail.city(),
-                detail.city() == null ? null : detail.city().zoneId().getId(),
+                detail.city() == null ? "UTC" : detail.city().zoneId().getId(),
                 detail.currentLocalTime() == null ? null : detail.currentLocalTime().toOffsetDateTime(),
                 CompanionScheduleResponse.from(detail.schedule()),
                 detail.openChatUrl(),

@@ -21,4 +21,6 @@ public interface CompanionMeetingCheckInProjection {
     BigDecimal getPlaceLatitude();
 
     BigDecimal getPlaceLongitude();
+
+    String getPlaceAddress();
 }

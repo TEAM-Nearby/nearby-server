@@ -12,8 +12,15 @@ public record CompanionMeetingCheckInContext(
         Long placeId,
         LocalDateTime scheduledAt,
         BigDecimal placeLatitude,
-        BigDecimal placeLongitude
+        BigDecimal placeLongitude,
+        String placeAddress
 ) {
+
+    public CompanionMeetingCheckInContext(Long meetingId, Long matchId, CompanionMeetingStatus meetingStatus,
+            Long scheduleId, Long placeId, LocalDateTime scheduledAt, BigDecimal placeLatitude,
+            BigDecimal placeLongitude) {
+        this(meetingId, matchId, meetingStatus, scheduleId, placeId, scheduledAt, placeLatitude, placeLongitude, null);
+    }
 
     public boolean hasConfirmedSchedulePlace() {
         return scheduleId != null

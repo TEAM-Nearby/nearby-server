@@ -18,6 +18,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeeting;
+import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingCheckInContext;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
 import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.port.out.CompanionMatchParticipantRepository;
@@ -63,7 +64,8 @@ class CompleteCompanionMeetingServiceTest {
 				matchRepository,
 				participantRepository,
 				checkInRepository,
-				CLOCK
+				CLOCK,
+				meetingId -> Optional.empty()
 		);
 
 		meetingRepository.save(meeting(CompanionMeetingStatus.ONGOING));
@@ -74,6 +76,21 @@ class CompleteCompanionMeetingServiceTest {
 		));
 		checkInRepository.put(checkIn(HOST_ID));
 		checkInRepository.put(checkIn(GUEST_ID));
+	}
+
+	@Test
+	void storesUtcCompletionAndReturnsPlaceLocalTime() {
+		service = new CompleteCompanionMeetingService(meetingRepository, matchRepository,
+				participantRepository, checkInRepository, CLOCK,
+				id -> Optional.of(new CompanionMeetingCheckInContext(id, MATCH_ID,
+						CompanionMeetingStatus.ONGOING, 1L, 1L, NOW,
+						BigDecimal.ZERO, BigDecimal.ZERO, "Paris, France")));
+
+		CompleteCompanionMeetingResult result = service.complete(MEETING_ID, HOST_ID);
+
+		assertEquals(NOW.plusHours(2), result.currentUserCompletedAt());
+		assertEquals(NOW, checkInRepository.findByMeetingIdAndUserId(MEETING_ID, HOST_ID)
+				.orElseThrow().completedAt());
 	}
 
 	@Test

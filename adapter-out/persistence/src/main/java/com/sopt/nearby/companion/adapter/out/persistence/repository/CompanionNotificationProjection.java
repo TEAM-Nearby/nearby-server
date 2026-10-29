@@ -9,6 +9,8 @@ public interface CompanionNotificationProjection {
 
     LocalDateTime getCreatedAt();
 
+    String getNotificationType();
+
     Long getApplicationId();
 
     String getApplicationStatus();
@@ -20,6 +22,8 @@ public interface CompanionNotificationProjection {
     String getHostNickname();
 
     String getPlaceName();
+
+    String getPlaceAddress();
 
     LocalDateTime getMeetingAt();
 

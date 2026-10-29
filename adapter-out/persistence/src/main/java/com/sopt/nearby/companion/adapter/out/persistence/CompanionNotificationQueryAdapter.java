@@ -8,6 +8,7 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationHostProfile;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationPageCursor;
+import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.port.out.CompanionNotificationPageRow;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPushContentQueryPort;
@@ -77,8 +78,11 @@ public class CompanionNotificationQueryAdapter implements CompanionNotificationQ
             final CompanionNotificationDirection direction,
             final CompanionNotificationProjection row
     ) {
-        return CompanionNotificationSummary.of(
+        var summary = CompanionNotificationSummary.of(
                 direction,
+                row.getNotificationType() == null
+                        ? null
+                        : CompanionNotificationType.valueOf(row.getNotificationType()),
                 row.getNotificationId(),
                 row.getApplicationId(),
                 CompanionApplicationStatus.valueOf(row.getApplicationStatus()),
@@ -92,5 +96,8 @@ public class CompanionNotificationQueryAdapter implements CompanionNotificationQ
                 row.getMatchId(),
                 Boolean.TRUE.equals(row.getReadStatus())
         );
+        return new CompanionNotificationSummary(summary.notificationId(), summary.applicationId(),
+                summary.applicationStatus(), summary.host(), summary.placeName(), summary.meetingAt(),
+                summary.matchId(), summary.actionType(), summary.isRead(), row.getPlaceAddress());
     }
 }

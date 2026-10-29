@@ -34,23 +34,39 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
     @Query(value = """
             select
                 notification.id as notificationId,
-                notification.created_at as createdAt,
+                case
+                    when notification.notification_type = 'COMPANION_SCHEDULE_UPDATED'
+                        then notification.created_at
+                    else app.created_at
+                end as createdAt,
+                notification.notification_type as notificationType,
                 app.id as applicationId,
                 app.status as applicationStatus,
                 host_profile.user_id as hostUserId,
                 host_profile.profile_image_url as hostProfileImageUrl,
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
+                place.address as placeAddress,
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case
+                    when app.status = 'PENDING' then true
                     when notification.read_at is null then false
                     else true
                 end as readStatus
-            from companion_notification notification
-            join companion_application app
-                on app.id = notification.target_id
+            from companion_application app
+            left join companion_notification notification
+                on notification.target_id = app.id
                 and notification.target_type = 'COMPANION_APPLICATION'
+                and notification.recipient_user_id = :userId
+                and (
+                    (app.status = 'ACCEPTED'
+                        and notification.notification_type = 'COMPANION_APPLICATION_ACCEPTED')
+                    or (app.status = 'REJECTED'
+                        and notification.notification_type = 'COMPANION_APPLICATION_REJECTED')
+                    or (app.status = 'ACCEPTED'
+                        and notification.notification_type = 'COMPANION_SCHEDULE_UPDATED')
+                )
             join companion_post post
                 on post.id = app.post_id
             join companion_profile host_profile
@@ -62,13 +78,16 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 and schedule.confirmed = true
             left join place_cache place
                 on place.id = coalesce(schedule.place_id, post.place_id)
-            where notification.recipient_user_id = :userId
-                and app.applicant_user_id = :userId
-                and notification.notification_type in (
-                    'COMPANION_APPLICATION_ACCEPTED',
-                    'COMPANION_APPLICATION_REJECTED'
-                )
-            order by notification.created_at desc, notification.id desc
+            where app.applicant_user_id = :userId
+                and (app.status = 'PENDING' or notification.id is not null)
+            order by
+                case
+                    when notification.notification_type = 'COMPANION_SCHEDULE_UPDATED'
+                        then notification.created_at
+                    else app.created_at
+                end desc,
+                app.id desc,
+                notification.id desc
             """, nativeQuery = true)
     List<CompanionNotificationProjection> findSentByUserId(@Param("userId") Long userId);
 
@@ -76,12 +95,14 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
             select
                 notification.id as notificationId,
                 notification.created_at as createdAt,
+                notification.notification_type as notificationType,
                 app.id as applicationId,
                 app.status as applicationStatus,
                 host_profile.user_id as hostUserId,
                 host_profile.profile_image_url as hostProfileImageUrl,
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
+                place.address as placeAddress,
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case
@@ -114,12 +135,14 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
             select
                 notification.id as notificationId,
                 notification.created_at as createdAt,
+                notification.notification_type as notificationType,
                 app.id as applicationId,
                 app.status as applicationStatus,
                 host_profile.user_id as hostUserId,
                 host_profile.profile_image_url as hostProfileImageUrl,
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
+                place.address as placeAddress,
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case when notification.read_at is null then false else true end as readStatus
@@ -138,7 +161,8 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 and app.applicant_user_id = :userId
                 and notification.notification_type in (
                     'COMPANION_APPLICATION_ACCEPTED',
-                    'COMPANION_APPLICATION_REJECTED'
+                    'COMPANION_APPLICATION_REJECTED',
+                    'COMPANION_SCHEDULE_UPDATED'
                 )
                 and (
                     :cursorCreatedAt is null
@@ -159,12 +183,14 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
             select
                 notification.id as notificationId,
                 notification.created_at as createdAt,
+                notification.notification_type as notificationType,
                 app.id as applicationId,
                 app.status as applicationStatus,
                 host_profile.user_id as hostUserId,
                 host_profile.profile_image_url as hostProfileImageUrl,
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
+                place.address as placeAddress,
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case when notification.read_at is null then false else true end as readStatus

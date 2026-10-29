@@ -86,7 +86,7 @@ class ResolvePlaceCacheServiceTest {
 
         assertEquals(7L, result.placeId());
         assertEquals("Updated place", result.name());
-        assertEquals("Updated address", result.address());
+        assertEquals("Rambla de Catalunya, 16", result.address());
         assertEquals("CAFE", result.category());
         assertEquals(1, placeCacheRepository.saveAttempts);
         assertEquals("Updated place", placeCacheRepository.places.get(command.googlePlaceId()).name());

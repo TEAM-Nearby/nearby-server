@@ -31,7 +31,7 @@ public record OngoingCompanionMeetingResponse(
                 OngoingCompanionMeetingHostResponse.from(summary.companion()),
                 summary.placeName(),
                 summary.city(),
-                summary.city() == null ? null : summary.city().zoneId().getId(),
+                summary.city() == null ? "UTC" : summary.city().zoneId().getId(),
                 summary.currentLocalTime() == null ? null : summary.currentLocalTime().toOffsetDateTime(),
                 summary.meetingAt(),
                 summary.meetingTimeType(),

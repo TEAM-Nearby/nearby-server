@@ -44,7 +44,10 @@ public record ReadCompanionMeetingDetailResult(
                 detail.placeName(),
                 city,
                 currentLocalTime,
-                detail.meetingAt(),
+                CompanionMeetingTimeConverter.toPlaceLocalTime(
+                        detail.meetingAt(),
+                        city
+                ),
                 detail.meetingTimeType(),
                 detail.meetingStatus(),
                 detail.currentUserCheckedIn(),

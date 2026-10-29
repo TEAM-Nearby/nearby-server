@@ -17,8 +17,17 @@ public record CompanionRequestReview(
         LocalDateTime exposureExpiresAt,
         String openChatUrl,
         ApplicantProfile applicantProfile,
-        ApplicantAccount applicantAccount
+        ApplicantAccount applicantAccount,
+        String placeAddress
 ) {
+
+    public CompanionRequestReview(Long applicationId, Long postId, CompanionApplicationStatus applicationStatus,
+            Long hostUserId, String placeName, CompanionPostMeetingTimeType meetingTimeType,
+            LocalDateTime meetingAt, LocalDateTime exposureExpiresAt, String openChatUrl,
+            ApplicantProfile applicantProfile, ApplicantAccount applicantAccount) {
+        this(applicationId, postId, applicationStatus, hostUserId, placeName, meetingTimeType, meetingAt,
+                exposureExpiresAt, openChatUrl, applicantProfile, applicantAccount, null);
+    }
 
     public record ApplicantProfile(
             Long profileId,

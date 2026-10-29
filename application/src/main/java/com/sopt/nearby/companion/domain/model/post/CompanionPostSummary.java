@@ -25,8 +25,19 @@ public record CompanionPostSummary(
         int participantCount,
         int maxParticipants,
         LocalDateTime createdAt,
-        List<Participant> participants
+        List<Participant> participants,
+        String placeAddress
 ) {
+
+    public CompanionPostSummary(Long postId, CompanionPostStatus status, String hostNickname, UserGender hostGender,
+            Long placeId, String googlePlaceId, String placeName, CompanionPostPlaceCategory placeCategory,
+            BigDecimal latitude, BigDecimal longitude, int distanceMeters, String photoReference, String content,
+            CompanionPostMeetingTimeType meetingTimeType, LocalDateTime meetingAt, int participantCount,
+            int maxParticipants, LocalDateTime createdAt, List<Participant> participants) {
+        this(postId, status, hostNickname, hostGender, placeId, googlePlaceId, placeName, placeCategory,
+                latitude, longitude, distanceMeters, photoReference, content, meetingTimeType, meetingAt,
+                participantCount, maxParticipants, createdAt, participants, null);
+    }
 
     public CompanionPostSummary {
         participants = participants == null ? List.of() : List.copyOf(participants);

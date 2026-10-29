@@ -91,6 +91,24 @@ class CreateCompanionNotificationServiceTest {
     }
 
     @Test
+    void createsScheduleUpdateNotificationEveryTime() {
+        FakeCompanionNotificationRepository repository = new FakeCompanionNotificationRepository();
+        CreateCompanionNotificationService service = new CreateCompanionNotificationService(repository, CLOCK);
+        CreateCompanionNotificationCommand command = command(
+                7L,
+                CompanionNotificationType.COMPANION_SCHEDULE_UPDATED,
+                1L
+        );
+
+        CompanionNotification first = service.create(command);
+        CompanionNotification second = service.create(command);
+
+        assertEquals(2, repository.saveCount);
+        assertEquals(1L, first.id());
+        assertEquals(2L, second.id());
+    }
+
+    @Test
     void createsDeliveryForEachActiveEndpointWhenNotificationIsNew() {
         FakeCompanionNotificationRepository notificationRepository = new FakeCompanionNotificationRepository();
         FakePushEndpointRepository endpointRepository = new FakePushEndpointRepository(List.of(
@@ -189,7 +207,24 @@ class CreateCompanionNotificationServiceTest {
                 CLOCK
         );
         CreateCompanionRequestService requestService = new CreateCompanionRequestService(
-                userId -> assertEquals(8L, userId), postRepository, applicationRepository, notificationService, CLOCK
+                userId -> assertEquals(8L, userId), postRepository,
+                new com.sopt.nearby.companion.port.out.CompanionMatchRepository() {
+                    public Optional<com.sopt.nearby.companion.domain.model.match.CompanionMatch> findById(Long id) { return Optional.empty(); }
+                    public com.sopt.nearby.companion.domain.model.match.CompanionMatch save(com.sopt.nearby.companion.domain.model.match.CompanionMatch m) { return m; }
+                    public Optional<com.sopt.nearby.companion.domain.model.match.CompanionMatch> findFirstByPostIdAndStatus(Long id, com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus status) { return Optional.empty(); }
+                    public boolean confirmScheduleIfMatched(Long id) { return false; }
+                },
+                new com.sopt.nearby.companion.port.out.CompanionScheduleRepository() {
+                    public Optional<com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule> findById(Long id) { return Optional.empty(); }
+                    public com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule save(com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule s) { return s; }
+                    public Optional<com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule> findConfirmedByMatchId(Long id) { return Optional.empty(); }
+                },
+                applicationRepository, notificationService, CLOCK,
+                new com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort() {
+                    public List<com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary> findAllByParticipantUserId(Long id) { return List.of(); }
+                    public Optional<String> findPlaceNameByPlaceId(Long id) { return Optional.empty(); }
+                    public Optional<String> findPlaceAddressByPlaceId(Long id) { return Optional.empty(); }
+                }
         );
 
         CreateCompanionRequestResult result = requestService.create(new CreateCompanionRequestCommand(8L, post.id()));
@@ -257,6 +292,25 @@ class CreateCompanionNotificationServiceTest {
         assertEquals(0, deliveryRepository.deliveries.size());
         assertEquals(0, contentQueryPort.placeLookupCount);
         assertEquals(0, contentQueryPort.nicknameLookupCount);
+    }
+
+    @Test
+    void createsScheduleUpdateDeliveryWithConfirmedTitleAndBody() {
+        FakeCompanionNotificationRepository notificationRepository = new FakeCompanionNotificationRepository();
+        FakePushEndpointRepository endpointRepository = new FakePushEndpointRepository(List.of(endpoint(11L, true)));
+        CapturingPushDeliveryRepository deliveryRepository = new CapturingPushDeliveryRepository();
+        CreateCompanionNotificationService service = new CreateCompanionNotificationService(
+                notificationRepository,
+                endpointRepository,
+                deliveryRepository,
+                new FakePushContentQueryPort(),
+                CLOCK
+        );
+
+        service.create(command(7L, CompanionNotificationType.COMPANION_SCHEDULE_UPDATED, 1L));
+
+        assertEquals("동행 일정 수정", deliveryRepository.deliveries.get(0).title());
+        assertEquals("동행 일정이 수정되었어요.", deliveryRepository.deliveries.get(0).body());
     }
 
     private CompanionPushEndpoint endpoint(final Long id, final boolean active) {

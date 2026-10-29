@@ -5,10 +5,12 @@ import com.sopt.nearby.companion.domain.exception.CompanionNotificationNotFoundE
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionNotificationException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionNotificationIdException;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
+import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.port.in.MarkCompanionNotificationAsReadUseCase;
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class MarkCompanionNotificationAsReadService implements MarkCompanionNotificationAsReadUseCase {
 
@@ -43,7 +45,7 @@ public class MarkCompanionNotificationAsReadService implements MarkCompanionNoti
         LocalDateTime readAt = LocalDateTime.now(clock);
         boolean marked = repository.markAsReadIfUnread(notificationId, userId, readAt);
         if (marked) {
-            return new MarkCompanionNotificationAsReadResult(notificationId, true, readAt);
+            return result(notificationId, true, readAt);
         }
 
         CompanionNotification currentNotification = repository.findById(notificationId)
@@ -55,10 +57,18 @@ public class MarkCompanionNotificationAsReadService implements MarkCompanionNoti
     }
 
     private MarkCompanionNotificationAsReadResult toResult(final CompanionNotification notification) {
-        return new MarkCompanionNotificationAsReadResult(
+        return result(
                 notification.id(),
                 notification.isRead(),
                 notification.readAt()
         );
+    }
+
+    private MarkCompanionNotificationAsReadResult result(Long notificationId, boolean isRead, LocalDateTime readAt) {
+        var zone = repository.findPlaceAddressByNotificationId(notificationId)
+                .flatMap(CompanionPlaceCityNameResolver::resolveSupportedCity)
+                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        return new MarkCompanionNotificationAsReadResult(notificationId, isRead,
+                CompanionMeetingTimeConverter.utcToLocal(readAt, zone));
     }
 }
