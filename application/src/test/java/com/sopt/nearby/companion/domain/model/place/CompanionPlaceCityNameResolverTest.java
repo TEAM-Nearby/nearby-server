@@ -60,7 +60,10 @@ class CompanionPlaceCityNameResolverTest {
 			"Barcelona 12, Oxford, UK",
 			"Barcelona 12, New York, United States",
 			"1 Main St, Paris TX 75460, United States",
-			"1 Main St, London ON, Canada"
+			"1 Main St, London ON, Canada",
+			"Calle de Madrid, Santa Cruz de Tenerife, Spain",
+			"London Road, Oxford, UK",
+			"Rue de Paris, Lyon, France"
 	})
 	void doesNotResolveStreetNameWhenCityIsUnsupported(String address) {
 		ResolvedCityTime result = CompanionPlaceCityNameResolver.resolveCurrentTime(
