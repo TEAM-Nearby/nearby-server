@@ -104,8 +104,9 @@ public class CreateCompanionNotificationService implements CreateCompanionNotifi
     private String body(final CompanionNotification notification) {
         return switch (notification.notificationType()) {
             case COMPANION_APPLICATION_CREATED -> contentQueryPort.findRecipientNickname(notification.recipientUserId())
-                    .orElseThrow(() -> new IllegalStateException("동행 푸시 수신자의 닉네임을 찾을 수 없습니다."))
-                    + "님과 동행을 원하는 분이 있어요. 지금 바로 확인해보세요!";
+                    .filter(nickname -> !nickname.isBlank())
+                    .map(nickname -> nickname + "님과 동행을 원하는 분이 있어요. 지금 바로 확인해보세요!")
+                    .orElse("새로운 동행 신청이 도착했어요.");
             case COMPANION_APPLICATION_ACCEPTED -> placeName(notification)
                     + " 동행이 수락되었어요. 지금 확인해보세요!";
             case COMPANION_APPLICATION_REJECTED -> placeName(notification)
