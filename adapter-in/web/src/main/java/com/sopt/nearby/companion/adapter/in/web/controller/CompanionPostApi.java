@@ -104,6 +104,7 @@ public interface CompanionPostApi {
                     장소 주소에서 BARCELONA, MADRID, LONDON, PARIS를 판별해 city, timeZoneId, currentLocalTime을 반환합니다.
                     확정 일정이 있으면 최신 비취소 매칭의 확정 장소를 모집글의 원본 장소보다 우선 사용합니다.
                     도시를 판별할 수 없으면 city는 null이며, 시간은 UTC로 반환합니다.
+                    meetingAt, createdAt, expiresAt은 오프셋 없는 장소 현지 시각입니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
