@@ -119,12 +119,14 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
 
     private boolean isExpired(final CompanionPost post) {
         LocalDateTime now = LocalDateTime.now(clock);
+        if (post.meetingTimeType() == com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType.NOW) {
+            return post.exposureExpiresAt() == null || !post.exposureExpiresAt().isAfter(now);
+        }
         var confirmedTime = matchRepository.findFirstByPostIdAndStatus(
                         post.id(), CompanionMatchStatus.SCHEDULE_CONFIRMED)
                 .flatMap(match -> scheduleRepository.findConfirmedByMatchId(match.id()))
                 .map(CompanionSchedule::scheduledAt);
-        if (post.meetingTimeType() != com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType.NOW
-                && confirmedTime.isPresent() && !confirmedTime.get().isAfter(now)) {
+        if (confirmedTime.isPresent() && !confirmedTime.get().isAfter(now)) {
             return true;
         }
         return switch (post.meetingTimeType()) {

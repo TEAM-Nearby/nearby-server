@@ -183,6 +183,20 @@ class CreateCompanionRequestServiceTest {
     }
 
     @Test
+    void doesNotLookUpConfirmedScheduleForNowPost() {
+        postRepository.post = Optional.of(post(
+                CompanionPostStatus.RECRUITING,
+                CompanionPostMeetingTimeType.NOW,
+                null,
+                NOW.plusHours(1)
+        ));
+
+        service.create(new CreateCompanionRequestCommand(7L, 10L));
+
+        assertEquals(0, matchRepository.findFirstByPostIdAndStatusCalls);
+    }
+
+    @Test
     void rejectsPastScheduledPost() {
         postRepository.post = Optional.of(post(
                 CompanionPostStatus.RECRUITING,
@@ -338,6 +352,7 @@ class CreateCompanionRequestServiceTest {
     private static final class FakeCompanionMatchRepository implements CompanionMatchRepository {
 
         private Optional<CompanionMatch> match = Optional.empty();
+        private int findFirstByPostIdAndStatusCalls;
 
         @Override
         public CompanionMatch save(final CompanionMatch model) {
@@ -354,6 +369,7 @@ class CreateCompanionRequestServiceTest {
                 final Long postId,
                 final CompanionMatchStatus status
         ) {
+            findFirstByPostIdAndStatusCalls++;
             return match.filter(found -> found.postId().equals(postId) && found.status() == status);
         }
 

@@ -82,6 +82,7 @@ class CompanionPlaceCityNameResolverTest {
 			"'Madrid, Rambla de Catalunya, 16', MADRID",
 			"'London, United Kingdom', LONDON",
 			"'10 Downing Street, London SW1A 2AA, UK', LONDON",
+			"'Paris, \u00cele-de-France, France', PARIS",
 			"'Paris, France', PARIS"
 	})
 	void preservesSupportedCityComponents(String address, CompanionCity expectedCity) {

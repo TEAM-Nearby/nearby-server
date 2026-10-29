@@ -59,13 +59,17 @@ public final class CompanionPlaceCityNameResolver {
 		// 실제 국가명으로 끝나는 주소만 도시 위치로 제한해 도로명으로 되돌아가지 않는다.
 		if (addressParts.length >= 2 && isCountry(addressParts[lastIndex].trim())) {
 			String country = addressParts[lastIndex].trim();
-			lastIndex--;
-			firstIndex = lastIndex;
-			String cityPart = addressParts[lastIndex];
-			return Arrays.stream(CompanionCity.values())
-					.filter(candidate -> candidate.matches(cityPart))
-					.filter(candidate -> matchesCountry(candidate, country))
-					.findFirst();
+			for (int index = lastIndex - 1; index >= Math.max(firstIndex, lastIndex - 2); index--) {
+				String addressPart = addressParts[index];
+				Optional<CompanionCity> city = Arrays.stream(CompanionCity.values())
+						.filter(candidate -> candidate.matches(addressPart))
+						.filter(candidate -> matchesCountry(candidate, country))
+						.findFirst();
+				if (city.isPresent()) {
+					return city;
+				}
+			}
+			return Optional.empty();
 		}
 		for (int index = lastIndex; index >= firstIndex; index--) {
 			String addressPart = addressParts[index];
