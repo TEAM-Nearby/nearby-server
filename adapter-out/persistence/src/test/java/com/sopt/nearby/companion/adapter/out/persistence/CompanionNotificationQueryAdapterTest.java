@@ -355,6 +355,46 @@ class CompanionNotificationQueryAdapterTest {
         assertThat(result.get(2).isRead()).isFalse();
     }
 
+    @Test
+    void findsPushRecipientNicknameByUserId() {
+        CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
+        profileJpaRepository.saveAndFlush(profile(100L, "모집글작성자", null));
+        profileJpaRepository.saveAndFlush(profile(200L, "동행신청자", null));
+
+        assertThat(adapter.findRecipientNickname(100L)).contains("모집글작성자");
+        assertThat(adapter.findRecipientNickname(200L)).contains("동행신청자");
+        assertThat(adapter.findRecipientNickname(999L)).isEmpty();
+    }
+
+    @Test
+    void findsPostPlaceForPushWhenRequestHasNoConfirmedSchedule() {
+        CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
+        PlaceCacheEntity place = placeCacheJpaRepository.saveAndFlush(place("push-place", "오노테라"));
+        CompanionPostEntity post = postJpaRepository.saveAndFlush(post(100L, place.getId(), NOW.plusDays(1)));
+        CompanionApplicationEntity application = applicationJpaRepository.saveAndFlush(application(
+                post.getId(), 200L, CompanionApplicationStatus.REJECTED, NOW
+        ));
+
+        assertThat(adapter.findPlaceNameByApplicationId(application.getId())).contains("오노테라");
+        assertThat(adapter.findPlaceNameByApplicationId(Long.MAX_VALUE)).isEmpty();
+    }
+
+    @Test
+    void prefersConfirmedSchedulePlaceForAcceptedRequestPush() {
+        CompanionNotificationQueryAdapter adapter = new CompanionNotificationQueryAdapter(notificationJpaRepository);
+        PlaceCacheEntity postPlace = placeCacheJpaRepository.saveAndFlush(place("push-post-place", "모집 장소"));
+        PlaceCacheEntity confirmedPlace = placeCacheJpaRepository.saveAndFlush(place("push-confirmed-place", "확정 장소"));
+        CompanionPostEntity post = postJpaRepository.saveAndFlush(post(100L, postPlace.getId(), NOW.plusDays(1)));
+        CompanionApplicationEntity application = applicationJpaRepository.saveAndFlush(application(
+                post.getId(), 200L, CompanionApplicationStatus.ACCEPTED, NOW
+        ));
+        CompanionMatchEntity match = matchJpaRepository.saveAndFlush(match(post.getId()));
+        participantJpaRepository.saveAndFlush(participant(match.getId(), 200L, application.getId()));
+        scheduleJpaRepository.saveAndFlush(schedule(match.getId(), confirmedPlace.getId(), NOW.plusDays(2)));
+
+        assertThat(adapter.findPlaceNameByApplicationId(application.getId())).contains("확정 장소");
+    }
+
     private PlaceCacheEntity place(final String googlePlaceId, final String name) {
         return new PlaceCacheEntity(
                 null,
