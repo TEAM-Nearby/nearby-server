@@ -30,7 +30,9 @@ public interface CompanionRequestApi {
     })
     @Operation(
             summary = "동행 신청 검토 화면 상세 조회",
-            description = "JWT 액세스 토큰으로 인증된 호스트가 동행 신청 상세 정보를 조회합니다.",
+            description = "JWT 액세스 토큰으로 인증된 호스트가 동행 신청 상세 정보를 조회합니다. "
+                    + "meetingAt은 오프셋 없는 장소 현지 시각입니다. "
+                    + "NOW 신청은 확정 일정이 있으면 해당 시각을, 없으면 신청 시각을 반환합니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
     CommonResponse<CompanionRequestReviewResponse> getReview(
