@@ -4,13 +4,21 @@ package com.sopt.nearby.companion.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import com.sopt.nearby.companion.domain.model.match.CompanionApplication;
+import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotification;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionPushDelivery;
 import com.sopt.nearby.companion.domain.model.notification.CompanionPushEndpoint;
 import com.sopt.nearby.companion.domain.model.notification.CompanionPushPlatform;
+import com.sopt.nearby.companion.domain.model.post.CompanionPost;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
+import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
+import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
+import com.sopt.nearby.companion.port.out.CompanionPostRepository;
+import com.sopt.nearby.companion.port.out.CompanionPushContentQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPushDeliveryRepository;
 import com.sopt.nearby.companion.port.out.CompanionPushEndpointRepository;
 import java.time.Clock;
@@ -23,6 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CreateCompanionNotificationServiceTest {
 
@@ -105,24 +117,181 @@ class CreateCompanionNotificationServiceTest {
                 endpoint(13L, false)
         ));
         CapturingPushDeliveryRepository deliveryRepository = new CapturingPushDeliveryRepository();
+        FakePushContentQueryPort contentQueryPort = new FakePushContentQueryPort();
         CreateCompanionNotificationService service = new CreateCompanionNotificationService(
                 notificationRepository,
                 endpointRepository,
                 deliveryRepository,
+                contentQueryPort,
                 CLOCK
         );
 
-        service.create(command(
+        CreateCompanionNotificationCommand command = command(
                 7L,
                 CompanionNotificationType.COMPANION_APPLICATION_CREATED,
                 1L
-        ));
+        );
+        service.create(command);
+        contentQueryPort.nickname = "변경된닉네임";
+        service.create(command);
 
         assertEquals(2, deliveryRepository.deliveries.size());
         assertEquals("새로운 동행 신청", deliveryRepository.deliveries.get(0).title());
-        assertEquals("새로운 동행 신청이 도착했어요.", deliveryRepository.deliveries.get(0).body());
+        assertEquals("수만두님과 동행을 원하는 분이 있어요. 지금 바로 확인해보세요!",
+                deliveryRepository.deliveries.get(0).body());
+        assertEquals(deliveryRepository.deliveries.get(0).body(), deliveryRepository.deliveries.get(1).body());
         assertEquals(11L, deliveryRepository.deliveries.get(0).endpointId());
         assertEquals(12L, deliveryRepository.deliveries.get(1).endpointId());
+        assertEquals(7L, contentQueryPort.recipientUserId);
+        assertEquals(1, contentQueryPort.nicknameLookupCount);
+        assertEquals(0, contentQueryPort.placeLookupCount);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "\t"})
+    void createsNotificationAndDeliveryWithOriginalBodyWhenNicknameIsMissing(final String nickname) {
+        FakeCompanionNotificationRepository notificationRepository = new FakeCompanionNotificationRepository();
+        CapturingPushDeliveryRepository deliveryRepository = new CapturingPushDeliveryRepository();
+        FakePushContentQueryPort contentQueryPort = new FakePushContentQueryPort();
+        contentQueryPort.nickname = nickname;
+        CreateCompanionNotificationService service = new CreateCompanionNotificationService(
+                notificationRepository,
+                new FakePushEndpointRepository(List.of(endpoint(11L, true))),
+                deliveryRepository,
+                contentQueryPort,
+                CLOCK
+        );
+
+        CompanionNotification notification = service.create(command(
+                7L, CompanionNotificationType.COMPANION_APPLICATION_CREATED, 123L
+        ));
+
+        assertEquals(Optional.of(notification), notificationRepository.findById(notification.id()));
+        assertEquals(1, deliveryRepository.deliveries.size());
+        CompanionPushDelivery delivery = deliveryRepository.deliveries.get(0);
+        assertEquals(notification.id(), delivery.notificationId());
+        assertEquals("새로운 동행 신청", delivery.title());
+        assertEquals("새로운 동행 신청이 도착했어요.", delivery.body());
+        assertEquals(1, contentQueryPort.nicknameLookupCount);
+        assertEquals(0, contentQueryPort.placeLookupCount);
+    }
+
+    @Test
+    void createsRequestNotificationAndDeliveryWhenHostHasNoNickname() {
+        CompanionPost post = new CompanionPost(
+                10L, 7L, 20L, CompanionPostMeetingTimeType.SCHEDULED, NOW.plusHours(2), null,
+                4, true, "함께 식사해요.", "https://open.kakao.com/o/nearby123", CompanionPostStatus.RECRUITING, NOW
+        );
+        CompanionPostRepository postRepository = new CompanionPostRepository() {
+            @Override
+            public CompanionPost save(final CompanionPost model) {
+                throw new UnsupportedOperationException("신청 테스트에서는 모집글을 저장하지 않습니다.");
+            }
+
+            @Override
+            public Optional<CompanionPost> findById(final Long id) {
+                return post.id().equals(id) ? Optional.of(post) : Optional.empty();
+            }
+        };
+        CapturingApplicationRepository applicationRepository = new CapturingApplicationRepository();
+        FakeCompanionNotificationRepository notificationRepository = new FakeCompanionNotificationRepository();
+        CapturingPushDeliveryRepository deliveryRepository = new CapturingPushDeliveryRepository();
+        FakePushContentQueryPort contentQueryPort = new FakePushContentQueryPort();
+        contentQueryPort.nickname = null;
+        CreateCompanionNotificationService notificationService = new CreateCompanionNotificationService(
+                notificationRepository,
+                new FakePushEndpointRepository(List.of(endpoint(11L, true))),
+                deliveryRepository,
+                contentQueryPort,
+                CLOCK
+        );
+        CreateCompanionRequestService requestService = new CreateCompanionRequestService(
+                userId -> assertEquals(8L, userId), postRepository,
+                new com.sopt.nearby.companion.port.out.CompanionMatchRepository() {
+                    public Optional<com.sopt.nearby.companion.domain.model.match.CompanionMatch> findById(Long id) { return Optional.empty(); }
+                    public com.sopt.nearby.companion.domain.model.match.CompanionMatch save(com.sopt.nearby.companion.domain.model.match.CompanionMatch m) { return m; }
+                    public Optional<com.sopt.nearby.companion.domain.model.match.CompanionMatch> findFirstByPostIdAndStatus(Long id, com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus status) { return Optional.empty(); }
+                    public boolean confirmScheduleIfMatched(Long id) { return false; }
+                },
+                new com.sopt.nearby.companion.port.out.CompanionScheduleRepository() {
+                    public Optional<com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule> findById(Long id) { return Optional.empty(); }
+                    public com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule save(com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule s) { return s; }
+                    public Optional<com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule> findConfirmedByMatchId(Long id) { return Optional.empty(); }
+                },
+                applicationRepository, notificationService, CLOCK,
+                new com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort() {
+                    public List<com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary> findAllByParticipantUserId(Long id) { return List.of(); }
+                    public Optional<String> findPlaceNameByPlaceId(Long id) { return Optional.empty(); }
+                    public Optional<String> findPlaceAddressByPlaceId(Long id) { return Optional.empty(); }
+                }
+        );
+
+        CreateCompanionRequestResult result = requestService.create(new CreateCompanionRequestCommand(8L, post.id()));
+
+        CompanionApplication application = applicationRepository.findById(result.applicationId()).orElseThrow();
+        assertEquals(post.id(), application.postId());
+        assertEquals(8L, application.applicantUserId());
+        assertEquals(CompanionApplicationStatus.PENDING, application.status());
+        CompanionNotification notification = notificationRepository.findByUniqueKey(
+                CompanionNotificationType.COMPANION_APPLICATION_CREATED,
+                CompanionNotificationTargetType.COMPANION_APPLICATION,
+                application.id(), post.hostUserId()
+        ).orElseThrow();
+        assertEquals(1, notificationRepository.saveCount);
+        assertEquals(1, deliveryRepository.deliveries.size());
+        CompanionPushDelivery delivery = deliveryRepository.deliveries.get(0);
+        assertEquals(notification.id(), delivery.notificationId());
+        assertEquals(post.hostUserId(), delivery.recipientUserId());
+        assertEquals(application.id(), delivery.targetId());
+        assertEquals("새로운 동행 신청이 도착했어요.", delivery.body());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "COMPANION_APPLICATION_ACCEPTED, 오노테라 동행이 수락되었어요. 지금 확인해보세요!",
+            "COMPANION_APPLICATION_REJECTED, 오노테라 동행 요청이 거절되었어요. 아쉽지만 다른 동행을 찾아보세요!"
+    })
+    void createsRequestResultDeliveryWithPlaceName(
+            final CompanionNotificationType notificationType,
+            final String expectedBody
+    ) {
+        CapturingPushDeliveryRepository deliveryRepository = new CapturingPushDeliveryRepository();
+        FakePushContentQueryPort contentQueryPort = new FakePushContentQueryPort();
+        CreateCompanionNotificationService service = new CreateCompanionNotificationService(
+                new FakeCompanionNotificationRepository(),
+                new FakePushEndpointRepository(List.of(endpoint(11L, true))),
+                deliveryRepository,
+                contentQueryPort,
+                CLOCK
+        );
+
+        service.create(command(7L, notificationType, 123L));
+
+        assertEquals("동행 신청 결과", deliveryRepository.deliveries.get(0).title());
+        assertEquals(expectedBody, deliveryRepository.deliveries.get(0).body());
+        assertEquals(123L, contentQueryPort.applicationId);
+        assertEquals(1, contentQueryPort.placeLookupCount);
+        assertEquals(0, contentQueryPort.nicknameLookupCount);
+    }
+
+    @Test
+    void doesNotLookUpPushContentWithoutActiveEndpoints() {
+        CapturingPushDeliveryRepository deliveryRepository = new CapturingPushDeliveryRepository();
+        FakePushContentQueryPort contentQueryPort = new FakePushContentQueryPort();
+        CreateCompanionNotificationService service = new CreateCompanionNotificationService(
+                new FakeCompanionNotificationRepository(),
+                new FakePushEndpointRepository(List.of(endpoint(11L, false))),
+                deliveryRepository,
+                contentQueryPort,
+                CLOCK
+        );
+
+        service.create(command(7L, CompanionNotificationType.COMPANION_APPLICATION_ACCEPTED, 1L));
+
+        assertEquals(0, deliveryRepository.deliveries.size());
+        assertEquals(0, contentQueryPort.placeLookupCount);
+        assertEquals(0, contentQueryPort.nicknameLookupCount);
     }
 
     @Test
@@ -134,6 +303,7 @@ class CreateCompanionNotificationServiceTest {
                 notificationRepository,
                 endpointRepository,
                 deliveryRepository,
+                new FakePushContentQueryPort(),
                 CLOCK
         );
 
@@ -169,6 +339,66 @@ class CreateCompanionNotificationServiceTest {
                 CompanionNotificationTargetType.COMPANION_APPLICATION,
                 applicationId
         );
+    }
+
+    private static final class FakePushContentQueryPort implements CompanionPushContentQueryPort {
+
+        private String nickname = "수만두";
+        private Long recipientUserId;
+        private Long applicationId;
+        private int nicknameLookupCount;
+        private int placeLookupCount;
+
+        @Override
+        public Optional<String> findRecipientNickname(final Long recipientUserId) {
+            this.recipientUserId = recipientUserId;
+            nicknameLookupCount++;
+            return Optional.ofNullable(nickname);
+        }
+
+        @Override
+        public Optional<String> findPlaceNameByApplicationId(final Long applicationId) {
+            this.applicationId = applicationId;
+            placeLookupCount++;
+            return Optional.of("오노테라");
+        }
+    }
+
+    private static final class CapturingApplicationRepository implements CompanionApplicationRepository {
+
+        private CompanionApplication saved;
+
+        @Override
+        public CompanionApplication save(final CompanionApplication model) {
+            saved = new CompanionApplication(
+                    123L, model.postId(), model.applicantUserId(), model.status(), model.rejectionReason(), model.createdAt()
+            );
+            return saved;
+        }
+
+        @Override
+        public Optional<CompanionApplication> findById(final Long id) {
+            return Optional.ofNullable(saved).filter(application -> application.id().equals(id));
+        }
+
+        @Override
+        public boolean existsByPostIdAndApplicantUserId(final Long postId, final Long applicantUserId) {
+            return saved != null && saved.postId().equals(postId) && saved.applicantUserId().equals(applicantUserId);
+        }
+
+        @Override
+        public long countAcceptedByPostId(final Long postId) {
+            throw new UnsupportedOperationException("신청 테스트에서는 수락 수를 조회하지 않습니다.");
+        }
+
+        @Override
+        public boolean updateStatusIfPending(
+                final Long applicationId,
+                final CompanionApplicationStatus status,
+                final String rejectionReason
+        ) {
+            throw new UnsupportedOperationException("신청 테스트에서는 상태를 변경하지 않습니다.");
+        }
     }
 
     private static final class FakeCompanionNotificationRepository implements CompanionNotificationRepository {

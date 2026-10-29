@@ -67,6 +67,7 @@ import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionMeetingCheckInQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionNotificationRepository;
+import com.sopt.nearby.companion.port.out.CompanionPushContentQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPushDeliveryRepository;
 import com.sopt.nearby.companion.port.out.CompanionPushEndpointRepository;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
@@ -357,9 +358,10 @@ public class CompanionUseCaseConfig {
             final CompanionNotificationRepository repository,
             final CompanionPushEndpointRepository endpointRepository,
             final CompanionPushDeliveryRepository deliveryRepository,
+            final CompanionPushContentQueryPort contentQueryPort,
             final Clock clock
     ) {
-        return new CreateCompanionNotificationService(repository, endpointRepository, deliveryRepository, clock);
+        return new CreateCompanionNotificationService(repository, endpointRepository, deliveryRepository, contentQueryPort, clock);
     }
 
     @Bean

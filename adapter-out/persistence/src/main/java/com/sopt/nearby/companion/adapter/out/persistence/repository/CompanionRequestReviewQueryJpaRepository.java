@@ -22,7 +22,8 @@ public interface CompanionRequestReviewQueryJpaRepository extends Repository<Com
                     from companion_match match_row
                     join companion_schedule schedule on schedule.match_id = match_row.id and schedule.confirmed = true
                     where match_row.post_id = post.id and match_row.status = 'SCHEDULE_CONFIRMED'
-                    order by match_row.created_at desc, match_row.id desc limit 1), post.meeting_at) as meetingAt,
+                    order by match_row.created_at desc, match_row.id desc limit 1), post.meeting_at,
+                    case when post.meeting_time_type = 'NOW' then app.created_at end) as meetingAt,
                 post.exposure_expires_at as exposureExpiresAt,
                 post.open_chat_url as openChatUrl,
                 applicant_profile.id as applicantProfileId,

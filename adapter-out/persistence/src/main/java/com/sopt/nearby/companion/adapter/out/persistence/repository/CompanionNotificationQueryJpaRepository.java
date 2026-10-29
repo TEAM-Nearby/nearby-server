@@ -3,12 +3,33 @@ package com.sopt.nearby.companion.adapter.out.persistence.repository;
 
 import com.sopt.nearby.companion.adapter.out.persistence.entity.CompanionNotificationEntity;
 import java.util.List;
+import java.util.Optional;
 import java.time.LocalDateTime;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
 
 public interface CompanionNotificationQueryJpaRepository extends Repository<CompanionNotificationEntity, Long> {
+
+    @Query(value = """
+            select profile.nickname
+            from companion_profile profile
+            where profile.user_id = :recipientUserId
+            """, nativeQuery = true)
+    Optional<String> findRecipientNickname(@Param("recipientUserId") Long recipientUserId);
+
+    @Query(value = """
+            select place.name
+            from companion_application app
+            join companion_post post on post.id = app.post_id
+            left join companion_match_participant participant
+                on participant.accepted_application_id = app.id
+            left join companion_schedule schedule
+                on schedule.match_id = participant.match_id and schedule.confirmed = true
+            join place_cache place on place.id = coalesce(schedule.place_id, post.place_id)
+            where app.id = :applicationId
+            """, nativeQuery = true)
+    Optional<String> findPlaceNameByApplicationId(@Param("applicationId") Long applicationId);
 
     @Query(value = """
             select

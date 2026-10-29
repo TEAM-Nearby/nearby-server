@@ -69,17 +69,22 @@ class ReadCompanionRequestReviewServiceTest {
     }
 
     @Test
-    void fallsBackToExposureExpiresAtWhenMeetingAtIsNull() {
+    void convertsNowApplicationTimeWithoutUsingExposureExpiry() {
         queryPort.result = Optional.of(review(
                 100L,
                 CompanionPostMeetingTimeType.NOW,
-                null,
-                LocalDateTime.of(2026, 6, 18, 17, 30)
+                LocalDateTime.of(2026, 7, 2, 7, 37),
+                LocalDateTime.of(2026, 7, 2, 8, 37)
         ));
+        var original = queryPort.result.orElseThrow();
+        queryPort.result = Optional.of(new CompanionRequestReview(
+                original.applicationId(), original.postId(), original.applicationStatus(), original.hostUserId(),
+                original.placeName(), original.meetingTimeType(), original.meetingAt(), original.exposureExpiresAt(),
+                original.openChatUrl(), original.applicantProfile(), original.applicantAccount(), "Paris, France"));
 
         CompanionRequestReviewResult result = service.read(new ReadCompanionRequestReviewCommand(100L, 3L));
 
-        assertEquals(LocalDateTime.of(2026, 6, 18, 17, 30), result.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 7, 2, 9, 37), result.meetingAt());
     }
 
     @Test

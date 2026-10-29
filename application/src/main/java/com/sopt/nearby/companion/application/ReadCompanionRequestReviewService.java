@@ -7,7 +7,6 @@ import com.sopt.nearby.companion.domain.model.match.CompanionRequestReview;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
 import com.sopt.nearby.companion.port.out.CompanionRequestReviewQueryPort;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +32,7 @@ public class ReadCompanionRequestReviewService implements ReadCompanionRequestRe
         var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(review.placeAddress())
                 .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
         return CompanionRequestReviewResult.from(review,
-                CompanionMeetingTimeConverter.utcToLocal(effectiveMeetingAt(review), zone), zone);
+                CompanionMeetingTimeConverter.utcToLocal(review.meetingAt(), zone), zone);
     }
 
     private void validate(final ReadCompanionRequestReviewCommand command) {
@@ -44,9 +43,5 @@ public class ReadCompanionRequestReviewService implements ReadCompanionRequestRe
                 || command.applicationId() <= 0) {
             throw new CompanionRequestNotFoundException();
         }
-    }
-
-    private LocalDateTime effectiveMeetingAt(final CompanionRequestReview review) {
-        return review.meetingAt() == null ? review.exposureExpiresAt() : review.meetingAt();
     }
 }
