@@ -88,7 +88,7 @@ class ReadCompanionPostDetailServiceTest {
         CompanionPostDetailResult result = service.read(new ReadCompanionPostDetailCommand(7L, 101L));
 
         assertNull(result.meetingAt());
-        assertEquals(NOW.plusMinutes(30).plusHours(2), result.expiresAt());
+        assertEquals(NOW.plusMinutes(30), result.expiresAt());
         assertEquals("https://open.kakao.com/o/nearby123", result.openChatUrl());
         assertEquals(CompanionPostApplyStatus.ACCEPTED, result.applyStatus());
     }

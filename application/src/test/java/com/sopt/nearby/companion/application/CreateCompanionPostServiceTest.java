@@ -173,6 +173,23 @@ class CreateCompanionPostServiceTest {
     }
 
     @Test
+    void returnsNowExposureExpiryInUtcForParis() {
+        CreateCompanionPostCommand base = command(CompanionPostMeetingTimeType.NOW, null, true, List.of());
+        CreateCompanionPostCommand paris = new CreateCompanionPostCommand(
+                base.hostUserId(),
+                new CreateCompanionPostCommand.Place("place", "restaurant", "Paris, France",
+                        base.place().latitude(), base.place().longitude(), base.place().category()),
+                base.meetingTimeType(), base.meetingAt(), base.recruitmentCapacity(),
+                base.departEvenIfNotFull(), base.styleKeywords(), base.content(), base.openChatUrl()
+        );
+
+        CreateCompanionPostResult result = service.create(paris);
+
+        assertEquals(NOW.plusHours(1), result.exposureExpiresAt());
+        assertEquals(NOW.plusHours(2), result.createdAt());
+    }
+
+    @Test
     void returnsResolvedPlaceSnapshot() {
         resolvePlaceCacheUseCase.result = new ResolvedPlaceCache(
                 20L,
