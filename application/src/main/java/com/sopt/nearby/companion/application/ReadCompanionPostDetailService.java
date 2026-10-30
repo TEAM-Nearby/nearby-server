@@ -78,8 +78,7 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
                 CompanionMeetingTimeConverter.utcToLocal(detail.createdAt(),
                         cityTime.city() == null ? ZoneOffset.UTC : cityTime.city().zoneId()),
                 detail.meetingTimeType(),
-                CompanionMeetingTimeConverter.utcToLocal(detail.expiresAt(),
-                        cityTime.city() == null ? ZoneOffset.UTC : cityTime.city().zoneId()),
+                detail.expiresAt(),
                 detail.participantCount(),
                 detail.participants().stream()
                         .map(participant -> new CompanionPostDetailResult.Participant(
