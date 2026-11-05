@@ -188,11 +188,13 @@ jobs:
             --arg healthcheck_path "$HEALTHCHECK_PATH" \
             --arg ssm_env_path "$SSM_ENV_PATH" \
             --arg aws_region "$AWS_REGION" \
+            --rawfile profile_image_check .github/scripts/check-production-profile-images.sh \
             --arg app_env_path "$APP_DIR/app.env" \
             --arg service_unit "/etc/systemd/system/${APP_SERVICE_NAME}.service" \
             '{commands: [
               "#!/bin/bash",
               "set -euo pipefail",
+              "bash -s -- \($ssm_env_path | @sh) \($aws_region | @sh) <<\u0027NEARBY_IMAGE_CHECK\u0027\n\($profile_image_check)\nNEARBY_IMAGE_CHECK",
               "sudo test -d \($app_dir)",
               "stage_dir=$(mktemp -d \($app_dir | @sh)/.deploy.XXXXXXXX)",
               "trap '\''rm -rf -- \"$stage_dir\"'\'' EXIT",
