@@ -69,7 +69,7 @@ jobs:
           set -euo pipefail
           account="$(aws sts get-caller-identity --query Account --output text)"
           test "$account" = "$AWS_ACCOUNT_ID"
-          target="$(aws ec2 describe-instances --instance-ids "$EC2_INSTANCE_ID" --query 'Reservations[0].Instances[0].Tags[?Key==`Environment`].Value | [0]' --output text)"
+          target="$(aws ec2 describe-instances --instance-ids "$EC2_INSTANCE_ID" --query "Reservations[0].Instances[0].Tags[?Key=='Environment'].Value | [0]" --output text)"
           test "$target" = production
           aws s3api head-bucket --bucket "$DEPLOY_S3_BUCKET"
           parameters="$(jq -n --arg path "$SSM_ENV_PATH" --arg region "$AWS_REGION" '{commands: [
