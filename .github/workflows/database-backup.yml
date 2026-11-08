@@ -5,12 +5,33 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  id-token: write
 concurrency:
   group: nearby-backup-prod
   cancel-in-progress: false
 jobs:
+  skipped:
+    if: vars.BACKUP_ENABLED != 'true' || github.ref != format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Explain skipped backup
+        env:
+          BACKUP_ENABLED: ${{ vars.BACKUP_ENABLED }}
+          EXECUTION_REF: ${{ github.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          {
+            echo '### Backup skipped'
+            if [ "$BACKUP_ENABLED" != true ]; then
+              echo 'BACKUP_ENABLED is missing or is not true. Scheduled backups are disabled.'
+            else
+              printf 'Run on the default branch %s instead of %s.\n' "$DEFAULT_BRANCH" "$EXECUTION_REF"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
   backup:
+    permissions:
+      contents: read
+      id-token: write
     if: vars.BACKUP_ENABLED == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -19,7 +40,6 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 0
           persist-credentials: false
       - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1
         with:

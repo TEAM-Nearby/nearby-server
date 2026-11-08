@@ -1,6 +1,15 @@
 name: Deploy backend
 on:
   workflow_call:
+    secrets:
+      FLYWAY_DB_URL:
+        required: true
+      FLYWAY_DB_USER:
+        required: true
+      FLYWAY_DB_PASSWORD:
+        required: true
+      AWS_ROLE_TO_ASSUME:
+        required: false
     inputs:
       environment:
         required: true
@@ -52,6 +61,10 @@ jobs:
   migrate:
     needs: verify
     uses: ./.github/workflows/flyway-migration.yml
+    secrets:
+      FLYWAY_DB_URL: ${{ secrets.FLYWAY_DB_URL }}
+      FLYWAY_DB_USER: ${{ secrets.FLYWAY_DB_USER }}
+      FLYWAY_DB_PASSWORD: ${{ secrets.FLYWAY_DB_PASSWORD }}
     permissions:
       contents: read
     with:

@@ -8,6 +8,13 @@ on:
         type: choice
         options: [dev, prod]
   workflow_call:
+    secrets:
+      FLYWAY_DB_URL:
+        required: true
+      FLYWAY_DB_USER:
+        required: true
+      FLYWAY_DB_PASSWORD:
+        required: true
     inputs:
       environment:
         required: true

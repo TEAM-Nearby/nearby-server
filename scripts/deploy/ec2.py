@@ -74,7 +74,7 @@ def atomic_copy(source, destination, mode):
         temporary.unlink(missing_ok=True)
 
 
-def deploy(config, result):
+def deploy(config, result, *, systemd_root=Path("/etc/systemd/system"), proc_root=Path("/proc")):
     if os.geteuid() != 0:
         raise ValueError("SSM deployment must run as root")
     app_dir = Path(config["APP_DIR"])
@@ -132,7 +132,7 @@ def deploy(config, result):
                 raise ValueError("Existing release artifact was modified")
             atomic_copy(stage / "app.jar", archived / "app.jar", 0o644)
             old_pid = run(["systemctl", "show", service, "--property=MainPID", "--value"])
-            dropin = Path("/etc/systemd/system") / (service + ".d") / "90-nearby-deployment.conf"
+            dropin = systemd_root / (service + ".d") / "90-nearby-deployment.conf"
             dropin.parent.mkdir(parents=True, exist_ok=True)
             if dropin.exists():
                 shutil.copyfile(dropin, state / "previous-dropin.conf")
@@ -159,7 +159,7 @@ def deploy(config, result):
             pid = run(["systemctl", "show", service, "--property=MainPID", "--value"])
             if pid == "0" or pid == old_pid:
                 raise RuntimeError("Expected a new running application process")
-            commandline = Path("/proc") / pid / "cmdline"
+            commandline = proc_root / pid / "cmdline"
             if str(jar).encode() not in commandline.read_bytes().split(b"\0"):
                 raise RuntimeError("Running process does not use expected JAR")
             if sha256(jar) != config["sha256"]:
@@ -180,6 +180,7 @@ def main():
         deploy(config, result)
         result["status"] = "success"
     except Exception as error:
+        result["status"] = "failure"
         result["error"] = str(error) if isinstance(error, (ValueError, RuntimeError)) else type(error).__name__
     finally:
         print("NEARBY_DEPLOYMENT_RESULT=" + json.dumps(result), flush=True)

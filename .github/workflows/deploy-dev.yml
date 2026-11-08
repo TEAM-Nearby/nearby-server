@@ -3,12 +3,19 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  id-token: write
 concurrency:
   group: nearby-operations-dev
   cancel-in-progress: false
 jobs:
   deploy:
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/deploy.yml
+    secrets:
+      FLYWAY_DB_URL: ${{ secrets.FLYWAY_DB_URL }}
+      FLYWAY_DB_USER: ${{ secrets.FLYWAY_DB_USER }}
+      FLYWAY_DB_PASSWORD: ${{ secrets.FLYWAY_DB_PASSWORD }}
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
     with:
       environment: dev

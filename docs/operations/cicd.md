@@ -26,6 +26,11 @@ Lambda, Docker 기반 앱 배포, API Gateway, CloudFront는 추가하지 않는
 JAR 포장 단계는 변경·미추적 파일이 있는 작업 트리를 거부한다. 로컬 수정 JAR를 HEAD의 산출물로 표시하지 않는다.
 테스트·빌드를 DB 변경 전에 끝내어 빌드 실패 시 DB만 먼저 변경되는 상황을 줄인다.
 
+배포 진입점 → 공통 배포 → migration의 호출 경계마다 필요한 Secret만 이름으로 전달한다.
+재사용 워크플로는 Flyway Secret 3개를 required로 선언하며, dev의 AWS_ROLE_TO_ASSUME은
+공통 배포에만 전달한다. 실제 값은 실행 job의 dev/production Environment에서 읽는다.
+필수 Secret 전달 여부와 실제 값의 존재는 별개이므로 preflight의 빈 값 검사도 유지한다.
+
 CI는 이전 실행을 취소할 수 있다. 배포는 dev/prod별 nearby-operations 잠금으로 migration부터
 릴리즈까지 직렬화하며 진행 중 실행을 취소하지 않는다. 단독 migration도 같은 operations 잠금을 사용한다.
 배포 내부 migration은 부모가 이미 operations 잠금을 보유하므로 별도 migration 잠금을 사용한다.
@@ -210,6 +215,8 @@ metadata artifact 보존 기간은 90일이며 장기 복구 기록은 별도 �
 
 BACKUP_ENABLED=true 전에는 예약·수동 백업 모두 실행되지 않는다. 외부 설정 완료 후 활성화하고
 기본 브랜치에서 첫 수동 백업을 검증한다. UTC 20:00은 KST 다음 날 05:00이며 실제 시작은 지연될 수 있다.
+비활성 설정이나 기본 브랜치 불일치로 생략하면 별도 job이 이유를 Summary에 기록한다.
+백업 checkout은 스크립트 실행에 필요한 단일 커밋만 받는다.
 
 Supabase CLI 2.58.5를 고정하고 Docker 사용 가능한 runner에서 역할·스키마·데이터를 분리한다.
 빈 파일을 검사하고 gzip·GPG AES256으로 암호화한 뒤 평문을 삭제한다. 실패해도 임시 파일을 정리한다.
@@ -258,3 +265,8 @@ dev 대신 develop, 멀티모듈의 두 SQL 경로, 앱과 동일한 Flyway 의�
 최신 develop 기반 격리 작업 트리의 결과이며 기존 사용자 변경은 포함하지 않았다. 원격 CI와 CI의 PostgreSQL 17.6 컨테이너는
 실행하지 않았다. 실제 AWS OIDC·SSM·systemd·외부 HTTP, Supabase 덤프·GPG·S3 업로드 및 복원은
 외부 설정 후 별도 검증해야 한다. 운영 migration·배포·태그·Release를 실행하지 않았다.
+
+PR 리뷰 반영 후 Python 테스트는 26개다. 실제 임시 파일과 대체한 외부 명령으로 ec2.deploy의
+정상 교체, 체크섬·환경 오류, 설치·기동·health·프로세스 검증 실패와 이전 JAR·환경·drop-in
+보존을 검증한다. 최종 metadata 저장 실패가 성공 종료로 오인되던 오류도 회귀 테스트로 막았다.
+로컬 actionlint는 ShellCheck를 포함해 통과했다. 실제 EC2·AWS 배포 검증을 대체하지는 않는다.
