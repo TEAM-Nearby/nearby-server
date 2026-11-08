@@ -1,0 +1,47 @@
+name: Deploy prod
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '운영 버전 (예: 1.2.0)'
+        required: true
+        type: string
+permissions:
+  contents: write
+  id-token: write
+concurrency:
+  group: nearby-operations-prod
+  cancel-in-progress: false
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: prod
+      version: ${{ inputs.version }}
+  release:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: production
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: deployment-prod-${{ github.run_id }}
+          path: build/deployment
+      - name: Publish annotated tag and release after saved deployment evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOY_ENVIRONMENT: prod
+          DEPLOY_SHA: ${{ github.sha }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: python3 scripts/deploy/pipeline.py release
+      - name: Distinguish release publication failure
+        if: failure()
+        run: echo 'Application deployment succeeded. Release publication failed; recover publication using the saved SHA and metadata without redeploying or moving tags.' >> "$GITHUB_STEP_SUMMARY"

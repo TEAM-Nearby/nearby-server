@@ -2,6 +2,21 @@ plugins {
     id 'org.springframework.boot'
 }
 
+// 애플리케이션과 같은 Flyway 의존성으로 배포 선행 migration만 실행한다.
+sourceSets {
+    migration {
+        compileClasspath += sourceSets.main.runtimeClasspath
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+    }
+}
+
+tasks.register('migrateDatabase', JavaExec) {
+    group = 'database'
+    description = 'Runs Flyway against the explicitly supplied FLYWAY_* database.'
+    classpath = sourceSets.migration.runtimeClasspath
+    mainClass = 'com.sopt.nearby.migration.DatabaseMigration'
+}
+
 dependencies {
     implementation project(':adapter-in:web')
     implementation project(':adapter-out:persistence')

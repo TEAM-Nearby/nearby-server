@@ -1,0 +1,14 @@
+name: Deploy dev
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: nearby-operations-dev
+  cancel-in-progress: false
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: dev

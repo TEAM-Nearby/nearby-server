@@ -1,0 +1,112 @@
+name: Deploy backend
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      version:
+        type: string
+        default: ''
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: ${{ inputs.environment == 'prod' && 'production' || 'dev' }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate deployment inputs and configuration
+        env:
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+          DEPLOY_SHA: ${{ github.sha }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          AWS_REGION: ${{ inputs.environment == 'prod' && vars.PROD_AWS_REGION || inputs.environment == 'dev' && vars.AWS_REGION || '' }}
+          AWS_ACCOUNT_ID: ${{ inputs.environment == 'prod' && vars.PROD_AWS_ACCOUNT_ID || inputs.environment == 'dev' && vars.AWS_ACCOUNT_ID || '' }}
+          EC2_INSTANCE_ID: ${{ inputs.environment == 'prod' && vars.PROD_EC2_INSTANCE_ID || inputs.environment == 'dev' && vars.EC2_INSTANCE_ID }}
+          DEPLOY_S3_BUCKET: ${{ inputs.environment == 'prod' && vars.PROD_DEPLOY_S3_BUCKET || inputs.environment == 'dev' && vars.DEPLOY_S3_BUCKET }}
+          APP_DIR: ${{ inputs.environment == 'prod' && vars.PROD_APP_DIR || inputs.environment == 'dev' && vars.APP_DIR || '' }}
+          APP_JAR_PATH: ${{ inputs.environment == 'prod' && vars.PROD_APP_JAR_PATH || inputs.environment == 'dev' && vars.APP_JAR_PATH || '' }}
+          APP_SERVICE_NAME: ${{ inputs.environment == 'prod' && vars.PROD_APP_SERVICE_NAME || inputs.environment == 'dev' && vars.APP_SERVICE_NAME || '' }}
+          SSM_ENV_PATH: ${{ inputs.environment == 'prod' && vars.PROD_SSM_ENV_PATH || inputs.environment == 'dev' && vars.SSM_ENV_PATH || '' }}
+          INTERNAL_HEALTHCHECK_URL: ${{ inputs.environment == 'prod' && vars.PROD_INTERNAL_HEALTHCHECK_URL || inputs.environment == 'dev' && vars.INTERNAL_HEALTHCHECK_URL || '' }}
+          SERVICE_URL: ${{ inputs.environment == 'prod' && vars.PROD_SERVICE_URL || inputs.environment == 'dev' && vars.SERVICE_URL || '' }}
+          HEALTHCHECK_PATH: ${{ inputs.environment == 'prod' && vars.PROD_HEALTHCHECK_PATH || inputs.environment == 'dev' && vars.HEALTHCHECK_PATH || '' }}
+          AWS_ROLE_TO_ASSUME: ${{ inputs.environment == 'prod' && vars.PROD_AWS_ROLE_ARN || inputs.environment == 'dev' && secrets.AWS_ROLE_TO_ASSUME || '' }}
+          FLYWAY_DB_URL: ${{ secrets.FLYWAY_DB_URL }}
+          FLYWAY_DB_USER: ${{ secrets.FLYWAY_DB_USER }}
+          FLYWAY_DB_PASSWORD: ${{ secrets.FLYWAY_DB_PASSWORD }}
+        run: python3 scripts/deploy/pipeline.py preflight
+  verify:
+    needs: preflight
+    uses: ./.github/workflows/verify.yml
+    permissions:
+      contents: read
+    with:
+      commit_sha: ${{ github.sha }}
+  migrate:
+    needs: verify
+    uses: ./.github/workflows/flyway-migration.yml
+    permissions:
+      contents: read
+    with:
+      environment: ${{ inputs.environment }}
+      commit_sha: ${{ github.sha }}
+      deployment_lock_held: true
+  deploy:
+    needs: migrate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: ${{ inputs.environment == 'prod' && 'production' || 'dev' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+      DEPLOY_SHA: ${{ github.sha }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      AWS_REGION: ${{ inputs.environment == 'prod' && vars.PROD_AWS_REGION || inputs.environment == 'dev' && vars.AWS_REGION || '' }}
+      AWS_ACCOUNT_ID: ${{ inputs.environment == 'prod' && vars.PROD_AWS_ACCOUNT_ID || inputs.environment == 'dev' && vars.AWS_ACCOUNT_ID || '' }}
+      EC2_INSTANCE_ID: ${{ inputs.environment == 'prod' && vars.PROD_EC2_INSTANCE_ID || inputs.environment == 'dev' && vars.EC2_INSTANCE_ID }}
+      DEPLOY_S3_BUCKET: ${{ inputs.environment == 'prod' && vars.PROD_DEPLOY_S3_BUCKET || inputs.environment == 'dev' && vars.DEPLOY_S3_BUCKET }}
+      APP_DIR: ${{ inputs.environment == 'prod' && vars.PROD_APP_DIR || inputs.environment == 'dev' && vars.APP_DIR || '' }}
+      APP_JAR_PATH: ${{ inputs.environment == 'prod' && vars.PROD_APP_JAR_PATH || inputs.environment == 'dev' && vars.APP_JAR_PATH || '' }}
+      APP_SERVICE_NAME: ${{ inputs.environment == 'prod' && vars.PROD_APP_SERVICE_NAME || inputs.environment == 'dev' && vars.APP_SERVICE_NAME || '' }}
+      SSM_ENV_PATH: ${{ inputs.environment == 'prod' && vars.PROD_SSM_ENV_PATH || inputs.environment == 'dev' && vars.SSM_ENV_PATH || '' }}
+      INTERNAL_HEALTHCHECK_URL: ${{ inputs.environment == 'prod' && vars.PROD_INTERNAL_HEALTHCHECK_URL || inputs.environment == 'dev' && vars.INTERNAL_HEALTHCHECK_URL || '' }}
+      SERVICE_URL: ${{ inputs.environment == 'prod' && vars.PROD_SERVICE_URL || inputs.environment == 'dev' && vars.SERVICE_URL || '' }}
+      HEALTHCHECK_PATH: ${{ inputs.environment == 'prod' && vars.PROD_HEALTHCHECK_PATH || inputs.environment == 'dev' && vars.HEALTHCHECK_PATH || '' }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Initialize deployment record before AWS authentication
+        run: python3 scripts/deploy/pipeline.py initialize
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: backend-${{ github.sha }}
+          path: build/deployment/package
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ inputs.environment == 'prod' && vars.PROD_AWS_ROLE_ARN || inputs.environment == 'dev' && secrets.AWS_ROLE_TO_ASSUME || '' }}
+          allowed-account-ids: ${{ inputs.environment == 'prod' && vars.PROD_AWS_ACCOUNT_ID || inputs.environment == 'dev' && vars.AWS_ACCOUNT_ID || '' }}
+          aws-region: ${{ inputs.environment == 'prod' && vars.PROD_AWS_REGION || inputs.environment == 'dev' && vars.AWS_REGION || '' }}
+          role-session-name: nearby-${{ github.run_id }}
+      - name: Upload and deploy the verified jar through SSM
+        run: python3 scripts/deploy/deploy.py
+      - name: Save deployment metadata, including failure state
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: deployment-${{ inputs.environment }}-${{ github.run_id }}
+          path: build/deployment/metadata.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 90
