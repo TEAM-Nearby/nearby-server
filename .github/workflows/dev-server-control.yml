@@ -1,0 +1,62 @@
+# 개발 EC2의 상태 조회와 자동 시작 준비 및 수동 전원 제어를 실행합니다.
+name: Dev server control
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: '작업 (처음에는 status 확인 후 prepare 실행)'
+        required: true
+        default: status
+        type: choice
+        options: [status, prepare, start, stop]
+      reason:
+        description: '작업 사유 (stop은 2~100자 필수, 한 줄)'
+        type: string
+        default: ''
+      confirmation:
+        description: 'stop 실행 시 stop-dev를 입력하세요.'
+        type: string
+        default: ''
+permissions:
+  contents: read
+# 개발 배포 및 직접 실행하는 개발 DB migration과 동일한 잠금을 사용합니다.
+concurrency:
+  group: nearby-operations-dev
+  cancel-in-progress: false
+jobs:
+  control:
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CONTROL_ACTION: ${{ inputs.action }}
+      CONTROL_REASON: ${{ inputs.reason }}
+      STOP_CONFIRMATION: ${{ inputs.confirmation }}
+      AWS_RETRY_MODE: standard
+      AWS_MAX_ATTEMPTS: '2'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate branch, commit and stop confirmation
+        run: python3 scripts/operations/dev_server.py preflight
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: arn:aws:iam::395931907754:role/nearby-github-actions-dev-server-control
+          role-session-name: dev-control-${{ github.run_id }}-${{ github.run_attempt }}
+          allowed-account-ids: '395931907754'
+          aws-region: ap-northeast-2
+      - name: Control development server and verify the result
+        run: python3 scripts/operations/dev_server.py
+      - name: Preserve operation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dev-server-control-${{ github.run_id }}-${{ github.run_attempt }}
+          path: build/dev-server-control/result.json
+          if-no-files-found: warn
+          retention-days: 90
