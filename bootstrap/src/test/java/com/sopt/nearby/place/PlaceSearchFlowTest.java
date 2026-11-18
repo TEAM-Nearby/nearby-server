@@ -30,11 +30,14 @@ import com.sopt.nearby.user.port.out.UserAccountRepository;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -73,6 +76,65 @@ class PlaceSearchFlowTest {
                 .andExpect(jsonPath("$.data.nextPageToken").value("next"));
         verify(searchPort).search(new SearchPlacesCommand("시우다드 콘달",
                 new BigDecimal("41.3874"), new BigDecimal("2.1686"), 5000, "es", 5, "previous"));
+    }
+
+    @Test
+    void excludesUnsupportedPlacesWhilePreservingSupportedPlacesAndPagination() throws Exception {
+        long userId = profile(CompanionProfileStatus.ACTIVE);
+        var attribution = new PlaceSearchPage.Attribution("출처", "https://example.com");
+        var university = new PlaceSearchPage.Place("university", "한국외대", "서울",
+                new BigDecimal("37.597"), new BigDecimal("127.058"), Category.OTHER, List.of());
+        var uncategorized = new PlaceSearchPage.Place("unknown", "분류 없는 장소", null,
+                BigDecimal.ZERO, BigDecimal.ZERO, null, List.of());
+        List<PlaceSearchPage.Place> supported = List.of(Category.RESTAURANT, Category.CAFE, Category.PUB,
+                        Category.MUSEUM, Category.PHOTO_SPOT).stream()
+                .map(category -> new PlaceSearchPage.Place(category.name(), category.name(), "주소",
+                        new BigDecimal("37.597"), new BigDecimal("127.058"), category, List.of(attribution)))
+                .toList();
+        var results = new ArrayList<>(supported);
+        results.addFirst(university);
+        results.add(uncategorized);
+        when(searchPort.search(any())).thenReturn(new PlaceSearchPage(results, "next-supported-page"));
+
+        var response = mvc.perform(request(userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.places.length()").value(5))
+                .andExpect(jsonPath("$.data.nextPageToken").value("next-supported-page"))
+                .andReturn();
+
+        for (int i = 0; i < supported.size(); i++) {
+            jsonPath("$.data.places[" + i + "].googlePlaceId").value(supported.get(i).googlePlaceId()).match(response);
+            jsonPath("$.data.places[" + i + "].category").value(supported.get(i).category().name()).match(response);
+            jsonPath("$.data.places[" + i + "].attributions[0].providerUri")
+                    .value(attribution.providerUri()).match(response);
+        }
+
+        when(searchPort.search(any())).thenReturn(new PlaceSearchPage(List.of(university, uncategorized), "next"));
+        mvc.perform(request(userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.places").isEmpty())
+                .andExpect(jsonPath("$.data.nextPageToken").value("next"));
+        verify(searchPort, times(2)).search(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"\"category\":\"OTHER\",", "\"category\":\"ALL\",", "\"category\":null,",
+            "\"category\":\"\",", ""})
+    void rejectsUnsupportedPostPlaceWithoutPersistingIt(final String categoryJson) throws Exception {
+        long userId = profile(CompanionProfileStatus.ACTIVE);
+        String googleId = "unsupported-place-" + userId;
+
+        mvc.perform(post("/api/companion-posts").with(jwt().jwt(t -> t.subject("" + userId)))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"place":{"googlePlaceId":"%s","name":"한국외대",%s
+                                  "latitude":37.597,"longitude":127.058},
+                                 "meetingTimeType":"UNDECIDED","recruitmentCapacity":1,
+                                 "content":"같이 가요","openChatUrl":"https://open.kakao.com/o/test"}
+                                """.formatted(googleId, categoryJson)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+        assertThat(places.findByGooglePlaceId(googleId)).isEmpty();
     }
 
     @Test

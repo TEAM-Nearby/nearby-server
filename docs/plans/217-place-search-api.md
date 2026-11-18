@@ -1,6 +1,7 @@
 # 동행글 작성 장소 검색 API
 
 - 이슈: [#217](https://github.com/TEAM-Nearby/nearby-server/issues/217).
+- 카테고리 제한 후속 이슈: [#268](https://github.com/TEAM-Nearby/nearby-server/issues/268).
 - 기준 브랜치: `feat/217`, `develop`의 `abeeb32`에서 시작.
 - 서버 구현: `GET /api/companion-places/search`.
 - 확인 날짜: 2026-10-03, Asia/Seoul.
@@ -59,9 +60,13 @@ Authorization: Bearer <access-token>
 
 결과가 없으면 `places: []`, 마지막 페이지면 `nextPageToken: null`이다. 주소가 없는 장소는 `address: null`이다. Google 응답에 ID·이름·유효한 좌표가 없거나 응답 형태가 잘못되면 빈 결과로 숨기지 않고 502를 반환한다. 중복 Google Place ID는 응답 순서를 유지하며 한 번만 반환한다.
 
-카테고리는 Google `primaryType`을 먼저 사용하고 `types`로 보완한다. `RESTAURANT`, `CAFE`, `PUB`, `MUSEUM`, `PHOTO_SPOT`, `OTHER`는 기존 작성 API에 전달 가능한 값이다. 실제 시우다드 콘달의 Google 기본 유형은 `bar`이므로 `PUB`으로 반환됐다.
+카테고리는 Google `primaryType`을 먼저 사용하고 `types`로 보완한다. 검색 결과에는 동행글 작성이 가능한 `RESTAURANT`, `CAFE`, `PUB`, `MUSEUM`, `PHOTO_SPOT`만 포함한다. 대학·도시 등 위 분류에 해당하지 않는 `OTHER`와 분류가 누락된 장소는 제외한다. 실제 시우다드 콘달의 Google 기본 유형은 `bar`이므로 `PUB`으로 반환됐다.
+
+분류 필터링 후 결과가 `pageSize`보다 적거나 빈 배열일 수 있다. `nextPageToken`은 그대로 유지하므로 빈 결과도 토큰이 있으면 다음 페이지를 조회할 수 있다. 서버는 페이지를 채우기 위해 추가 Google 요청을 보내지 않는다.
 
 앱은 선택한 결과의 `googlePlaceId`, `name`, `address`, `latitude`, `longitude`, `category`를 기존 `POST /api/companion-posts` 요청의 `place`에 그대로 전달한다. `attributions`는 검색 화면에 표시할 출처 정보이며 작성 요청 필드가 아니다. 기존 장소 저장 흐름이 Google Place ID로 장소를 재사용하고 상세 조회에 같은 ID·주소·좌표를 반환한다. DB 좌표는 기존 소수점 8자리 정밀도로 저장한다.
+
+작성 API도 `place.category`가 누락되거나 `OTHER`, `ALL`이면 400 `VALIDATION_ERROR`로 거부한다. 기존 `OTHER` 장소의 동행글을 일괄 변경하거나 삭제하지 않는다.
 
 ## 오류·설정·저장
 

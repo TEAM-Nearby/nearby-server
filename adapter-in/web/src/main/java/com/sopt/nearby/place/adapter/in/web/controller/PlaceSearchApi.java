@@ -21,9 +21,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public interface PlaceSearchApi {
     @Operation(summary = "동행글 작성용 장소 검색",
             description = "검색어와 선택 도시 또는 지도 중심 좌표로 Google Text Search를 호출합니다. "
+                    + "식당(RESTAURANT), 카페(CAFE), 술집(PUB), 박물관(MUSEUM), 포토스팟(PHOTO_SPOT)만 반환합니다. "
                     + "좌표는 필수이며 radiusMeters는 검색 우선순위일 뿐 결과의 경계가 아닙니다. "
                     + "기본 표시 언어는 한국어이며 모든 한국어 별칭의 검색을 보장하지 않습니다. "
-                    + "최대 20건을 반환하며 빈 결과도 200입니다. 다음 페이지는 같은 검색 조건과 nextPageToken을 사용합니다. "
+                    + "분류 필터링으로 pageSize보다 적거나 빈 결과도 200입니다. "
+                    + "빈 결과에도 nextPageToken이 있으면 같은 검색 조건으로 다음 페이지를 조회할 수 있습니다. "
                     + "온보딩 완료와 활성 동행 프로필이 필요합니다. 선택한 결과의 googlePlaceId, name, address, "
                     + "latitude, longitude, category를 기존 동행글 작성 요청의 place에 전달합니다. "
                     + "앱은 Google Maps 출처 표시 및 반환된 attributions를 표시해야 합니다.",
