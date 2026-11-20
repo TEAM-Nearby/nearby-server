@@ -60,12 +60,12 @@ class ReadCompanionRequestReviewServiceTest {
         assertEquals(CompanionApplicationStatus.PENDING, result.applicationStatus());
         assertEquals("오노테라", result.placeName());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.meetingTimeType());
-        assertEquals(LocalDateTime.of(2026, 6, 18, 16, 30), result.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 6, 19, 1, 30), result.meetingAt());
         assertEquals("https://open.kakao.com/o/nearby123", result.openChatUrl());
         assertEquals(20L, result.applicantProfile().profileId());
         assertEquals("지민", result.applicantProfile().nickname());
         assertEquals(UserGender.FEMALE, result.applicantProfile().gender());
-        assertEquals(LocalDateTime.of(2026, 7, 1, 9, 0), result.applicantAccount().phoneVerifiedAt());
+        assertEquals(LocalDateTime.of(2026, 7, 1, 18, 0), result.applicantAccount().phoneVerifiedAt());
     }
 
     @Test

@@ -87,9 +87,6 @@ nearby:
       search-timeout-ms: ${GOOGLE_PLACES_SEARCH_TIMEOUT_MS:5000}
       photo:
         max-width-px: ${GOOGLE_PLACES_PHOTO_MAX_WIDTH_PX:640}
-    time-zone:
-      api-key: ${GOOGLE_TIME_ZONE_API_KEY:${GOOGLE_PLACES_API_KEY:}}
-      timeout-ms: ${GOOGLE_TIME_ZONE_TIMEOUT_MS:1000}
   push:
     worker:
       enabled: ${NEARBY_PUSH_WORKER_ENABLED:false}

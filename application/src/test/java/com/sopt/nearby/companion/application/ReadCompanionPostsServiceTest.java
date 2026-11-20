@@ -12,7 +12,6 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSummary;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
-import com.sopt.nearby.companion.port.out.CompanionPlaceTimeZoneLookup;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
@@ -20,15 +19,10 @@ import com.sopt.nearby.user.exception.OnboardingRequiredException;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -123,10 +117,10 @@ class ReadCompanionPostsServiceTest {
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, post.meetingTimeType());
         assertEquals("1234567890123456789012345678901234567890123456789", post.contentPreview());
         assertEquals(true, post.contentPreviewTruncated());
-        assertEquals("7월 3일 14:00", post.meetingAtText());
+        assertEquals("7월 3일 23:00", post.meetingAtText());
         assertEquals("2/4 모집 중", post.participantSummaryText());
         assertEquals("30분 전", post.createdAgoText());
-        assertEquals("7월 3일 14시 니어바이스시 동행", post.mapMarkerText());
+        assertEquals("7월 3일 23시 니어바이스시 동행", post.mapMarkerText());
         assertEquals("google-place-id", resolvePlaceImageUseCase.command.googlePlaceId());
         assertEquals("https://lh3.googleusercontent.com/place.jpg", resolvePlaceImageUseCase.command.photoReference());
         assertEquals("https://lh3.googleusercontent.com/resolved-place.jpg", post.place().imageUrl());
@@ -171,7 +165,7 @@ class ReadCompanionPostsServiceTest {
 
         assertEquals("https://cdn.nearby.test/default-place.png", result.posts().get(0).place().imageUrl());
         assertEquals("DEFAULT", result.posts().get(0).place().imageSource());
-        assertEquals("7월 3일 14시 30분 니어바이스시 동행", result.posts().get(0).mapMarkerText());
+        assertEquals("7월 3일 23시 30분 니어바이스시 동행", result.posts().get(0).mapMarkerText());
         assertEquals("7월 1일", result.posts().get(0).createdAgoText());
     }
 
@@ -207,49 +201,13 @@ class ReadCompanionPostsServiceTest {
     }
 
     @Test
-    void limitsTimeZoneLookupsAndReusesFailedCoordinatesWithinRequest() {
-        AtomicInteger lookups = new AtomicInteger();
-        AtomicLong nanoTime = new AtomicLong();
-        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver(new CompanionPlaceTimeZoneLookup() {
-            @Override
-            public Optional<ZoneId> findTimeZone(
-                    final BigDecimal latitude,
-                    final BigDecimal longitude,
-                    final Instant instant
-            ) {
-                return findTimeZone(latitude, longitude, instant, Duration.ofSeconds(1));
-            }
-
-            @Override
-            public Optional<ZoneId> findTimeZone(
-                    final BigDecimal latitude,
-                    final BigDecimal longitude,
-                    final Instant instant,
-                    final Duration timeout
-            ) {
-                if (timeout.isZero()) {
-                    return Optional.empty();
-                }
-                if (lookups.incrementAndGet() == 2) {
-                    nanoTime.set(Duration.ofSeconds(2).toNanos());
-                }
-                return Optional.empty();
-            }
-        });
-        service = new ReadCompanionPostsService(
-                queryPort, onboardingUseCase, CLOCK, resolvePlaceImageUseCase, resolver,
-                Duration.ofSeconds(1), nanoTime::get);
-        queryPort.result = List.of(
-                summary(101L, "unknown", "37.566500", "126.978000"),
-                summary(102L, "unknown", "37.5665", "126.978"),
-                summary(103L, "unknown", "35.0", "127.0"),
-                summary(104L, "日本 大阪府大阪市", "34.6937", "135.5023")
-        );
+    void displaysUnsupportedPlaceTimesInSeoulTime() {
+        queryPort.result = List.of(summary(101L, "unknown", "41.9028", "12.4964"));
 
         CompanionPostsResult result = service.read(validCommand());
 
-        assertEquals(2, lookups.get());
-        assertEquals(LocalDateTime.of(2026, 7, 2, 12, 30), result.posts().get(3).createdAt());
+        assertEquals(LocalDateTime.of(2026, 7, 2, 12, 30), result.posts().getFirst().createdAt());
+        assertEquals(LocalDateTime.of(2026, 7, 3, 23, 0), result.posts().getFirst().meetingAt());
     }
 
     @Test

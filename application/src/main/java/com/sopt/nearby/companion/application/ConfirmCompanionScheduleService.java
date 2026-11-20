@@ -3,7 +3,6 @@ package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
-import com.sopt.nearby.companion.domain.exception.CompanionPlaceTimeZoneUnavailableException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
@@ -103,11 +102,11 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
         CompanionSchedule currentSchedule = scheduleRepository.findConfirmedByMatchId(match.id()).orElse(null);
         Long placeId = currentSchedule == null ? post.placeId() : currentSchedule.placeId();
         var place = placeQueryPort.findPlaceByPlaceId(placeId).orElse(null);
-        var zone = placeTimeResolver.resolveKnownZone(
+        var zone = placeTimeResolver.resolveZone(
                 place == null ? null : place.address(),
                 place == null ? null : place.latitude(),
                 place == null ? null : place.longitude(),
-                clock.instant()).orElseThrow(CompanionPlaceTimeZoneUnavailableException::new);
+                clock.instant());
         LocalDateTime utcTime = CompanionMeetingTimeConverter.toUtc(command.scheduledAt(), zone)
                 .filter(value -> value.isAfter(LocalDateTime.now(clock)))
                 .orElseThrow(InvalidCompanionScheduleRequestException::new);

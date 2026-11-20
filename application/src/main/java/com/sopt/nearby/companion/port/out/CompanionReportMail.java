@@ -7,7 +7,6 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.List;
 
 public record CompanionReportMail(
@@ -34,6 +33,6 @@ public record CompanionReportMail(
 				reportedPhoneNumber, companionPostId, companionPostContent, scheduledAt,
 				meetingTimeType, placeAddress,
 				CompanionPlaceCityNameResolver.resolveSupportedCity(placeAddress)
-						.map(city -> city.zoneId()).orElse(ZoneOffset.UTC));
+						.map(city -> city.zoneId()).orElse(ZoneId.of("Asia/Seoul")));
 	}
 }

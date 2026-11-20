@@ -74,7 +74,6 @@ import com.sopt.nearby.companion.port.out.CompanionPushEndpointRepository;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
-import com.sopt.nearby.companion.port.out.CompanionPlaceTimeZoneLookup;
 import com.sopt.nearby.companion.port.out.CompanionPostDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionPostStyleRepository;
 import com.sopt.nearby.companion.port.out.CompanionProfileDetailQueryPort;
@@ -116,8 +115,8 @@ import org.springframework.context.annotation.Configuration;
 public class CompanionUseCaseConfig {
 
     @Bean
-    CompanionPlaceTimeResolver companionPlaceTimeResolver(final CompanionPlaceTimeZoneLookup timeZoneLookup) {
-        return new CompanionPlaceTimeResolver(timeZoneLookup);
+    CompanionPlaceTimeResolver companionPlaceTimeResolver() {
+        return new CompanionPlaceTimeResolver();
     }
 
     @Bean

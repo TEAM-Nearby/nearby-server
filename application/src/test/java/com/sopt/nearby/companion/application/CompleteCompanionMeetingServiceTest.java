@@ -100,7 +100,7 @@ class CompleteCompanionMeetingServiceTest {
 		assertEquals(MEETING_ID, result.meetingId());
 		assertEquals(MATCH_ID, result.matchId());
 		assertTrue(result.currentUserCompleted());
-		assertEquals(NOW, result.currentUserCompletedAt());
+		assertEquals(NOW.plusHours(9), result.currentUserCompletedAt());
 		assertEquals(CompanionMeetingStatus.ONGOING, result.meetingStatus());
 		assertNull(result.meetingCompletedAt());
 		assertEquals(CompanionMeetingStatus.ONGOING, meetingRepository.findById(MEETING_ID).orElseThrow().status());
@@ -114,7 +114,7 @@ class CompleteCompanionMeetingServiceTest {
 		CompleteCompanionMeetingResult result = service.complete(MEETING_ID, GUEST_ID);
 
 		assertEquals(CompanionMeetingStatus.COMPLETED, result.meetingStatus());
-		assertEquals(NOW, result.meetingCompletedAt());
+		assertEquals(NOW.plusHours(9), result.meetingCompletedAt());
 		assertEquals(CompanionMeetingStatus.COMPLETED, meetingRepository.findById(MEETING_ID).orElseThrow().status());
 		assertEquals(CompanionMatchStatus.COMPLETED, matchRepository.findById(MATCH_ID).orElseThrow().status());
 	}

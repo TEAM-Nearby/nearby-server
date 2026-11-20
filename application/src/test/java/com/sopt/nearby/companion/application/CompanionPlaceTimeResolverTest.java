@@ -3,14 +3,10 @@ package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.sopt.nearby.companion.port.out.CompanionPlaceTimeZoneLookup;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class CompanionPlaceTimeResolverTest {
@@ -18,9 +14,8 @@ class CompanionPlaceTimeResolverTest {
     private static final Instant NOW = Instant.parse("2026-11-20T01:41:00Z");
 
     @Test
-    void unsupportedSeoulUsesCoordinateTimeZoneAndKeepsCityNull() {
-        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver(
-                lookup(ZoneId.of("Asia/Seoul")));
+    void unsupportedSeoulUsesSeoulTimeZoneAndKeepsCityNull() {
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver();
 
         var result = resolver.resolveCurrentTime(
                 "서울특별시 종로구", new BigDecimal("37.5665"), new BigDecimal("126.9780"), NOW);
@@ -31,30 +26,32 @@ class CompanionPlaceTimeResolverTest {
     }
 
     @Test
-    void japaneseAddressFallsBackToTokyoWhenLookupFails() {
-        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver(
-                (latitude, longitude, instant) -> Optional.empty());
+    void japaneseAddressUsesTokyo() {
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver();
 
         assertEquals(ZoneId.of("Asia/Tokyo"), resolver.resolveZone(
                 "日本 大阪府大阪市", new BigDecimal("34.6937"), new BigDecimal("135.5023"), NOW));
     }
 
     @Test
-    void koreanAddressWithoutCountryFallsBackToSeoulWhenLookupFails() {
-        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver(
-                (latitude, longitude, instant) -> Optional.empty());
+    void japaneseAddressWithoutCountryUsesTokyo() {
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver();
+
+        assertEquals(ZoneId.of("Asia/Tokyo"), resolver.resolveZone(
+                "도쿄도 시부야구", new BigDecimal("35.6595"), new BigDecimal("139.7005"), NOW));
+    }
+
+    @Test
+    void koreanAddressWithoutCountryUsesSeoul() {
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver();
 
         assertEquals(ZoneId.of("Asia/Seoul"), resolver.resolveZone(
                 "서울특별시 종로구", new BigDecimal("37.5665"), new BigDecimal("126.9780"), NOW));
     }
 
     @Test
-    void supportedCityWinsOverCoordinateLookupAndKeepsDst() {
-        AtomicInteger calls = new AtomicInteger();
-        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver((latitude, longitude, instant) -> {
-            calls.incrementAndGet();
-            return Optional.of(ZoneId.of("Asia/Seoul"));
-        });
+    void supportedCityKeepsDst() {
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver();
 
         var result = resolver.resolveCurrentTime(
                 "Madrid, Spain", new BigDecimal("40.4168"), new BigDecimal("-3.7038"),
@@ -62,18 +59,12 @@ class CompanionPlaceTimeResolverTest {
 
         assertEquals("Europe/Madrid", result.currentLocalTime().getZone().getId());
         assertEquals(2 * 60 * 60, result.currentLocalTime().getOffset().getTotalSeconds());
-        assertEquals(0, calls.get());
     }
 
     @Test
-    void missingCoordinatesAndUnknownAddressFallBackToUtc() {
-        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver(lookup(ZoneId.of("Asia/Seoul")));
+    void missingCoordinatesAndUnknownAddressFallBackToSeoul() {
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver();
 
-        assertTrue(resolver.resolveKnownZone("unknown", null, null, NOW).isEmpty());
-        assertEquals("UTC", resolver.resolveZone("unknown", null, null, NOW).getId());
-    }
-
-    private CompanionPlaceTimeZoneLookup lookup(final ZoneId zoneId) {
-        return (latitude, longitude, instant) -> Optional.of(zoneId);
+        assertEquals("Asia/Seoul", resolver.resolveZone("unknown", null, null, NOW).getId());
     }
 }

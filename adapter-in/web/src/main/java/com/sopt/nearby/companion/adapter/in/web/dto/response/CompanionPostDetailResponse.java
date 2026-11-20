@@ -40,7 +40,7 @@ public record CompanionPostDetailResponse(
                 result.hostProfileId(),
                 result.googlePlaceId(),
                 result.city(),
-                result.currentLocalTime() == null ? "UTC" : result.currentLocalTime().getZone().getId(),
+                result.currentLocalTime() == null ? "Asia/Seoul" : result.currentLocalTime().getZone().getId(),
                 result.currentLocalTime() == null ? null : result.currentLocalTime().toOffsetDateTime(),
                 result.meetingAt(),
                 result.maxParticipants(),

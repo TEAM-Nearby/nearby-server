@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
-import com.sopt.nearby.companion.domain.exception.CompanionPlaceTimeZoneUnavailableException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
@@ -34,7 +33,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +54,6 @@ class ConfirmCompanionScheduleServiceTest {
     private CapturingNotificationUseCase notificationUseCase;
     private ConfirmCompanionScheduleService service;
     private String placeAddress;
-    private Optional<ZoneId> lookupZone;
     private long checkedInCount;
 
     @BeforeEach
@@ -67,7 +64,6 @@ class ConfirmCompanionScheduleServiceTest {
         meetingRepository = new FakeCompanionMeetingRepository();
         participantRepository = new FakeCompanionMatchParticipantRepository();
         notificationUseCase = new CapturingNotificationUseCase();
-        lookupZone = Optional.of(ZoneOffset.UTC);
         service = new ConfirmCompanionScheduleService(
                 matchRepository,
                 postRepository,
@@ -91,8 +87,7 @@ class ConfirmCompanionScheduleServiceTest {
                     public long countCompletedByMeetingId(Long meetingId) { return 0; }
                     public MeetingCheckIn saveIfAbsent(MeetingCheckIn value) { return value; }
                 },
-                Clock.fixed(Instant.parse("2026-07-01T00:00:00Z"), ZoneOffset.UTC),
-                new CompanionPlaceTimeResolver((latitude, longitude, instant) -> lookupZone)
+                Clock.fixed(Instant.parse("2026-07-01T00:00:00Z"), ZoneOffset.UTC)
         );
 
         matchRepository.save(match(CompanionMatchStatus.SCHEDULE_CONFIRMED));
@@ -146,13 +141,13 @@ class ConfirmCompanionScheduleServiceTest {
     }
 
     @Test
-    void doesNotSaveScheduleWhenTimeZoneIsUnavailable() {
+    void savesUnsupportedPlaceScheduleInSeoulTime() {
         placeAddress = "Roma, Italia";
-        lookupZone = Optional.empty();
 
-        assertThrows(CompanionPlaceTimeZoneUnavailableException.class,
-                () -> service.update(command(7L, UPDATED_TIME)));
-        assertEquals(0, scheduleRepository.saveCount);
+        service.update(command(7L, UPDATED_TIME));
+
+        assertEquals(UPDATED_TIME.minusHours(9), scheduleRepository.schedules.get(1L).scheduledAt());
+        assertEquals(1, scheduleRepository.saveCount);
     }
 
     @Test
@@ -170,7 +165,7 @@ class ConfirmCompanionScheduleServiceTest {
         ConfirmCompanionScheduleResult result = service.update(command(7L, UPDATED_TIME));
 
         CompanionSchedule updated = scheduleRepository.schedules.get(1L);
-        assertEquals(UPDATED_TIME, updated.scheduledAt());
+        assertEquals(UPDATED_TIME.minusHours(9), updated.scheduledAt());
         assertEquals(100L, updated.placeId());
         assertEquals(60, updated.estimatedDurationMinutes());
         assertEquals(true, updated.confirmed());
@@ -198,7 +193,7 @@ class ConfirmCompanionScheduleServiceTest {
 
     @Test
     void doesNotNotifyWhenScheduledAtIsUnchanged() {
-        service.update(command(7L, ORIGINAL_TIME));
+        service.update(command(7L, ORIGINAL_TIME.plusHours(9)));
 
         assertEquals(0, notificationUseCase.commands.size());
     }
@@ -214,9 +209,9 @@ class ConfirmCompanionScheduleServiceTest {
         CompanionMeeting meeting = meetingRepository.meetings.get(1L);
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, matchRepository.findById(1L).orElseThrow().status());
         assertEquals(100L, schedule.placeId());
-        assertEquals(UPDATED_TIME, schedule.scheduledAt());
+        assertEquals(UPDATED_TIME.minusHours(9), schedule.scheduledAt());
         assertEquals(CompanionMeetingStatus.ONGOING, meeting.status());
-        assertEquals(UPDATED_TIME, meeting.startedAt());
+        assertEquals(UPDATED_TIME.minusHours(9), meeting.startedAt());
         assertEquals(schedule.id(), result.scheduleId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
         assertEquals(0, notificationUseCase.commands.size());

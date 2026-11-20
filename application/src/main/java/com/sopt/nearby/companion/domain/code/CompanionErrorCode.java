@@ -25,7 +25,6 @@ public enum CompanionErrorCode implements ErrorCode {
     INVALID_COMPANION_PROFILE_UPDATE("동행 프로필 수정 입력이 올바르지 않습니다."),
     FORBIDDEN_INACTIVE_COMPANION_PROFILE("활성 상태가 아닌 동행 프로필은 조회하거나 수정할 수 없습니다."),
     INVALID_SCHEDULE_REQUEST("올바르지 않은 일정 수정 요청입니다."),
-    COMPANION_PLACE_TIME_ZONE_UNAVAILABLE("장소 시간대를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요."),
     FORBIDDEN_COMPANION_SCHEDULE("동행 일정을 수정할 권한이 없습니다."),
     FORBIDDEN_READ_COMPANION_SCHEDULE("동행 일정을 조회할 권한이 없습니다."),
     COMPANION_SCHEDULE_ALREADY_CONFIRMED("이미 확정된 동행 일정입니다."),

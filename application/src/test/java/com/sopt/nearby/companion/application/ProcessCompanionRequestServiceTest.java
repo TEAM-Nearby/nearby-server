@@ -47,7 +47,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -149,7 +148,7 @@ class ProcessCompanionRequestServiceTest {
         AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
 
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
-        assertEquals(applicationCreatedAt, result.meetingAt());
+        assertEquals(applicationCreatedAt.plusHours(9), result.meetingAt());
         CompanionMatch match = matchRepository.findById(result.matchId()).orElseThrow();
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, match.status());
         CompanionSchedule schedule = scheduleRepository.findConfirmedByMatchId(result.matchId()).orElseThrow();
@@ -163,24 +162,7 @@ class ProcessCompanionRequestServiceTest {
     }
 
     @Test
-    void acceptsUndecidedRequestWithoutLookingUpTimeZone() {
-        AtomicInteger lookups = new AtomicInteger();
-        CompanionMatchSummaryQueryPort placeQueryPort = new CompanionMatchSummaryQueryPort() {
-            public List<CompanionMatchSummary> findAllByParticipantUserId(final Long userId) { return List.of(); }
-            public Optional<String> findPlaceNameByPlaceId(final Long placeId) { return Optional.empty(); }
-            public Optional<String> findPlaceAddressByPlaceId(final Long placeId) { return Optional.empty(); }
-            public Optional<Place> findPlaceByPlaceId(final Long placeId) {
-                return Optional.of(new Place("서울특별시 종로구", new BigDecimal("37.5665"),
-                        new BigDecimal("126.9780")));
-            }
-        };
-        service = new ProcessCompanionRequestService(
-                applicationRepository, postRepository, matchRepository, participantRepository,
-                scheduleRepository, meetingRepository, notificationUseCase, CLOCK, placeQueryPort,
-                new CompanionPlaceTimeResolver((latitude, longitude, instant) -> {
-                    lookups.incrementAndGet();
-                    return Optional.of(ZoneOffset.UTC);
-                }));
+    void acceptsUndecidedRequestWithoutMeetingTime() {
         applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
         CompanionPost original = post(10L, 100L);
         postRepository.save(new CompanionPost(
@@ -191,7 +173,6 @@ class ProcessCompanionRequestServiceTest {
         AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
 
         assertNull(result.meetingAt());
-        assertEquals(0, lookups.get());
     }
 
     @Test
@@ -293,7 +274,7 @@ class ProcessCompanionRequestServiceTest {
 
         assertEquals(50L, result.matchId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
-        assertEquals(existingScheduleAt, result.meetingAt());
+        assertEquals(existingScheduleAt.plusHours(9), result.meetingAt());
         assertEquals(1, matchRepository.matches.size());
         assertEquals(1, scheduleRepository.schedules.size());
         assertEquals(1, meetingRepository.meetings.size());

@@ -72,7 +72,7 @@ class CompanionPlaceCityNameResolverTest {
 		);
 
 		assertNull(result.city());
-		assertEquals("2026-07-01T12:00Z", result.currentLocalTime().toOffsetDateTime().toString());
+		assertEquals("2026-07-01T21:00+09:00", result.currentLocalTime().toOffsetDateTime().toString());
 	}
 
 	@ParameterizedTest
@@ -100,6 +100,6 @@ class CompanionPlaceCityNameResolverTest {
 		);
 
 		assertNull(result.city());
-		assertEquals("2026-07-01T12:00Z", result.currentLocalTime().toOffsetDateTime().toString());
+		assertEquals("2026-07-01T21:00+09:00", result.currentLocalTime().toOffsetDateTime().toString());
 	}
 }

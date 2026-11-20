@@ -1,37 +1,25 @@
-// 지원 도시와 장소 좌표·주소를 이용해 장소의 IANA 시간대를 계산한다.
+// 지원 도시와 일본 주소의 시간대를 유지하고 나머지 장소는 한국 시간대로 계산한다.
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
-import com.sopt.nearby.companion.port.out.CompanionPlaceTimeZoneLookup;
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.Optional;
 
 public class CompanionPlaceTimeResolver {
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final ZoneId TOKYO = ZoneId.of("Asia/Tokyo");
-    private static final ZoneId UTC = ZoneId.of("UTC");
     private static final List<String> KOREAN_ADMINISTRATIVE_AREAS = List.of(
             "서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시", "울산광역시",
             "세종특별자치시", "경기도", "강원특별자치도", "강원도", "충청북도", "충청남도", "전북특별자치도",
             "전라북도", "전라남도", "경상북도", "경상남도", "제주특별자치도");
-
-    private final CompanionPlaceTimeZoneLookup timeZoneLookup;
-
-    public CompanionPlaceTimeResolver() {
-        this((latitude, longitude, instant) -> Optional.empty());
-    }
-
-    public CompanionPlaceTimeResolver(final CompanionPlaceTimeZoneLookup timeZoneLookup) {
-        this.timeZoneLookup = timeZoneLookup;
-    }
+    private static final List<String> JAPANESE_ADMINISTRATIVE_AREAS = List.of(
+            "東京都", "北海道", "大阪府", "京都府", "도쿄도", "홋카이도", "오사카부", "교토부");
 
     public ZoneId resolveZone(
             final String address,
@@ -39,35 +27,10 @@ public class CompanionPlaceTimeResolver {
             final BigDecimal longitude,
             final Instant instant
     ) {
-        return resolveKnownZone(address, latitude, longitude, instant).orElse(UTC);
-    }
-
-    public ZoneId resolveZone(
-            final String address,
-            final BigDecimal latitude,
-            final BigDecimal longitude,
-            final Instant instant,
-            final Duration lookupTimeout
-    ) {
-        Objects.requireNonNull(instant);
         return CompanionPlaceCityNameResolver.resolveSupportedCity(address)
                 .map(city -> city.zoneId())
-                .or(() -> lookup(latitude, longitude, instant, lookupTimeout))
                 .or(() -> countryZone(address))
-                .orElse(UTC);
-    }
-
-    public Optional<ZoneId> resolveKnownZone(
-            final String address,
-            final BigDecimal latitude,
-            final BigDecimal longitude,
-            final Instant instant
-    ) {
-        Objects.requireNonNull(instant);
-        return CompanionPlaceCityNameResolver.resolveSupportedCity(address)
-                .map(city -> city.zoneId())
-                .or(() -> lookup(latitude, longitude, instant))
-                .or(() -> countryZone(address));
+                .orElse(SEOUL);
     }
 
     public ResolvedCityTime resolveCurrentTime(
@@ -78,29 +41,6 @@ public class CompanionPlaceTimeResolver {
     ) {
         var city = CompanionPlaceCityNameResolver.resolveSupportedCity(address).orElse(null);
         return new ResolvedCityTime(city, instant.atZone(resolveZone(address, latitude, longitude, instant)));
-    }
-
-    private Optional<ZoneId> lookup(
-            final BigDecimal latitude,
-            final BigDecimal longitude,
-            final Instant instant
-    ) {
-        if (latitude == null || longitude == null) {
-            return Optional.empty();
-        }
-        return timeZoneLookup.findTimeZone(latitude, longitude, instant);
-    }
-
-    private Optional<ZoneId> lookup(
-            final BigDecimal latitude,
-            final BigDecimal longitude,
-            final Instant instant,
-            final Duration timeout
-    ) {
-        if (latitude == null || longitude == null) {
-            return Optional.empty();
-        }
-        return timeZoneLookup.findTimeZone(latitude, longitude, instant, timeout);
     }
 
     private Optional<ZoneId> countryZone(final String address) {
@@ -114,6 +54,8 @@ public class CompanionPlaceTimeResolver {
             return Optional.of(SEOUL);
         }
         if (normalized.contains("일본") || normalized.contains("日本") || normalized.contains("JAPAN")
+                || JAPANESE_ADMINISTRATIVE_AREAS.stream().anyMatch(normalized::contains)
+                || normalized.contains("県")
                 || normalized.matches(".*(?:^|[,\\s])JP(?:$|[,\\s]).*")) {
             return Optional.of(TOKYO);
         }

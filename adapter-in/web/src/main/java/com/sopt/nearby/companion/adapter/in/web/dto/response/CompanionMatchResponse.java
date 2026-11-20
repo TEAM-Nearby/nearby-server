@@ -35,7 +35,7 @@ public record CompanionMatchResponse(
         final ZonedDateTime zonedDateTime = result.currentLocalTime();
 
         final String timeZoneId =
-                zonedDateTime == null ? "UTC" : zonedDateTime.getZone().getId();
+                zonedDateTime == null ? "Asia/Seoul" : zonedDateTime.getZone().getId();
 
         final OffsetDateTime currentLocalTime =
                 zonedDateTime == null

@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.sopt.nearby.common.exception.ErrorCode;
 import com.sopt.nearby.common.exception.NotFoundException;
-import com.sopt.nearby.companion.domain.exception.CompanionPlaceTimeZoneUnavailableException;
 import com.sopt.nearby.shared.adapter.in.web.response.CommonResponse;
 import com.sopt.nearby.shared.adapter.in.web.response.SuccessCode;
 import com.sopt.nearby.common.exception.BusinessException;
@@ -59,12 +58,6 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.code").value("TEST_NOT_FOUND"))
                 .andExpect(jsonPath("$.message").value("테스트 대상을 찾을 수 없습니다."))
                 .andExpect(jsonPath("$.data").value(nullValue()));
-    }
-
-    @Test
-    void mapsUnavailableCompanionPlaceTimeZoneToServiceUnavailable() {
-        assertThat(ApiExceptionStatusResolver.resolve(new CompanionPlaceTimeZoneUnavailableException()))
-                .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @Test
