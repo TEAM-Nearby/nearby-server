@@ -5,6 +5,7 @@ import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolv
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.port.out.CompanionPlaceTimeZoneLookup;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -41,6 +42,21 @@ public class CompanionPlaceTimeResolver {
         return resolveKnownZone(address, latitude, longitude, instant).orElse(UTC);
     }
 
+    public ZoneId resolveZone(
+            final String address,
+            final BigDecimal latitude,
+            final BigDecimal longitude,
+            final Instant instant,
+            final Duration lookupTimeout
+    ) {
+        Objects.requireNonNull(instant);
+        return CompanionPlaceCityNameResolver.resolveSupportedCity(address)
+                .map(city -> city.zoneId())
+                .or(() -> lookup(latitude, longitude, instant, lookupTimeout))
+                .or(() -> countryZone(address))
+                .orElse(UTC);
+    }
+
     public Optional<ZoneId> resolveKnownZone(
             final String address,
             final BigDecimal latitude,
@@ -73,6 +89,18 @@ public class CompanionPlaceTimeResolver {
             return Optional.empty();
         }
         return timeZoneLookup.findTimeZone(latitude, longitude, instant);
+    }
+
+    private Optional<ZoneId> lookup(
+            final BigDecimal latitude,
+            final BigDecimal longitude,
+            final Instant instant,
+            final Duration timeout
+    ) {
+        if (latitude == null || longitude == null) {
+            return Optional.empty();
+        }
+        return timeZoneLookup.findTimeZone(latitude, longitude, instant, timeout);
     }
 
     private Optional<ZoneId> countryZone(final String address) {

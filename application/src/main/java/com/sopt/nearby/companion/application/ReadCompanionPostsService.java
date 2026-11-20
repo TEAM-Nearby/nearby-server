@@ -118,10 +118,9 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
             final Map<String, ZoneId> zones
     ) {
         String contentPreview = contentPreview(summary.content());
-        var zone = zones.computeIfAbsent(coordinateKey(summary), ignored -> nanoTime.getAsLong() < lookupDeadline
-                ? placeTimeResolver.resolveZone(
-                        summary.placeAddress(), summary.latitude(), summary.longitude(), instant)
-                : placeTimeResolver.resolveZone(summary.placeAddress(), null, null, instant));
+        var zone = zones.computeIfAbsent(coordinateKey(summary), ignored -> placeTimeResolver.resolveZone(
+                summary.placeAddress(), summary.latitude(), summary.longitude(), instant,
+                Duration.ofNanos(Math.max(0, lookupDeadline - nanoTime.getAsLong()))));
         var meetingAt = CompanionMeetingTimeConverter.utcToLocal(summary.meetingAt(), zone);
         ResolvedPlaceImage image = resolvePlaceImageUseCase.resolve(new ResolvePlaceImageCommand(
                 summary.googlePlaceId(),

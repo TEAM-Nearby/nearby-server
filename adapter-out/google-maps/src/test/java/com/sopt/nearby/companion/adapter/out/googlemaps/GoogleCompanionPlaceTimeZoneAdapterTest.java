@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.adapter.out.googlemaps;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,11 +47,30 @@ class GoogleCompanionPlaceTimeZoneAdapterTest {
         var adapter = adapter();
 
         var first = adapter.findTimeZone(new BigDecimal("37.566500"), new BigDecimal("126.978000"), Instant.EPOCH);
-        var second = adapter.findTimeZone(new BigDecimal("37.5665"), new BigDecimal("126.978"), Instant.now());
+        var second = adapter.findTimeZone(
+                new BigDecimal("37.5665"), new BigDecimal("126.978"), Instant.now(), Duration.ZERO);
 
         assertEquals(ZoneId.of("Asia/Seoul"), first.orElseThrow());
         assertEquals(first, second);
         assertEquals(1, requests.get());
+    }
+
+    @Test
+    void limitsApiCallToCallerTimeout() throws Exception {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/timezone", exchange -> {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            }
+            exchange.close();
+        });
+        server.start();
+
+        assertTimeout(Duration.ofMillis(500), () -> assertTrue(adapter().findTimeZone(
+                new BigDecimal("37.5665"), new BigDecimal("126.978"), Instant.EPOCH,
+                Duration.ofMillis(50)).isEmpty()));
     }
 
     @Test

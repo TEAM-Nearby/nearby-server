@@ -67,6 +67,16 @@ public class GoogleCompanionPlaceTimeZoneAdapter implements CompanionPlaceTimeZo
             final BigDecimal longitude,
             final Instant instant
     ) {
+        return findTimeZone(latitude, longitude, instant, timeout);
+    }
+
+    @Override
+    public Optional<ZoneId> findTimeZone(
+            final BigDecimal latitude,
+            final BigDecimal longitude,
+            final Instant instant,
+            final Duration maxWait
+    ) {
         if (apiKey == null || apiKey.isBlank() || invalidCoordinates(latitude, longitude) || instant == null) {
             return Optional.empty();
         }
@@ -76,8 +86,12 @@ public class GoogleCompanionPlaceTimeZoneAdapter implements CompanionPlaceTimeZo
         if (cached != null) {
             return Optional.of(cached);
         }
+        Duration requestTimeout = timeout.compareTo(maxWait) <= 0 ? timeout : maxWait;
+        if (requestTimeout.isZero() || requestTimeout.isNegative()) {
+            return Optional.empty();
+        }
         try {
-            HttpRequest request = HttpRequest.newBuilder(uri(location, instant)).timeout(timeout).GET().build();
+            HttpRequest request = HttpRequest.newBuilder(uri(location, instant)).timeout(requestTimeout).GET().build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
                 log.warn("Google Time Zone lookup failed. status={}", response.statusCode());

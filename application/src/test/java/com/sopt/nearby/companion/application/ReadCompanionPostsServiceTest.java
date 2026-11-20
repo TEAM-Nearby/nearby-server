@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.domain.model.post.CompanionPostStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostSummary;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
 import com.sopt.nearby.companion.port.out.CompanionPostQueryPort;
+import com.sopt.nearby.companion.port.out.CompanionPlaceTimeZoneLookup;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageCommand;
 import com.sopt.nearby.place.port.in.ResolvePlaceImageUseCase;
 import com.sopt.nearby.place.port.in.ResolvedPlaceImage;
@@ -22,6 +23,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -208,11 +210,31 @@ class ReadCompanionPostsServiceTest {
     void limitsTimeZoneLookupsAndReusesFailedCoordinatesWithinRequest() {
         AtomicInteger lookups = new AtomicInteger();
         AtomicLong nanoTime = new AtomicLong();
-        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver((latitude, longitude, instant) -> {
-            if (lookups.incrementAndGet() == 2) {
-                nanoTime.set(Duration.ofSeconds(2).toNanos());
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver(new CompanionPlaceTimeZoneLookup() {
+            @Override
+            public Optional<ZoneId> findTimeZone(
+                    final BigDecimal latitude,
+                    final BigDecimal longitude,
+                    final Instant instant
+            ) {
+                return findTimeZone(latitude, longitude, instant, Duration.ofSeconds(1));
             }
-            return Optional.empty();
+
+            @Override
+            public Optional<ZoneId> findTimeZone(
+                    final BigDecimal latitude,
+                    final BigDecimal longitude,
+                    final Instant instant,
+                    final Duration timeout
+            ) {
+                if (timeout.isZero()) {
+                    return Optional.empty();
+                }
+                if (lookups.incrementAndGet() == 2) {
+                    nanoTime.set(Duration.ofSeconds(2).toNanos());
+                }
+                return Optional.empty();
+            }
         });
         service = new ReadCompanionPostsService(
                 queryPort, onboardingUseCase, CLOCK, resolvePlaceImageUseCase, resolver,
