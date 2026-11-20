@@ -1,4 +1,5 @@
 plugins {
+	id 'com.diffplug.spotless' version '8.8.0' apply false
 	id 'org.springframework.boot' version '3.5.15' apply false
 	id 'io.spring.dependency-management' version '1.1.7' apply false
 }
@@ -20,7 +21,25 @@ subprojects {
 	}
 
 	apply plugin: 'java'
+	apply plugin: 'checkstyle'
+	apply plugin: 'com.diffplug.spotless'
 	apply plugin: 'io.spring.dependency-management'
+
+	spotless {
+		// 기존 소스의 일괄 변경 없이 도입 이후 변경된 파일부터 공백 규칙을 적용한다.
+		ratchetFrom '01ac006d6e8600bfcac07441227e5110ae4d5134'
+		java {
+			target 'src/*/java/**/*.java'
+			trimTrailingWhitespace()
+			endWithNewline()
+		}
+	}
+
+	checkstyle {
+		toolVersion = '12.3.1'
+		configFile = rootProject.file('config/checkstyle/checkstyle.xml')
+		maxWarnings = 0
+	}
 
 	java {
 		toolchain {

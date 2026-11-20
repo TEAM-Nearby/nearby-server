@@ -1,0 +1,16 @@
+changelog:
+  exclude:
+    labels: [skip-release-notes]
+  categories:
+    - title: 새 기능
+      labels: [feature, enhancement, api]
+    - title: 버그 수정
+      labels: [bug, bugfix]
+    - title: 개선
+      labels: [refactor, performance]
+    - title: 문서
+      labels: [docs, documentation]
+    - title: 운영 및 배포
+      labels: [infra, deploy, ci]
+    - title: 기타 변경
+      labels: ['*']

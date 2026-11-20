@@ -1,5 +1,6 @@
 HELP.md
 .env
+__pycache__/
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar

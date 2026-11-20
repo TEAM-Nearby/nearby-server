@@ -1,0 +1,79 @@
+name: Verify backend
+on:
+  workflow_call:
+    inputs:
+      commit_sha:
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_DB: nearby_ci
+          POSTGRES_USER: nearby_ci
+          POSTGRES_PASSWORD: nearby_ci_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U nearby_ci -d nearby_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ inputs.commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Check formatting, static rules, tests and boot jar
+        run: ./gradlew spotlessCheck checkstyleMain checkstyleTest checkstyleMigration test :bootstrap:bootJar --stacktrace --no-daemon
+      - name: Verify PostgreSQL migrations and repeatability
+        env:
+          FLYWAY_URL: jdbc:postgresql://127.0.0.1:5432/nearby_ci
+          FLYWAY_USER: nearby_ci
+          FLYWAY_PASSWORD: nearby_ci_only
+        run: |
+          ./gradlew :bootstrap:migrateDatabase --no-daemon
+          ./gradlew :bootstrap:migrateDatabase --no-daemon
+      - name: Test deployment and backup failure handling
+        run: python3 -m unittest discover -s scripts/tests -v
+      - name: Validate workflows
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/actionlint.tgz" https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz
+          echo "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757  $RUNNER_TEMP/actionlint.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/actionlint.tgz" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint"
+      - name: Package verified jar
+        env:
+          DEPLOY_SHA: ${{ inputs.commit_sha }}
+        run: python3 scripts/deploy/pipeline.py package
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: backend-${{ inputs.commit_sha }}
+          path: build/deployment/package/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
+      - name: Write verification summary
+        if: always()
+        env:
+          CHECK_STATUS: ${{ job.status }}
+          CHECK_SHA: ${{ inputs.commit_sha }}
+        run: |
+          printf '### Backend verification\n- Commit: %s\n- Result: %s\n' "$CHECK_SHA" "$CHECK_STATUS" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: failure()
+        with:
+          name: verification-reports-${{ inputs.commit_sha }}
+          path: '**/build/reports/'
+          overwrite: true
+          retention-days: 7

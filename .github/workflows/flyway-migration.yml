@@ -1,0 +1,69 @@
+name: Flyway migration
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '대상 환경 (dev는 develop, prod는 main에서 실행)'
+        required: true
+        type: choice
+        options: [dev, prod]
+  workflow_call:
+    secrets:
+      FLYWAY_DB_URL:
+        required: true
+      FLYWAY_DB_USER:
+        required: true
+      FLYWAY_DB_PASSWORD:
+        required: true
+    inputs:
+      environment:
+        required: true
+        type: string
+      commit_sha:
+        required: true
+        type: string
+      deployment_lock_held:
+        description: '호출 배포가 nearby-operations-{environment}를 소유할 때만 true'
+        required: true
+        type: boolean
+permissions:
+  contents: read
+# 직접 실행은 배포 전체와 같은 잠금, 배포 내부 호출은 별도 잠금으로 교착을 피한다.
+concurrency:
+  group: ${{ inputs.deployment_lock_held && format('nearby-migration-{0}', inputs.environment) || format('nearby-operations-{0}', inputs.environment) }}
+  cancel-in-progress: false
+jobs:
+  migrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: ${{ inputs.environment == 'prod' && 'production' || 'dev' }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ inputs.commit_sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate environment and exact commit
+        env:
+          DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+          DEPLOY_SHA: ${{ inputs.commit_sha || github.sha }}
+        run: python3 scripts/deploy/pipeline.py guard
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Show state, validate and migrate
+        env:
+          FLYWAY_URL: ${{ secrets.FLYWAY_DB_URL }}
+          FLYWAY_USER: ${{ secrets.FLYWAY_DB_USER }}
+          FLYWAY_PASSWORD: ${{ secrets.FLYWAY_DB_PASSWORD }}
+        run: ./gradlew :bootstrap:migrateDatabase --no-daemon
+      - name: Write migration summary
+        if: always()
+        env:
+          MIGRATION_ENVIRONMENT: ${{ inputs.environment }}
+          MIGRATION_SHA: ${{ inputs.commit_sha || github.sha }}
+          MIGRATION_STATUS: ${{ job.status }}
+        run: |
+          printf '### Flyway\n- Environment: %s\n- Commit: %s\n- Result: %s\n' "$MIGRATION_ENVIRONMENT" "$MIGRATION_SHA" "$MIGRATION_STATUS" >> "$GITHUB_STEP_SUMMARY"
