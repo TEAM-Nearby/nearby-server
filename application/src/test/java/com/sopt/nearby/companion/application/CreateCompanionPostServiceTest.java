@@ -191,7 +191,8 @@ class CreateCompanionPostServiceTest {
     @NullSource
     @EnumSource(value = CompanionPostPlaceCategory.class, names = {"ALL", "OTHER"})
     void rejectsUnsupportedPlaceCategoriesBeforeSaving(final CompanionPostPlaceCategory category) {
-        CreateCompanionPostCommand command = withPlaceCategory(commandWithRecruitmentCapacity(1), category);
+        CreateCompanionPostCommand command = withPlaceCategory(command(
+                CompanionPostMeetingTimeType.NOW, null, true, List.of(CompanionPostKeyword.PHOTO_LOVER)), category);
 
         assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(command));
 
@@ -207,8 +208,9 @@ class CreateCompanionPostServiceTest {
         resolvePlaceCacheUseCase.result = new ResolvedPlaceCache(20L, "google-place-id", "저장된 장소명", "저장된 주소",
                 new BigDecimal("37.11110000"), new BigDecimal("126.22220000"), category);
 
-        assertThrows(InvalidCompanionPostCreateRequestException.class,
-                () -> service.create(commandWithRecruitmentCapacity(1)));
+        CreateCompanionPostCommand command = command(
+                CompanionPostMeetingTimeType.NOW, null, true, List.of(CompanionPostKeyword.PHOTO_LOVER));
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(command));
 
         assertNull(postRepository.savedPost);
         assertEquals(List.of(), styleRepository.savedStyles);

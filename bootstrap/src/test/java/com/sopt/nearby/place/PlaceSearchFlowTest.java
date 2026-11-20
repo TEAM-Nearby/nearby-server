@@ -18,10 +18,12 @@ import com.sopt.nearby.place.application.SearchPlacesCommand;
 import com.sopt.nearby.place.domain.exception.PlaceSearchFailedException;
 import com.sopt.nearby.place.domain.exception.PlaceSearchRateLimitedException;
 import com.sopt.nearby.place.domain.exception.PlaceSearchTimeoutException;
+import com.sopt.nearby.place.domain.model.PlaceBusinessStatus;
+import com.sopt.nearby.place.domain.model.PlaceCache;
 import com.sopt.nearby.place.domain.model.PlaceSearchPage;
 import com.sopt.nearby.place.domain.model.PlaceSearchPage.Category;
-import com.sopt.nearby.place.port.out.PlaceTextSearchPort;
 import com.sopt.nearby.place.port.out.PlaceCacheRepository;
+import com.sopt.nearby.place.port.out.PlaceTextSearchPort;
 import com.sopt.nearby.user.domain.model.UserAccount;
 import com.sopt.nearby.user.domain.model.UserAccountStatus;
 import com.sopt.nearby.user.domain.model.UserOnboardingStatus;
@@ -138,6 +140,27 @@ class PlaceSearchFlowTest {
     }
 
     @Test
+    void rejectsPostForCachedOtherPlaceEvenWhenRequestSuppliesCafe() throws Exception {
+        long userId = profile(CompanionProfileStatus.ACTIVE);
+        String googleId = "cached-other-" + userId;
+        places.save(new PlaceCache(null, googleId, "한국외대", "서울",
+                new BigDecimal("37.597"), new BigDecimal("127.058"), "OTHER",
+                null, null, null, null, PlaceBusinessStatus.UNKNOWN));
+
+        mvc.perform(post("/api/companion-posts").with(jwt().jwt(t -> t.subject("" + userId)))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"place":{"googlePlaceId":"%s","name":"한국외대","category":"CAFE",
+                                  "latitude":37.597,"longitude":127.058},
+                                 "meetingTimeType":"UNDECIDED","recruitmentCapacity":1,
+                                 "content":"같이 가요","openChatUrl":"https://open.kakao.com/o/test"}
+                                """.formatted(googleId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+
+        assertThat(places.findByGooglePlaceId(googleId).orElseThrow().category()).isEqualTo("OTHER");
+    }
+
+    @Test
     void preservesSelectedPlaceThroughRepeatedPostCreationAndDetailRead() throws Exception {
         long userId = profile(CompanionProfileStatus.ACTIVE);
         String googleId = "selected-place-" + userId;
@@ -242,6 +265,18 @@ class PlaceSearchFlowTest {
         }
         jsonPath("$.paths['" + PATH + "'].get.responses['403'].content['application/json'].examples.COMPANION_PROFILE_REQUIRED.value.code")
                 .value("COMPANION_PROFILE_REQUIRED").match(docs);
+
+        var spec = JsonPath.parse(docs.getResponse().getContentAsString());
+        List<String> responseRefs = spec.read("$.paths['" + PATH + "'].get.responses['200'].content.*.schema['$ref']");
+        assertThat(responseRefs).hasSize(1);
+        String dataRef = spec.read(schemaPath(responseRefs.getFirst()) + ".properties.data['$ref']");
+        String placeRef = spec.read(schemaPath(dataRef) + ".properties.places.items['$ref']");
+        List<String> categories = spec.read(schemaPath(placeRef) + ".properties.category.enum");
+        assertThat(categories).containsExactly("RESTAURANT", "CAFE", "PUB", "MUSEUM", "PHOTO_SPOT");
+    }
+
+    private String schemaPath(final String reference) {
+        return "$" + reference.substring(1).replace('/', '.');
     }
 
     private MockHttpServletRequestBuilder request(final long id) {

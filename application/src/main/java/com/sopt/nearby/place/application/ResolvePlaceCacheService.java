@@ -20,13 +20,14 @@ public class ResolvePlaceCacheService implements ResolvePlaceCacheUseCase {
     @Override
     public ResolvedPlaceCache resolve(final ResolvePlaceCacheCommand command) {
         return placeCacheRepository.findByGooglePlaceId(command.googlePlaceId())
-                .map(place -> updateIfCategoryExplicit(place, command))
+                .map(place -> refreshIfCategoryMatches(place, command))
                 .map(this::toResolvedPlaceCache)
                 .orElseGet(() -> saveOrReload(command));
     }
 
-    private PlaceCache updateIfCategoryExplicit(final PlaceCache place, final ResolvePlaceCacheCommand command) {
-        if (command.category() == null || command.category().isBlank()) {
+    private PlaceCache refreshIfCategoryMatches(final PlaceCache place, final ResolvePlaceCacheCommand command) {
+        if (command.category() == null || command.category().isBlank()
+                || !command.category().equalsIgnoreCase(place.category())) {
             return place;
         }
         return placeCacheRepository.save(new PlaceCache(
@@ -36,7 +37,7 @@ public class ResolvePlaceCacheService implements ResolvePlaceCacheUseCase {
                 place.address(),
                 command.latitude(),
                 command.longitude(),
-                command.category(),
+                place.category(),
                 place.phoneNumber(),
                 place.rating(),
                 place.reviewCount(),

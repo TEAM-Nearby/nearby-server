@@ -22,7 +22,7 @@ class ResolvePlaceCacheServiceTest {
         FakePlaceCacheRepository placeCacheRepository = new FakePlaceCacheRepository();
         ResolvePlaceCacheService service = new ResolvePlaceCacheService(placeCacheRepository);
         ResolvePlaceCacheCommand command = commandWithoutCategory();
-        placeCacheRepository.places.put(command.googlePlaceId(), place(7L, command.googlePlaceId()));
+        placeCacheRepository.places.put(command.googlePlaceId(), place(7L, command.googlePlaceId(), "restaurant"));
 
         ResolvedPlaceCache result = service.resolve(command);
 
@@ -69,10 +69,10 @@ class ResolvePlaceCacheServiceTest {
     }
 
     @Test
-    void updatesExistingPlaceWhenCategoryIsExplicit() {
+    void refreshesExistingPlaceWhenRequestedCategoryMatchesStoredCategory() {
         FakePlaceCacheRepository placeCacheRepository = new FakePlaceCacheRepository();
         ResolvePlaceCacheService service = new ResolvePlaceCacheService(placeCacheRepository);
-        placeCacheRepository.places.put("google-place-id", place(7L, "google-place-id"));
+        placeCacheRepository.places.put("google-place-id", place(7L, "google-place-id", "cafe"));
         ResolvePlaceCacheCommand command = new ResolvePlaceCacheCommand(
                 "google-place-id",
                 "Updated place",
@@ -87,10 +87,34 @@ class ResolvePlaceCacheServiceTest {
         assertEquals(7L, result.placeId());
         assertEquals("Updated place", result.name());
         assertEquals("Rambla de Catalunya, 16", result.address());
-        assertEquals("CAFE", result.category());
+        assertEquals("cafe", result.category());
         assertEquals(1, placeCacheRepository.saveAttempts);
         assertEquals("Updated place", placeCacheRepository.places.get(command.googlePlaceId()).name());
-        assertEquals("CAFE", placeCacheRepository.places.get(command.googlePlaceId()).category());
+        assertEquals("cafe", placeCacheRepository.places.get(command.googlePlaceId()).category());
+    }
+
+    @Test
+    void preservesStoredOtherCategoryWhenRequestSuppliesCafe() {
+        FakePlaceCacheRepository placeCacheRepository = new FakePlaceCacheRepository();
+        ResolvePlaceCacheService service = new ResolvePlaceCacheService(placeCacheRepository);
+        ResolvePlaceCacheCommand command = new ResolvePlaceCacheCommand(
+                "google-place-id",
+                "Updated place",
+                "Updated address",
+                new BigDecimal("41.00000000"),
+                new BigDecimal("2.00000000"),
+                "CAFE"
+        );
+        PlaceCache storedPlace = place(7L, command.googlePlaceId(), "OTHER");
+        placeCacheRepository.places.put(command.googlePlaceId(), storedPlace);
+
+        ResolvedPlaceCache result = service.resolve(command);
+
+        assertEquals(storedPlace.id(), result.placeId());
+        assertEquals(storedPlace.name(), result.name());
+        assertEquals("OTHER", result.category());
+        assertEquals("OTHER", placeCacheRepository.places.get(command.googlePlaceId()).category());
+        assertEquals(0, placeCacheRepository.saveAttempts);
     }
 
     @Test
@@ -99,7 +123,7 @@ class ResolvePlaceCacheServiceTest {
         ResolvePlaceCacheService service = new ResolvePlaceCacheService(placeCacheRepository);
         ResolvePlaceCacheCommand command = command();
         placeCacheRepository.saveException = new DuplicatePlaceCacheException(new RuntimeException());
-        placeCacheRepository.existingAfterConflict = place(1L, command.googlePlaceId());
+        placeCacheRepository.existingAfterConflict = place(1L, command.googlePlaceId(), "restaurant");
 
         ResolvedPlaceCache result = service.resolve(command);
 
@@ -131,7 +155,7 @@ class ResolvePlaceCacheServiceTest {
         );
     }
 
-    private PlaceCache place(final Long id, final String googlePlaceId) {
+    private PlaceCache place(final Long id, final String googlePlaceId, final String category) {
         return new PlaceCache(
                 id,
                 googlePlaceId,
@@ -139,7 +163,7 @@ class ResolvePlaceCacheServiceTest {
                 "Rambla de Catalunya, 16",
                 new BigDecimal("41.39020500"),
                 new BigDecimal("2.16354800"),
-                "restaurant",
+                category,
                 null,
                 null,
                 null,
