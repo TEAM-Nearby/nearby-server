@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
+import com.sopt.nearby.companion.domain.exception.CompanionPlaceTimeZoneUnavailableException;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostKeyword;
@@ -114,6 +115,23 @@ class CreateCompanionPostServiceTest {
         assertEquals(LocalDateTime.of(2026, 7, 2, 6, 55), postRepository.savedPost.meetingAt());
         assertEquals(LocalDateTime.of(2026, 7, 2, 8, 55), result.meetingAt());
         assertEquals(NOW.plusHours(2), result.createdAt());
+    }
+
+    @Test
+    void doesNotStoreScheduledPostWhenTimeZoneIsUnavailable() {
+        CreateCompanionPostCommand base = command(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 11, 20, 19, 0), true, List.of());
+        CreateCompanionPostCommand rome = new CreateCompanionPostCommand(
+                base.hostUserId(),
+                new CreateCompanionPostCommand.Place(
+                        "rome-place", "Roma", "Roma, Italia",
+                        new BigDecimal("41.9028"), new BigDecimal("12.4964"), base.place().category()),
+                base.meetingTimeType(), base.meetingAt(), base.recruitmentCapacity(),
+                base.departEvenIfNotFull(), base.styleKeywords(), base.content(), base.openChatUrl());
+
+        assertThrows(CompanionPlaceTimeZoneUnavailableException.class, () -> service.create(rome));
+        assertNull(postRepository.savedPost);
     }
 
     @Test

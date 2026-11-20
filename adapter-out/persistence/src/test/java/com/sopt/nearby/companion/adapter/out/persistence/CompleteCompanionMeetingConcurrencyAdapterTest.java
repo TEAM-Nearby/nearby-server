@@ -10,6 +10,7 @@ import com.sopt.nearby.companion.application.CheckInCompanionMeetingService;
 import com.sopt.nearby.companion.application.CheckInCompanionMeetingCommand;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleService;
 import com.sopt.nearby.companion.application.ConfirmCompanionScheduleCommand;
+import com.sopt.nearby.companion.application.CompanionPlaceTimeResolver;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingCheckInContext;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
 import com.sopt.nearby.companion.domain.exception.CheckInTimeNotAllowedException;
@@ -163,10 +164,14 @@ class CompleteCompanionMeetingConcurrencyAdapterTest {
 			public List<CompanionMatchSummary> findAllByParticipantUserId(Long userId) { return List.of(); }
 			public Optional<String> findPlaceNameByPlaceId(Long placeId) { return Optional.empty(); }
 			public Optional<String> findPlaceAddressByPlaceId(Long placeId) { return Optional.empty(); }
+			public Optional<Place> findPlaceByPlaceId(Long placeId) {
+				return Optional.of(new Place("UTC", BigDecimal.ZERO, BigDecimal.ZERO));
+			}
 		};
 		var scheduleService = new ConfirmCompanionScheduleService(matches, new CompanionPostRepositoryAdapter(postJpaRepository),
 				schedules, new CompanionMeetingRepositoryAdapter(meetingJpaRepository), participants, command -> null,
-				place, checkIns, CLOCK);
+				place, checkIns, CLOCK,
+				new CompanionPlaceTimeResolver((latitude, longitude, instant) -> Optional.of(ZoneOffset.UTC)));
 		var checkCommand = new CheckInCompanionMeetingCommand(HOST_ID, ids.meetingId(), BigDecimal.ZERO, BigDecimal.ZERO);
 		var scheduleCommand = new ConfirmCompanionScheduleCommand(ids.matchId(), HOST_ID, NOW.plusHours(3));
 		CountDownLatch firstFinished = new CountDownLatch(1);

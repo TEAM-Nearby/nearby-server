@@ -38,12 +38,20 @@ public class CompanionPlaceTimeResolver {
             final BigDecimal longitude,
             final Instant instant
     ) {
+        return resolveKnownZone(address, latitude, longitude, instant).orElse(UTC);
+    }
+
+    public Optional<ZoneId> resolveKnownZone(
+            final String address,
+            final BigDecimal latitude,
+            final BigDecimal longitude,
+            final Instant instant
+    ) {
         Objects.requireNonNull(instant);
         return CompanionPlaceCityNameResolver.resolveSupportedCity(address)
                 .map(city -> city.zoneId())
-                .orElseGet(() -> lookup(latitude, longitude, instant)
-                        .or(() -> countryZone(address))
-                        .orElse(UTC));
+                .or(() -> lookup(latitude, longitude, instant))
+                .or(() -> countryZone(address));
     }
 
     public ResolvedCityTime resolveCurrentTime(

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.sopt.nearby.companion.domain.exception.CompanionMatchAlreadyCanceledException;
+import com.sopt.nearby.companion.domain.exception.CompanionPlaceTimeZoneUnavailableException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionScheduleException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatch;
@@ -29,9 +30,11 @@ import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
 import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +56,7 @@ class ConfirmCompanionScheduleServiceTest {
     private CapturingNotificationUseCase notificationUseCase;
     private ConfirmCompanionScheduleService service;
     private String placeAddress;
+    private Optional<ZoneId> lookupZone;
     private long checkedInCount;
 
     @BeforeEach
@@ -63,6 +67,7 @@ class ConfirmCompanionScheduleServiceTest {
         meetingRepository = new FakeCompanionMeetingRepository();
         participantRepository = new FakeCompanionMatchParticipantRepository();
         notificationUseCase = new CapturingNotificationUseCase();
+        lookupZone = Optional.of(ZoneOffset.UTC);
         service = new ConfirmCompanionScheduleService(
                 matchRepository,
                 postRepository,
@@ -74,6 +79,9 @@ class ConfirmCompanionScheduleServiceTest {
                     public List<CompanionMatchSummary> findAllByParticipantUserId(Long userId) { return List.of(); }
                     public Optional<String> findPlaceNameByPlaceId(Long placeId) { return Optional.empty(); }
                     public Optional<String> findPlaceAddressByPlaceId(Long placeId) { return Optional.ofNullable(placeAddress); }
+                    public Optional<Place> findPlaceByPlaceId(Long placeId) {
+                        return Optional.of(new Place(placeAddress, BigDecimal.ZERO, BigDecimal.ZERO));
+                    }
                 },
                 new MeetingCheckInRepository() {
                     public Optional<MeetingCheckIn> findById(Long id) { return Optional.empty(); }
@@ -83,7 +91,8 @@ class ConfirmCompanionScheduleServiceTest {
                     public long countCompletedByMeetingId(Long meetingId) { return 0; }
                     public MeetingCheckIn saveIfAbsent(MeetingCheckIn value) { return value; }
                 },
-                Clock.fixed(Instant.parse("2026-07-01T00:00:00Z"), ZoneOffset.UTC)
+                Clock.fixed(Instant.parse("2026-07-01T00:00:00Z"), ZoneOffset.UTC),
+                new CompanionPlaceTimeResolver((latitude, longitude, instant) -> lookupZone)
         );
 
         matchRepository.save(match(CompanionMatchStatus.SCHEDULE_CONFIRMED));
@@ -134,6 +143,16 @@ class ConfirmCompanionScheduleServiceTest {
         assertEquals(UPDATED_TIME.minusHours(2), scheduleRepository.schedules.get(1L).scheduledAt());
         assertEquals(UPDATED_TIME, CompanionMeetingTimeConverter.utcToLocal(
                 scheduleRepository.schedules.get(1L).scheduledAt(), java.time.ZoneId.of("Europe/Paris")));
+    }
+
+    @Test
+    void doesNotSaveScheduleWhenTimeZoneIsUnavailable() {
+        placeAddress = "Roma, Italia";
+        lookupZone = Optional.empty();
+
+        assertThrows(CompanionPlaceTimeZoneUnavailableException.class,
+                () -> service.update(command(7L, UPDATED_TIME)));
+        assertEquals(0, scheduleRepository.saveCount);
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
 import com.sopt.nearby.companion.domain.exception.InvalidOpenChatUrlException;
+import com.sopt.nearby.companion.domain.exception.CompanionPlaceTimeZoneUnavailableException;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
@@ -94,8 +95,12 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 command.place().category() == null ? null : command.place().category().name()
         ));
 
-        var zone = placeTimeResolver.resolveZone(
-                place.address(), place.latitude(), place.longitude(), clock.instant());
+        var zone = command.meetingTimeType() == CompanionPostMeetingTimeType.SCHEDULED
+                ? placeTimeResolver.resolveKnownZone(
+                        place.address(), place.latitude(), place.longitude(), clock.instant())
+                        .orElseThrow(CompanionPlaceTimeZoneUnavailableException::new)
+                : placeTimeResolver.resolveZone(
+                        place.address(), place.latitude(), place.longitude(), clock.instant());
         LocalDateTime meetingAt = command.meetingTimeType() == CompanionPostMeetingTimeType.SCHEDULED
                 ? CompanionMeetingTimeConverter.toUtc(command.meetingAt(), zone)
                         .filter(value -> value.isAfter(createdAt))

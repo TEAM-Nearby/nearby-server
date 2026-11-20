@@ -9,6 +9,7 @@ import com.sopt.nearby.companion.adapter.in.web.dto.response.CompanionPostsRespo
 import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotRecruitingException;
+import com.sopt.nearby.companion.domain.exception.CompanionPlaceTimeZoneUnavailableException;
 import com.sopt.nearby.companion.domain.exception.CompanionRequestAlreadyExistsException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionRequestSelfException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionPostCreateRequestException;
@@ -105,7 +106,7 @@ public interface CompanionPostApi {
                     확정 일정이 있으면 최신 비취소 매칭의 확정 장소를 모집글의 원본 장소보다 우선 사용합니다.
                     지원 도시가 아니면 city는 null일 수 있으며, 좌표 시간대 조회에 실패한 경우에만 UTC를 반환합니다.
                     meetingAt, createdAt은 오프셋 없는 장소 현지 시각입니다.
-                    expiresAt은 도시와 관계없이 오프셋 없는 UTC 시각입니다.
+                    expiresAt은 오프셋 없는 장소 현지 시각입니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
@@ -119,7 +120,8 @@ public interface CompanionPostApi {
     @ApiExceptions({
             CompanionProfileRequiredException.class,
             InvalidCompanionPostCreateRequestException.class,
-            InvalidOpenChatUrlException.class
+            InvalidOpenChatUrlException.class,
+            CompanionPlaceTimeZoneUnavailableException.class
     })
     @ApiResponse(
             responseCode = "403",
@@ -144,7 +146,7 @@ public interface CompanionPostApi {
             description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글을 작성합니다. "
                     + "recruitmentCapacity는 작성자를 제외한 모집 인원으로 1~7명이며, "
                     + "응답의 maxParticipants는 작성자를 포함한 전체 정원으로 2~8명입니다. "
-                    + "SCHEDULED의 meetingAt은 오프셋 없는 장소 현지 시각이며 시간대 조회에 실패한 경우에만 UTC입니다. "
+                    + "SCHEDULED의 meetingAt은 오프셋 없는 장소 현지 시각이며 시간대를 확인할 수 없으면 503을 반환합니다. "
                     + "응답의 exposureExpiresAt은 오프셋 없는 장소 현지 시각입니다. "
                     + "존재하지 않거나 두 번 존재하는 서머타임 전환 시각은 허용하지 않습니다.",
             security = @SecurityRequirement(name = "bearerAuth"),

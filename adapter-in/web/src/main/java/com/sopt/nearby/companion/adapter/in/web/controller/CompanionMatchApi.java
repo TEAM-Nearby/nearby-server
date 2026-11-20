@@ -16,6 +16,7 @@ import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionSchedule
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdException;
 import com.sopt.nearby.companion.domain.exception.CompanionMatchNotFoundException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
+import com.sopt.nearby.companion.domain.exception.CompanionPlaceTimeZoneUnavailableException;
 import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMatchException;
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionScheduleRequestException;
 import com.sopt.nearby.companion.domain.exception.CompanionProfileRequiredException;
@@ -160,6 +161,7 @@ public interface CompanionMatchApi {
     @ApiExceptions({
             CompanionProfileRequiredException.class,
             InvalidCompanionScheduleRequestException.class,
+            CompanionPlaceTimeZoneUnavailableException.class,
             ForbiddenCompanionScheduleException.class,
             CompanionMatchNotFoundException.class,
             CompanionMatchAlreadyCanceledException.class
@@ -189,7 +191,7 @@ public interface CompanionMatchApi {
     @Operation(
             summary = "글 작성자의 동행 일정 확정 및 수정",
             description = "JWT 액세스 토큰으로 인증된 글 작성자가 일정을 확정하거나 수정합니다. "
-                    + "scheduledAt은 오프셋 없는 장소 현지 시각이며 시간대 조회에 실패한 경우에만 UTC입니다. "
+                    + "scheduledAt은 오프셋 없는 장소 현지 시각이며 시간대를 확인할 수 없으면 503을 반환합니다. "
                     + "과거 시각과 존재하지 않거나 두 번 존재하는 서머타임 전환 시각은 허용하지 않습니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )

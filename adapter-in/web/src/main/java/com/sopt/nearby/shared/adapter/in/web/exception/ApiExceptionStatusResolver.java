@@ -21,6 +21,8 @@ public final class ApiExceptionStatusResolver {
     private static final String INVALID_REFRESH_TOKEN_CODE = "INVALID_REFRESH_TOKEN";
     private static final String ONBOARDING_REQUIRED_CODE = "ONBOARDING_REQUIRED";
     private static final String COMPANION_POST_EXPIRED_CODE = "COMPANION_POST_EXPIRED";
+    private static final String COMPANION_PLACE_TIME_ZONE_UNAVAILABLE_CODE =
+            "COMPANION_PLACE_TIME_ZONE_UNAVAILABLE";
     private static final String GOOGLE_PLACE_API_ERROR_CODE = "GOOGLE_PLACE_API_ERROR";
     private static final String PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED_CODE =
             "PHONE_VERIFICATION_SEND_LIMIT_EXCEEDED";
@@ -81,6 +83,9 @@ public final class ApiExceptionStatusResolver {
             return HttpStatus.BAD_GATEWAY;
         }
         if (errorCode.name().equals("PLACE_SEARCH_RATE_LIMITED")) {
+            return HttpStatus.SERVICE_UNAVAILABLE;
+        }
+        if (errorCode.name().equals(COMPANION_PLACE_TIME_ZONE_UNAVAILABLE_CODE)) {
             return HttpStatus.SERVICE_UNAVAILABLE;
         }
         if (errorCode.name().equals("PLACE_SEARCH_TIMEOUT")) {

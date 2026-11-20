@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.sopt.nearby.companion.port.out.CompanionPlaceTimeZoneLookup;
 import java.math.BigDecimal;
@@ -68,6 +69,7 @@ class CompanionPlaceTimeResolverTest {
     void missingCoordinatesAndUnknownAddressFallBackToUtc() {
         CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver(lookup(ZoneId.of("Asia/Seoul")));
 
+        assertTrue(resolver.resolveKnownZone("unknown", null, null, NOW).isEmpty());
         assertEquals("UTC", resolver.resolveZone("unknown", null, null, NOW).getId());
     }
 
