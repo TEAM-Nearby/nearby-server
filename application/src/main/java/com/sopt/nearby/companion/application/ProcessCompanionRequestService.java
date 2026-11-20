@@ -125,6 +125,11 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
 
     private LocalDateTime localMeetingAt(final Long matchId, final RequestContext context) {
         var schedule = scheduleRepository.findConfirmedByMatchId(matchId);
+        LocalDateTime time = schedule.map(CompanionSchedule::scheduledAt)
+                .orElseGet(() -> resolveMeetingAt(matchId, context));
+        if (time == null) {
+            return null;
+        }
         Long placeId = schedule.map(CompanionSchedule::placeId).orElse(context.post().placeId());
         var place = placeQueryPort.findPlaceByPlaceId(placeId).orElse(null);
         var zone = placeTimeResolver.resolveZone(
@@ -132,8 +137,6 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
                 place == null ? null : place.latitude(),
                 place == null ? null : place.longitude(),
                 clock.instant());
-        LocalDateTime time = schedule.map(CompanionSchedule::scheduledAt)
-                .orElseGet(() -> resolveMeetingAt(matchId, context));
         return CompanionMeetingTimeConverter.utcToLocal(time, zone);
     }
 

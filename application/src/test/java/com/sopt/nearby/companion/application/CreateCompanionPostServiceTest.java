@@ -34,8 +34,8 @@ import org.junit.jupiter.api.Test;
 
 class CreateCompanionPostServiceTest {
 
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-02T05:00:00Z"), ZoneOffset.UTC);
-    private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 2, 5, 0);
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-02T00:00:00Z"), ZoneOffset.UTC);
+    private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 2, 0, 0);
 
     private FakeRequireCompletedOnboardingUseCase onboardingUseCase;
     private FakeResolvePlaceCacheUseCase resolvePlaceCacheUseCase;
@@ -80,7 +80,7 @@ class CreateCompanionPostServiceTest {
     void rejectsPastScheduledMeetingInPlaceLocalTime() {
         CreateCompanionPostCommand base = command(
                 CompanionPostMeetingTimeType.SCHEDULED,
-                LocalDateTime.of(2026, 7, 2, 6, 30),
+                LocalDateTime.of(2026, 7, 2, 1, 30),
                 true,
                 List.of()
         );
@@ -113,7 +113,7 @@ class CreateCompanionPostServiceTest {
 
         assertEquals(LocalDateTime.of(2026, 7, 2, 6, 55), postRepository.savedPost.meetingAt());
         assertEquals(LocalDateTime.of(2026, 7, 2, 8, 55), result.meetingAt());
-        assertEquals(LocalDateTime.of(2026, 7, 2, 7, 0), result.createdAt());
+        assertEquals(NOW.plusHours(2), result.createdAt());
     }
 
     @Test
@@ -143,11 +143,11 @@ class CreateCompanionPostServiceTest {
                 List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
                 result.styleKeywords()
         );
-        assertEquals(NOW, result.createdAt());
+        assertEquals(NOW.plusHours(9), result.createdAt());
 
         CompanionPost saved = postRepository.savedPost;
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, saved.meetingTimeType());
-        assertEquals(LocalDateTime.of(2026, 7, 3, 14, 0), saved.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 7, 3, 5, 0), saved.meetingAt());
         assertEquals(CompanionPostStatus.RECRUITING, saved.status());
         assertIterableEquals(
                 List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
@@ -166,14 +166,16 @@ class CreateCompanionPostServiceTest {
 
         assertEquals(CompanionPostMeetingTimeType.NOW, result.meetingTimeType());
         assertNull(result.meetingAt());
-        assertEquals(NOW.plusHours(1), result.exposureExpiresAt());
+        assertEquals(NOW.plusHours(9), result.createdAt());
+        assertEquals(NOW.plusHours(10), result.exposureExpiresAt());
+        assertEquals(NOW.plusHours(1), postRepository.savedPost.exposureExpiresAt());
         assertEquals(true, result.departEvenIfNotFull());
         assertEquals(List.of(), result.styleKeywords());
         assertEquals(CompanionPostPlaceCategory.OTHER, result.place().category());
     }
 
     @Test
-    void returnsNowExposureExpiryInUtcForParis() {
+    void returnsNowExposureExpiryInPlaceLocalTimeForParis() {
         CreateCompanionPostCommand base = command(CompanionPostMeetingTimeType.NOW, null, true, List.of());
         CreateCompanionPostCommand paris = new CreateCompanionPostCommand(
                 base.hostUserId(),
@@ -185,7 +187,7 @@ class CreateCompanionPostServiceTest {
 
         CreateCompanionPostResult result = service.create(paris);
 
-        assertEquals(NOW.plusHours(1), result.exposureExpiresAt());
+        assertEquals(NOW.plusHours(3), result.exposureExpiresAt());
         assertEquals(NOW.plusHours(2), result.createdAt());
     }
 

@@ -7,7 +7,7 @@ import com.sopt.nearby.companion.port.out.CompanionPlaceTimeZoneLookup;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,6 +16,11 @@ public class CompanionPlaceTimeResolver {
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final ZoneId TOKYO = ZoneId.of("Asia/Tokyo");
+    private static final ZoneId UTC = ZoneId.of("UTC");
+    private static final List<String> KOREAN_ADMINISTRATIVE_AREAS = List.of(
+            "서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시", "울산광역시",
+            "세종특별자치시", "경기도", "강원특별자치도", "강원도", "충청북도", "충청남도", "전북특별자치도",
+            "전라북도", "전라남도", "경상북도", "경상남도", "제주특별자치도");
 
     private final CompanionPlaceTimeZoneLookup timeZoneLookup;
 
@@ -38,7 +43,7 @@ public class CompanionPlaceTimeResolver {
                 .map(city -> city.zoneId())
                 .orElseGet(() -> lookup(latitude, longitude, instant)
                         .or(() -> countryZone(address))
-                        .orElse(ZoneOffset.UTC));
+                        .orElse(UTC));
     }
 
     public ResolvedCityTime resolveCurrentTime(
@@ -68,6 +73,7 @@ public class CompanionPlaceTimeResolver {
         }
         String normalized = address.toUpperCase(Locale.ROOT);
         if (normalized.contains("대한민국") || normalized.contains("SOUTH KOREA")
+                || KOREAN_ADMINISTRATIVE_AREAS.stream().anyMatch(normalized::contains)
                 || normalized.matches(".*(?:^|[,\\s])KR(?:$|[,\\s]).*")) {
             return Optional.of(SEOUL);
         }

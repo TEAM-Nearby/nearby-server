@@ -134,7 +134,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 ),
                 post.meetingTimeType(),
                 CompanionMeetingTimeConverter.utcToLocal(post.meetingAt(), zone),
-                post.exposureExpiresAt(),
+                CompanionMeetingTimeConverter.utcToLocal(post.exposureExpiresAt(), zone),
                 post.maxParticipants(),
                 1,
                 post.departEvenIfNotFull(),

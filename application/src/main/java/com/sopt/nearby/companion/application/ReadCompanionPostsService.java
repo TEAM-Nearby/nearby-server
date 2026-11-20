@@ -14,10 +14,14 @@ import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.LongSupplier;
 import org.springframework.transaction.annotation.Transactional;
 
 public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
@@ -30,12 +34,15 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
     private static final BigDecimal MAX_LONGITUDE = new BigDecimal("180");
     private static final DateTimeFormatter DATE_TIME_TEXT_FORMATTER = DateTimeFormatter.ofPattern("M월 d일 HH:mm");
     private static final DateTimeFormatter DATE_TEXT_FORMATTER = DateTimeFormatter.ofPattern("M월 d일");
+    private static final Duration TIME_ZONE_LOOKUP_BUDGET = Duration.ofSeconds(1);
 
     private final CompanionPostQueryPort queryPort;
     private final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase;
     private final Clock clock;
     private final ResolvePlaceImageUseCase resolvePlaceImageUseCase;
     private final CompanionPlaceTimeResolver placeTimeResolver;
+    private final Duration timeZoneLookupBudget;
+    private final LongSupplier nanoTime;
 
     public ReadCompanionPostsService(
             final CompanionPostQueryPort queryPort,
@@ -54,11 +61,26 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
             final ResolvePlaceImageUseCase resolvePlaceImageUseCase,
             final CompanionPlaceTimeResolver placeTimeResolver
     ) {
+        this(queryPort, requireCompletedOnboardingUseCase, clock, resolvePlaceImageUseCase,
+                placeTimeResolver, TIME_ZONE_LOOKUP_BUDGET, System::nanoTime);
+    }
+
+    ReadCompanionPostsService(
+            final CompanionPostQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final Clock clock,
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase,
+            final CompanionPlaceTimeResolver placeTimeResolver,
+            final Duration timeZoneLookupBudget,
+            final LongSupplier nanoTime
+    ) {
         this.queryPort = queryPort;
         this.requireCompletedOnboardingUseCase = requireCompletedOnboardingUseCase;
         this.clock = clock;
         this.resolvePlaceImageUseCase = resolvePlaceImageUseCase;
         this.placeTimeResolver = placeTimeResolver;
+        this.timeZoneLookupBudget = timeZoneLookupBudget;
+        this.nanoTime = nanoTime;
     }
 
     @Override
@@ -70,8 +92,11 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
         }
 
         List<CompanionPostSummary> summaries = queryPort.find(command);
+        var instant = clock.instant();
+        long lookupDeadline = nanoTime.getAsLong() + timeZoneLookupBudget.toNanos();
+        Map<String, ZoneId> zones = new HashMap<>();
         List<CompanionPostsResult.Post> posts = summaries.stream()
-                .map(this::toPost)
+                .map(summary -> toPost(summary, instant, lookupDeadline, zones))
                 .toList();
 
         return new CompanionPostsResult(
@@ -86,10 +111,17 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
         );
     }
 
-    private CompanionPostsResult.Post toPost(final CompanionPostSummary summary) {
+    private CompanionPostsResult.Post toPost(
+            final CompanionPostSummary summary,
+            final Instant instant,
+            final long lookupDeadline,
+            final Map<String, ZoneId> zones
+    ) {
         String contentPreview = contentPreview(summary.content());
-        var zone = placeTimeResolver.resolveZone(
-                summary.placeAddress(), summary.latitude(), summary.longitude(), clock.instant());
+        var zone = zones.computeIfAbsent(coordinateKey(summary), ignored -> nanoTime.getAsLong() < lookupDeadline
+                ? placeTimeResolver.resolveZone(
+                        summary.placeAddress(), summary.latitude(), summary.longitude(), instant)
+                : placeTimeResolver.resolveZone(summary.placeAddress(), null, null, instant));
         var meetingAt = CompanionMeetingTimeConverter.utcToLocal(summary.meetingAt(), zone);
         ResolvedPlaceImage image = resolvePlaceImageUseCase.resolve(new ResolvePlaceImageCommand(
                 summary.googlePlaceId(),
@@ -141,6 +173,14 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
         );
     }
 
+    private String coordinateKey(final CompanionPostSummary summary) {
+        if (summary.latitude() == null || summary.longitude() == null) {
+            return "address:" + summary.placeAddress();
+        }
+        return summary.latitude().stripTrailingZeros().toPlainString()
+                + "," + summary.longitude().stripTrailingZeros().toPlainString();
+    }
+
     private String meetingAtText(final LocalDateTime meetingAt) {
         return meetingAt == null ? null : DATE_TIME_TEXT_FORMATTER.format(meetingAt);
     }
@@ -152,7 +192,7 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
         return content.substring(0, CONTENT_PREVIEW_LENGTH);
     }
 
-    private String createdAgoText(final LocalDateTime createdAt, final java.time.ZoneId zone) {
+    private String createdAgoText(final LocalDateTime createdAt, final ZoneId zone) {
         long minutes = Duration.between(createdAt, LocalDateTime.now(clock)).toMinutes();
         if (minutes < 1) {
             return "방금 전";

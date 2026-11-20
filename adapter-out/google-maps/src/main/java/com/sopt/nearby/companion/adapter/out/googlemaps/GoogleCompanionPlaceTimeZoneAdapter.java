@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Map;
@@ -93,7 +94,7 @@ public class GoogleCompanionPlaceTimeZoneAdapter implements CompanionPlaceTimeZo
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             return Optional.empty();
-        } catch (IOException | IllegalArgumentException exception) {
+        } catch (IOException | IllegalArgumentException | DateTimeException exception) {
             log.warn("Google Time Zone lookup failed. type={}", exception.getClass().getSimpleName());
             return Optional.empty();
         }

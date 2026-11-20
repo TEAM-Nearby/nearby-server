@@ -8,7 +8,6 @@ import com.sopt.nearby.companion.port.out.CompanionPlaceTimeZoneLookup;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
@@ -40,6 +39,15 @@ class CompanionPlaceTimeResolverTest {
     }
 
     @Test
+    void koreanAddressWithoutCountryFallsBackToSeoulWhenLookupFails() {
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver(
+                (latitude, longitude, instant) -> Optional.empty());
+
+        assertEquals(ZoneId.of("Asia/Seoul"), resolver.resolveZone(
+                "서울특별시 종로구", new BigDecimal("37.5665"), new BigDecimal("126.9780"), NOW));
+    }
+
+    @Test
     void supportedCityWinsOverCoordinateLookupAndKeepsDst() {
         AtomicInteger calls = new AtomicInteger();
         CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver((latitude, longitude, instant) -> {
@@ -60,7 +68,7 @@ class CompanionPlaceTimeResolverTest {
     void missingCoordinatesAndUnknownAddressFallBackToUtc() {
         CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver(lookup(ZoneId.of("Asia/Seoul")));
 
-        assertEquals(ZoneOffset.UTC, resolver.resolveZone("unknown", null, null, NOW));
+        assertEquals("UTC", resolver.resolveZone("unknown", null, null, NOW).getId());
     }
 
     private CompanionPlaceTimeZoneLookup lookup(final ZoneId zoneId) {

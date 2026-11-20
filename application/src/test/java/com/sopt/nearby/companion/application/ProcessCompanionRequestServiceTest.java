@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,6 +37,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -45,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -157,6 +160,38 @@ class ProcessCompanionRequestServiceTest {
         assertEquals(result.matchId(), meeting.matchId());
         assertEquals(CompanionMeetingStatus.ONGOING, meeting.status());
         assertEquals(applicationCreatedAt, meeting.startedAt());
+    }
+
+    @Test
+    void acceptsUndecidedRequestWithoutLookingUpTimeZone() {
+        AtomicInteger lookups = new AtomicInteger();
+        CompanionMatchSummaryQueryPort placeQueryPort = new CompanionMatchSummaryQueryPort() {
+            public List<CompanionMatchSummary> findAllByParticipantUserId(final Long userId) { return List.of(); }
+            public Optional<String> findPlaceNameByPlaceId(final Long placeId) { return Optional.empty(); }
+            public Optional<String> findPlaceAddressByPlaceId(final Long placeId) { return Optional.empty(); }
+            public Optional<Place> findPlaceByPlaceId(final Long placeId) {
+                return Optional.of(new Place("서울특별시 종로구", new BigDecimal("37.5665"),
+                        new BigDecimal("126.9780")));
+            }
+        };
+        service = new ProcessCompanionRequestService(
+                applicationRepository, postRepository, matchRepository, participantRepository,
+                scheduleRepository, meetingRepository, notificationUseCase, CLOCK, placeQueryPort,
+                new CompanionPlaceTimeResolver((latitude, longitude, instant) -> {
+                    lookups.incrementAndGet();
+                    return Optional.of(ZoneOffset.UTC);
+                }));
+        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        CompanionPost original = post(10L, 100L);
+        postRepository.save(new CompanionPost(
+                original.id(), original.hostUserId(), original.placeId(), CompanionPostMeetingTimeType.UNDECIDED,
+                null, null, original.maxParticipants(), original.departEvenIfNotFull(), original.content(),
+                original.openChatUrl(), original.status(), original.createdAt()));
+
+        AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
+
+        assertNull(result.meetingAt());
+        assertEquals(0, lookups.get());
     }
 
     @Test

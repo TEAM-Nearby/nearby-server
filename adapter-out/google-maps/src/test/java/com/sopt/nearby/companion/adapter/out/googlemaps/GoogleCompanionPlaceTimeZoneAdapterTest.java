@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
+import com.sopt.nearby.companion.application.CompanionPlaceTimeResolver;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -59,6 +60,24 @@ class GoogleCompanionPlaceTimeZoneAdapterTest {
 
         assertTrue(adapter().findTimeZone(
                 new BigDecimal("91"), BigDecimal.ZERO, Instant.EPOCH).isEmpty());
+    }
+
+    @Test
+    void unknownTimeZoneIdFallsBackToUtc() throws Exception {
+        server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/timezone", exchange -> {
+            byte[] body = "{\"status\":\"OK\",\"timeZoneId\":\"Unknown/Zone\"}"
+                    .getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        server.start();
+
+        var resolver = new CompanionPlaceTimeResolver(adapter());
+
+        assertEquals("UTC", resolver.resolveZone(
+                "unknown", new BigDecimal("37.5665"), new BigDecimal("126.978"), Instant.EPOCH).getId());
     }
 
     private GoogleCompanionPlaceTimeZoneAdapter adapter() {

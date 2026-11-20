@@ -19,10 +19,14 @@ import com.sopt.nearby.user.exception.OnboardingRequiredException;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -201,6 +205,32 @@ class ReadCompanionPostsServiceTest {
     }
 
     @Test
+    void limitsTimeZoneLookupsAndReusesFailedCoordinatesWithinRequest() {
+        AtomicInteger lookups = new AtomicInteger();
+        AtomicLong nanoTime = new AtomicLong();
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver((latitude, longitude, instant) -> {
+            if (lookups.incrementAndGet() == 2) {
+                nanoTime.set(Duration.ofSeconds(2).toNanos());
+            }
+            return Optional.empty();
+        });
+        service = new ReadCompanionPostsService(
+                queryPort, onboardingUseCase, CLOCK, resolvePlaceImageUseCase, resolver,
+                Duration.ofSeconds(1), nanoTime::get);
+        queryPort.result = List.of(
+                summary(101L, "unknown", "37.566500", "126.978000"),
+                summary(102L, "unknown", "37.5665", "126.978"),
+                summary(103L, "unknown", "35.0", "127.0"),
+                summary(104L, "日本 大阪府大阪市", "34.6937", "135.5023")
+        );
+
+        CompanionPostsResult result = service.read(validCommand());
+
+        assertEquals(2, lookups.get());
+        assertEquals(LocalDateTime.of(2026, 7, 2, 12, 30), result.posts().get(3).createdAt());
+    }
+
+    @Test
     void rejectsInvalidSearchCondition() {
         assertThrows(InvalidCompanionPostSearchRequestException.class, () -> service.read(new ReadCompanionPostsCommand(
                 7L,
@@ -276,6 +306,20 @@ class ReadCompanionPostsServiceTest {
                 null,
                 CompanionPostSort.LATEST
         );
+    }
+
+    private CompanionPostSummary summary(
+            final Long postId,
+            final String address,
+            final String latitude,
+            final String longitude
+    ) {
+        return new CompanionPostSummary(
+                postId, CompanionPostStatus.RECRUITING, "호스트", UserGender.FEMALE, 20L, "place-" + postId,
+                "장소", CompanionPostPlaceCategory.RESTAURANT, new BigDecimal(latitude), new BigDecimal(longitude),
+                10, null, "동행", CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 3, 14, 0), 1, 4,
+                LocalDateTime.of(2026, 7, 2, 3, 30), List.of(), address);
     }
 
     private static final class FakeCompanionPostQueryPort implements CompanionPostQueryPort {
