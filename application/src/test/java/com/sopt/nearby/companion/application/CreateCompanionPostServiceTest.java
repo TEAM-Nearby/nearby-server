@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,6 +94,39 @@ class CreateCompanionPostServiceTest {
         );
 
         assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(paris));
+    }
+
+    @Test
+    void rejectsScheduleThatPassesWhileResolvingPlace() {
+        Instant initial = CLOCK.instant();
+        Clock advancingClock = new Clock() {
+            private int calls;
+
+            @Override
+            public ZoneId getZone() {
+                return ZoneOffset.UTC;
+            }
+
+            @Override
+            public Clock withZone(final ZoneId zone) {
+                return this;
+            }
+
+            @Override
+            public Instant instant() {
+                return calls++ == 0 ? initial : initial.plusSeconds(2);
+            }
+        };
+        service = new CreateCompanionPostService(
+                onboardingUseCase, resolvePlaceCacheUseCase, postRepository, styleRepository, advancingClock);
+        CreateCompanionPostCommand command = command(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 2, 9, 0, 1),
+                true,
+                List.of());
+
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(command));
+        assertNull(postRepository.savedPost);
     }
 
     @Test

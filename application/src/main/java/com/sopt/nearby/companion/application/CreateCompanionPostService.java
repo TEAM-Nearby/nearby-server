@@ -98,7 +98,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 place.address(), place.latitude(), place.longitude(), clock.instant());
         LocalDateTime meetingAt = command.meetingTimeType() == CompanionPostMeetingTimeType.SCHEDULED
                 ? CompanionMeetingTimeConverter.toUtc(command.meetingAt(), zone)
-                        .filter(value -> value.isAfter(createdAt))
+                        .filter(value -> value.isAfter(LocalDateTime.now(clock)))
                         .orElseThrow(InvalidCompanionPostCreateRequestException::new)
                 : null;
 
