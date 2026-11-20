@@ -2,18 +2,26 @@
 package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationSummary;
-import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
-import java.time.ZoneOffset;
+import java.time.Instant;
 
 final class CompanionNotificationTime {
     private CompanionNotificationTime() { }
 
     static CompanionNotificationSummary localize(final CompanionNotificationSummary summary) {
-        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(summary.placeAddress())
-                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        return localize(summary, new CompanionPlaceTimeResolver(), Instant.EPOCH);
+    }
+
+    static CompanionNotificationSummary localize(
+            final CompanionNotificationSummary summary,
+            final CompanionPlaceTimeResolver placeTimeResolver,
+            final Instant instant
+    ) {
+        var zone = placeTimeResolver.resolveZone(
+                summary.placeAddress(), summary.latitude(), summary.longitude(), instant);
         return new CompanionNotificationSummary(summary.notificationId(), summary.applicationId(),
                 summary.applicationStatus(), summary.host(), summary.placeName(),
                 CompanionMeetingTimeConverter.utcToLocal(summary.meetingAt(), zone), summary.matchId(),
-                summary.actionType(), summary.isRead(), summary.placeAddress());
+                summary.actionType(), summary.isRead(), summary.placeAddress(),
+                summary.latitude(), summary.longitude());
     }
 }

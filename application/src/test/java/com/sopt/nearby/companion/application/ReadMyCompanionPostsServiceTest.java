@@ -102,7 +102,7 @@ class ReadMyCompanionPostsServiceTest {
 		assertNull(result.posts().get(0).cityNameKor());
 		assertNull(result.posts().get(0).city());
 		assertEquals(CLOCK.instant(), result.posts().get(0).currentLocalTime().toInstant());
-		assertEquals(java.time.ZoneOffset.UTC, result.posts().get(0).currentLocalTime().getOffset());
+		assertEquals(java.time.ZoneOffset.ofHours(9), result.posts().get(0).currentLocalTime().getOffset());
 	}
 
 	private MyCompanionPostSummary post(

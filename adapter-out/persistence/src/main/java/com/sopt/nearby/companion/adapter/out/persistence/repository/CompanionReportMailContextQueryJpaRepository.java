@@ -20,7 +20,9 @@ public interface CompanionReportMailContextQueryJpaRepository extends Repository
 				coalesce(schedule.scheduled_at, post.meeting_at) as scheduledAt,
 				case when schedule.id is not null and post.meeting_time_type <> 'NOW'
 						then 'SCHEDULED' else post.meeting_time_type end as meetingTimeType,
-				place.address as placeAddress
+				place.address as placeAddress,
+				place.latitude as latitude,
+				place.longitude as longitude
 			from companion_match m
 			join companion_post post
 				on post.id = m.post_id

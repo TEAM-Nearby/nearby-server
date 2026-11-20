@@ -51,6 +51,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
     private final CreateCompanionNotificationUseCase notificationUseCase;
     private final Clock clock;
     private final CompanionMatchSummaryQueryPort placeQueryPort;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public ProcessCompanionRequestService(
             final CompanionApplicationRepository applicationRepository,
@@ -63,6 +64,22 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
             final Clock clock,
             final CompanionMatchSummaryQueryPort placeQueryPort
     ) {
+        this(applicationRepository, postRepository, matchRepository, participantRepository, scheduleRepository,
+                meetingRepository, notificationUseCase, clock, placeQueryPort, new CompanionPlaceTimeResolver());
+    }
+
+    public ProcessCompanionRequestService(
+            final CompanionApplicationRepository applicationRepository,
+            final CompanionPostRepository postRepository,
+            final CompanionMatchRepository matchRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final CompanionScheduleRepository scheduleRepository,
+            final CompanionMeetingRepository meetingRepository,
+            final CreateCompanionNotificationUseCase notificationUseCase,
+            final Clock clock,
+            final CompanionMatchSummaryQueryPort placeQueryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.applicationRepository = applicationRepository;
         this.postRepository = postRepository;
         this.matchRepository = matchRepository;
@@ -72,6 +89,7 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
         this.notificationUseCase = notificationUseCase;
         this.clock = clock;
         this.placeQueryPort = placeQueryPort;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -107,12 +125,18 @@ public class ProcessCompanionRequestService implements AcceptCompanionRequestUse
 
     private LocalDateTime localMeetingAt(final Long matchId, final RequestContext context) {
         var schedule = scheduleRepository.findConfirmedByMatchId(matchId);
-        Long placeId = schedule.map(CompanionSchedule::placeId).orElse(context.post().placeId());
-        var zone = placeQueryPort.findPlaceAddressByPlaceId(placeId)
-                .flatMap(CompanionPlaceCityNameResolver::resolveSupportedCity)
-                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
         LocalDateTime time = schedule.map(CompanionSchedule::scheduledAt)
                 .orElseGet(() -> resolveMeetingAt(matchId, context));
+        if (time == null) {
+            return null;
+        }
+        Long placeId = schedule.map(CompanionSchedule::placeId).orElse(context.post().placeId());
+        var place = placeQueryPort.findPlaceByPlaceId(placeId).orElse(null);
+        var zone = placeTimeResolver.resolveZone(
+                place == null ? null : place.address(),
+                place == null ? null : place.latitude(),
+                place == null ? null : place.longitude(),
+                clock.instant());
         return CompanionMeetingTimeConverter.utcToLocal(time, zone);
     }
 

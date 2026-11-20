@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.adapter.out.persistence.repository;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 public interface CompanionNotificationProjection {
 
@@ -24,6 +25,10 @@ public interface CompanionNotificationProjection {
     String getPlaceName();
 
     String getPlaceAddress();
+
+    BigDecimal getLatitude();
+
+    BigDecimal getLongitude();
 
     LocalDateTime getMeetingAt();
 

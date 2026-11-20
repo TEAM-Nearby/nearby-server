@@ -2,6 +2,7 @@
 package com.sopt.nearby.companion.port.out;
 
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,4 +12,11 @@ public interface CompanionMatchSummaryQueryPort {
     Optional<String> findPlaceNameByPlaceId(Long placeId);
 
     Optional<String> findPlaceAddressByPlaceId(Long placeId);
+
+    default Optional<Place> findPlaceByPlaceId(final Long placeId) {
+        return findPlaceAddressByPlaceId(placeId).map(address -> new Place(address, null, null));
+    }
+
+    record Place(String address, BigDecimal latitude, BigDecimal longitude) {
+    }
 }

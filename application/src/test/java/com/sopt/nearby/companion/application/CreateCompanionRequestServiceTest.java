@@ -92,7 +92,7 @@ class CreateCompanionRequestServiceTest {
         assertEquals(1L, result.applicationId());
         assertEquals(10L, result.postId());
         assertEquals(CompanionApplicationStatus.PENDING, result.applicationStatus());
-        assertEquals(NOW, result.createdAt());
+        assertEquals(NOW.plusHours(9), result.createdAt());
         assertEquals(7L, applicationRepository.saved.applicantUserId());
         assertEquals(CompanionApplicationStatus.PENDING, applicationRepository.saved.status());
         assertNull(applicationRepository.saved.rejectionReason());

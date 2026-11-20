@@ -78,7 +78,7 @@ class ReadCompanionRequestResultServiceTest {
         assertEquals(new BigDecimal("35.6595"), result.acceptedDetail().place().latitude());
         assertEquals(new BigDecimal("139.7005"), result.acceptedDetail().place().longitude());
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, result.acceptedDetail().meetingTimeType());
-        assertEquals(LocalDateTime.of(2026, 7, 20, 18, 0), result.acceptedDetail().meetingAt());
+        assertEquals(LocalDateTime.of(2026, 7, 21, 3, 0), result.acceptedDetail().meetingAt());
         assertEquals(2, result.acceptedDetail().participantCount());
         assertEquals(4, result.acceptedDetail().maxParticipants());
         assertEquals("https://open.kakao.com/o/nearby", result.acceptedDetail().openChatUrl());

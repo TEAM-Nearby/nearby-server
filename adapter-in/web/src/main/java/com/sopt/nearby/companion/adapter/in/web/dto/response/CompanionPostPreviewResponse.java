@@ -26,7 +26,7 @@ public record CompanionPostPreviewResponse(
                 postModel.content(),
                 postModel.placeName(),
                 postModel.city(),
-                postModel.city() == null ? "UTC" : postModel.city().zoneId().getId(),
+                postModel.currentLocalTime() == null ? "Asia/Seoul" : postModel.currentLocalTime().getZone().getId(),
                 postModel.currentLocalTime() == null ? null : postModel.currentLocalTime().toOffsetDateTime(),
                 postModel.meetingTimeType(),
                 postModel.meetingAt()

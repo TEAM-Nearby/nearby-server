@@ -3,7 +3,6 @@ package com.sopt.nearby.companion.application;
 
 import com.sopt.nearby.companion.domain.model.meeting.OngoingCompanionMeetingSummary;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingProgressStatus;
-import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.port.in.ReadOngoingCompanionMeetingsUseCase;
 import com.sopt.nearby.companion.port.out.OngoingCompanionMeetingQueryPort;
@@ -16,13 +15,23 @@ public class ReadOngoingCompanionMeetingsService implements ReadOngoingCompanion
 
     private final OngoingCompanionMeetingQueryPort queryPort;
     private final Clock clock;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public ReadOngoingCompanionMeetingsService(
             final OngoingCompanionMeetingQueryPort queryPort,
             final Clock clock
     ) {
+        this(queryPort, clock, new CompanionPlaceTimeResolver());
+    }
+
+    public ReadOngoingCompanionMeetingsService(
+            final OngoingCompanionMeetingQueryPort queryPort,
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.queryPort = queryPort;
         this.clock = clock;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -51,8 +60,10 @@ public class ReadOngoingCompanionMeetingsService implements ReadOngoingCompanion
             final OngoingCompanionMeetingSummary summary,
             final Instant now
     ) {
-        final ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+        final ResolvedCityTime cityTime = placeTimeResolver.resolveCurrentTime(
                 summary.placeAddress(),
+                summary.latitude(),
+                summary.longitude(),
                 now
         );
         return new OngoingCompanionMeetingSummary(
@@ -61,11 +72,13 @@ public class ReadOngoingCompanionMeetingsService implements ReadOngoingCompanion
                 summary.companion(),
                 summary.placeName(),
                 summary.placeAddress(),
+                summary.latitude(),
+                summary.longitude(),
                 cityTime.city(),
                 cityTime.currentLocalTime(),
                 CompanionMeetingTimeConverter.toPlaceLocalTime(
                         summary.meetingAt(),
-                        cityTime.city()
+                        cityTime.currentLocalTime().getZone()
                 ),
                 summary.meetingTimeType(),
                 summary.checkedIn(),

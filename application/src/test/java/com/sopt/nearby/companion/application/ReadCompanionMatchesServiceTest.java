@@ -35,7 +35,7 @@ class ReadCompanionMatchesServiceTest {
         assertEquals(CompanionCity.MADRID, results.get(0).city());
         assertEquals("2026-07-01T14:00+02:00", results.get(0).currentLocalTime().toOffsetDateTime().toString());
         assertNull(results.get(1).city());
-        assertEquals("2026-07-01T12:00Z", results.get(1).currentLocalTime().toOffsetDateTime().toString());
+        assertEquals("2026-07-01T21:00+09:00", results.get(1).currentLocalTime().toOffsetDateTime().toString());
     }
 
     @Test

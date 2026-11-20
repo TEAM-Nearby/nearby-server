@@ -92,11 +92,11 @@ class CheckInCompanionMeetingServiceTest {
         assertEquals(2L, result.totalParticipantCount());
         assertEquals(false, result.allParticipantsCheckedIn());
         assertEquals(false, result.canMoveToComplete());
-        assertEquals(NOW, result.checkedInAt());
+        assertEquals(NOW.plusHours(9), result.checkedInAt());
         assertEquals(0.0, result.distanceMeters());
         assertEquals(150.0, result.allowedRadiusMeters());
-        assertEquals(LocalDateTime.of(2026, 6, 29, 17, 30), result.checkInAvailableFrom());
-        assertEquals(LocalDateTime.of(2026, 6, 29, 19, 30), result.checkInAvailableUntil());
+        assertEquals(LocalDateTime.of(2026, 6, 30, 2, 30), result.checkInAvailableFrom());
+        assertEquals(LocalDateTime.of(2026, 6, 30, 4, 30), result.checkInAvailableUntil());
         assertEquals(false, result.alreadyCompleted());
     }
 
@@ -118,7 +118,7 @@ class CheckInCompanionMeetingServiceTest {
 
         assertEquals(true, result.currentUserCheckedIn());
         assertEquals(true, result.alreadyCompleted());
-        assertEquals(firstCheckedInAt, result.checkedInAt());
+        assertEquals(firstCheckedInAt.plusHours(9), result.checkedInAt());
         assertEquals(0, checkInRepository.saveIfAbsentCount);
     }
 

@@ -40,7 +40,9 @@ public class CompanionReportMailContextQueryAdapter implements CompanionReportMa
 				row.getCompanionPostContent(),
 				row.getScheduledAt(),
 				CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
-				row.getPlaceAddress()
+				row.getPlaceAddress(),
+				row.getLatitude(),
+				row.getLongitude()
 		);
 	}
 }

@@ -21,6 +21,8 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
                 host_profile.gender as hostGender,
                 place.name as placeName,
                 place.address as placeAddress,
+                place.latitude as latitude,
+                place.longitude as longitude,
                 coalesce(
                     schedule.scheduled_at,
                     case
@@ -63,4 +65,11 @@ public interface CompanionMatchSummaryJpaRepository extends Repository<Companion
             where place.id = :placeId
             """, nativeQuery = true)
     Optional<String> findPlaceAddressByPlaceId(@Param("placeId") Long placeId);
+
+    @Query(value = """
+            select place.address as address, place.latitude as latitude, place.longitude as longitude
+            from place_cache place
+            where place.id = :placeId
+            """, nativeQuery = true)
+    Optional<CompanionPlaceProjection> findPlaceByPlaceId(@Param("placeId") Long placeId);
 }

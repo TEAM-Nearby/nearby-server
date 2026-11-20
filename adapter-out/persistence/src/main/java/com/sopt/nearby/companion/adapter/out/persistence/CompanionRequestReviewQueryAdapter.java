@@ -46,7 +46,9 @@ public class CompanionRequestReviewQueryAdapter implements CompanionRequestRevie
                         row.getApplicantMannerScore()
                 ),
                 new CompanionRequestReview.ApplicantAccount(row.getApplicantPhoneVerifiedAt()),
-                row.getPlaceAddress()
+                row.getPlaceAddress(),
+                row.getLatitude(),
+                row.getLongitude()
         );
     }
 }

@@ -1,14 +1,12 @@
 // 내가 작성한 동행 모집글 목록 조회 유스케이스를 구현한다.
 package com.sopt.nearby.companion.application;
 
-import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.domain.model.post.MyCompanionPostSummary;
 import com.sopt.nearby.companion.port.in.ReadMyCompanionPostsUseCase;
 import com.sopt.nearby.companion.port.out.MyCompanionPostQueryPort;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +14,20 @@ public class ReadMyCompanionPostsService implements ReadMyCompanionPostsUseCase 
 
 	private final MyCompanionPostQueryPort queryPort;
 	private final Clock clock;
+	private final CompanionPlaceTimeResolver placeTimeResolver;
 
 	public ReadMyCompanionPostsService(final MyCompanionPostQueryPort queryPort, final Clock clock) {
+		this(queryPort, clock, new CompanionPlaceTimeResolver());
+	}
+
+	public ReadMyCompanionPostsService(
+			final MyCompanionPostQueryPort queryPort,
+			final Clock clock,
+			final CompanionPlaceTimeResolver placeTimeResolver
+	) {
 		this.queryPort = queryPort;
 		this.clock = clock;
+		this.placeTimeResolver = placeTimeResolver;
 	}
 
 	@Override
@@ -34,8 +42,10 @@ public class ReadMyCompanionPostsService implements ReadMyCompanionPostsUseCase 
 	}
 
 	private ReadMyCompanionPostsResult.Post toPost(final MyCompanionPostSummary summary, final Instant now) {
-		final ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+		final ResolvedCityTime cityTime = placeTimeResolver.resolveCurrentTime(
 				summary.place().address(),
+				summary.place().latitude(),
+				summary.place().longitude(),
 				now
 		);
 		return new ReadMyCompanionPostsResult.Post(
@@ -43,8 +53,8 @@ public class ReadMyCompanionPostsService implements ReadMyCompanionPostsUseCase 
 				cityTime.city() == null ? null : cityTime.city().koreanName(),
 				cityTime.city(),
 				cityTime.currentLocalTime(),
-				CompanionMeetingTimeConverter.utcToLocal(summary.scheduledAt(),
-						cityTime.city() == null ? ZoneOffset.UTC : cityTime.city().zoneId()),
+				CompanionMeetingTimeConverter.utcToLocal(
+						summary.scheduledAt(), cityTime.currentLocalTime().getZone()),
 				new ReadMyCompanionPostsResult.Place(
 						summary.place().googlePlaceId(),
 						summary.place().name(),

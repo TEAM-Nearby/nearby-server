@@ -14,19 +14,33 @@ import com.sopt.nearby.companion.port.in.ReadCompanionRequestResultUseCase;
 import com.sopt.nearby.companion.port.out.AcceptedCompanionRequestDetailQueryPort;
 import com.sopt.nearby.companion.port.out.CompanionApplicationRepository;
 import java.time.ZoneOffset;
+import java.time.Clock;
 import org.springframework.transaction.annotation.Transactional;
 
 public class ReadCompanionRequestResultService implements ReadCompanionRequestResultUseCase {
 
     private final CompanionApplicationRepository applicationRepository;
     private final AcceptedCompanionRequestDetailQueryPort detailQueryPort;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
+    private final Clock clock;
 
     public ReadCompanionRequestResultService(
             final CompanionApplicationRepository applicationRepository,
             final AcceptedCompanionRequestDetailQueryPort detailQueryPort
     ) {
+        this(applicationRepository, detailQueryPort, new CompanionPlaceTimeResolver(), Clock.systemUTC());
+    }
+
+    public ReadCompanionRequestResultService(
+            final CompanionApplicationRepository applicationRepository,
+            final AcceptedCompanionRequestDetailQueryPort detailQueryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver,
+            final Clock clock
+    ) {
         this.applicationRepository = applicationRepository;
         this.detailQueryPort = detailQueryPort;
+        this.placeTimeResolver = placeTimeResolver;
+        this.clock = clock;
     }
 
     @Override
@@ -52,8 +66,9 @@ public class ReadCompanionRequestResultService implements ReadCompanionRequestRe
                 .orElseThrow(CompanionMatchNotFoundException::new);
         validateMatchStatus(detail.matchStatus());
 
-        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(detail.place().address())
-                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        var zone = placeTimeResolver.resolveZone(
+                detail.place().address(), detail.place().latitude(), detail.place().longitude(),
+                clock.instant());
         var localized = new AcceptedCompanionRequestDetail(
                 detail.matchId(), detail.matchStatus(), detail.postId(), detail.host(), detail.place(),
                 detail.meetingTimeType(), CompanionMeetingTimeConverter.utcToLocal(detail.meetingAt(), zone),

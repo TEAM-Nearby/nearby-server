@@ -16,7 +16,7 @@ public record ReadCompanionMatchResult(
 
     public LocalDateTime localCreatedAt() {
         return CompanionMeetingTimeConverter.utcToLocal(match.createdAt(),
-                city == null ? java.time.ZoneOffset.UTC : city.zoneId());
+                currentLocalTime.getZone());
     }
 
     public ReadCompanionMatchResult(
