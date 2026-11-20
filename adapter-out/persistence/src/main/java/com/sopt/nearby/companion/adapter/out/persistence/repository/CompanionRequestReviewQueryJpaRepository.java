@@ -17,6 +17,8 @@ public interface CompanionRequestReviewQueryJpaRepository extends Repository<Com
                 post.host_user_id as hostUserId,
                 place.name as placeName,
                 place.address as placeAddress,
+                place.latitude as latitude,
+                place.longitude as longitude,
                 post.meeting_time_type as meetingTimeType,
                 coalesce((select schedule.scheduled_at
                     from companion_match match_row

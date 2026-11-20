@@ -42,6 +42,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
     private final CompanionPostRepository postRepository;
     private final CompanionPostStyleRepository styleRepository;
     private final Clock clock;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public CreateCompanionPostService(
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
@@ -50,11 +51,24 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
             final CompanionPostStyleRepository styleRepository,
             final Clock clock
     ) {
+        this(requireCompletedOnboardingUseCase, resolvePlaceCacheUseCase, postRepository, styleRepository,
+                clock, new CompanionPlaceTimeResolver());
+    }
+
+    public CreateCompanionPostService(
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final ResolvePlaceCacheUseCase resolvePlaceCacheUseCase,
+            final CompanionPostRepository postRepository,
+            final CompanionPostStyleRepository styleRepository,
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.requireCompletedOnboardingUseCase = requireCompletedOnboardingUseCase;
         this.resolvePlaceCacheUseCase = resolvePlaceCacheUseCase;
         this.postRepository = postRepository;
         this.styleRepository = styleRepository;
         this.clock = clock;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -80,8 +94,8 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 command.place().category() == null ? null : command.place().category().name()
         ));
 
-        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(place.address())
-                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        var zone = placeTimeResolver.resolveZone(
+                place.address(), place.latitude(), place.longitude(), clock.instant());
         LocalDateTime meetingAt = command.meetingTimeType() == CompanionPostMeetingTimeType.SCHEDULED
                 ? CompanionMeetingTimeConverter.toUtc(command.meetingAt(), zone)
                         .filter(value -> value.isAfter(createdAt))

@@ -4,6 +4,7 @@ package com.sopt.nearby.companion.domain.model.meeting;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType;
 import com.sopt.nearby.companion.domain.model.profile.UserGender;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record CompanionMeetingDetail(
@@ -16,11 +17,32 @@ public record CompanionMeetingDetail(
         boolean hostCheckedIn,
         String placeName,
         String placeAddress,
+        BigDecimal latitude,
+        BigDecimal longitude,
         LocalDateTime meetingAt,
         CompanionPostMeetingTimeType meetingTimeType,
         CompanionMeetingStatus meetingStatus,
         boolean currentUserCheckedIn
 ) {
+
+    public CompanionMeetingDetail(
+            final Long meetingId,
+            final MatchParticipantRole currentUserRole,
+            final Long hostId,
+            final UserGender hostGender,
+            final String hostProfileImageUrl,
+            final String hostNickname,
+            final boolean hostCheckedIn,
+            final String placeName,
+            final String placeAddress,
+            final LocalDateTime meetingAt,
+            final CompanionPostMeetingTimeType meetingTimeType,
+            final CompanionMeetingStatus meetingStatus,
+            final boolean currentUserCheckedIn
+    ) {
+        this(meetingId, currentUserRole, hostId, hostGender, hostProfileImageUrl, hostNickname, hostCheckedIn,
+                placeName, placeAddress, null, null, meetingAt, meetingTimeType, meetingStatus, currentUserCheckedIn);
+    }
 
     public CompanionMeetingDetail(
             final Long meetingId,
@@ -45,6 +67,8 @@ public record CompanionMeetingDetail(
                 hostNickname,
                 hostCheckedIn,
                 placeName,
+                null,
+                null,
                 null,
                 meetingAt,
                 meetingTimeType,

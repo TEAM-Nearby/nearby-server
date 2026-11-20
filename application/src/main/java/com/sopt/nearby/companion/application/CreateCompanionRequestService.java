@@ -37,6 +37,7 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
     private final CreateCompanionNotificationUseCase createCompanionNotificationUseCase;
     private final Clock clock;
     private final CompanionMatchSummaryQueryPort placeQueryPort;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public CreateCompanionRequestService(
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
@@ -48,6 +49,22 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
             final Clock clock,
             final CompanionMatchSummaryQueryPort placeQueryPort
     ) {
+        this(requireCompletedOnboardingUseCase, postRepository, matchRepository, scheduleRepository,
+                applicationRepository, createCompanionNotificationUseCase, clock, placeQueryPort,
+                new CompanionPlaceTimeResolver());
+    }
+
+    public CreateCompanionRequestService(
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final CompanionPostRepository postRepository,
+            final CompanionMatchRepository matchRepository,
+            final CompanionScheduleRepository scheduleRepository,
+            final CompanionApplicationRepository applicationRepository,
+            final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
+            final Clock clock,
+            final CompanionMatchSummaryQueryPort placeQueryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.requireCompletedOnboardingUseCase = requireCompletedOnboardingUseCase;
         this.postRepository = postRepository;
         this.matchRepository = matchRepository;
@@ -56,6 +73,7 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
         this.createCompanionNotificationUseCase = createCompanionNotificationUseCase;
         this.clock = clock;
         this.placeQueryPort = placeQueryPort;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -94,11 +112,17 @@ public class CreateCompanionRequestService implements CreateCompanionRequestUseC
                 application.id(),
                 application.postId(),
                 application.status(),
-                CompanionMeetingTimeConverter.utcToLocal(application.createdAt(),
-                        placeQueryPort.findPlaceAddressByPlaceId(post.placeId())
-                                .flatMap(CompanionPlaceCityNameResolver::resolveSupportedCity)
-                                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC))
+                CompanionMeetingTimeConverter.utcToLocal(application.createdAt(), resolvePlaceZone(post.placeId()))
         );
+    }
+
+    private java.time.ZoneId resolvePlaceZone(final Long placeId) {
+        var place = placeQueryPort.findPlaceByPlaceId(placeId).orElse(null);
+        return placeTimeResolver.resolveZone(
+                place == null ? null : place.address(),
+                place == null ? null : place.latitude(),
+                place == null ? null : place.longitude(),
+                clock.instant());
     }
 
     private void validate(final CreateCompanionRequestCommand command) {

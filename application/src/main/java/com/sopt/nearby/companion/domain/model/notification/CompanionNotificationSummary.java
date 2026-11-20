@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.domain.model.notification;
 
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 public record CompanionNotificationSummary(
         Long notificationId,
@@ -14,7 +15,9 @@ public record CompanionNotificationSummary(
         Long matchId,
         CompanionNotificationActionType actionType,
         boolean isRead,
-        String placeAddress
+        String placeAddress,
+        BigDecimal latitude,
+        BigDecimal longitude
 ) {
 
     public CompanionNotificationSummary(Long notificationId, Long applicationId,
@@ -23,6 +26,14 @@ public record CompanionNotificationSummary(
             CompanionNotificationActionType actionType, boolean isRead) {
         this(notificationId, applicationId, applicationStatus, host, placeName, meetingAt, matchId,
                 actionType, isRead, null);
+    }
+
+    public CompanionNotificationSummary(Long notificationId, Long applicationId,
+            CompanionApplicationStatus applicationStatus, CompanionNotificationHostProfile host,
+            String placeName, LocalDateTime meetingAt, Long matchId,
+            CompanionNotificationActionType actionType, boolean isRead, String placeAddress) {
+        this(notificationId, applicationId, applicationStatus, host, placeName, meetingAt, matchId,
+                actionType, isRead, placeAddress, null, null);
     }
 
     public static CompanionNotificationSummary of(

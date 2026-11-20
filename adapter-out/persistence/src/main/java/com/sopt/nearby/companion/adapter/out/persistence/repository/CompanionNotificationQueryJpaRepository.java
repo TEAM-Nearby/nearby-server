@@ -47,6 +47,8 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
                 place.address as placeAddress,
+                place.latitude as latitude,
+                place.longitude as longitude,
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case
@@ -103,6 +105,8 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
                 place.address as placeAddress,
+                place.latitude as latitude,
+                place.longitude as longitude,
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case
@@ -143,6 +147,8 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
                 place.address as placeAddress,
+                place.latitude as latitude,
+                place.longitude as longitude,
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case when notification.read_at is null then false else true end as readStatus
@@ -191,6 +197,8 @@ public interface CompanionNotificationQueryJpaRepository extends Repository<Comp
                 host_profile.nickname as hostNickname,
                 place.name as placeName,
                 place.address as placeAddress,
+                place.latitude as latitude,
+                place.longitude as longitude,
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 participant.match_id as matchId,
                 case when notification.read_at is null then false else true end as readStatus

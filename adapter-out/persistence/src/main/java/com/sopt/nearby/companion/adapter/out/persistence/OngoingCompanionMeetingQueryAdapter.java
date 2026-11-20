@@ -42,6 +42,8 @@ public class OngoingCompanionMeetingQueryAdapter implements OngoingCompanionMeet
                 ),
                 row.getPlaceName(),
                 row.getPlaceAddress(),
+                row.getLatitude(),
+                row.getLongitude(),
                 null,
                 null,
                 row.getMeetingAt(),

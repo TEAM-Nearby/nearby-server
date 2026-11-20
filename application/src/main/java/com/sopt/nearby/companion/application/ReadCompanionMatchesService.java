@@ -1,7 +1,6 @@
 // 매칭된 동행 목록 조회 유스케이스를 구현하는 서비스
 package com.sopt.nearby.companion.application;
 
-import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.port.in.ReadCompanionMatchesUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMatchSummaryQueryPort;
 import java.time.Clock;
@@ -12,10 +11,20 @@ public class ReadCompanionMatchesService implements ReadCompanionMatchesUseCase 
 
     private final CompanionMatchSummaryQueryPort queryPort;
     private final Clock clock;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public ReadCompanionMatchesService(final CompanionMatchSummaryQueryPort queryPort, final Clock clock) {
+        this(queryPort, clock, new CompanionPlaceTimeResolver());
+    }
+
+    public ReadCompanionMatchesService(
+            final CompanionMatchSummaryQueryPort queryPort,
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.queryPort = queryPort;
         this.clock = clock;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -24,17 +33,17 @@ public class ReadCompanionMatchesService implements ReadCompanionMatchesUseCase 
 
         return queryPort.findAllByParticipantUserId(userId)
                 .stream()
-                .map(match -> CompanionPlaceCityNameResolver.resolveSupportedCity(match.placeAddress())
-                        .map(city -> new ReadCompanionMatchResult(
-                                match,
-                                city,
-                                now.atZone(city.zoneId()),
-                                CompanionMeetingTimeConverter.toPlaceLocalTime(
-                                        match.meetingAt(),
-                                        city
-                                )
-                        ))
-                        .orElseGet(() -> new ReadCompanionMatchResult(match, null, now.atZone(java.time.ZoneOffset.UTC))))
+                .map(match -> {
+                    var cityTime = placeTimeResolver.resolveCurrentTime(
+                            match.placeAddress(), match.latitude(), match.longitude(), now);
+                    return new ReadCompanionMatchResult(
+                            match,
+                            cityTime.city(),
+                            cityTime.currentLocalTime(),
+                            CompanionMeetingTimeConverter.toPlaceLocalTime(
+                                    match.meetingAt(), cityTime.currentLocalTime().getZone())
+                    );
+                })
                 .toList();
     }
 }

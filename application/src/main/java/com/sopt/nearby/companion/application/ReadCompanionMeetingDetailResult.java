@@ -46,7 +46,7 @@ public record ReadCompanionMeetingDetailResult(
                 currentLocalTime,
                 CompanionMeetingTimeConverter.toPlaceLocalTime(
                         detail.meetingAt(),
-                        city
+                        currentLocalTime.getZone()
                 ),
                 detail.meetingTimeType(),
                 detail.meetingStatus(),

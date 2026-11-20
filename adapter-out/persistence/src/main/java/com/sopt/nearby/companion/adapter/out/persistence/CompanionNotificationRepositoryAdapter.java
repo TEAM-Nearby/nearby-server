@@ -77,7 +77,13 @@ public class CompanionNotificationRepositoryAdapter
 
     @Override
     public Optional<String> findPlaceAddressByNotificationId(final Long notificationId) {
-        return jpaRepository.findPlaceAddressByNotificationId(notificationId);
+        return jpaRepository.findPlaceByNotificationId(notificationId).map(row -> row.getAddress());
+    }
+
+    @Override
+    public Optional<Place> findPlaceByNotificationId(final Long notificationId) {
+        return jpaRepository.findPlaceByNotificationId(notificationId)
+                .map(row -> new Place(row.getAddress(), row.getLatitude(), row.getLongitude()));
     }
 
     @Override

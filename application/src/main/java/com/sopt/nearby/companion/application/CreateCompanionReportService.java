@@ -52,6 +52,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 	private final CompanionReportMailContextQueryPort mailContextQueryPort;
 	private final CompanionReportMailSender mailSender;
 	private final Clock clock;
+	private final CompanionPlaceTimeResolver placeTimeResolver;
 
 	public CreateCompanionReportService(
 			final CompanionMeetingRepository meetingRepository,
@@ -64,6 +65,23 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 			final CompanionReportMailSender mailSender,
 			final Clock clock
 	) {
+		this(meetingRepository, matchRepository, participantRepository, profileRepository,
+				reportRepository, reportReasonRepository, mailContextQueryPort, mailSender, clock,
+				new CompanionPlaceTimeResolver());
+	}
+
+	public CreateCompanionReportService(
+			final CompanionMeetingRepository meetingRepository,
+			final CompanionMatchRepository matchRepository,
+			final CompanionMatchParticipantRepository participantRepository,
+			final CompanionProfileRepository profileRepository,
+			final CompanionReportRepository reportRepository,
+			final CompanionReportReasonRepository reportReasonRepository,
+			final CompanionReportMailContextQueryPort mailContextQueryPort,
+			final CompanionReportMailSender mailSender,
+			final Clock clock,
+			final CompanionPlaceTimeResolver placeTimeResolver
+	) {
 		this.meetingRepository = meetingRepository;
 		this.matchRepository = matchRepository;
 		this.participantRepository = participantRepository;
@@ -73,6 +91,7 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 		this.mailContextQueryPort = mailContextQueryPort;
 		this.mailSender = mailSender;
 		this.clock = clock;
+		this.placeTimeResolver = placeTimeResolver;
 	}
 
 	@Override
@@ -118,6 +137,8 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 				new CompanionReportReason(savedReport.id(), reason)
 		));
 
+		var zone = placeTimeResolver.resolveZone(mailContext.placeAddress(), mailContext.latitude(),
+				mailContext.longitude(), clock.instant());
 		CompanionReportMail mail = new CompanionReportMail(
 				savedReport,
 				List.copyOf(command.reasons()),
@@ -129,12 +150,11 @@ public class CreateCompanionReportService implements CreateCompanionReportUseCas
 				mailContext.companionPostContent(),
 				mailContext.scheduledAt(),
 				mailContext.meetingTimeType(),
-				mailContext.placeAddress()
+				mailContext.placeAddress(),
+				zone
 		);
 		sendMailAfterCommit(mail);
 
-		var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(mailContext.placeAddress())
-				.map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
 		return new CreateCompanionReportResult(meetingId, matchId, savedReport.id(),
 				CompanionMeetingTimeConverter.utcToLocal(savedReport.createdAt(), zone));
 	}

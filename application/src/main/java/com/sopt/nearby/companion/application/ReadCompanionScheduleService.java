@@ -7,7 +7,6 @@ import com.sopt.nearby.companion.domain.exception.ForbiddenReadCompanionSchedule
 import com.sopt.nearby.companion.domain.exception.InvalidCompanionMatchIdException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchStatus;
 import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
-import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.port.in.ReadCompanionScheduleUseCase;
 import com.sopt.nearby.companion.port.out.CompanionScheduleDetailQueryPort;
@@ -16,13 +15,23 @@ import java.time.Clock;
 public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCase {
     private final CompanionScheduleDetailQueryPort companionScheduleDetailQueryPort;
     private final Clock clock;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public ReadCompanionScheduleService(
             final CompanionScheduleDetailQueryPort companionScheduleDetailQueryPort,
             final Clock clock
     ) {
+        this(companionScheduleDetailQueryPort, clock, new CompanionPlaceTimeResolver());
+    }
+
+    public ReadCompanionScheduleService(
+            final CompanionScheduleDetailQueryPort companionScheduleDetailQueryPort,
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.companionScheduleDetailQueryPort = companionScheduleDetailQueryPort;
         this.clock = clock;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -44,10 +53,12 @@ public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCas
         String placeAddress = scheduleDetail.schedule() == null || scheduleDetail.schedule().place() == null
                 ? null
                 : scheduleDetail.schedule().place().address();
-        ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+        var place = scheduleDetail.schedule() == null ? null : scheduleDetail.schedule().place();
+        ResolvedCityTime cityTime = placeTimeResolver.resolveCurrentTime(
                 placeAddress,
-                clock.instant()
-        );
+                place == null ? null : place.latitude(),
+                place == null ? null : place.longitude(),
+                clock.instant());
         return new CompanionScheduleDetail(
                 scheduleDetail.matchId(),
                 scheduleDetail.matchStatus(),
@@ -72,7 +83,7 @@ public class ReadCompanionScheduleService implements ReadCompanionScheduleUseCas
                 detail.schedule().place(),
                 CompanionMeetingTimeConverter.toPlaceLocalTime(
                         detail.schedule().scheduledAt(),
-                        cityTime.city()
+                        cityTime.currentLocalTime().getZone()
                 )
         );
     }

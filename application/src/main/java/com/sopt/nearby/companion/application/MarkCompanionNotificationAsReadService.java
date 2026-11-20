@@ -16,13 +16,23 @@ public class MarkCompanionNotificationAsReadService implements MarkCompanionNoti
 
     private final CompanionNotificationRepository repository;
     private final Clock clock;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public MarkCompanionNotificationAsReadService(
             final CompanionNotificationRepository repository,
             final Clock clock
     ) {
+        this(repository, clock, new CompanionPlaceTimeResolver());
+    }
+
+    public MarkCompanionNotificationAsReadService(
+            final CompanionNotificationRepository repository,
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.repository = repository;
         this.clock = clock;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -65,9 +75,12 @@ public class MarkCompanionNotificationAsReadService implements MarkCompanionNoti
     }
 
     private MarkCompanionNotificationAsReadResult result(Long notificationId, boolean isRead, LocalDateTime readAt) {
-        var zone = repository.findPlaceAddressByNotificationId(notificationId)
-                .flatMap(CompanionPlaceCityNameResolver::resolveSupportedCity)
-                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        var place = repository.findPlaceByNotificationId(notificationId).orElse(null);
+        var zone = placeTimeResolver.resolveZone(
+                place == null ? null : place.address(),
+                place == null ? null : place.latitude(),
+                place == null ? null : place.longitude(),
+                clock.instant());
         return new MarkCompanionNotificationAsReadResult(notificationId, isRead,
                 CompanionMeetingTimeConverter.utcToLocal(readAt, zone));
     }

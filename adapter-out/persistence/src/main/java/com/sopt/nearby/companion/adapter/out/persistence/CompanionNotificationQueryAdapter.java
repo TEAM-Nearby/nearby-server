@@ -98,6 +98,7 @@ public class CompanionNotificationQueryAdapter implements CompanionNotificationQ
         );
         return new CompanionNotificationSummary(summary.notificationId(), summary.applicationId(),
                 summary.applicationStatus(), summary.host(), summary.placeName(), summary.meetingAt(),
-                summary.matchId(), summary.actionType(), summary.isRead(), row.getPlaceAddress());
+                summary.matchId(), summary.actionType(), summary.isRead(), row.getPlaceAddress(),
+                row.getLatitude(), row.getLongitude());
     }
 }

@@ -15,6 +15,8 @@ public interface CompanionReviewTargetQueryJpaRepository extends Repository<Comp
 				target_profile.profile_image_url as profileImageUrl,
 				target_profile.nickname as nickname,
 				coalesce(nullif(place.address, ''), place.name, '') as placeAddress,
+				place.latitude as latitude,
+				place.longitude as longitude,
 				schedule.scheduled_at as meetingAt,
 				true as checkedIn,
 				case

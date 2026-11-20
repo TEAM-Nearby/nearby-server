@@ -14,7 +14,8 @@ import org.springframework.data.repository.query.Param;
 public interface CompanionNotificationStoreJpaRepository extends JpaRepository<CompanionNotificationEntity, Long> {
 
     @Query(value = """
-            select place.address from companion_notification notification
+            select place.address as address, place.latitude as latitude, place.longitude as longitude
+            from companion_notification notification
             join companion_application app on app.id = notification.target_id
                 and notification.target_type = 'COMPANION_APPLICATION'
             join companion_post post on post.id = app.post_id
@@ -23,7 +24,11 @@ public interface CompanionNotificationStoreJpaRepository extends JpaRepository<C
             join place_cache place on place.id = coalesce(schedule.place_id, post.place_id)
             where notification.id = :notificationId
             """, nativeQuery = true)
-    Optional<String> findPlaceAddressByNotificationId(@Param("notificationId") Long notificationId);
+    Optional<CompanionPlaceProjection> findPlaceByNotificationId(@Param("notificationId") Long notificationId);
+
+    default Optional<String> findPlaceAddressByNotificationId(final Long notificationId) {
+        return findPlaceByNotificationId(notificationId).map(CompanionPlaceProjection::getAddress);
+    }
 
     Optional<CompanionNotificationEntity> findByNotificationTypeAndTargetTypeAndTargetIdAndRecipientUserId(
             CompanionNotificationType notificationType,

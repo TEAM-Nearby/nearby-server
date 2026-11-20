@@ -35,6 +35,7 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
     private final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase;
     private final Clock clock;
     private final ResolvePlaceImageUseCase resolvePlaceImageUseCase;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public ReadCompanionPostsService(
             final CompanionPostQueryPort queryPort,
@@ -42,10 +43,22 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
             final Clock clock,
             final ResolvePlaceImageUseCase resolvePlaceImageUseCase
     ) {
+        this(queryPort, requireCompletedOnboardingUseCase, clock, resolvePlaceImageUseCase,
+                new CompanionPlaceTimeResolver());
+    }
+
+    public ReadCompanionPostsService(
+            final CompanionPostQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final Clock clock,
+            final ResolvePlaceImageUseCase resolvePlaceImageUseCase,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.queryPort = queryPort;
         this.requireCompletedOnboardingUseCase = requireCompletedOnboardingUseCase;
         this.clock = clock;
         this.resolvePlaceImageUseCase = resolvePlaceImageUseCase;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -75,8 +88,8 @@ public class ReadCompanionPostsService implements ReadCompanionPostsUseCase {
 
     private CompanionPostsResult.Post toPost(final CompanionPostSummary summary) {
         String contentPreview = contentPreview(summary.content());
-        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(summary.placeAddress())
-                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        var zone = placeTimeResolver.resolveZone(
+                summary.placeAddress(), summary.latitude(), summary.longitude(), clock.instant());
         var meetingAt = CompanionMeetingTimeConverter.utcToLocal(summary.meetingAt(), zone);
         ResolvedPlaceImage image = resolvePlaceImageUseCase.resolve(new ResolvePlaceImageCommand(
                 summary.googlePlaceId(),

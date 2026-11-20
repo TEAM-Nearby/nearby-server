@@ -19,9 +19,9 @@ public interface MyCompanionPostApi {
 			summary = "내가 작성한 동행 모집글 목록 조회",
 				description = """
 						JWT 액세스 토큰으로 인증된 사용자가 직접 작성한 동행 모집글 목록을 조회합니다.
-						장소 주소에서 BARCELONA, MADRID, LONDON, PARIS를 판별해 각 글의 city, cityNameKor, timeZoneId, currentLocalTime을 반환합니다.
+						지원 도시는 주소로, 그 외 장소는 좌표로 각 글의 city, cityNameKor, timeZoneId, currentLocalTime을 반환합니다.
 						cityNameKor는 각각 바르셀로나, 마드리드, 런던, 파리이며 기존 cityName 필드를 대체합니다.
-						도시를 판별할 수 없으면 도시 이름은 null이며, 시간은 UTC로 반환합니다.
+						지원 도시가 아니면 도시 이름은 null일 수 있으며, 좌표 시간대 조회에 실패한 경우에만 UTC를 반환합니다.
 						scheduledAt은 ISO-8601 형식으로 반환하며 화면 포맷팅과 null 표시는 클라이언트에서 처리합니다.
 					hostProfileImageUrl은 작성자의 프로필 이미지이며, members는 호스트를 제외한 참여 확정 멤버 목록입니다.
 					프로필 이미지 URL이 null인 경우 기본 이미지 표시는 클라이언트에서 처리합니다.

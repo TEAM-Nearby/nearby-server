@@ -38,4 +38,8 @@ final class CompanionMeetingTimeConverter {
     ) {
         return utcToLocal(meetingAt, city == null ? ZoneOffset.UTC : city.zoneId());
     }
+
+    static LocalDateTime toPlaceLocalTime(final LocalDateTime meetingAt, final ZoneId zone) {
+        return utcToLocal(meetingAt, zone);
+    }
 }

@@ -19,6 +19,8 @@ public interface OngoingCompanionMeetingQueryJpaRepository extends Repository<Co
                 host_profile.gender as hostGender,
                 place.name as placeName,
                 place.address as placeAddress,
+                place.latitude as latitude,
+                place.longitude as longitude,
                 coalesce(schedule.scheduled_at, post.meeting_at) as meetingAt,
                 case
                     when m.status = 'MATCHED' then post.meeting_time_type

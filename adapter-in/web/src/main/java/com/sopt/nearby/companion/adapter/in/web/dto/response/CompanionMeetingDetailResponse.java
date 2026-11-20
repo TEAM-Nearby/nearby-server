@@ -36,7 +36,7 @@ public record CompanionMeetingDetailResponse(
                 result.hostCheckedIn(),
                 result.placeName(),
                 result.city(),
-                result.city() == null ? "UTC" : result.city().zoneId().getId(),
+                result.currentLocalTime() == null ? "UTC" : result.currentLocalTime().getZone().getId(),
                 result.currentLocalTime() == null ? null : result.currentLocalTime().toOffsetDateTime(),
                 result.meetingAt(),
                 result.meetingTimeType().name(),
