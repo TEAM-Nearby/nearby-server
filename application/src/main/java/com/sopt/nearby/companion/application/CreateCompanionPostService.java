@@ -77,8 +77,9 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 command.place().address(),
                 command.place().latitude(),
                 command.place().longitude(),
-                command.place().category() == null ? null : command.place().category().name()
+                command.place().category().name()
         ));
+        CompanionPostPlaceCategory placeCategory = requireSupportedCategory(place.category());
 
         var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(place.address())
                 .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
@@ -116,7 +117,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                         place.address(),
                         place.latitude(),
                         place.longitude(),
-                        effectiveCategory(place.category())
+                        placeCategory
                 ),
                 post.meetingTimeType(),
                 CompanionMeetingTimeConverter.utcToLocal(post.meetingAt(), zone),
@@ -144,7 +145,7 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
                 || command.recruitmentCapacity() > MAX_RECRUITMENT_CAPACITY
                 || isBlank(command.content())
                 || isBlank(command.openChatUrl())
-                || command.place().category() == CompanionPostPlaceCategory.ALL
+                || isUnsupportedCategory(command.place().category())
                 || isInvalidCoordinate(command.place().latitude(), MIN_LATITUDE, MAX_LATITUDE)
                 || isInvalidCoordinate(command.place().longitude(), MIN_LONGITUDE, MAX_LONGITUDE)
                 || contentLength(command.content()) > MAX_CONTENT_LENGTH_EXCLUDING_WHITESPACE
@@ -166,11 +167,25 @@ public class CreateCompanionPostService implements CreateCompanionPostUseCase {
         }
     }
 
-    private CompanionPostPlaceCategory effectiveCategory(final String category) {
+    private CompanionPostPlaceCategory requireSupportedCategory(final String category) {
         if (isBlank(category)) {
-            return CompanionPostPlaceCategory.OTHER;
+            throw new InvalidCompanionPostCreateRequestException();
         }
-        return CompanionPostPlaceCategory.valueOf(category.toUpperCase(Locale.ROOT));
+        CompanionPostPlaceCategory resolved;
+        try {
+            resolved = CompanionPostPlaceCategory.valueOf(category.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new InvalidCompanionPostCreateRequestException();
+        }
+        if (isUnsupportedCategory(resolved)) {
+            throw new InvalidCompanionPostCreateRequestException();
+        }
+        return resolved;
+    }
+
+    private boolean isUnsupportedCategory(final CompanionPostPlaceCategory category) {
+        return category == null || category == CompanionPostPlaceCategory.ALL
+                || category == CompanionPostPlaceCategory.OTHER;
     }
 
     private boolean isInvalidCoordinate(final BigDecimal value, final BigDecimal min, final BigDecimal max) {

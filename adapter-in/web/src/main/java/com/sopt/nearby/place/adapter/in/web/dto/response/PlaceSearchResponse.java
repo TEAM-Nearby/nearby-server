@@ -17,10 +17,11 @@ public record PlaceSearchResponse(List<Place> places,
         )).toList(), page.nextPageToken());
     }
 
+    @Schema(name = "PlaceSearchItem")
     public record Place(String googlePlaceId, String name,
                         @Schema(description = "Google이 주소를 제공하지 않으면 null입니다.") String address,
                         BigDecimal latitude, BigDecimal longitude,
-                        @Schema(allowableValues = {"RESTAURANT", "CAFE", "PUB", "MUSEUM", "PHOTO_SPOT", "OTHER"})
+                        @Schema(allowableValues = {"RESTAURANT", "CAFE", "PUB", "MUSEUM", "PHOTO_SPOT"})
                         String category, List<Attribution> attributions) {
     }
 

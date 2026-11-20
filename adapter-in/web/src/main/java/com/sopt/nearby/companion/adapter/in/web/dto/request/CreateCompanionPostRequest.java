@@ -70,6 +70,8 @@ public record CreateCompanionPostRequest(
             String address,
             BigDecimal latitude,
             BigDecimal longitude,
+            @Schema(description = "동행글 장소 카테고리", requiredMode = Schema.RequiredMode.REQUIRED,
+                    allowableValues = {"RESTAURANT", "CAFE", "PUB", "MUSEUM", "PHOTO_SPOT"})
             String category
     ) {
 
