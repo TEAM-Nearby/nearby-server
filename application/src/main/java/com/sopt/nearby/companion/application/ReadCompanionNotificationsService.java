@@ -38,4 +38,3 @@ public class ReadCompanionNotificationsService implements ReadCompanionNotificat
                 .toList();
     }
 }
-

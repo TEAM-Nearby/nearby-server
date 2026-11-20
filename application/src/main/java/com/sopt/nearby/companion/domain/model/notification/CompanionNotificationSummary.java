@@ -86,4 +86,3 @@ public record CompanionNotificationSummary(
         );
     }
 }
-
