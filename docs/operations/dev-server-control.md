@@ -36,6 +36,7 @@ EC2 ID나 운영 환경을 선택하는 입력은 제공하지 않습니다.
 이 workflow는 기존 **Deploy dev**와 직접 실행하는 개발 DB migration의
 `nearby-operations-dev` concurrency 그룹을 사용합니다. 실행 중인 작업을 취소하지 않고 기다립니다.
 대기 실행은 새 요청으로 대체될 수 있으므로 반복 실행하지 않습니다.
+다른 브랜치에서 실행하면 별도 그룹에서 입력 검증에 실패하며 Summary와 결과 artifact에 사유가 남습니다.
 운영 작업의 concurrency 그룹과 파일은 바꾸지 않습니다.
 
 개발 배포가 자동으로 EC2를 시작하지는 않습니다. 서버가 꺼져 있으면 `start` 성공 후 배포합니다.

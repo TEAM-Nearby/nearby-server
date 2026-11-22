@@ -50,12 +50,26 @@ class InputTests(unittest.TestCase):
             self.assertEqual(("stop", reason), dev.guard())
 
     def test_preflight_rejects_invalid_input_before_aws_and_records_failure(self):
-        with tempfile.TemporaryDirectory() as directory, patch.object(dev, "RECORD", Path(directory) / "result.json"), \
-                patch.object(dev.sys, "argv", ["dev_server.py", "preflight"]), \
-                patch.dict(os.environ, {"CONTROL_ACTION": "stop"}), patch.object(dev, "aws") as aws:
-            self.assertEqual(1, dev.main())
-            aws.assert_not_called()
-            self.assertEqual("failure", json.loads(dev.RECORD.read_text())["result"])
+        cases = (
+            ({"CONTROL_ACTION": "stop"}, "Stop requires a reason"),
+            ({"GITHUB_REF": "refs/heads/feature", "CONTROL_ACTION": "stop",
+              "CONTROL_REASON": "개발 종료", "STOP_CONFIRMATION": "stop-dev"}, "develop"),
+        )
+        for environment, error in cases:
+            with self.subTest(environment=environment), tempfile.TemporaryDirectory() as directory:
+                summary = Path(directory) / "summary.md"
+                result = Path(directory) / "result.json"
+                with patch.object(dev, "RECORD", result), \
+                        patch.object(dev.sys, "argv", ["dev_server.py", "preflight"]), \
+                        patch.dict(os.environ, {**environment, "GITHUB_STEP_SUMMARY": str(summary)}), \
+                        patch.object(dev, "aws") as aws:
+                    self.assertEqual(1, dev.main())
+                    aws.assert_not_called()
+                record = json.loads(result.read_text())
+                self.assertEqual("failure", record["result"])
+                self.assertEqual("preflight", record["phase"])
+                self.assertIn(error, record["error"])
+                self.assertIn(record["error"], summary.read_text())
 
 
 class ControlTests(unittest.TestCase):

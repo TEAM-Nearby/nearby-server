@@ -19,13 +19,12 @@ on:
         default: ''
 permissions:
   contents: read
-# 개발 배포 및 직접 실행하는 개발 DB migration과 동일한 잠금을 사용합니다.
+# develop 실행만 개발 배포 및 DB migration과 같은 그룹을 사용합니다.
 concurrency:
-  group: nearby-operations-dev
+  group: ${{ github.ref == 'refs/heads/develop' && 'nearby-operations-dev' || format('dev-server-preflight-{0}', github.run_id) }}
   cancel-in-progress: false
 jobs:
   control:
-    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
