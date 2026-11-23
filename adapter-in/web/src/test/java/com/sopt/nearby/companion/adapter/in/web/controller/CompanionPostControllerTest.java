@@ -268,7 +268,7 @@ class CompanionPostControllerTest {
                 LocalDateTime.of(2026, 7, 2, 15, 0),
                 true,
                 List.of(),
-                CompanionPostPlaceCategory.OTHER
+                CompanionPostPlaceCategory.RESTAURANT
         );
 
         mockMvc.perform(post("/api/companion-posts")
@@ -279,7 +279,8 @@ class CompanionPostControllerTest {
                                     "googlePlaceId": "google-place-id",
                                     "name": "니어바이 스시",
                                     "latitude": 37.5671,
-                                    "longitude": 126.9792
+                                    "longitude": 126.9792,
+                                    "category": "RESTAURANT"
                                   },
                                   "meetingTimeType": "NOW",
                                   "maxParticipants": 1,
@@ -301,7 +302,7 @@ class CompanionPostControllerTest {
                 LocalDateTime.of(2026, 7, 2, 15, 0),
                 true,
                 List.of(),
-                CompanionPostPlaceCategory.OTHER
+                CompanionPostPlaceCategory.RESTAURANT
         );
 
         mockMvc.perform(post("/api/companion-posts")
@@ -312,7 +313,8 @@ class CompanionPostControllerTest {
                                     "googlePlaceId": "google-place-id",
                                     "name": "니어바이 스시",
                                     "latitude": 37.5671,
-                                    "longitude": 126.9792
+                                    "longitude": 126.9792,
+                                    "category": "RESTAURANT"
                                   },
                                   "meetingTimeType": "NOW",
                                   "recruitmentCapacity": 3,
@@ -327,11 +329,11 @@ class CompanionPostControllerTest {
                 .andExpect(jsonPath("$.data.exposureExpiresAt").value("2026-07-02T15:00:00"))
                 .andExpect(jsonPath("$.data.departEvenIfNotFull").value(true))
                 .andExpect(jsonPath("$.data.styleKeywords").isArray())
-                .andExpect(jsonPath("$.data.place.category").value("OTHER"));
+                .andExpect(jsonPath("$.data.place.category").value("RESTAURANT"));
 
         assertEquals(null, createUseCase.command.departEvenIfNotFull());
         assertEquals(null, createUseCase.command.styleKeywords());
-        assertEquals(null, createUseCase.command.place().category());
+        assertEquals(CompanionPostPlaceCategory.RESTAURANT, createUseCase.command.place().category());
     }
 
     @Test

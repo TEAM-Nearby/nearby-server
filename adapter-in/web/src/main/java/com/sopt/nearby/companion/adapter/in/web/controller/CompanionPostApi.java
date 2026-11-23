@@ -142,6 +142,7 @@ public interface CompanionPostApi {
     @Operation(
             summary = "동행 모집글 작성",
             description = "JWT 액세스 토큰으로 인증된 사용자가 동행 모집글을 작성합니다. "
+                    + "place.category는 필수이며 RESTAURANT, CAFE, PUB, MUSEUM, PHOTO_SPOT만 허용합니다. "
                     + "recruitmentCapacity는 작성자를 제외한 모집 인원으로 1~7명이며, "
                     + "응답의 maxParticipants는 작성자를 포함한 전체 정원으로 2~8명입니다. "
                     + "SCHEDULED의 meetingAt은 오프셋 없는 장소 현지 시각이며 도시를 알 수 없으면 UTC입니다. "

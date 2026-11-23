@@ -31,6 +31,11 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class CreateCompanionPostServiceTest {
 
@@ -169,7 +174,46 @@ class CreateCompanionPostServiceTest {
         assertEquals(NOW.plusHours(1), result.exposureExpiresAt());
         assertEquals(true, result.departEvenIfNotFull());
         assertEquals(List.of(), result.styleKeywords());
-        assertEquals(CompanionPostPlaceCategory.OTHER, result.place().category());
+        assertEquals(CompanionPostPlaceCategory.RESTAURANT, result.place().category());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = CompanionPostPlaceCategory.class,
+            names = {"RESTAURANT", "CAFE", "PUB", "MUSEUM", "PHOTO_SPOT"})
+    void allowsSupportedPlaceCategories(final CompanionPostPlaceCategory category) {
+        CreateCompanionPostResult result = service.create(withPlaceCategory(commandWithRecruitmentCapacity(1), category));
+
+        assertEquals(category, result.place().category());
+        assertEquals(category.name(), resolvePlaceCacheUseCase.command.category());
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @EnumSource(value = CompanionPostPlaceCategory.class, names = {"ALL", "OTHER"})
+    void rejectsUnsupportedPlaceCategoriesBeforeSaving(final CompanionPostPlaceCategory category) {
+        CreateCompanionPostCommand command = withPlaceCategory(command(
+                CompanionPostMeetingTimeType.NOW, null, true, List.of(CompanionPostKeyword.PHOTO_LOVER)), category);
+
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(command));
+
+        assertNull(resolvePlaceCacheUseCase.command);
+        assertNull(postRepository.savedPost);
+        assertEquals(List.of(), styleRepository.savedStyles);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "OTHER", "ALL", "DESSERT"})
+    void rejectsUnsupportedResolvedCategoryBeforeSavingPost(final String category) {
+        resolvePlaceCacheUseCase.result = new ResolvedPlaceCache(20L, "google-place-id", "저장된 장소명", "저장된 주소",
+                new BigDecimal("37.11110000"), new BigDecimal("126.22220000"), category);
+
+        CreateCompanionPostCommand command = command(
+                CompanionPostMeetingTimeType.NOW, null, true, List.of(CompanionPostKeyword.PHOTO_LOVER));
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(command));
+
+        assertNull(postRepository.savedPost);
+        assertEquals(List.of(), styleRepository.savedStyles);
     }
 
     @Test
@@ -359,7 +403,7 @@ class CreateCompanionPostServiceTest {
                         "서울특별시 중구 세종대로 110",
                         new BigDecimal("37.56710000"),
                         new BigDecimal("126.97920000"),
-                        meetingTimeType == CompanionPostMeetingTimeType.NOW ? null : CompanionPostPlaceCategory.RESTAURANT
+                        CompanionPostPlaceCategory.RESTAURANT
                 ),
                 meetingTimeType,
                 meetingAt,
