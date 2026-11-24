@@ -49,6 +49,8 @@ class CompanionPlaceTimeResolverTest {
                 "Japan Center, 1737 Post St, San Francisco, CA, USA", null, null, NOW));
         assertEquals(ZoneId.of("Asia/Seoul"), resolver.resolveZone(
                 "Japan Center, Toronto, Canada", null, null, NOW));
+        assertEquals(ZoneId.of("Asia/Seoul"), resolver.resolveZone(
+                "Restaurant Japan, Toronto, Canada", null, null, NOW));
         assertEquals(ZoneId.of("Asia/Tokyo"), resolver.resolveZone(
                 "Fukuoka, Japan", null, null, NOW));
         assertEquals(ZoneId.of("Asia/Tokyo"), resolver.resolveZone(
