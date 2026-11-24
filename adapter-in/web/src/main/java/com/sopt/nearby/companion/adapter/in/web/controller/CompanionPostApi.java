@@ -145,7 +145,7 @@ public interface CompanionPostApi {
                     + "recruitmentCapacity는 작성자를 제외한 모집 인원으로 1~7명이며, "
                     + "응답의 maxParticipants는 작성자를 포함한 전체 정원으로 2~8명입니다. "
                     + "SCHEDULED의 meetingAt은 오프셋 없는 장소 현지 시각이며 미지원 장소는 Asia/Seoul 기준으로 처리합니다. "
-                    + "응답의 exposureExpiresAt은 오프셋 없는 장소 현지 시각입니다. "
+                    + "응답의 exposureExpiresAt은 오프셋 없는 UTC 시각입니다. "
                     + "존재하지 않거나 두 번 존재하는 서머타임 전환 시각은 허용하지 않습니다.",
             security = @SecurityRequirement(name = "bearerAuth"),
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(

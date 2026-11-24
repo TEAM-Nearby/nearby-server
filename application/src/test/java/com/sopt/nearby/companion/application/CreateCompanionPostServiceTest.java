@@ -220,7 +220,7 @@ class CreateCompanionPostServiceTest {
         assertEquals(CompanionPostMeetingTimeType.NOW, result.meetingTimeType());
         assertNull(result.meetingAt());
         assertEquals(NOW.plusHours(9), result.createdAt());
-        assertEquals(NOW.plusHours(10), result.exposureExpiresAt());
+        assertEquals(NOW.plusHours(1), result.exposureExpiresAt());
         assertEquals(NOW.plusHours(1), postRepository.savedPost.exposureExpiresAt());
         assertEquals(true, result.departEvenIfNotFull());
         assertEquals(List.of(), result.styleKeywords());
@@ -228,7 +228,7 @@ class CreateCompanionPostServiceTest {
     }
 
     @Test
-    void returnsNowExposureExpiryInPlaceLocalTimeForParis() {
+    void returnsNowExposureExpiryInUtcForParis() {
         CreateCompanionPostCommand base = command(CompanionPostMeetingTimeType.NOW, null, true, List.of());
         CreateCompanionPostCommand paris = new CreateCompanionPostCommand(
                 base.hostUserId(),
@@ -240,7 +240,7 @@ class CreateCompanionPostServiceTest {
 
         CreateCompanionPostResult result = service.create(paris);
 
-        assertEquals(NOW.plusHours(3), result.exposureExpiresAt());
+        assertEquals(NOW.plusHours(1), result.exposureExpiresAt());
         assertEquals(NOW.plusHours(2), result.createdAt());
     }
 

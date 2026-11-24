@@ -19,7 +19,7 @@ public class CompanionPlaceTimeResolver {
             "세종특별자치시", "경기도", "강원특별자치도", "강원도", "충청북도", "충청남도", "전북특별자치도",
             "전라북도", "전라남도", "경상북도", "경상남도", "제주특별자치도");
     private static final List<String> JAPANESE_ADMINISTRATIVE_AREAS = List.of(
-            "東京都", "北海道", "大阪府", "京都府", "도쿄도", "홋카이도", "오사카부", "교토부");
+            "東京都", "北海道", "大阪府", "京都府", "도쿄도", "홋카이도", "오사카부", "교토부", "후쿠오카현");
 
     public ZoneId resolveZone(
             final String address,
@@ -48,12 +48,16 @@ public class CompanionPlaceTimeResolver {
             return Optional.empty();
         }
         String normalized = address.toUpperCase(Locale.ROOT);
+        if (normalized.matches(".*(?:,|\\s)(?:USA|UNITED STATES|US)\\s*$")) {
+            return Optional.of(SEOUL);
+        }
         if (normalized.contains("대한민국") || normalized.contains("SOUTH KOREA")
                 || KOREAN_ADMINISTRATIVE_AREAS.stream().anyMatch(normalized::contains)
                 || normalized.matches(".*(?:^|[,\\s])KR(?:$|[,\\s]).*")) {
             return Optional.of(SEOUL);
         }
-        if (normalized.contains("일본") || normalized.contains("日本") || normalized.contains("JAPAN")
+        if (normalized.contains("일본") || normalized.contains("日本")
+                || normalized.matches(".*(?:^|,)\\s*JAPAN\\s*(?:,|$).*")
                 || JAPANESE_ADMINISTRATIVE_AREAS.stream().anyMatch(normalized::contains)
                 || normalized.contains("県")
                 || normalized.matches(".*(?:^|[,\\s])JP(?:$|[,\\s]).*")) {

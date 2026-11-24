@@ -12,6 +12,7 @@ import com.sopt.nearby.companion.domain.exception.ForbiddenCompanionMeetingExcep
 import com.sopt.nearby.companion.domain.exception.InvalidCheckInRequestException;
 import com.sopt.nearby.companion.domain.exception.OutOfCheckInRadiusException;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchParticipant;
+import com.sopt.nearby.companion.domain.model.match.CompanionScheduleDetail;
 import com.sopt.nearby.companion.domain.model.match.MatchParticipantRole;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingCheckInContext;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
@@ -66,6 +67,32 @@ class CheckInCompanionMeetingServiceTest {
                 participant(USER_ID, MatchParticipantRole.GUEST),
                 participant(8L, MatchParticipantRole.HOST)
         ));
+    }
+
+    @Test
+    void displaysExistingUtcScheduleAndCheckInWindowInSeoulTime() {
+        LocalDateTime storedSchedule = LocalDateTime.of(2026, 6, 29, 18, 30);
+        String address = "서울특별시 종로구";
+        BigDecimal latitude = new BigDecimal("41.39020500");
+        BigDecimal longitude = new BigDecimal("2.16354800");
+        queryPort.put(new CompanionMeetingCheckInContext(
+                MEETING_ID, MATCH_ID, CompanionMeetingStatus.ONGOING, 20L, 30L, storedSchedule,
+                latitude, longitude, address));
+        var detail = new CompanionScheduleDetail(
+                MATCH_ID, CompanionMatchStatus.SCHEDULE_CONFIRMED, null, null,
+                new CompanionScheduleDetail.Schedule(
+                        new CompanionScheduleDetail.Place("place", "place", address, latitude, longitude),
+                        storedSchedule),
+                null, "host", com.sopt.nearby.companion.domain.model.post.CompanionPostMeetingTimeType.SCHEDULED,
+                MatchParticipantRole.GUEST);
+        var scheduleService = new ReadCompanionScheduleService((matchId, userId) -> Optional.of(detail), CLOCK);
+
+        LocalDateTime displayedSchedule = scheduleService.getSchedule(MATCH_ID, USER_ID).schedule().scheduledAt();
+        CheckInCompanionMeetingResult result = service.checkIn(command("41.39020500", "2.16354800"));
+
+        assertEquals(LocalDateTime.of(2026, 6, 30, 3, 30), displayedSchedule);
+        assertEquals(displayedSchedule.minusHours(1), result.checkInAvailableFrom());
+        assertEquals(displayedSchedule.plusHours(1), result.checkInAvailableUntil());
     }
 
     @Test

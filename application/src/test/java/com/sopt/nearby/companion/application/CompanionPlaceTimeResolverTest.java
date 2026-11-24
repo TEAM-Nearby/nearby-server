@@ -42,6 +42,20 @@ class CompanionPlaceTimeResolverTest {
     }
 
     @Test
+    void distinguishesCountryFromPlaceNameAndRecognizesFukuoka() {
+        CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver();
+
+        assertEquals(ZoneId.of("Asia/Seoul"), resolver.resolveZone(
+                "Japan Center, 1737 Post St, San Francisco, CA, USA", null, null, NOW));
+        assertEquals(ZoneId.of("Asia/Seoul"), resolver.resolveZone(
+                "Japan Center, Toronto, Canada", null, null, NOW));
+        assertEquals(ZoneId.of("Asia/Tokyo"), resolver.resolveZone(
+                "Fukuoka, Japan", null, null, NOW));
+        assertEquals(ZoneId.of("Asia/Tokyo"), resolver.resolveZone(
+                "후쿠오카현 후쿠오카시 하카타구", null, null, NOW));
+    }
+
+    @Test
     void koreanAddressWithoutCountryUsesSeoul() {
         CompanionPlaceTimeResolver resolver = new CompanionPlaceTimeResolver();
 
