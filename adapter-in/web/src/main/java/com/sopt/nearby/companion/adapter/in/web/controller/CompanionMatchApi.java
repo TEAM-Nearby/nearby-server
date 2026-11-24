@@ -189,7 +189,7 @@ public interface CompanionMatchApi {
     @Operation(
             summary = "글 작성자의 동행 일정 확정 및 수정",
             description = "JWT 액세스 토큰으로 인증된 글 작성자가 일정을 확정하거나 수정합니다. "
-                    + "scheduledAt은 오프셋 없는 장소 현지 시각이며 미지원 장소는 Asia/Seoul 기준으로 처리합니다. "
+                    + "scheduledAt은 오프셋 없는 장소 현지 시각이며 일본은 Asia/Tokyo, 그 외 미지원 장소는 Asia/Seoul 기준으로 처리합니다. "
                     + "과거 시각과 존재하지 않거나 두 번 존재하는 서머타임 전환 시각은 허용하지 않습니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )

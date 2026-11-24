@@ -52,6 +52,8 @@ class CompanionPlaceTimeResolverTest {
         assertEquals(ZoneId.of("Asia/Tokyo"), resolver.resolveZone(
                 "Fukuoka, Japan", null, null, NOW));
         assertEquals(ZoneId.of("Asia/Tokyo"), resolver.resolveZone(
+                "1-1 Shibuya, Tokyo 150-0002 Japan", null, null, NOW));
+        assertEquals(ZoneId.of("Asia/Tokyo"), resolver.resolveZone(
                 "후쿠오카현 후쿠오카시 하카타구", null, null, NOW));
     }
 
