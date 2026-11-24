@@ -57,6 +57,7 @@ public class CompanionPlaceTimeResolver {
             return Optional.of(SEOUL);
         }
         if (normalized.contains("일본") || normalized.contains("日本")
+                || normalized.matches("\\s*JAPAN\\s*,.*")
                 || normalized.matches(".*(?:^|[,\\s])JAPAN\\s*$")
                 || JAPANESE_ADMINISTRATIVE_AREAS.stream().anyMatch(normalized::contains)
                 || normalized.contains("県")
