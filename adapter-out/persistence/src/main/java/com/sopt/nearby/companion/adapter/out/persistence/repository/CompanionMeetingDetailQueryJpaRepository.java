@@ -23,6 +23,8 @@ public interface CompanionMeetingDetailQueryJpaRepository extends Repository<Com
                 end as hostCheckedIn,
                 place.name as placeName,
                 place.address as placeAddress,
+                place.latitude as latitude,
+                place.longitude as longitude,
                 schedule.scheduled_at as meetingAt,
                 case
                     when post.meeting_time_type = 'NOW' then 'NOW'

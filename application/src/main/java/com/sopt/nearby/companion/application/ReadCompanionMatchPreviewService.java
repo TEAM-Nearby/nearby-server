@@ -13,7 +13,6 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview.Member;
 import com.sopt.nearby.companion.domain.model.match.CompanionMatchPreview.Post;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionSchedule;
-import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.domain.model.post.CompanionPost;
 import com.sopt.nearby.companion.domain.model.profile.CompanionProfile;
@@ -39,6 +38,7 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
     private final CompanionScheduleRepository companionScheduleRepository;
     private final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort;
     private final Clock clock;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public ReadCompanionMatchPreviewService(CompanionMatchRepository companionMatchRepository,
                                             CompanionPostRepository companionPostRepository,
@@ -47,6 +47,19 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
                                             CompanionScheduleRepository companionScheduleRepository,
                                             CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
                                             Clock clock) {
+        this(companionMatchRepository, companionPostRepository, companionMatchParticipantRepository,
+                companionProfileRepository, companionScheduleRepository, companionMatchSummaryQueryPort,
+                clock, new CompanionPlaceTimeResolver());
+    }
+
+    public ReadCompanionMatchPreviewService(CompanionMatchRepository companionMatchRepository,
+                                            CompanionPostRepository companionPostRepository,
+                                            CompanionMatchParticipantRepository companionMatchParticipantRepository,
+                                            CompanionProfileRepository companionProfileRepository,
+                                            CompanionScheduleRepository companionScheduleRepository,
+                                            CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
+                                            Clock clock,
+                                            CompanionPlaceTimeResolver placeTimeResolver) {
         this.companionMatchRepository = companionMatchRepository;
         this.companionPostRepository = companionPostRepository;
         this.companionMatchParticipantRepository = companionMatchParticipantRepository;
@@ -54,6 +67,7 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
         this.companionScheduleRepository = companionScheduleRepository;
         this.companionMatchSummaryQueryPort = companionMatchSummaryQueryPort;
         this.clock = clock;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -106,12 +120,13 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
         Long placeId = confirmedSchedule
                 .map(CompanionSchedule::placeId)
                 .orElse(post.placeId());
-        String placeAddress = companionMatchSummaryQueryPort.findPlaceAddressByPlaceId(placeId)
-                .orElse(null);
-        ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+        var place = companionMatchSummaryQueryPort.findPlaceByPlaceId(placeId).orElse(null);
+        String placeAddress = place == null ? null : place.address();
+        ResolvedCityTime cityTime = placeTimeResolver.resolveCurrentTime(
                 placeAddress,
-                clock.instant()
-        );
+                place == null ? null : place.latitude(),
+                place == null ? null : place.longitude(),
+                clock.instant());
 
         Post previewPost = new Post(
                 post.id(),
@@ -124,7 +139,7 @@ public class ReadCompanionMatchPreviewService implements ReadCompanionMatchPrevi
                 post.meetingTimeType(),
                 CompanionMeetingTimeConverter.toPlaceLocalTime(
                         meetingAt,
-                        cityTime.city()
+                        cityTime.currentLocalTime().getZone()
                 )
         );
 

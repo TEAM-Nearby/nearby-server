@@ -54,7 +54,7 @@ class MarkCompanionNotificationAsReadServiceTest {
 
         assertEquals(1L, result.notificationId());
         assertEquals(true, result.isRead());
-        assertEquals(NOW, result.readAt());
+        assertEquals(NOW.plusHours(9), result.readAt());
         assertEquals(1, repository.markAsReadIfUnreadCount);
         assertEquals(NOW, repository.findById(1L).orElseThrow().readAt());
     }
@@ -73,7 +73,7 @@ class MarkCompanionNotificationAsReadServiceTest {
 
         assertEquals(1L, result.notificationId());
         assertEquals(true, result.isRead());
-        assertEquals(readAt, result.readAt());
+        assertEquals(readAt.plusHours(9), result.readAt());
         assertEquals(0, repository.markAsReadIfUnreadCount);
     }
 
@@ -92,7 +92,7 @@ class MarkCompanionNotificationAsReadServiceTest {
 
         assertEquals(1L, result.notificationId());
         assertEquals(true, result.isRead());
-        assertEquals(firstReadAt, result.readAt());
+        assertEquals(firstReadAt.plusHours(9), result.readAt());
         assertEquals(1, repository.markAsReadIfUnreadCount);
     }
 

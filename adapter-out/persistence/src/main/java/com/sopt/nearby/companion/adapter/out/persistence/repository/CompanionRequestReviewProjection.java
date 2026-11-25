@@ -18,6 +18,10 @@ public interface CompanionRequestReviewProjection {
 
     String getPlaceAddress();
 
+    BigDecimal getLatitude();
+
+    BigDecimal getLongitude();
+
     String getMeetingTimeType();
 
     LocalDateTime getMeetingAt();

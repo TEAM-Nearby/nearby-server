@@ -4,7 +4,6 @@ package com.sopt.nearby.companion.application;
 import com.sopt.nearby.companion.domain.exception.CompanionPostExpiredException;
 import com.sopt.nearby.companion.domain.exception.CompanionPostNotFoundException;
 import com.sopt.nearby.companion.domain.model.match.CompanionApplicationStatus;
-import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostApplyStatus;
 import com.sopt.nearby.companion.domain.model.post.CompanionPostDetail;
@@ -14,7 +13,6 @@ import com.sopt.nearby.companion.port.out.CompanionPostDetailQueryPort;
 import com.sopt.nearby.user.port.in.RequireCompletedOnboardingUseCase;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import org.springframework.transaction.annotation.Transactional;
 
 public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUseCase {
@@ -22,15 +20,26 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
     private final CompanionPostDetailQueryPort queryPort;
     private final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase;
     private final Clock clock;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public ReadCompanionPostDetailService(
             final CompanionPostDetailQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final Clock clock
     ) {
+        this(queryPort, requireCompletedOnboardingUseCase, clock, new CompanionPlaceTimeResolver());
+    }
+
+    public ReadCompanionPostDetailService(
+            final CompanionPostDetailQueryPort queryPort,
+            final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.queryPort = queryPort;
         this.requireCompletedOnboardingUseCase = requireCompletedOnboardingUseCase;
         this.clock = clock;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -55,10 +64,11 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
         String openChatUrl = canReadOpenChatUrl(detail, command.userId(), applyStatus)
                 ? detail.openChatUrl()
                 : null;
-        ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+        ResolvedCityTime cityTime = placeTimeResolver.resolveCurrentTime(
                 detail.place().address(),
-                clock.instant()
-        );
+                detail.place().latitude(),
+                detail.place().longitude(),
+                clock.instant());
 
         return new CompanionPostDetailResult(
                 detail.postId(),
@@ -69,16 +79,17 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
                 cityTime.currentLocalTime(),
                 CompanionMeetingTimeConverter.toPlaceLocalTime(
                         detail.meetingAt(),
-                        cityTime.city()
+                        cityTime.currentLocalTime().getZone()
                 ),
                 detail.maxParticipants(),
                 detail.content(),
                 openChatUrl,
                 detail.status(),
-                CompanionMeetingTimeConverter.utcToLocal(detail.createdAt(),
-                        cityTime.city() == null ? ZoneOffset.UTC : cityTime.city().zoneId()),
+                CompanionMeetingTimeConverter.utcToLocal(
+                        detail.createdAt(), cityTime.currentLocalTime().getZone()),
                 detail.meetingTimeType(),
-                detail.expiresAt(),
+                CompanionMeetingTimeConverter.utcToLocal(
+                        detail.expiresAt(), cityTime.currentLocalTime().getZone()),
                 detail.participantCount(),
                 detail.participants().stream()
                         .map(participant -> new CompanionPostDetailResult.Participant(
@@ -104,8 +115,8 @@ public class ReadCompanionPostDetailService implements ReadCompanionPostDetailUs
                         detail.hostProfileSummary().profileImageUrl(),
                         detail.hostProfileSummary().mannerScore(),
                         detail.hostProfileSummary().mannerKeywords(),
-                        CompanionMeetingTimeConverter.utcToLocal(detail.hostProfileSummary().phoneVerifiedAt(),
-                                cityTime.city() == null ? ZoneOffset.UTC : cityTime.city().zoneId()),
+                        CompanionMeetingTimeConverter.utcToLocal(
+                                detail.hostProfileSummary().phoneVerifiedAt(), cityTime.currentLocalTime().getZone()),
                         detail.hostProfileSummary().keywords()
                 )
         );

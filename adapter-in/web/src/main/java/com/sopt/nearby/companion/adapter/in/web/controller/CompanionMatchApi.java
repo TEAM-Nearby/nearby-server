@@ -76,8 +76,8 @@ public interface CompanionMatchApi {
                     JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭 목록을 조회합니다.
                     MATCHED 또는 SCHEDULE_CONFIRMED 상태만 반환합니다.
                     meetingTimeType이 NOW인 신규 수락 흐름은 일정이 자동 확정되어 SCHEDULE_CONFIRMED 상태로 반환됩니다.
-                    장소 주소에서 BARCELONA, MADRID, LONDON, PARIS를 판별해 해당 도시의 IANA 시간대와 현재 현지 시각을 반환합니다.
-                    도시를 판별할 수 없으면 city는 null이며, 시간은 UTC로 반환합니다.
+                    지원 도시는 해당 도시 시간대, 일본 주소는 Asia/Tokyo, 그 외 미지원 장소는 Asia/Seoul로 현재 현지 시각을 반환합니다.
+                    지원 도시가 아니면 city는 null일 수 있습니다.
                     currentLocalTime에는 도시의 UTC 오프셋이 포함되며 서머타임도 반영됩니다.
                     createdAt과 meetingAt은 장소 도시 기준 시각이며, 화면 표기 문구는 클라이언트에서 포맷팅합니다.
                     """,
@@ -143,8 +143,8 @@ public interface CompanionMatchApi {
                     JWT 액세스 토큰으로 인증된 사용자가 참여 중인 매칭의 미리보기를 조회합니다.
                     host에는 모집글 작성자의 닉네임과 프로필 이미지 URL을 반환하고, members에는 호스트를 제외한 참여자를 반환합니다.
                     companionPost에는 장소명, 만남 시간 유형, 만남 시간을 함께 반환합니다.
-					장소 주소에서 BARCELONA, MADRID, LONDON, PARIS를 판별해 city, timeZoneId, currentLocalTime을 반환합니다.
-					도시를 판별할 수 없으면 city는 null이며, 시간은 UTC로 반환합니다.
+					지원 도시는 해당 도시 시간대, 일본 주소는 Asia/Tokyo, 그 외 미지원 장소는 Asia/Seoul로 city, timeZoneId, currentLocalTime을 반환합니다.
+					지원 도시가 아니면 city는 null일 수 있습니다.
                     일정 확정 후에는 companion_schedule.scheduledAt을 우선 반환하고, 미확정 NOW 모집글은 exposureExpiresAt을 meetingAt으로 반환합니다.
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
@@ -189,7 +189,7 @@ public interface CompanionMatchApi {
     @Operation(
             summary = "글 작성자의 동행 일정 확정 및 수정",
             description = "JWT 액세스 토큰으로 인증된 글 작성자가 일정을 확정하거나 수정합니다. "
-                    + "scheduledAt은 오프셋 없는 장소 현지 시각이며 도시를 알 수 없으면 UTC입니다. "
+                    + "scheduledAt은 오프셋 없는 장소 현지 시각이며 일본은 Asia/Tokyo, 그 외 미지원 장소는 Asia/Seoul 기준으로 처리합니다. "
                     + "과거 시각과 존재하지 않거나 두 번 존재하는 서머타임 전환 시각은 허용하지 않습니다.",
             security = @SecurityRequirement(name = "bearerAuth")
     )
@@ -255,8 +255,8 @@ public interface CompanionMatchApi {
                     성공 응답은 MATCHED 또는 SCHEDULE_CONFIRMED 상태만 반환하며, 로그인 사용자의 닉네임, 매칭 내 역할과 모집글의 만남 시간 유형을 함께 반환합니다.
                     MATCHED 상태에서는 모집글의 장소, 시간, 오픈채팅 URL을 기본 일정으로 반환하고, SCHEDULE_CONFIRMED 상태에서는 확정된 일정을 반환합니다.
                     일정 확정 여부는 schedule 존재 여부가 아닌 matchStatus로 판단합니다.
-                    일정 장소 주소에서 BARCELONA, MADRID, LONDON, PARIS를 판별해 city, timeZoneId, currentLocalTime을 반환합니다.
-                    도시를 판별할 수 없으면 city는 null이며, 시간은 UTC로 반환합니다.
+                    지원 도시는 해당 도시 시간대, 일본 주소는 Asia/Tokyo, 그 외 미지원 장소는 Asia/Seoul로 city, timeZoneId, currentLocalTime을 반환합니다.
+                    지원 도시가 아니면 city는 null일 수 있습니다.
                     meetingTimeType이 UNDECIDED이면 schedule의 장소는 반환되지만 scheduledAt은 null입니다.
                     meetingTimeType이 NOW인 신규 수락 흐름은 일정이 자동 확정되어 SCHEDULE_CONFIRMED 상태로 반환됩니다.
                     기존 DB에 NOW + MATCHED 상태로 남아 있는 데이터는 모집글 장소와 즉시 동행 노출 만료 시간으로 기본 일정을 구성합니다.

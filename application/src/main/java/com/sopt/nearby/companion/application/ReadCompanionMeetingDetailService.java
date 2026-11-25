@@ -8,7 +8,6 @@ import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCan
 import com.sopt.nearby.companion.domain.exception.ReadCompanionMeetingAlreadyCompletedException;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingDetail;
 import com.sopt.nearby.companion.domain.model.meeting.CompanionMeetingStatus;
-import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver;
 import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolver.ResolvedCityTime;
 import com.sopt.nearby.companion.port.in.ReadCompanionMeetingDetailUseCase;
 import com.sopt.nearby.companion.port.out.CompanionMeetingDetailQueryPort;
@@ -18,13 +17,23 @@ public class ReadCompanionMeetingDetailService implements ReadCompanionMeetingDe
 
     private final CompanionMeetingDetailQueryPort queryPort;
     private final Clock clock;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public ReadCompanionMeetingDetailService(
             final CompanionMeetingDetailQueryPort queryPort,
             final Clock clock
     ) {
+        this(queryPort, clock, new CompanionPlaceTimeResolver());
+    }
+
+    public ReadCompanionMeetingDetailService(
+            final CompanionMeetingDetailQueryPort queryPort,
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.queryPort = queryPort;
         this.clock = clock;
+        this.placeTimeResolver = placeTimeResolver;
     }
 
     @Override
@@ -38,10 +47,11 @@ public class ReadCompanionMeetingDetailService implements ReadCompanionMeetingDe
         }
         validateMeetingStatus(detail.meetingStatus());
 
-        ResolvedCityTime cityTime = CompanionPlaceCityNameResolver.resolveCurrentTime(
+        ResolvedCityTime cityTime = placeTimeResolver.resolveCurrentTime(
                 detail.placeAddress(),
-                clock.instant()
-        );
+                detail.latitude(),
+                detail.longitude(),
+                clock.instant());
         return ReadCompanionMeetingDetailResult.from(
                 detail,
                 cityTime.city(),

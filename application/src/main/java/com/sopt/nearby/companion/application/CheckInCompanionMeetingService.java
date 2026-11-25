@@ -40,6 +40,7 @@ public class CheckInCompanionMeetingService implements CheckInCompanionMeetingUs
     private final MeetingCheckInRepository checkInRepository;
     private final Clock clock;
     private final CompanionMatchRepository matchRepository;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public CheckInCompanionMeetingService(
             final CompanionMeetingCheckInQueryPort queryPort,
@@ -48,10 +49,23 @@ public class CheckInCompanionMeetingService implements CheckInCompanionMeetingUs
             final CompanionMatchRepository matchRepository,
             final Clock clock
     ) {
+        this(queryPort, participantRepository, checkInRepository, matchRepository, clock,
+                new CompanionPlaceTimeResolver());
+    }
+
+    public CheckInCompanionMeetingService(
+            final CompanionMeetingCheckInQueryPort queryPort,
+            final CompanionMatchParticipantRepository participantRepository,
+            final MeetingCheckInRepository checkInRepository,
+            final CompanionMatchRepository matchRepository,
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.queryPort = queryPort;
         this.participantRepository = participantRepository;
         this.checkInRepository = checkInRepository;
         this.matchRepository = matchRepository;
+        this.placeTimeResolver = placeTimeResolver;
         this.clock = clock;
     }
 
@@ -178,8 +192,8 @@ public class CheckInCompanionMeetingService implements CheckInCompanionMeetingUs
     ) {
         long checkedInCount = checkInRepository.countByMeetingId(context.meetingId());
         boolean allParticipantsCheckedIn = checkedInCount >= totalParticipantCount;
-        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(context.placeAddress())
-                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        var zone = placeTimeResolver.resolveZone(
+                context.placeAddress(), context.placeLatitude(), context.placeLongitude(), clock.instant());
 
         return new CheckInCompanionMeetingResult(
                 context.meetingId(),

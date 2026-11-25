@@ -154,7 +154,7 @@ class ReadCompanionScheduleServiceTest {
         CompanionScheduleDetail result = service.getSchedule(1L, 7L);
 
         assertEquals(CompanionMatchStatus.COMPLETED, result.matchStatus());
-        assertEquals(SCHEDULED_AT, result.schedule().scheduledAt());
+        assertEquals(SCHEDULED_AT.plusHours(9), result.schedule().scheduledAt());
     }
 
     private CompanionScheduleDetail confirmedScheduleDetail() {

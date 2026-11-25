@@ -6,6 +6,7 @@ import com.sopt.nearby.companion.domain.model.notification.CompanionNotification
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationTargetType;
 import com.sopt.nearby.companion.domain.model.notification.CompanionNotificationType;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,5 +26,13 @@ public interface CompanionNotificationRepository extends DomainRepository<Compan
 
     default Optional<String> findPlaceAddressByNotificationId(Long notificationId) {
         return Optional.empty();
+    }
+
+    default Optional<Place> findPlaceByNotificationId(Long notificationId) {
+        return findPlaceAddressByNotificationId(notificationId)
+                .map(address -> new Place(address, null, null));
+    }
+
+    record Place(String address, BigDecimal latitude, BigDecimal longitude) {
     }
 }

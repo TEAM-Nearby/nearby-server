@@ -31,6 +31,8 @@ public class CompanionMatchSummaryQueryAdapter implements CompanionMatchSummaryQ
                         UserGender.valueOf(row.getHostGender()),
                         row.getPlaceName(),
                         row.getPlaceAddress(),
+                        row.getLatitude(),
+                        row.getLongitude(),
                         row.getMeetingAt(),
                         CompanionPostMeetingTimeType.valueOf(row.getMeetingTimeType()),
                         row.getCreatedAt(),
@@ -48,5 +50,11 @@ public class CompanionMatchSummaryQueryAdapter implements CompanionMatchSummaryQ
     @Override
     public Optional<String> findPlaceAddressByPlaceId(final Long placeId) {
         return repository.findPlaceAddressByPlaceId(placeId);
+    }
+
+    @Override
+    public Optional<Place> findPlaceByPlaceId(final Long placeId) {
+        return repository.findPlaceByPlaceId(placeId)
+                .map(row -> new Place(row.getAddress(), row.getLatitude(), row.getLongitude()));
     }
 }

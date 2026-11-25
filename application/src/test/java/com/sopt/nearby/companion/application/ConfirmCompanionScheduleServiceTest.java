@@ -29,6 +29,7 @@ import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
 import com.sopt.nearby.companion.port.out.MeetingCheckInRepository;
 import com.sopt.nearby.companion.domain.model.meeting.MeetingCheckIn;
 import com.sopt.nearby.companion.port.in.CreateCompanionNotificationUseCase;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.Clock;
 import java.time.Instant;
@@ -74,6 +75,9 @@ class ConfirmCompanionScheduleServiceTest {
                     public List<CompanionMatchSummary> findAllByParticipantUserId(Long userId) { return List.of(); }
                     public Optional<String> findPlaceNameByPlaceId(Long placeId) { return Optional.empty(); }
                     public Optional<String> findPlaceAddressByPlaceId(Long placeId) { return Optional.ofNullable(placeAddress); }
+                    public Optional<Place> findPlaceByPlaceId(Long placeId) {
+                        return Optional.of(new Place(placeAddress, BigDecimal.ZERO, BigDecimal.ZERO));
+                    }
                 },
                 new MeetingCheckInRepository() {
                     public Optional<MeetingCheckIn> findById(Long id) { return Optional.empty(); }
@@ -137,6 +141,16 @@ class ConfirmCompanionScheduleServiceTest {
     }
 
     @Test
+    void savesUnsupportedPlaceScheduleInSeoulTime() {
+        placeAddress = "Roma, Italia";
+
+        service.update(command(7L, UPDATED_TIME));
+
+        assertEquals(UPDATED_TIME.minusHours(9), scheduleRepository.schedules.get(1L).scheduledAt());
+        assertEquals(1, scheduleRepository.saveCount);
+    }
+
+    @Test
     void rejectsPastScheduleAndAmbiguousLocalTime() {
         placeAddress = "Paris, France";
         assertThrows(InvalidCompanionScheduleRequestException.class,
@@ -151,7 +165,7 @@ class ConfirmCompanionScheduleServiceTest {
         ConfirmCompanionScheduleResult result = service.update(command(7L, UPDATED_TIME));
 
         CompanionSchedule updated = scheduleRepository.schedules.get(1L);
-        assertEquals(UPDATED_TIME, updated.scheduledAt());
+        assertEquals(UPDATED_TIME.minusHours(9), updated.scheduledAt());
         assertEquals(100L, updated.placeId());
         assertEquals(60, updated.estimatedDurationMinutes());
         assertEquals(true, updated.confirmed());
@@ -179,7 +193,7 @@ class ConfirmCompanionScheduleServiceTest {
 
     @Test
     void doesNotNotifyWhenScheduledAtIsUnchanged() {
-        service.update(command(7L, ORIGINAL_TIME));
+        service.update(command(7L, ORIGINAL_TIME.plusHours(9)));
 
         assertEquals(0, notificationUseCase.commands.size());
     }
@@ -195,9 +209,9 @@ class ConfirmCompanionScheduleServiceTest {
         CompanionMeeting meeting = meetingRepository.meetings.get(1L);
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, matchRepository.findById(1L).orElseThrow().status());
         assertEquals(100L, schedule.placeId());
-        assertEquals(UPDATED_TIME, schedule.scheduledAt());
+        assertEquals(UPDATED_TIME.minusHours(9), schedule.scheduledAt());
         assertEquals(CompanionMeetingStatus.ONGOING, meeting.status());
-        assertEquals(UPDATED_TIME, meeting.startedAt());
+        assertEquals(UPDATED_TIME.minusHours(9), meeting.startedAt());
         assertEquals(schedule.id(), result.scheduleId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
         assertEquals(0, notificationUseCase.commands.size());

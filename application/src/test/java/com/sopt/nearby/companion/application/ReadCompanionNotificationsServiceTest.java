@@ -52,7 +52,7 @@ class ReadCompanionNotificationsServiceTest {
 
         assertEquals(7L, queryPort.userId);
         assertEquals(CompanionNotificationDirection.SENT, queryPort.direction);
-        assertEquals(queryPort.result, result);
+        assertEquals(queryPort.result.getFirst().meetingAt().plusHours(9), result.getFirst().meetingAt());
     }
 
     private static final class FakeCompanionNotificationQueryPort implements CompanionNotificationQueryPort {

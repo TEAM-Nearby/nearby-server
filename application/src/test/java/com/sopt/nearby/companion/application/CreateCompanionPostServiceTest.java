@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +40,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class CreateCompanionPostServiceTest {
 
-    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-02T05:00:00Z"), ZoneOffset.UTC);
-    private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 2, 5, 0);
+    private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-07-02T00:00:00Z"), ZoneOffset.UTC);
+    private static final LocalDateTime NOW = LocalDateTime.of(2026, 7, 2, 0, 0);
 
     private FakeRequireCompletedOnboardingUseCase onboardingUseCase;
     private FakeResolvePlaceCacheUseCase resolvePlaceCacheUseCase;
@@ -85,7 +86,7 @@ class CreateCompanionPostServiceTest {
     void rejectsPastScheduledMeetingInPlaceLocalTime() {
         CreateCompanionPostCommand base = command(
                 CompanionPostMeetingTimeType.SCHEDULED,
-                LocalDateTime.of(2026, 7, 2, 6, 30),
+                LocalDateTime.of(2026, 7, 2, 1, 30),
                 true,
                 List.of()
         );
@@ -98,6 +99,39 @@ class CreateCompanionPostServiceTest {
         );
 
         assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(paris));
+    }
+
+    @Test
+    void rejectsScheduleThatPassesWhileResolvingPlace() {
+        Instant initial = CLOCK.instant();
+        Clock advancingClock = new Clock() {
+            private int calls;
+
+            @Override
+            public ZoneId getZone() {
+                return ZoneOffset.UTC;
+            }
+
+            @Override
+            public Clock withZone(final ZoneId zone) {
+                return this;
+            }
+
+            @Override
+            public Instant instant() {
+                return calls++ == 0 ? initial : initial.plusSeconds(2);
+            }
+        };
+        service = new CreateCompanionPostService(
+                onboardingUseCase, resolvePlaceCacheUseCase, postRepository, styleRepository, advancingClock);
+        CreateCompanionPostCommand command = command(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 2, 9, 0, 1),
+                true,
+                List.of());
+
+        assertThrows(InvalidCompanionPostCreateRequestException.class, () -> service.create(command));
+        assertNull(postRepository.savedPost);
     }
 
     @Test
@@ -118,7 +152,26 @@ class CreateCompanionPostServiceTest {
 
         assertEquals(LocalDateTime.of(2026, 7, 2, 6, 55), postRepository.savedPost.meetingAt());
         assertEquals(LocalDateTime.of(2026, 7, 2, 8, 55), result.meetingAt());
-        assertEquals(LocalDateTime.of(2026, 7, 2, 7, 0), result.createdAt());
+        assertEquals(NOW.plusHours(2), result.createdAt());
+    }
+
+    @Test
+    void storesUnsupportedPlaceScheduleInSeoulTime() {
+        CreateCompanionPostCommand base = command(
+                CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 11, 20, 19, 0), true, List.of());
+        CreateCompanionPostCommand rome = new CreateCompanionPostCommand(
+                base.hostUserId(),
+                new CreateCompanionPostCommand.Place(
+                        "rome-place", "Roma", "Roma, Italia",
+                        new BigDecimal("41.9028"), new BigDecimal("12.4964"), base.place().category()),
+                base.meetingTimeType(), base.meetingAt(), base.recruitmentCapacity(),
+                base.departEvenIfNotFull(), base.styleKeywords(), base.content(), base.openChatUrl());
+
+        CreateCompanionPostResult result = service.create(rome);
+
+        assertEquals(LocalDateTime.of(2026, 11, 20, 10, 0), postRepository.savedPost.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 11, 20, 19, 0), result.meetingAt());
     }
 
     @Test
@@ -148,11 +201,11 @@ class CreateCompanionPostServiceTest {
                 List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
                 result.styleKeywords()
         );
-        assertEquals(NOW, result.createdAt());
+        assertEquals(NOW.plusHours(9), result.createdAt());
 
         CompanionPost saved = postRepository.savedPost;
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, saved.meetingTimeType());
-        assertEquals(LocalDateTime.of(2026, 7, 3, 14, 0), saved.meetingAt());
+        assertEquals(LocalDateTime.of(2026, 7, 3, 5, 0), saved.meetingAt());
         assertEquals(CompanionPostStatus.RECRUITING, saved.status());
         assertIterableEquals(
                 List.of(CompanionPostKeyword.NEW_FOOD_CHALLENGE, CompanionPostKeyword.PHOTO_LOVER),
@@ -171,7 +224,9 @@ class CreateCompanionPostServiceTest {
 
         assertEquals(CompanionPostMeetingTimeType.NOW, result.meetingTimeType());
         assertNull(result.meetingAt());
+        assertEquals(NOW.plusHours(9), result.createdAt());
         assertEquals(NOW.plusHours(1), result.exposureExpiresAt());
+        assertEquals(NOW.plusHours(1), postRepository.savedPost.exposureExpiresAt());
         assertEquals(true, result.departEvenIfNotFull());
         assertEquals(List.of(), result.styleKeywords());
         assertEquals(CompanionPostPlaceCategory.RESTAURANT, result.place().category());

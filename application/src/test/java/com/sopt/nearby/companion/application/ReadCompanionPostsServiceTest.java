@@ -117,10 +117,10 @@ class ReadCompanionPostsServiceTest {
         assertEquals(CompanionPostMeetingTimeType.SCHEDULED, post.meetingTimeType());
         assertEquals("1234567890123456789012345678901234567890123456789", post.contentPreview());
         assertEquals(true, post.contentPreviewTruncated());
-        assertEquals("7월 3일 14:00", post.meetingAtText());
+        assertEquals("7월 3일 23:00", post.meetingAtText());
         assertEquals("2/4 모집 중", post.participantSummaryText());
         assertEquals("30분 전", post.createdAgoText());
-        assertEquals("7월 3일 14시 니어바이스시 동행", post.mapMarkerText());
+        assertEquals("7월 3일 23시 니어바이스시 동행", post.mapMarkerText());
         assertEquals("google-place-id", resolvePlaceImageUseCase.command.googlePlaceId());
         assertEquals("https://lh3.googleusercontent.com/place.jpg", resolvePlaceImageUseCase.command.photoReference());
         assertEquals("https://lh3.googleusercontent.com/resolved-place.jpg", post.place().imageUrl());
@@ -165,7 +165,7 @@ class ReadCompanionPostsServiceTest {
 
         assertEquals("https://cdn.nearby.test/default-place.png", result.posts().get(0).place().imageUrl());
         assertEquals("DEFAULT", result.posts().get(0).place().imageSource());
-        assertEquals("7월 3일 14시 30분 니어바이스시 동행", result.posts().get(0).mapMarkerText());
+        assertEquals("7월 3일 23시 30분 니어바이스시 동행", result.posts().get(0).mapMarkerText());
         assertEquals("7월 1일", result.posts().get(0).createdAgoText());
     }
 
@@ -198,6 +198,16 @@ class ReadCompanionPostsServiceTest {
         assertEquals(null, result.posts().get(0).meetingAt());
         assertEquals(null, result.posts().get(0).meetingAtText());
         assertEquals("니어바이스시 동행", result.posts().get(0).mapMarkerText());
+    }
+
+    @Test
+    void displaysUnsupportedPlaceTimesInSeoulTime() {
+        queryPort.result = List.of(summary(101L, "unknown", "41.9028", "12.4964"));
+
+        CompanionPostsResult result = service.read(validCommand());
+
+        assertEquals(LocalDateTime.of(2026, 7, 2, 12, 30), result.posts().getFirst().createdAt());
+        assertEquals(LocalDateTime.of(2026, 7, 3, 23, 0), result.posts().getFirst().meetingAt());
     }
 
     @Test
@@ -276,6 +286,20 @@ class ReadCompanionPostsServiceTest {
                 null,
                 CompanionPostSort.LATEST
         );
+    }
+
+    private CompanionPostSummary summary(
+            final Long postId,
+            final String address,
+            final String latitude,
+            final String longitude
+    ) {
+        return new CompanionPostSummary(
+                postId, CompanionPostStatus.RECRUITING, "호스트", UserGender.FEMALE, 20L, "place-" + postId,
+                "장소", CompanionPostPlaceCategory.RESTAURANT, new BigDecimal(latitude), new BigDecimal(longitude),
+                10, null, "동행", CompanionPostMeetingTimeType.SCHEDULED,
+                LocalDateTime.of(2026, 7, 3, 14, 0), 1, 4,
+                LocalDateTime.of(2026, 7, 2, 3, 30), List.of(), address);
     }
 
     private static final class FakeCompanionPostQueryPort implements CompanionPostQueryPort {

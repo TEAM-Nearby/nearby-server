@@ -37,8 +37,9 @@ public final class CompanionReportMailFormatter {
 	}
 
 	public static String body(final CompanionReportMail mail) {
-		String placeTime = formatPlaceDateTime(mail.scheduledAt(), mail.meetingTimeType(), mail.placeAddress());
-		ZoneId placeZone = placeZone(mail.placeAddress());
+		String placeTime = formatPlaceDateTime(
+				mail.scheduledAt(), mail.meetingTimeType(), mail.placeAddress(), mail.placeZone());
+		ZoneId placeZone = mail.placeZone();
 		String reasons = mail.reasons().stream()
 				.map(CompanionReportMailFormatter::reasonLabel)
 				.reduce((left, right) -> left + ", " + right)
@@ -65,8 +66,9 @@ public final class CompanionReportMailFormatter {
 	}
 
 	public static String htmlBody(final CompanionReportMail mail) {
-		String placeTime = formatPlaceDateTime(mail.scheduledAt(), mail.meetingTimeType(), mail.placeAddress());
-		ZoneId placeZone = placeZone(mail.placeAddress());
+		String placeTime = formatPlaceDateTime(
+				mail.scheduledAt(), mail.meetingTimeType(), mail.placeAddress(), mail.placeZone());
+		ZoneId placeZone = mail.placeZone();
 		String reasons = mail.reasons().stream()
 				.map(CompanionReportMailFormatter::reasonLabel)
 				.reduce((left, right) -> left + ", " + right)
@@ -128,9 +130,9 @@ public final class CompanionReportMailFormatter {
 	private static String formatPlaceDateTime(
 			final java.time.LocalDateTime value,
 			final CompanionPostMeetingTimeType meetingTimeType,
-			final String placeAddress
+			final String placeAddress,
+			final ZoneId placeZone
 	) {
-		ZoneId placeZone = placeZone(placeAddress);
 		String cityName = CompanionPlaceCityNameResolver.resolveSupportedCity(placeAddress)
 				.map(CompanionCity::displayName)
 				.orElse("도시 미정");
@@ -138,11 +140,6 @@ public final class CompanionReportMailFormatter {
 				: formatUtcLocalDateTime(value, placeZone, CITY_DATE_TIME_FORMATTER);
 		return formattedDateTime
 				+ " (" + cityName + ")";
-	}
-
-	private static ZoneId placeZone(final String address) {
-		return CompanionPlaceCityNameResolver.resolveSupportedCity(address)
-				.map(CompanionCity::zoneId).orElse(ZoneOffset.UTC);
 	}
 
 	private static String formatUtcLocalDateTime(

@@ -41,6 +41,7 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
     private final CompanionMatchSummaryQueryPort placeQueryPort;
     private final Clock clock;
     private final MeetingCheckInRepository checkInRepository;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
 
     public ConfirmCompanionScheduleService(
             final CompanionMatchRepository matchRepository,
@@ -53,6 +54,22 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
             final MeetingCheckInRepository checkInRepository,
             final Clock clock
     ) {
+        this(matchRepository, postRepository, scheduleRepository, meetingRepository, participantRepository,
+                notificationUseCase, placeQueryPort, checkInRepository, clock, new CompanionPlaceTimeResolver());
+    }
+
+    public ConfirmCompanionScheduleService(
+            final CompanionMatchRepository matchRepository,
+            final CompanionPostRepository postRepository,
+            final CompanionScheduleRepository scheduleRepository,
+            final CompanionMeetingRepository meetingRepository,
+            final CompanionMatchParticipantRepository participantRepository,
+            final CreateCompanionNotificationUseCase notificationUseCase,
+            final CompanionMatchSummaryQueryPort placeQueryPort,
+            final MeetingCheckInRepository checkInRepository,
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
+    ) {
         this.matchRepository = matchRepository;
         this.postRepository = postRepository;
         this.scheduleRepository = scheduleRepository;
@@ -61,6 +78,7 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
         this.notificationUseCase = notificationUseCase;
         this.placeQueryPort = placeQueryPort;
         this.checkInRepository = checkInRepository;
+        this.placeTimeResolver = placeTimeResolver;
         this.clock = clock;
     }
 
@@ -83,9 +101,12 @@ public class ConfirmCompanionScheduleService implements ConfirmCompanionSchedule
 
         CompanionSchedule currentSchedule = scheduleRepository.findConfirmedByMatchId(match.id()).orElse(null);
         Long placeId = currentSchedule == null ? post.placeId() : currentSchedule.placeId();
-        var zone = placeQueryPort.findPlaceAddressByPlaceId(placeId)
-                .flatMap(CompanionPlaceCityNameResolver::resolveSupportedCity)
-                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        var place = placeQueryPort.findPlaceByPlaceId(placeId).orElse(null);
+        var zone = placeTimeResolver.resolveZone(
+                place == null ? null : place.address(),
+                place == null ? null : place.latitude(),
+                place == null ? null : place.longitude(),
+                clock.instant());
         LocalDateTime utcTime = CompanionMeetingTimeConverter.toUtc(command.scheduledAt(), zone)
                 .filter(value -> value.isAfter(LocalDateTime.now(clock)))
                 .orElseThrow(InvalidCompanionScheduleRequestException::new);

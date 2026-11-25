@@ -14,6 +14,7 @@ import com.sopt.nearby.companion.application.IssueProfileImageUploadUrlService;
 import com.sopt.nearby.companion.application.MarkCompanionNotificationAsReadService;
 import com.sopt.nearby.companion.application.ProcessCompanionRequestService;
 import com.sopt.nearby.companion.application.ProcessCompanionPushDeliveriesService;
+import com.sopt.nearby.companion.application.CompanionPlaceTimeResolver;
 import com.sopt.nearby.companion.application.RegisterCompanionPushEndpointService;
 import com.sopt.nearby.companion.application.ReadCompanionMeetingDetailService;
 import com.sopt.nearby.companion.application.ReadCompanionNotificationsService;
@@ -114,19 +115,26 @@ import org.springframework.context.annotation.Configuration;
 public class CompanionUseCaseConfig {
 
     @Bean
+    CompanionPlaceTimeResolver companionPlaceTimeResolver() {
+        return new CompanionPlaceTimeResolver();
+    }
+
+    @Bean
     CreateCompanionPostUseCase createCompanionPostUseCase(
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final ResolvePlaceCacheUseCase resolvePlaceCacheUseCase,
             final CompanionPostRepository companionPostRepository,
             final CompanionPostStyleRepository companionPostStyleRepository,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new CreateCompanionPostService(
                 requireCompletedOnboardingUseCase,
                 resolvePlaceCacheUseCase,
                 companionPostRepository,
                 companionPostStyleRepository,
-                clock
+                clock,
+                placeTimeResolver
         );
     }
 
@@ -139,7 +147,8 @@ public class CompanionUseCaseConfig {
             final CompanionApplicationRepository companionApplicationRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
             final Clock clock,
-            final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort
+            final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new CreateCompanionRequestService(
                 requireCompletedOnboardingUseCase,
@@ -149,7 +158,8 @@ public class CompanionUseCaseConfig {
                 companionApplicationRepository,
                 createCompanionNotificationUseCase,
                 clock,
-                companionMatchSummaryQueryPort
+                companionMatchSummaryQueryPort,
+                placeTimeResolver
         );
     }
 
@@ -161,7 +171,8 @@ public class CompanionUseCaseConfig {
             CompanionProfileRepository companionProfileRepository,
             CompanionScheduleRepository companionScheduleRepository,
             CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
-            Clock clock
+            Clock clock,
+            CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new ReadCompanionMatchPreviewService(
                 companionMatchRepository,
@@ -170,24 +181,27 @@ public class CompanionUseCaseConfig {
                 companionProfileRepository,
                 companionScheduleRepository,
                 companionMatchSummaryQueryPort,
-                clock
+                clock,
+                placeTimeResolver
         );
     }
 
     @Bean
     ReadCompanionMatchesUseCase readCompanionMatchesUseCase(
             final CompanionMatchSummaryQueryPort queryPort,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
-        return new ReadCompanionMatchesService(queryPort, clock);
+        return new ReadCompanionMatchesService(queryPort, clock, placeTimeResolver);
     }
 
     @Bean
     ReadCompanionScheduleUseCase readCompanionScheduleUseCase(
             final CompanionScheduleDetailQueryPort queryPort,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
-        return new ReadCompanionScheduleService(queryPort, clock);
+        return new ReadCompanionScheduleService(queryPort, clock, placeTimeResolver);
     }
 
     @Bean
@@ -195,13 +209,15 @@ public class CompanionUseCaseConfig {
             final CompanionPostQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
             final ResolvePlaceImageUseCase resolvePlaceImageUseCase,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new ReadCompanionPostsService(
                 queryPort,
                 requireCompletedOnboardingUseCase,
                 clock,
-                resolvePlaceImageUseCase
+                resolvePlaceImageUseCase,
+                placeTimeResolver
         );
     }
 
@@ -209,21 +225,24 @@ public class CompanionUseCaseConfig {
     ReadCompanionPostDetailUseCase readCompanionPostDetailUseCase(
             final CompanionPostDetailQueryPort queryPort,
             final RequireCompletedOnboardingUseCase requireCompletedOnboardingUseCase,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new ReadCompanionPostDetailService(
                 queryPort,
                 requireCompletedOnboardingUseCase,
-                clock
+                clock,
+                placeTimeResolver
         );
     }
 
     @Bean
     ReadMyCompanionPostsUseCase readMyCompanionPostsUseCase(
             final MyCompanionPostQueryPort queryPort,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
-        return new ReadMyCompanionPostsService(queryPort, clock);
+        return new ReadMyCompanionPostsService(queryPort, clock, placeTimeResolver);
     }
 
     @Bean
@@ -254,7 +273,8 @@ public class CompanionUseCaseConfig {
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
             final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
             final MeetingCheckInRepository checkInRepository,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new ConfirmCompanionScheduleService(
                 companionMatchRepository,
@@ -265,7 +285,8 @@ public class CompanionUseCaseConfig {
                 createCompanionNotificationUseCase,
                 companionMatchSummaryQueryPort,
                 checkInRepository,
-                clock
+                clock,
+                placeTimeResolver
         );
     }
 
@@ -301,31 +322,39 @@ public class CompanionUseCaseConfig {
 
     @Bean
     ReadCompanionNotificationsUseCase readCompanionNotificationsUseCase(
-            final CompanionNotificationQueryPort queryPort
+            final CompanionNotificationQueryPort queryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver,
+            final Clock clock
     ) {
-        return new ReadCompanionNotificationsService(queryPort);
+        return new ReadCompanionNotificationsService(queryPort, placeTimeResolver, clock);
     }
 
     @Bean
     ReadCompanionNotificationPageUseCase readCompanionNotificationPageUseCase(
-            final CompanionNotificationQueryPort queryPort
+            final CompanionNotificationQueryPort queryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver,
+            final Clock clock
     ) {
-        return new ReadCompanionNotificationPageService(queryPort);
+        return new ReadCompanionNotificationPageService(queryPort, placeTimeResolver, clock);
     }
 
     @Bean
     ReadCompanionRequestReviewUseCase readCompanionRequestReviewUseCase(
-            final CompanionRequestReviewQueryPort queryPort
+            final CompanionRequestReviewQueryPort queryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver,
+            final Clock clock
     ) {
-        return new ReadCompanionRequestReviewService(queryPort);
+        return new ReadCompanionRequestReviewService(queryPort, placeTimeResolver, clock);
     }
 
     @Bean
     ReadCompanionRequestResultUseCase readCompanionRequestResultUseCase(
             final CompanionApplicationRepository applicationRepository,
             final AcceptedCompanionRequestDetailQueryPort detailQueryPort
+            , final CompanionPlaceTimeResolver placeTimeResolver,
+            final Clock clock
     ) {
-        return new ReadCompanionRequestResultService(applicationRepository, detailQueryPort);
+        return new ReadCompanionRequestResultService(applicationRepository, detailQueryPort, placeTimeResolver, clock);
     }
 
     @Bean
@@ -338,7 +367,8 @@ public class CompanionUseCaseConfig {
             final CompanionMeetingRepository companionMeetingRepository,
             final CreateCompanionNotificationUseCase createCompanionNotificationUseCase,
             final Clock clock,
-            final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort
+            final CompanionMatchSummaryQueryPort companionMatchSummaryQueryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new ProcessCompanionRequestService(
                 applicationRepository,
@@ -349,7 +379,8 @@ public class CompanionUseCaseConfig {
                 companionMeetingRepository,
                 createCompanionNotificationUseCase,
                 clock,
-                companionMatchSummaryQueryPort
+                companionMatchSummaryQueryPort,
+                placeTimeResolver
         );
     }
 
@@ -413,17 +444,19 @@ public class CompanionUseCaseConfig {
     @Bean
     MarkCompanionNotificationAsReadUseCase markCompanionNotificationAsReadUseCase(
             final CompanionNotificationRepository repository,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
-        return new MarkCompanionNotificationAsReadService(repository, clock);
+        return new MarkCompanionNotificationAsReadService(repository, clock, placeTimeResolver);
     }
 
     @Bean
     ReadCompanionMeetingDetailUseCase readCompanionMeetingDetailUseCase(
             final CompanionMeetingDetailQueryPort queryPort,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
-        return new ReadCompanionMeetingDetailService(queryPort, clock);
+        return new ReadCompanionMeetingDetailService(queryPort, clock, placeTimeResolver);
     }
 
     @Bean
@@ -447,14 +480,16 @@ public class CompanionUseCaseConfig {
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
             final CompanionMatchRepository matchRepository,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new CheckInCompanionMeetingService(
                 queryPort,
                 participantRepository,
                 checkInRepository,
                 matchRepository,
-                clock
+                clock,
+                placeTimeResolver
         );
     }
 
@@ -465,7 +500,8 @@ public class CompanionUseCaseConfig {
             final CompanionMatchParticipantRepository participantRepository,
             final MeetingCheckInRepository checkInRepository,
             final Clock clock,
-            final CompanionMeetingCheckInQueryPort meetingContextQueryPort
+            final CompanionMeetingCheckInQueryPort meetingContextQueryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new CompleteCompanionMeetingService(
                 meetingRepository,
@@ -473,7 +509,8 @@ public class CompanionUseCaseConfig {
                 participantRepository,
                 checkInRepository,
                 clock,
-                meetingContextQueryPort
+                meetingContextQueryPort,
+                placeTimeResolver
         );
     }
 
@@ -487,7 +524,8 @@ public class CompanionUseCaseConfig {
             final CompanionReportReasonRepository reportReasonRepository,
             final CompanionReportMailContextQueryPort mailContextQueryPort,
             final CompanionReportMailSender mailSender,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
         return new CreateCompanionReportService(
                 meetingRepository,
@@ -498,16 +536,18 @@ public class CompanionUseCaseConfig {
                 reportReasonRepository,
                 mailContextQueryPort,
                 mailSender,
-                clock
+                clock,
+                placeTimeResolver
         );
     }
 
     @Bean
     ReadOngoingCompanionMeetingsUseCase readOngoingCompanionMeetingsUseCase(
             final OngoingCompanionMeetingQueryPort queryPort,
-            final Clock clock
+            final Clock clock,
+            final CompanionPlaceTimeResolver placeTimeResolver
     ) {
-        return new ReadOngoingCompanionMeetingsService(queryPort, clock);
+        return new ReadOngoingCompanionMeetingsService(queryPort, clock, placeTimeResolver);
     }
 
     @Bean

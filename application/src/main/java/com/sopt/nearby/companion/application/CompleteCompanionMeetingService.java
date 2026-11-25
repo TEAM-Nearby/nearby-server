@@ -36,6 +36,7 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 	private final MeetingCheckInRepository checkInRepository;
 	private final Clock clock;
 	private final CompanionMeetingCheckInQueryPort meetingContextQueryPort;
+	private final CompanionPlaceTimeResolver placeTimeResolver;
 
 	public CompleteCompanionMeetingService(
 			final CompanionMeetingRepository meetingRepository,
@@ -45,12 +46,26 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 			final Clock clock,
 			final CompanionMeetingCheckInQueryPort meetingContextQueryPort
 	) {
+		this(meetingRepository, matchRepository, participantRepository, checkInRepository, clock,
+				meetingContextQueryPort, new CompanionPlaceTimeResolver());
+	}
+
+	public CompleteCompanionMeetingService(
+			final CompanionMeetingRepository meetingRepository,
+			final CompanionMatchRepository matchRepository,
+			final CompanionMatchParticipantRepository participantRepository,
+			final MeetingCheckInRepository checkInRepository,
+			final Clock clock,
+			final CompanionMeetingCheckInQueryPort meetingContextQueryPort,
+			final CompanionPlaceTimeResolver placeTimeResolver
+	) {
 		this.meetingRepository = meetingRepository;
 		this.matchRepository = matchRepository;
 		this.participantRepository = participantRepository;
 		this.checkInRepository = checkInRepository;
 		this.clock = clock;
 		this.meetingContextQueryPort = meetingContextQueryPort;
+		this.placeTimeResolver = placeTimeResolver;
 	}
 
 	@Override
@@ -87,10 +102,12 @@ public class CompleteCompanionMeetingService implements CompleteCompanionMeeting
 			meetingStatus = CompanionMeetingStatus.COMPLETED;
 		}
 
-		var zone = meetingContextQueryPort.findByMeetingId(meetingId)
-				.map(CompanionMeetingCheckInContext::placeAddress)
-				.flatMap(CompanionPlaceCityNameResolver::resolveSupportedCity)
-				.map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+		var context = meetingContextQueryPort.findByMeetingId(meetingId).orElse(null);
+		var zone = placeTimeResolver.resolveZone(
+				context == null ? null : context.placeAddress(),
+				context == null ? null : context.placeLatitude(),
+				context == null ? null : context.placeLongitude(),
+				clock.instant());
 		return new CompleteCompanionMeetingResult(
 				meeting.id(),
 				meeting.matchId(),

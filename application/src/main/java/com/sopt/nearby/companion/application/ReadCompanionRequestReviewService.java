@@ -8,14 +8,27 @@ import com.sopt.nearby.companion.domain.model.place.CompanionPlaceCityNameResolv
 import com.sopt.nearby.companion.port.in.ReadCompanionRequestReviewUseCase;
 import com.sopt.nearby.companion.port.out.CompanionRequestReviewQueryPort;
 import java.time.ZoneOffset;
+import java.time.Clock;
 import org.springframework.transaction.annotation.Transactional;
 
 public class ReadCompanionRequestReviewService implements ReadCompanionRequestReviewUseCase {
 
     private final CompanionRequestReviewQueryPort queryPort;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
+    private final Clock clock;
 
     public ReadCompanionRequestReviewService(final CompanionRequestReviewQueryPort queryPort) {
+        this(queryPort, new CompanionPlaceTimeResolver(), Clock.systemUTC());
+    }
+
+    public ReadCompanionRequestReviewService(
+            final CompanionRequestReviewQueryPort queryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver,
+            final Clock clock
+    ) {
         this.queryPort = queryPort;
+        this.placeTimeResolver = placeTimeResolver;
+        this.clock = clock;
     }
 
     @Override
@@ -29,8 +42,8 @@ public class ReadCompanionRequestReviewService implements ReadCompanionRequestRe
             throw new ForbiddenCompanionRequestHostOnlyException();
         }
 
-        var zone = CompanionPlaceCityNameResolver.resolveSupportedCity(review.placeAddress())
-                .map(city -> city.zoneId()).orElse(ZoneOffset.UTC);
+        var zone = placeTimeResolver.resolveZone(
+                review.placeAddress(), review.latitude(), review.longitude(), clock.instant());
         return CompanionRequestReviewResult.from(review,
                 CompanionMeetingTimeConverter.utcToLocal(review.meetingAt(), zone), zone);
     }

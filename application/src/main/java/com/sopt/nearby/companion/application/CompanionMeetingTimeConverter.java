@@ -10,6 +10,8 @@ import java.util.Optional;
 
 final class CompanionMeetingTimeConverter {
 
+    private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
+
     private CompanionMeetingTimeConverter() {
     }
 
@@ -36,6 +38,10 @@ final class CompanionMeetingTimeConverter {
             final LocalDateTime meetingAt,
             final CompanionCity city
     ) {
-        return utcToLocal(meetingAt, city == null ? ZoneOffset.UTC : city.zoneId());
+        return utcToLocal(meetingAt, city == null ? SEOUL : city.zoneId());
+    }
+
+    static LocalDateTime toPlaceLocalTime(final LocalDateTime meetingAt, final ZoneId zone) {
+        return utcToLocal(meetingAt, zone);
     }
 }

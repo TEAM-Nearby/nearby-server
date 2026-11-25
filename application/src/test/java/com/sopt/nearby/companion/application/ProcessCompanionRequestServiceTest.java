@@ -3,6 +3,7 @@ package com.sopt.nearby.companion.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,6 +37,7 @@ import com.sopt.nearby.companion.domain.model.match.CompanionMatchSummary;
 import com.sopt.nearby.companion.port.out.CompanionMeetingRepository;
 import com.sopt.nearby.companion.port.out.CompanionPostRepository;
 import com.sopt.nearby.companion.port.out.CompanionScheduleRepository;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -146,7 +148,7 @@ class ProcessCompanionRequestServiceTest {
         AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
 
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
-        assertEquals(applicationCreatedAt, result.meetingAt());
+        assertEquals(applicationCreatedAt.plusHours(9), result.meetingAt());
         CompanionMatch match = matchRepository.findById(result.matchId()).orElseThrow();
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, match.status());
         CompanionSchedule schedule = scheduleRepository.findConfirmedByMatchId(result.matchId()).orElseThrow();
@@ -157,6 +159,20 @@ class ProcessCompanionRequestServiceTest {
         assertEquals(result.matchId(), meeting.matchId());
         assertEquals(CompanionMeetingStatus.ONGOING, meeting.status());
         assertEquals(applicationCreatedAt, meeting.startedAt());
+    }
+
+    @Test
+    void acceptsUndecidedRequestWithoutMeetingTime() {
+        applicationRepository.save(application(3L, 10L, 7L, CompanionApplicationStatus.PENDING, null));
+        CompanionPost original = post(10L, 100L);
+        postRepository.save(new CompanionPost(
+                original.id(), original.hostUserId(), original.placeId(), CompanionPostMeetingTimeType.UNDECIDED,
+                null, null, original.maxParticipants(), original.departEvenIfNotFull(), original.content(),
+                original.openChatUrl(), original.status(), original.createdAt()));
+
+        AcceptedCompanionRequestResult result = service.accept(new AcceptCompanionRequestCommand(100L, 3L));
+
+        assertNull(result.meetingAt());
     }
 
     @Test
@@ -258,7 +274,7 @@ class ProcessCompanionRequestServiceTest {
 
         assertEquals(50L, result.matchId());
         assertEquals(CompanionMatchStatus.SCHEDULE_CONFIRMED, result.matchStatus());
-        assertEquals(existingScheduleAt, result.meetingAt());
+        assertEquals(existingScheduleAt.plusHours(9), result.meetingAt());
         assertEquals(1, matchRepository.matches.size());
         assertEquals(1, scheduleRepository.schedules.size());
         assertEquals(1, meetingRepository.meetings.size());

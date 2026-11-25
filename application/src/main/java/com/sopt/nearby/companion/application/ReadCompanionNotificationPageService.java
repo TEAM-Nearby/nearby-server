@@ -9,6 +9,7 @@ import com.sopt.nearby.companion.port.in.ReadCompanionNotificationPageUseCase;
 import com.sopt.nearby.companion.port.out.CompanionNotificationPageRow;
 import com.sopt.nearby.companion.port.out.CompanionNotificationQueryPort;
 import java.util.List;
+import java.time.Clock;
 
 public class ReadCompanionNotificationPageService implements ReadCompanionNotificationPageUseCase {
 
@@ -16,9 +17,21 @@ public class ReadCompanionNotificationPageService implements ReadCompanionNotifi
     private static final int MAX_SIZE = 100;
 
     private final CompanionNotificationQueryPort queryPort;
+    private final CompanionPlaceTimeResolver placeTimeResolver;
+    private final Clock clock;
 
     public ReadCompanionNotificationPageService(final CompanionNotificationQueryPort queryPort) {
+        this(queryPort, new CompanionPlaceTimeResolver(), Clock.systemUTC());
+    }
+
+    public ReadCompanionNotificationPageService(
+            final CompanionNotificationQueryPort queryPort,
+            final CompanionPlaceTimeResolver placeTimeResolver,
+            final Clock clock
+    ) {
         this.queryPort = queryPort;
+        this.placeTimeResolver = placeTimeResolver;
+        this.clock = clock;
     }
 
     @Override
@@ -52,7 +65,8 @@ public class ReadCompanionNotificationPageService implements ReadCompanionNotifi
         boolean hasNext = rows.size() > pageSize;
         List<CompanionNotificationPageRow> pageRows = hasNext ? rows.subList(0, pageSize) : rows;
         List<CompanionNotificationSummary> requests = pageRows.stream()
-                .map(row -> CompanionNotificationTime.localize(row.summary()))
+                .map(row -> CompanionNotificationTime.localize(
+                        row.summary(), placeTimeResolver, clock.instant()))
                 .toList();
         String nextCursor = hasNext
                 ? CompanionNotificationPageCursor.of(
